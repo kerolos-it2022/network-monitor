@@ -3,7 +3,7 @@
 # deploy.sh — سكريبت نشر نظام مراقبة أجهزة الشبكة على سيرفر Ubuntu
 # =========================================================
 # الاستخدام:
-#   sudo bash deploy.sh            # تثبيت كامل (Docker + المشروع + تشغيل)
+#   sudo bash deploy.sh            # تثبيت كامل (المتطلبات + Docker + المشروع + تشغيل)
 #   sudo bash deploy.sh update     # تحديث بعد سحب كود جديد من git
 #   sudo bash deploy.sh logs       # عرض السجلات الحية
 #   sudo bash deploy.sh stop       # إيقاف النظام
@@ -11,7 +11,7 @@
 #   sudo bash deploy.sh status     # حالة الحاوية
 #   sudo bash deploy.sh uninstall  # حذف الحاوية (البيانات تبقى في volume)
 # =========================================================
-set -euo pipefail
+set -uo pipefail
 
 # ---- إعدادات ----
 PROJECT_DIR="${PROJECT_DIR:-/opt/network-monitor}"
@@ -25,7 +25,7 @@ NC='\033[0m' # No Color
 
 log()   { echo -e "${GREEN}[✓]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
-error() { echo -e "${RED}[✗]${NC} $1"; }
+error() { echo -e "${RED}[✗]${NC} $1" >&2; }
 
 # التأكد من تشغيل السكريبت بـ root
 if [[ $EUID -ne 0 ]]; then
@@ -33,25 +33,104 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+export DEBIAN_FRONTEND=noninteractive
+
+# تحدّث فهرس apt بشكل آمن (ما يوقفش السكريبت بالكامل لو فشل)
+apt_update_safe() {
+    log "تحديث فهرس الحزم (apt-get update)..."
+    apt-get update -y || warn "تعذّر apt-get update — أكمل المحاولة بالحزم المتاحة."
+}
+
+# تثبيت حزمة عبر apt-get بشكل آمن ( لازم apt_update_safe قبلها)
+apt_install_safe() {
+    local pkgs=("$@")
+    log "تثبيت: ${pkgs[*]}"
+    if apt-get install -y --no-install-recommends "${pkgs[@]}"; then
+        log "تم تثبيت الحزم."
+    else
+        error "فشل تثبيت الحزم: ${pkgs[*]}"
+        return 1
+    fi
+}
+
 # =========================================================
-# تثبيت Docker و Docker Compose إن لم يكونا موجودين
+# ضمان وجود الأدوات الأساسية قبل أي خطوة
+# =========================================================
+ensure_prerequisites() {
+    local need=()
+    command -v curl    &> /dev/null || need+=(curl)
+    command -v openssl &> /dev/null || need+=(openssl)
+    command -v gpg    &> /dev/null || need+=(gnupg)
+    command -v apt-get &> /dev/null || { error "apt-get غير موجود — هذا السكريبت لـ Ubuntu/Debian فقط."; exit 1; }
+    [[ -d /usr/share/doc/ca-certificates ]] || need+=(ca-certificates)
+
+    apt_update_safe
+
+    if [[ ${#need[@]} -gt 0 ]]; then
+        apt_install_safe "${need[@]}" || { error "تعذّر تثبيت المتطلبات الأساسية."; exit 1; }
+    else
+        log "المتطلبات الأساسية (curl, openssl, gnupg, ca-certificates) موجودة."
+    fi
+}
+
+# =========================================================
+# تثبيت Docker و Docker Compose على طريقة apt الرسمية
 # =========================================================
 install_docker() {
     if command -v docker &> /dev/null; then
         log "Docker مثبّت مسبقاً: $(docker --version)"
     else
-        log "تثبيت Docker..."
-        curl -fsSL https://get.docker.com | sh
+        log "تثبيت Docker عبر المستودع الرسمي..."
+
+        apt_update_safe
+
+        # الحزم الأساسية لإضافة مستودع موقّع
+        local repo_pkgs=(ca-certificates curl gnupg lsb-release)
+        command -v gpg &> /dev/null || repo_pkgs+=(gnupg)
+        apt_install_safe "${repo_pkgs[@]}" || { error "تعذّر تثبيت حزم المستودع."; exit 1; }
+
+        # مجلد المفاتيح (طريقة Docker الرسمية 2024+)
+        install -m 0755 -d /etc/apt/keyrings
+
+        # تنزيل وتسجيل مفتاح GPG
+        if ! curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg; then
+            error "تعذّر تنزيل مفتاح GPG الخاص بـ Docker."
+            exit 1
+        fi
+        chmod a+r /etc/apt/keyrings/docker.gpg
+
+        # تحديد الإصدار والمعمارية
+        local codename arch
+        codename="$(. /etc/os-release && echo "${VERSION_CODENAME:-}")"
+        if [[ -z "$codename" ]]; then
+            codename="$(lsb_release -cs 2>/dev/null || echo stable)"
+            warn "تعذّر اكتشاف VERSION_CODENAME، استخدام: $codename"
+        fi
+        arch="$(dpkg --print-architecture 2>/dev/null || echo amd64)"
+
+        local repo_line="deb [arch=${arch} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${codename} stable"
+        echo "$repo_line" > /etc/apt/sources.list.d/docker.list
+        log "تم إضافة مستودع Docker: $repo_line"
+
+        apt_update_safe
+        if ! apt_install_safe docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+            error "تعذّر تثبيت Docker. حاول يدوياً: apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin"
+            exit 1
+        fi
+
         systemctl enable docker
         systemctl start docker
         log "تم تثبيت Docker."
     fi
 
+    # التأكد من Docker Compose (plugin v2)
     if docker compose version &> /dev/null; then
         log "Docker Compose متاح: $(docker compose version)"
     else
-        error "Docker Compose غير متاح. ثبّته يدوياً."
-        exit 1
+        warn "Docker Compose غير متاح، محاولة تثبيته..."
+        apt_install_safe docker-compose-plugin \
+            && log "تم تثبيت docker-compose-plugin." \
+            || { error "Docker Compose غير متاح. ثبّته يدوياً: apt-get install docker-compose-plugin"; exit 1; }
     fi
 }
 
@@ -65,14 +144,25 @@ setup_env() {
         return
     fi
     warn "إنشاء backend/.env من .env.example — عدّله لاحقاً بقيم سرية حقيقية."
-    cp "$PROJECT_DIR/backend/.env.example" "$env_file"
+
+    if [[ -f "$PROJECT_DIR/backend/.env.example" ]]; then
+        cp "$PROJECT_DIR/backend/.env.example" "$env_file"
+    else
+        warn "backend/.env.example غير موجود — إنشاء ملف .env بسيط."
+        {
+            echo "# أُنشئ تلقائياً بواسطة deploy.sh — عدّله بقيمك الحقيقية"
+            echo "SESSION_SECRET=REPLACE_ME"
+            echo "DEFAULT_ADMIN_PASSWORD=REPLACE_ME"
+            echo "DB_PATH=/app/data/database.db"
+        } > "$env_file"
+    fi
 
     # توليد SESSION_SECRET عشوائي
     local secret
     if command -v openssl &> /dev/null; then
         secret=$(openssl rand -hex 32)
     else
-        secret=$(head -c 32 /dev/urandom | base64)
+        secret=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 64)
     fi
     sed -i "s|^SESSION_SECRET=.*|SESSION_SECRET=$secret|g" "$env_file"
     log "تم توليد SESSION_SECRET عشوائي وتخزينه في backend/.env"
@@ -86,6 +176,7 @@ case "${1:-install}" in
 
     install)
         log "بدء تثبيت نظام مراقبة أجهزة الشبكة..."
+        ensure_prerequisites
         install_docker
 
         # لو السكريبت في مجلد المشروع (الحالة الطبيعية)، فPROJECT_DIR هو مجلد السكريبت
@@ -112,7 +203,7 @@ case "${1:-install}" in
 
         log "============================================"
         log "تم النشر بنجاح!"
-        log "النظام يعمل على: http://$(hostname -I | awk \"{print \\$1}\"):4000"
+        log "النظام يعمل على: http://$(hostname -I | awk '{print $1}'):4000"
         log "صفحة الدخول:     http://localhost:4000/admin/login.html"
         log "البيانات الافتراضية للمدير موجودة في: $PROJECT_DIR/backend/.env"
         log "لعرض السجلات:    sudo bash deploy.sh logs"
