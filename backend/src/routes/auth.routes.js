@@ -1,4 +1,4 @@
-// auth.routes.js: مسارات المصادقة (login / logout / me) باستخدام جلسات express-session.
+// auth.routes.js: مسارات المصادقة (login / logout / me / change-password) باستخدام جلسات express-session.
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
@@ -51,6 +51,32 @@ router.get('/me', (req, res) => {
   return res
     .status(401)
     .json({ success: false, error: 'not authenticated' });
+});
+
+// PUT /api/auth/change-password  🔒
+router.put('/change-password', requireAuth, (req, res) => {
+  const { current_password, new_password } = req.body || {};
+  if (!current_password || !new_password) {
+    return res.status(400).json({ success: false, error: 'كلمة المرور الحالية والجديدة مطلوبتان' });
+  }
+  if (new_password.length < 6) {
+    return res.status(400).json({ success: false, error: 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(req.session.user.username);
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'المستخدم غير موجود' });
+  }
+
+  const ok = bcrypt.compareSync(current_password, user.password_hash);
+  if (!ok) {
+    return res.status(401).json({ success: false, error: 'كلمة المرور الحالية غير صحيحة' });
+  }
+
+  const newHash = bcrypt.hashSync(new_password, 10);
+  db.prepare('UPDATE users SET password_hash = ? WHERE username = ?').run(newHash, req.session.user.username);
+
+  return res.json({ success: true, data: null });
 });
 
 module.exports = router;

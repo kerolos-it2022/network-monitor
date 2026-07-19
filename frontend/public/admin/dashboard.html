@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- dashboard.html: لوحة تحكم المدير — تبويبات (الأجهزة/المواقع/الأنواع/الإشعارات/السجل). -->
+<!-- dashboard.html: لوحة تحكم المدير — تبويبات (الأجهزة/المواقع/الأنواع/الإشعارات/السجل/الملف الشخصي). -->
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -22,13 +22,19 @@
     <button class="tab-btn" id="tab-types" type="button">الأنواع</button>
     <button class="tab-btn" id="tab-notifications" type="button">الإشعارات</button>
     <button class="tab-btn" id="tab-logs" type="button">السجل</button>
+    <button class="tab-btn" id="tab-profile" type="button">الملف الشخصي</button>
   </nav>
 
   <main class="admin-wrap">
     <!-- ============ قسم الأجهزة ============ -->
     <section id="section-devices">
-      <div style="margin-bottom:0.75rem;">
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
         <button id="add-device-btn" type="button" class="btn btn-primary">+ إضافة جهاز جديد</button>
+        <button id="export-devices-btn" type="button" class="btn">📤 تصدير Excel</button>
+        <label class="btn" style="cursor:pointer;">
+          📥 استيراد Excel
+          <input type="file" id="import-devices-file" accept=".xlsx,.xls" style="display:none;" />
+        </label>
       </div>
 
       <!-- نموذج إضافة/تعديل جهاز -->
@@ -137,6 +143,31 @@
         <tbody id="logs-table-body"></tbody>
       </table>
     </section>
+
+    <!-- ============ قسم الملف الشخصي ============ -->
+    <section id="section-profile" class="hidden">
+      <div class="form-card">
+        <h3>تغيير كلمة المرور</h3>
+        <form id="change-password-form">
+          <div class="form-grid">
+            <label>كلمة المرور الحالية <input type="password" id="cp-current" required /></label>
+            <label>كلمة المرور الجديدة <input type="password" id="cp-new" required minlength="6" /></label>
+            <label>تأكيد كلمة المرور الجديدة <input type="password" id="cp-confirm" required minlength="6" /></label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">تغيير كلمة المرور</button>
+          </div>
+          <div id="cp-status" class="error-msg" style="margin-top:0.5rem;"></div>
+        </form>
+      </div>
+      <div class="form-card" style="margin-top:1rem;">
+        <h3>معلومات الحساب</h3>
+        <div class="form-grid">
+          <label>اسم المستخدم <input type="text" id="profile-username" readonly /></label>
+          <label>الدور <input type="text" id="profile-role" readonly /></label>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- سكريبتات -->
@@ -144,6 +175,7 @@
   <script src="../js/admin-locations-types.js"></script>
   <script src="../js/admin-notifications.js"></script>
   <script src="../js/admin-tabs.js"></script>
+  <script src="../js/admin-profile.js"></script>
 
   <!-- ذيل الصفحة -->
   <footer class="site-footer">

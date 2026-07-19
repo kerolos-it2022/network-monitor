@@ -184,4 +184,119 @@ router.delete('/:id', requireAuth, (req, res) => {
   return res.json({ success: true, data: null });
 });
 
+// ============================================================
+// تصدير الأجهزة إلى Excel
+// GET /api/devices/export/excel  🔒
+// ============================================================
+router.get('/export/excel', requireAuth, (req, res) => {
+  const XLSX = require('xlsx');
+  const devices = db.prepare(`${DEVICE_SELECT} ORDER BY d.id ASC`).all();
+
+  // تحضير البيانات للتصدير
+  const exportData = devices.map((d) => ({
+    'الاسم': d.name,
+    'IP': d.ip,
+    'النوع': d.device_type_name || '',
+    'الموقع': d.location_name || '',
+    'طريقة الفحص': d.check_protocol,
+    'المنفذ': d.port || '',
+    'فترة الفحص (ثانية)': d.check_interval_seconds,
+    'حد التنبيه': d.failure_threshold,
+    'مفعّل': d.is_active ? 'نعم' : 'لا',
+    'الحالة الحالية': d.current_status,
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  // تعيين عرض الأعمدة
+  ws['!cols'] = [
+    { wch: 25 }, { wch: 18 }, { wch: 15 }, { wch: 25 },
+    { wch: 15 }, { wch: 10 }, { wch: 18 }, { wch: 12 },
+    { wch: 10 }, { wch: 15 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, 'الأجهزة');
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename=devices.xlsx');
+  return res.send(buf);
+});
+
+// ============================================================
+// استيراد الأجهزة من Excel
+// POST /api/devices/import/excel  🔒
+// ============================================================
+router.post('/import/excel', requireAuth, (req, res) => {
+  if (!req.files || !req.files.file) {
+    return res.status(400).json({ success: false, error: 'لم يتم رفع ملف' });
+  }
+
+  const XLSX = require('xlsx');
+  const file = req.files.file;
+
+  try {
+    const wb = XLSX.read(file.data, { type: 'buffer' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    // جلب الأنواع والمواقع للربط
+    const types = db.prepare('SELECT id, name FROM device_types').all();
+    const typeMap = Object.fromEntries(types.map(t => [t.name, t.id]));
+    const locs = db.prepare('SELECT id, name FROM locations').all();
+    const locMap = Object.fromEntries(locs.map(l => [l.name, l.id]));
+
+    let imported = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const name = (row['الاسم'] || '').toString().trim();
+      const ip = (row['IP'] || '').toString().trim();
+      const typeName = (row['النوع'] || '').toString().trim();
+      const locName = (row['الموقع'] || '').toString().trim();
+      const checkProtocol = (row['طريقة الفحص'] || 'ping').toString().trim().toLowerCase();
+      const port = row['المنفذ'] ? parseInt(row['المنفذ'], 10) : null;
+      const checkInterval = row['فترة الفحص (ثانية)'] ? parseInt(row['فترة الفحص (ثانية)'], 10) : 30;
+      const failureThreshold = row['حد التنبيه'] ? parseInt(row['حد التنبيه'], 10) : 3;
+      const isActive = (row['مفعّل'] || 'نعم').toString().trim() === 'نعم' ? 1 : 0;
+
+      if (!name || !ip || !typeName) {
+        skipped++;
+        errors.push(`صف ${i + 2}: حقول الاسم/IP/النوع مطلوبة`);
+        continue;
+      }
+
+      const deviceTypeId = typeMap[typeName];
+      if (!deviceTypeId) {
+        skipped++;
+        errors.push(`صف ${i + 2}: نوع الجهاز "${typeName}" غير موجود`);
+        continue;
+      }
+
+      const locationId = locName ? locMap[locName] || null : null;
+
+      try {
+        db.prepare(
+          `INSERT INTO devices
+            (name, ip, device_type_id, location_id, check_protocol, port,
+             check_interval_seconds, failure_threshold, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(name, ip, deviceTypeId, locationId, checkProtocol, port, checkInterval, failureThreshold, isActive);
+        imported++;
+      } catch (e) {
+        skipped++;
+        errors.push(`صف ${i + 2}: ${e.message}`);
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: { imported, skipped, errors }
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: 'فشل قراءة ملف Excel: ' + e.message });
+  }
+});
+
 module.exports = router;

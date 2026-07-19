@@ -150,6 +150,49 @@ async function deleteDevice(id, name) {
   }
 }
 
+async function exportDevicesExcel() {
+  try {
+    const r = await fetch('/api/devices/export/excel', { credentials: 'include' });
+    if (!r.ok) throw new Error('فشل التصدير');
+    const blob = await r.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'devices.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('خطأ في التصدير: ' + e.message);
+  }
+}
+
+async function importDevicesExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const r = await fetch('/api/devices/import/excel', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    const data = await r.json();
+    if (data.success) {
+      const { imported, skipped, errors } = data.data;
+      let msg = `تم الاستيراد: ${imported} جهاز، تم التخطي: ${skipped}`;
+      if (errors.length) msg += '\nأخطاء:\n' + errors.join('\n');
+      alert(msg);
+      await loadDevices();
+    } else {
+      alert('فشل الاستيراد: ' + (data.error || 'خطأ غير معروف'));
+    }
+  } catch (e) {
+    alert('خطأ في الاستيراد: ' + e.message);
+  }
+}
+
 async function logoutNow() {
   await api('/api/auth/logout', { method: 'POST' });
   window.location.href = 'login.html';
@@ -175,4 +218,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('device-form').classList.add('hidden');
   });
   document.getElementById('logout-btn').addEventListener('click', logoutNow);
+
+  // تصدير/استيراد
+  document.getElementById('export-devices-btn').addEventListener('click', exportDevicesExcel);
+  document.getElementById('import-devices-file').addEventListener('change', (e) => {
+    if (e.target.files[0]) importDevicesExcel(e.target.files[0]);
+    e.target.value = ''; // السماح بإعادة نفس الملف
+  });
 });
