@@ -21,7 +21,7 @@
 ### 1) على جهاز التطوير (windows/mac): ادفع المشروع لـ GitHub
 ```bash
 # في جذر المشروع على جهازك
-git remote add origin https://github.com/kerolos-it2022/network-monitor/REPO.git
+git remote add origin https://github.com/kerolos-it2022/network-monitor.git
 git push -u origin main
 ```
 
@@ -30,7 +30,7 @@ git push -u origin main
 sudo mkdir -p /opt
 sudo chown $USER:$USER /opt
 cd /opt
-git clone https://github.com/kerolos-it2022/network-monitor/REPO.git network-monitor
+git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
 cd network-monitor
 ```
 
