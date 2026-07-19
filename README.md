@@ -105,7 +105,7 @@ Monitoring engine started (every 10s tick).
 
 ```bash
 # على سيرفر Ubuntu:
-git clone https://github.com/kerolos-it2022/REPO.git network-monitor
+git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
 cd network-monitor
 sudo bash deploy.sh install
 ```
