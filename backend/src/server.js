@@ -3,6 +3,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
+const multer = require('multer');
 
 const db = require('./db');
 const { startMonitoring } = require('./services/monitor.service');
@@ -15,6 +16,15 @@ const notificationsRoutes = require('./routes/notifications.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// إعداد multer لتخزين الملفات في الذاكرة (للتعامل مع ملفات Excel)
+const upload = multer({ storage: multer.memoryStorage() });
+
+// جعل upload متاحاً للـ routes
+app.use((req, res, next) => {
+  req.upload = upload;
+  next();
+});
 
 // JSON body parser.
 app.use(express.json());

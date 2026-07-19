@@ -5,6 +5,7 @@ const TAB_TO_SECTION = {
   'tab-types': 'section-types',
   'tab-notifications': 'section-notifications',
   'tab-logs': 'section-logs',
+  'tab-profile': 'section-profile',
 };
 
 function showSection(tabId) {
