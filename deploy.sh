@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# =========================================================
+# deploy.sh — سكريبت نشر نظام مراقبة أجهزة الشبكة على سيرفر Ubuntu
+# =========================================================
+# الاستخدام:
+#   sudo bash deploy.sh            # تثبيت كامل (Docker + المشروع + تشغيل)
+#   sudo bash deploy.sh update     # تحديث بعد سحب كود جديد من git
+#   sudo bash deploy.sh logs       # عرض السجلات الحية
+#   sudo bash deploy.sh stop       # إيقاف النظام
+#   sudo bash deploy.sh restart    # إعادة التشغيل
+#   sudo bash deploy.sh status     # حالة الحاوية
+#   sudo bash deploy.sh uninstall  # حذف الحاوية (البيانات تبقى في volume)
+# =========================================================
+set -euo pipefail
+
+# ---- إعدادات ----
+PROJECT_DIR="${PROJECT_DIR:-/opt/network-monitor}"
+COMPOSE_FILE="$PROJECT_DIR/docker-compose.yml"
+
+# ألوان لإخراج أوضح
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+log()   { echo -e "${GREEN}[✓]${NC} $1"; }
+warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
+error() { echo -e "${RED}[✗]${NC} $1"; }
+
+# التأكد من تشغيل السكريبت بـ root
+if [[ $EUID -ne 0 ]]; then
+    error "يجب تشغيل هذا السكريبت بصلاحية root. استخدم: sudo bash deploy.sh"
+    exit 1
+fi
+
+# =========================================================
+# تثبيت Docker و Docker Compose إن لم يكونا موجودين
+# =========================================================
+install_docker() {
+    if command -v docker &> /dev/null; then
+        log "Docker مثبّت مسبقاً: $(docker --version)"
+    else
+        log "تثبيت Docker..."
+        curl -fsSL https://get.docker.com | sh
+        systemctl enable docker
+        systemctl start docker
+        log "تم تثبيت Docker."
+    fi
+
+    if docker compose version &> /dev/null; then
+        log "Docker Compose متاح: $(docker compose version)"
+    else
+        error "Docker Compose غير متاح. ثبّته يدوياً."
+        exit 1
+    fi
+}
+
+# =========================================================
+# إعداد ملف .env على السيرفر إن لم يوجد
+# =========================================================
+setup_env() {
+    local env_file="$PROJECT_DIR/backend/.env"
+    if [[ -f "$env_file" ]]; then
+        log "ملف backend/.env موجود."
+        return
+    fi
+    warn "إنشاء backend/.env من .env.example — عدّله لاحقاً بقيم سرية حقيقية."
+    cp "$PROJECT_DIR/backend/.env.example" "$env_file"
+
+    # توليد SESSION_SECRET عشوائي
+    local secret
+    if command -v openssl &> /dev/null; then
+        secret=$(openssl rand -hex 32)
+    else
+        secret=$(head -c 32 /dev/urandom | base64)
+    fi
+    sed -i "s|^SESSION_SECRET=.*|SESSION_SECRET=$secret|g" "$env_file"
+    log "تم توليد SESSION_SECRET عشوائي وتخزينه في backend/.env"
+    warn "تذكير: عدّل DEFAULT_ADMIN_PASSWORD في backend/.env إلى كلمة مرور قوية!"
+}
+
+# =========================================================
+# العمليات الرئيسية
+# =========================================================
+case "${1:-install}" in
+
+    install)
+        log "بدء تثبيت نظام مراقبة أجهزة الشبكة..."
+        install_docker
+
+        # لو السكريبت في مجلد المشروع (الحالة الطبيعية)، فPROJECT_DIR هو مجلد السكريبت
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        if [[ "$SCRIPT_DIR" != "$PROJECT_DIR" ]] && [[ -f "$SCRIPT_DIR/docker-compose.yml" ]]; then
+            PROJECT_DIR="$SCRIPT_DIR"
+            COMPOSE_FILE="$PROJECT_DIR/docker-compose.yml"
+            log "استخدام مجلد المشروع: $PROJECT_DIR"
+        fi
+
+        setup_env
+
+        log "بناء الصورة وتشغيل الحاوية..."
+        cd "$PROJECT_DIR"
+        docker compose --env-file "$PROJECT_DIR/backend/.env" up -d --build
+
+        log "تهيئة قاعدة البيانات وإنشاء حساب المدير الافتراضي..."
+        docker exec network-monitor sh -c '
+            cd /app/backend &&
+            node -e "const db=require(\"better-sqlite3\")(process.env.DB_PATH); const fs=require(\"fs\"); db.exec(fs.readFileSync(\"../database/schema.sql\",\"utf-8\")); console.log(\"schema OK\"); db.close();" 2>/dev/null || echo "schema may already exist"
+        ' || warn "تعذّر تشغيل تهيئة قاعدة البيانات (ربما موجودة مسبقاً)"
+
+        docker exec network-monitor sh -c 'cd /app/backend && node src/seedAdmin.js' || warn "seedAdmin قد يكون قد شُغّل مسبقاً"
+
+        log "============================================"
+        log "تم النشر بنجاح!"
+        log "النظام يعمل على: http://$(hostname -I | awk \"{print \\$1}\"):4000"
+        log "صفحة الدخول:     http://localhost:4000/admin/login.html"
+        log "البيانات الافتراضية للمدير موجودة في: $PROJECT_DIR/backend/.env"
+        log "لعرض السجلات:    sudo bash deploy.sh logs"
+        log "============================================"
+        ;;
+
+    update)
+        log "تحديث المشروع: إعادة بناء الصورة وإعادة تشغيل الحاوية..."
+        cd "$PROJECT_DIR"
+        docker compose --env-file "$PROJECT_DIR/backend/.env" up -d --build
+        log "تم التحديث. البيانات محفوظة في volume."
+        ;;
+
+    logs)
+        log "عرض سجلات الحاوية (Ctrl+C للخروج)..."
+        docker compose -f "$COMPOSE_FILE" logs -f
+        ;;
+
+    stop)
+        log "إيقاف النظام..."
+        docker compose -f "$COMPOSE_FILE" stop
+        log "تم الإيقاف."
+        ;;
+
+    restart)
+        log "إعادة تشغيل النظام..."
+        docker compose -f "$COMPOSE_FILE" restart
+        log "تمت إعادة التشغيل."
+        ;;
+
+    status)
+        docker compose -f "$COMPOSE_FILE" ps
+        echo ""
+        docker compose -f "$COMPOSE_FILE" logs --tail=20
+        ;;
+
+    uninstall)
+        warn "سيتم حذف الحاوية والصورة. البيانات ستبقى في volume (nm-data)."
+        read -p "هل أنت متأكد؟ (y/N) " confirm
+        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+            docker compose -f "$COMPOSE_FILE" down --rmi local
+            log "تم الحذف. لإزالة البيانات أيضاً نفّذ: docker volume rm network-monitor_nm-data"
+        else
+            log "تم الإلغاء."
+        fi
+        ;;
+
+    *)
+        echo "استخدام: sudo bash deploy.sh [install|update|logs|stop|restart|status|uninstall]"
+        echo ""
+        echo "  install    — تثبيت كامل (افتراضي)"
+        echo "  update     — إعادة بناء بعد git pull"
+        echo "  logs       — عرض السجلات الحية"
+        echo "  stop       — إيقاف النظام"
+        echo "  restart    — إعادة التشغيل"
+        echo "  status     — حالة الحاوية + آخر السجلات"
+        echo "  uninstall  — حذف الحاوية والصورة (البيانات تبقى)"
+        exit 1
+        ;;
+esac

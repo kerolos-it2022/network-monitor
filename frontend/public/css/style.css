@@ -1,0 +1,310 @@
+/* style.css: تنسيقات الواجهة العامة ولوحة التحكم — متغيرات لونية، بطاقات الأجهزة، المودال، الوضع الليلي. */
+
+:root {
+  --bg: #f5f7fa;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --online: #22c55e;
+  --offline: #ef4444;
+  --unknown: #9ca3af;
+  --warning: #eab308;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+body.dark {
+  --bg: #0f172a;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --card-bg: #1e293b;
+  --border: #334155;
+  --accent: #3b82f6;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  direction: rtl;
+}
+
+.hidden { display: none !important; }
+
+/* ===== شريط علوي ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+.topbar-title { display: flex; align-items: center; gap: 1rem; }
+.topbar h1 { font-size: 1.25rem; margin: 0; }
+.admin-link {
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.admin-link:hover { background: var(--bg); }
+.summary-bar {
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.theme-toggle {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ===== أدوات الفلترة ===== */
+.filters-bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filters-bar input,
+.filters-bar select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.filters-bar input { flex: 1; min-width: 200px; }
+
+/* ===== مبدّل نمط العرض (بطاقات / جدول) ===== */
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+.view-btn {
+  padding: 0.45rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.view-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.view-btn:not(.active):hover {
+  background: var(--bg);
+}
+
+/* ===== شبكة البطاقات ===== */
+.devices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  padding: 0 1.5rem 2rem;
+}
+.device-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-right-width: 6px;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.1s ease;
+}
+.device-card:hover { transform: translateY(-2px); }
+.device-card .name { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.25rem; }
+.device-card .ip { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+.device-card .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+.device-card .status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 0.5rem;
+}
+
+.status-online  { border-right-color: var(--online);  }
+.status-offline { border-right-color: var(--offline); }
+.status-unknown { border-right-color: var(--unknown); }
+.status-warning { border-right-color: var(--warning); }
+
+.badge-online  { background: var(--online); }
+.badge-offline { background: var(--offline); }
+.badge-unknown { background: var(--unknown); }
+.badge-warning { background: var(--warning); }
+
+/* ===== المودال ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+.modal-content {
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+.modal-uptime { font-size: 1.1rem; margin: 0.5rem 0 1rem; font-weight: 600; }
+.modal-chart-wrap { margin-bottom: 1rem; }
+.downtime-list { list-style: none; padding: 0; margin: 0; }
+.downtime-list li {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* ===== جداول لوحة التحكم ===== */
+.admin-wrap { padding: 1rem 1.5rem; }
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+}
+table.data-table th,
+table.data-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-size: 0.9rem;
+}
+table.data-table th { background: var(--bg); font-weight: 600; }
+table.data-table tr.public-row { cursor: pointer; }
+table.data-table tr.public-row:hover { background: var(--bg); }
+
+/* أيقونة دائرية ملوّنة لحالة الجهاز في الجدول. */
+.status-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+}
+.status-dot.online  { background: var(--online);  box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
+.status-dot.offline { background: var(--offline); box-shadow: 0 0 0 2px rgba(239,68,68,0.15); }
+.status-dot.unknown { background: var(--unknown); box-shadow: 0 0 0 2px rgba(156,163,175,0.15); }
+.status-dot.warning { background: var(--warning); box-shadow: 0 0 0 2px rgba(234,179,8,0.15); }
+.btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-danger { color: var(--offline); }
+button.tab-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+button.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ===== نموذج (form) ===== */
+.form-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  gap: 0.25rem;
+}
+.form-grid input,
+.form-grid select {
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+.form-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+.error-msg { color: var(--offline); font-size: 0.9rem; }
+
+/* ===== ذيل الصفحة (حقوق الملكية) ===== */
+.site-footer {
+  text-align: center;
+  padding: 1.5rem 1rem 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+.site-footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.site-footer a:hover { text-decoration: underline; }
+
+/* ===== تأجيل رسم البطاقات على الموبايل ===== */
+@media (max-width: 600px) {
+  .topbar { flex-direction: column; align-items: stretch; }
+  .summary-bar { text-align: right; }
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!-- index.html: الصفحة العامة لعرض حالة أجهزة الشبكة (بدون تسجيل دخول). -->
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مراقبة أجهزة الشبكة</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- شريط علوي بالعنوان وملخص الحالة -->
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1>مراقبة أجهزة الشبكة</h1>
+      <a href="admin/login.html" class="admin-link">لوحة التحكم</a>
+    </div>
+    <div id="summary-bar" class="summary-bar">جارٍ التحميل…</div>
+    <button id="theme-toggle" class="theme-toggle" type="button">🌙 وضع ليلي</button>
+  </header>
+
+  <!-- أدوات الفلترة والبحث + مبدّل نمط العرض + الترتيب -->
+  <section class="filters-bar">
+    <input id="search-input" type="search" placeholder="بحث بالاسم أو IP…" />
+    <select id="filter-type"><option value="">كل الأنواع</option></select>
+    <select id="filter-location"><option value="">كل المواقع</option></select>
+    <select id="filter-status">
+      <option value="">كل الحالات</option>
+      <option value="online">متصل</option>
+      <option value="offline">متوقف</option>
+      <option value="unknown">غير معروف</option>
+    </select>
+    <select id="filter-sort">
+      <option value="name">ترتيب: حسب الاسم</option>
+      <option value="ip">ترتيب: حسب IP</option>
+      <option value="status">ترتيب: حسب الحالة</option>
+      <option value="type">ترتيب: حسب النوع</option>
+      <option value="location">ترتيب: حسب الموقع</option>
+      <option value="last_checked">ترتيب: حسب آخر فحص</option>
+    </select>
+    <div class="view-toggle" role="group" aria-label="نمط العرض">
+      <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات">🗂️</button>
+      <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول">📋</button>
+    </div>
+  </section>
+
+  <!-- شبكة بطاقات الأجهزة (نمط البطاقات) -->
+  <main>
+    <div id="devices-grid" class="devices-grid"></div>
+
+    <!-- نمط الجدول (مخفي افتراضياً) -->
+    <div id="devices-table-view" class="hidden">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>الحالة</th>
+            <th>الاسم</th>
+            <th>IP</th>
+            <th>النوع</th>
+            <th>الموقع</th>
+            <th>آخر فحص</th>
+            <th>تفاصيل</th>
+          </tr>
+        </thead>
+        <tbody id="devices-table-body"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal تفاصيل الجهاز -->
+  <div id="device-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="modal-close-btn" type="button" class="modal-close" aria-label="إغلاق">✕</button>
+      <h2 id="modal-device-name">—</h2>
+      <div id="modal-uptime" class="modal-uptime"></div>
+      <div class="modal-chart-wrap">
+        <canvas id="modal-chart-canvas" height="120"></canvas>
+      </div>
+      <h3>آخر الانقطاعات</h3>
+      <ul id="modal-downtime-list" class="downtime-list"></ul>
+    </div>
+  </div>
+
+  <!-- ذيل الصفحة -->
+  <footer class="site-footer">
+    &copy; 2026 نظام مراقبة أجهزة الشبكة — جميع الحقوق محفوظة
+  </footer>
+
+  <!-- Chart.js من CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/public-dashboard.js"></script>
+</body>
+</html>

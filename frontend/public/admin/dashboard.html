@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<!-- dashboard.html: لوحة تحكم المدير — تبويبات (الأجهزة/المواقع/الأنواع/الإشعارات/السجل). -->
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة التحكم</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>لوحة التحكم</h1>
+    <a href="../index.html" class="admin-link">الصفحة العامة</a>
+    <div style="flex:1;"></div>
+    <button id="logout-btn" type="button" class="btn">تسجيل الخروج</button>
+  </header>
+
+  <!-- تبويبات -->
+  <nav class="filters-bar" style="gap:0;">
+    <button class="tab-btn active" id="tab-devices" type="button">الأجهزة</button>
+    <button class="tab-btn" id="tab-locations" type="button">المواقع</button>
+    <button class="tab-btn" id="tab-types" type="button">الأنواع</button>
+    <button class="tab-btn" id="tab-notifications" type="button">الإشعارات</button>
+    <button class="tab-btn" id="tab-logs" type="button">السجل</button>
+  </nav>
+
+  <main class="admin-wrap">
+    <!-- ============ قسم الأجهزة ============ -->
+    <section id="section-devices">
+      <div style="margin-bottom:0.75rem;">
+        <button id="add-device-btn" type="button" class="btn btn-primary">+ إضافة جهاز جديد</button>
+      </div>
+
+      <!-- نموذج إضافة/تعديل جهاز -->
+      <form id="device-form" class="form-card hidden">
+        <input type="hidden" id="device-form-id" />
+        <h3 id="device-form-title">إضافة جهاز</h3>
+        <div class="form-grid">
+          <label>الاسم <input type="text" id="df-name" required /></label>
+          <label>IP <input type="text" id="df-ip" required placeholder="192.168.1.10" /></label>
+          <label>النوع
+            <select id="df-device_type_id" required></select>
+          </label>
+          <label>الموقع
+            <select id="df-location_id"><option value="">— بدون —</option></select>
+          </label>
+          <label>طريقة الفحص
+            <select id="df-check_protocol">
+              <option value="ping">Ping</option>
+              <option value="port">Port (TCP)</option>
+            </select>
+          </label>
+          <label>المنفذ (إن Port) <input type="number" id="df-port" min="1" max="65535" /></label>
+          <label>فترة الفحص (ثانية) <input type="number" id="df-check_interval_seconds" value="30" min="5" /></label>
+          <label>حد التنبيه <input type="number" id="df-failure_threshold" value="3" min="1" /></label>
+          <label>مفعّل للمراقبة
+            <input type="checkbox" id="df-is_active" checked />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+          <button type="button" class="btn" id="device-form-cancel">إلغاء</button>
+        </div>
+      </form>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>الاسم</th><th>IP</th><th>النوع</th><th>الموقع</th><th>الحالة</th><th>إجراءات</th></tr>
+        </thead>
+        <tbody id="devices-table-body"></tbody>
+      </table>
+    </section>
+
+    <!-- ============ قسم المواقع ============ -->
+    <section id="section-locations" class="hidden">
+      <div class="form-card">
+        <input type="hidden" id="location-form-id" />
+        <div class="form-grid">
+          <label>اسم الموقع <input type="text" id="loc-name" placeholder="الفرع الرئيسي - الطابق الثاني" /></label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="loc-save-btn">حفظ الموقع</button>
+          <button type="button" class="btn" id="loc-cancel-btn">إلغاء</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>المعرّف</th><th>الاسم</th><th>إجراءات</th></tr></thead>
+        <tbody id="locations-table-body"></tbody>
+      </table>
+    </section>
+
+    <!-- ============ قسم الأنواع ============ -->
+    <section id="section-types" class="hidden">
+      <div class="form-card">
+        <input type="hidden" id="type-form-id" />
+        <div class="form-grid">
+          <label>الاسم <input type="text" id="type-name" /></label>
+          <label>الأيقونة <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="type-save-btn">حفظ النوع</button>
+          <button type="button" class="btn" id="type-cancel-btn">إلغاء</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>المعرّف</th><th>الاسم</th><th>الأيقونة</th><th>إجراءات</th></tr></thead>
+        <tbody id="types-table-body"></tbody>
+      </table>
+    </section>
+
+    <!-- ============ قسم الإشعارات ============ -->
+    <section id="section-notifications" class="hidden">
+      <div class="form-card">
+        <h3>إعدادات الإشعارات</h3>
+        <div class="form-grid">
+          <label>Telegram مفعّل <input type="checkbox" id="ntf-telegram_enabled" /></label>
+          <label>Bot Token <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" /></label>
+          <label>Chat ID <input type="text" id="ntf-telegram_chat_id" /></label>
+          <label>WhatsApp مفعّل <input type="checkbox" id="ntf-whatsapp_enabled" /></label>
+          <label>WhatsApp API URL <input type="text" id="ntf-whatsapp_api_url" /></label>
+          <label>WhatsApp API Token <input type="text" id="ntf-whatsapp_api_token" /></label>
+          <label>WhatsApp To Number <input type="text" id="ntf-whatsapp_to_number" /></label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="ntf-save-btn">حفظ الإعدادات</button>
+        </div>
+        <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
+      </div>
+    </section>
+
+    <!-- ============ قسم السجل ============ -->
+    <section id="section-logs" class="hidden">
+      <table class="data-table">
+        <thead>
+          <tr><th>الوقت</th><th>الجهاز</th><th>القناة</th><th>الحالة</th><th>الرسالة</th></tr>
+        </thead>
+        <tbody id="logs-table-body"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- سكريبتات -->
+  <script src="../js/admin-devices.js"></script>
+  <script src="../js/admin-locations-types.js"></script>
+  <script src="../js/admin-notifications.js"></script>
+  <script src="../js/admin-tabs.js"></script>
+
+  <!-- ذيل الصفحة -->
+  <footer class="site-footer">
+    &#169; 2026 نظام مراقبة أجهزة الشبكة — جميع الحقوق محفوظة
+  </footer>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment files (keep .env.example only)
+backend/.env
+.env
+.env.local
+
+# Database file (re-create from schema.sql)
+database/monitoring.db
+
+# Logs / OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# PM2
+.pm2/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes / runtime artifacts
+docker-data/
