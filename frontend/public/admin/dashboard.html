@@ -12,6 +12,7 @@
     <h1>لوحة التحكم</h1>
     <a href="../index.html" class="admin-link">الصفحة العامة</a>
     <div style="flex:1;"></div>
+    <button id="theme-toggle" class="btn" type="button">🌙 وضع ليلي</button>
     <button id="logout-btn" type="button" class="btn">تسجيل الخروج</button>
   </header>
 
@@ -54,9 +55,11 @@
             <select id="df-check_protocol">
               <option value="ping">Ping</option>
               <option value="port">Port (TCP)</option>
+              <option value="http">HTTP</option>
+              <option value="https">HTTPS</option>
             </select>
           </label>
-          <label>المنفذ (إن Port) <input type="number" id="df-port" min="1" max="65535" /></label>
+          <label>المنفذ (افتراضي: HTTP=80, HTTPS=443, Port=مطلوب) <input type="number" id="df-port" min="1" max="65535" placeholder="80/443" /></label>
           <label>فترة الفحص (ثانية) <input type="number" id="df-check_interval_seconds" value="30" min="5" /></label>
           <label>حد التنبيه <input type="number" id="df-failure_threshold" value="3" min="1" /></label>
           <label>مفعّل للمراقبة
@@ -136,6 +139,15 @@
 
     <!-- ============ قسم السجل ============ -->
     <section id="section-logs" class="hidden">
+      <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+        <span>مسح السجلات الأقدم من:</span>
+        <select id="logs-clear-range">
+          <option value="1">يوم</option>
+          <option value="7">أسبوع</option>
+          <option value="30">شهر</option>
+        </select>
+        <button id="logs-clear-btn" class="btn btn-danger">🗑️ مسح السجلات</button>
+      </div>
       <table class="data-table">
         <thead>
           <tr><th>الوقت</th><th>الجهاز</th><th>القناة</th><th>الحالة</th><th>الرسالة</th></tr>
@@ -176,6 +188,7 @@
   <script src="../js/admin-notifications.js"></script>
   <script src="../js/admin-tabs.js"></script>
   <script src="../js/admin-profile.js"></script>
+  <script src="../js/admin-theme.js"></script>
 
   <!-- ذيل الصفحة -->
   <footer class="site-footer">

@@ -103,4 +103,15 @@ router.get('/logs', requireAuth, (req, res) => {
   return res.json({ success: true, data: rows });
 });
 
+// DELETE /api/notifications/logs?older_than_days=1|7|30  🔒
+router.delete('/logs', requireAuth, (req, res) => {
+  const days = Number(req.query.older_than_days);
+  if (![1, 7, 30].includes(days)) {
+    return res.status(400).json({ success: false, error: 'قيمة older_than_days غير صالحة (1/7/30)' });
+  }
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const result = db.prepare('DELETE FROM notification_logs WHERE sent_at < ?').run(cutoff);
+  return res.json({ success: true, data: { deleted: result.changes, older_than_days: days } });
+});
+
 module.exports = router;

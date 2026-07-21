@@ -37,12 +37,14 @@ CREATE TABLE IF NOT EXISTS devices (
     ip TEXT NOT NULL,
     device_type_id INTEGER NOT NULL,
     location_id INTEGER,
-    check_protocol TEXT NOT NULL DEFAULT 'ping', -- 'ping' | 'port' | 'http'
+    check_protocol TEXT NOT NULL DEFAULT 'ping', -- 'ping' | 'port' | 'http' | 'https'
     port INTEGER,                                 -- مطلوب فقط إذا check_protocol = 'port'
     check_interval_seconds INTEGER NOT NULL DEFAULT 30,
     failure_threshold INTEGER NOT NULL DEFAULT 3,
     is_active INTEGER NOT NULL DEFAULT 1,          -- 1 = مفعّل للمراقبة، 0 = موقوف مؤقتاً
     current_status TEXT NOT NULL DEFAULT 'unknown', -- 'online' | 'offline' | 'unknown'
+    http_accessible INTEGER NOT NULL DEFAULT 0,    -- 1 = الجهاز له واجهة HTTP (يُفحص تلقائياً)
+    https_accessible INTEGER NOT NULL DEFAULT 0,   -- 1 = الجهاز له واجهة HTTPS (يُفحص تلقائياً)
     last_response_time_ms INTEGER,
     last_checked_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),

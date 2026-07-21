@@ -37,13 +37,30 @@
       <option value="location">ترتيب: حسب الموقع</option>
       <option value="last_checked">ترتيب: حسب آخر فحص</option>
     </select>
-    <div class="view-toggle" role="group" aria-label="نمط العرض">
-      <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات">🗂️</button>
-      <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول">📋</button>
-    </div>
-  </section>
+<div class="view-toggle" role="group" aria-label="نمط العرض">
+        <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات">🗂️</button>
+        <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول">📋</button>
+      </div>
+    </section>
 
-  <!-- شبكة بطاقات الأجهزة (نمط البطاقات) -->
+    <!-- قسم أدوات الشبكة -->
+    <section class="tools-bar">
+      <div class="tools-title">🛠️ أدوات الشبكة</div>
+      <div class="tools-input-row">
+        <input id="tools-ip-input" type="text" placeholder="أدخل IP أو اسم المضيف..." />
+        <button id="tools-ping-btn" class="btn btn-primary" type="button">📡 Ping</button>
+        <button id="tools-tracert-btn" class="btn btn-primary" type="button">🌐 Tracert</button>
+        <button id="tools-stop-btn" class="btn btn-danger hidden" type="button">⏹ إيقاف</button>
+        <button id="tools-clear-btn" class="btn hidden" type="button">🗑️ مسح</button>
+      </div>
+      <div class="tools-status hidden" id="tools-status">
+        <span id="tools-status-text">جاري التنفيذ...</span>
+        <span class="tools-spinner"></span>
+      </div>
+      <pre id="tools-output" class="tools-output hidden"></pre>
+    </section>
+
+    <!-- شبكة بطاقات الأجهزة (نمط البطاقات) -->
   <main>
     <div id="devices-grid" class="devices-grid"></div>
 
@@ -58,6 +75,7 @@
             <th>النوع</th>
             <th>الموقع</th>
             <th>آخر فحص</th>
+            <th>فتح</th>
             <th>تفاصيل</th>
           </tr>
         </thead>

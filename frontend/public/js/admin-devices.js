@@ -2,8 +2,21 @@
 const ad = {}; // مساحة أسماء صغيرة لتفادي التضارب.
 
 async function api(url, opts) {
-  const r = await fetch(url, opts);
-  return r.json();
+  try {
+    const r = await fetch(url, opts);
+    if (!r.ok && r.status !== 401 && r.status !== 404) {
+      // محاولة قراءة رسالة الخطأ من الرد.
+      try {
+        const data = await r.json();
+        return data || { success: false, error: 'HTTP ' + r.status };
+      } catch (e) {
+        return { success: false, error: 'HTTP ' + r.status };
+      }
+    }
+    return await r.json();
+  } catch (e) {
+    return { success: false, error: 'تعذّر الاتصال بالخادم' };
+  }
 }
 
 // أداة تهريب بسيطة (الحروف الكاملة) لكسر الـ XSS في القيم المُدرجة في innerHTML.
@@ -29,6 +42,15 @@ async function loadDevices() {
   tbody.innerHTML = '';
   if (!r.success) return;
   for (const d of r.data) {
+    // زر الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
+    let openBtn = '';
+    if (d.https_accessible == 1) {
+      const url = 'https://' + d.ip + '/';
+      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTPS)">🔒 فتح HTTPS</button>';
+    } else if (d.http_accessible == 1) {
+      const url = 'http://' + d.ip + '/';
+      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTP)">🌐 فتح HTTP</button>';
+    }
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${esc(d.name)}</td>
@@ -37,10 +59,18 @@ async function loadDevices() {
       <td>${esc(d.location_name || '-')}</td>
       <td>${esc(statusText(d.current_status))}</td>
       <td>
+        ${openBtn}
         <button class="btn" data-edit="${d.id}">تعديل</button>
         <button class="btn btn-danger" data-del="${d.id}">حذف</button>
       </td>
     `;
+    // مستمع زر الفتح
+    if (openBtn) {
+      tr.querySelector('.open-device-btn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        window.open(this.dataset.url, '_blank');
+      });
+    }
     tr.querySelector('[data-edit]').addEventListener('click', () => startEditDevice(d.id));
     tr.querySelector('[data-del]').addEventListener('click', () => deleteDevice(d.id, d.name));
     tbody.appendChild(tr);
@@ -136,7 +166,16 @@ async function submitDeviceForm(e) {
     document.getElementById('device-form').classList.add('hidden');
     await loadDevices();
   } else {
-    alert(r.error || 'فشل الحفظ');
+    // لو الخطأ يتعلق بتكرار IP، نظهر رسالة واضحة بدلاً من alert عام.
+    const errMsg = r.error || 'فشل الحفظ';
+    if (errMsg.includes('IP') || errMsg.includes('مسجّل')) {
+      alert('⚠️ ' + errMsg);
+      // تظليل حقل IP لflutterattention المستخدم.
+      const ipField = document.getElementById('df-ip');
+      if (ipField) { ipField.focus(); ipField.select(); }
+    } else {
+      alert(errMsg);
+    }
   }
 }
 
@@ -218,6 +257,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('device-form').classList.add('hidden');
   });
   document.getElementById('logout-btn').addEventListener('click', logoutNow);
+
+  // تحديث placeholder حقل المنفذ حسب البروتوكول المختار
+  const protoSel = document.getElementById('df-check_protocol');
+  const portInput = document.getElementById('df-port');
+  function updatePortPlaceholder() {
+    const proto = protoSel.value;
+    if (proto === 'http') {
+      portInput.placeholder = '80';
+      portInput.title = 'منفذ HTTP (افتراضي 80)';
+    } else if (proto === 'https') {
+      portInput.placeholder = '443';
+      portInput.title = 'منفذ HTTPS (افتراضي 443)';
+    } else if (proto === 'port') {
+      portInput.placeholder = 'مثلاً 8080';
+      portInput.title = 'منفذ TCP';
+    } else {
+      portInput.placeholder = '';
+      portInput.title = '';
+    }
+  }
+  protoSel.addEventListener('change', updatePortPlaceholder);
+  // تطبيق البداية
+  updatePortPlaceholder();
 
   // تصدير/استيراد
   document.getElementById('export-devices-btn').addEventListener('click', exportDevicesExcel);

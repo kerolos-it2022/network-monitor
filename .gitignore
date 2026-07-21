@@ -23,5 +23,12 @@ Thumbs.db
 .idea/
 *.swp
 
-# Docker volumes / runtime artifacts
-docker-data/
+# Runtime artifacts
+*.pid
+
+# Test / sample data files
+test_import.xlsx
+
+# Root-level package-lock (npm files belong to backend/)
+/package-lock.json
+/nul

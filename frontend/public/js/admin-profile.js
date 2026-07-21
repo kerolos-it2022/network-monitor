@@ -59,7 +59,7 @@ async function changePassword(e) {
     const r = await api('/api/auth/change-password', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword: current, newPassword: newPass }),
+      body: JSON.stringify({ current_password: current, new_password: newPass }),
     });
     if (r.success) {
       statusEl.textContent = '✅ تم تغيير كلمة المرور بنجاح';

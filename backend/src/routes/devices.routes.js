@@ -1,9 +1,14 @@
 // devices.routes.js: مسارات إدارة الأجهزة (عامة للقراءة، محمية للكتابة) + سجل الحالة (history).
 const express = require('express');
+const multer = require('multer');
 const db = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+const { checkHttp, checkHttps } = require('../services/checkers');
 
 const router = express.Router();
+
+// إعداد multer لملفات Excel في الذاكرة
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ---------------------------------------------------------
 // استعلام موحد لجلب جهاز/أجهزة مع أسماء النوع والموقع (JOINs)
@@ -16,7 +21,8 @@ const DEVICE_SELECT = `
     l.name AS location_name,
     d.check_protocol, d.port,
     d.check_interval_seconds, d.failure_threshold, d.is_active,
-    d.current_status, d.last_response_time_ms, d.last_checked_at
+    d.current_status, d.http_accessible, d.https_accessible,
+    d.last_response_time_ms, d.last_checked_at
   FROM devices d
   LEFT JOIN device_types dt ON dt.id = d.device_type_id
   LEFT JOIN locations l ON l.id = d.location_id
@@ -79,7 +85,7 @@ router.get('/:id/history', (req, res) => {
   const downtimeEvents = events.map((e) => {
     let durationSeconds = e.duration_seconds;
     if (e.ended_at == null) {
-      durationSeconds = Math.floor((now - new Date(e.started_at).getTime()) / 1000);
+      durationSeconds = Math.floor((Date.now() - new Date(e.started_at).getTime()) / 1000);
       if (durationSeconds < 0) durationSeconds = 0;
     }
     return {
@@ -112,6 +118,14 @@ router.post('/', requireAuth, (req, res) => {
       .json({ success: false, error: 'الحقول name وip وdevice_type_id مطلوبة' });
   }
 
+  // منع تكرار عنوان IP — كل IP يجب أن يُسجَّل مرة واحدة فقط.
+  const existingIp = db.prepare('SELECT id FROM devices WHERE ip = ?').get(ip);
+  if (existingIp) {
+    return res
+      .status(409)
+      .json({ success: false, error: 'عنوان IP "' + ip + '" مسجّل بالفعل لجهاز آخر (رقم ' + existingIp.id + ')' });
+  }
+
   const result = db.prepare(
     `INSERT INTO devices
       (name, ip, device_type_id, location_id, check_protocol, port,
@@ -129,7 +143,26 @@ router.post('/', requireAuth, (req, res) => {
     is_active == null ? 1 : is_active
   );
 
-  return res.status(201).json({ success: true, data: { id: result.lastInsertRowid } });
+  const newDeviceId = result.lastInsertRowid;
+
+  // فحص تلقائي لبروتوكولات HTTP و HTTPS عند إضافة جهاز جديد
+  // تنفيذ بشكل غير متزامن حتى لا يؤخر إرجاع الرد
+  (async () => {
+    try {
+      const [httpRes, httpsRes] = await Promise.all([
+        checkHttp(ip, 80, 5000),
+        checkHttps(ip, 443, 5000),
+      ]);
+      db.prepare(
+        'UPDATE devices SET http_accessible = ?, https_accessible = ? WHERE id = ?'
+      ).run(httpRes.isOnline ? 1 : 0, httpsRes.isOnline ? 1 : 0, newDeviceId);
+      console.log(`[AUTO-SCAN] New device ${newDeviceId} (${ip}): HTTP=${httpRes.isOnline}, HTTPS=${httpsRes.isOnline}`);
+    } catch (e) {
+      console.error(`[AUTO-SCAN] Error scanning new device ${newDeviceId} (${ip}):`, e);
+    }
+  })();
+
+  return res.status(201).json({ success: true, data: { id: newDeviceId } });
 });
 
 // PUT /api/devices/:id  🔒
@@ -149,6 +182,14 @@ router.put('/:id', requireAuth, (req, res) => {
     return res
       .status(400)
       .json({ success: false, error: 'الحقول name وip وdevice_type_id مطلوبة' });
+  }
+
+  // منع تكرار IP عند التعديل — نتأكد أنه لا يملكه جهاز آخر.
+  const ipConflict = db.prepare('SELECT id FROM devices WHERE ip = ? AND id != ?').get(ip, id);
+  if (ipConflict) {
+    return res
+      .status(409)
+      .json({ success: false, error: 'عنوان IP "' + ip + '" مسجّل بالفعل لجهاز آخر (رقم ' + ipConflict.id + ')' });
   }
 
   db.prepare(
@@ -226,75 +267,116 @@ router.get('/export/excel', requireAuth, (req, res) => {
 // استيراد الأجهزة من Excel
 // POST /api/devices/import/excel  🔒
 // ============================================================
-router.post('/import/excel', requireAuth, (req, res) => {
-  if (!req.files || !req.files.file) {
+router.post('/import/excel', requireAuth, upload.single('file'), (req, res) => {
+  if (!req.file) {
     return res.status(400).json({ success: false, error: 'لم يتم رفع ملف' });
   }
 
   const XLSX = require('xlsx');
-  const file = req.files.file;
 
   try {
-    const wb = XLSX.read(file.data, { type: 'buffer' });
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
     const ws = wb.Sheets[wb.SheetNames[0]];
+
+    // تحويل الصفوف إلى JSON (الصف الأول هو العناوين).
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-    // جلب الأنواع والمواقع للربط
-    const types = db.prepare('SELECT id, name FROM device_types').all();
-    const typeMap = Object.fromEntries(types.map(t => [t.name, t.id]));
-    const locs = db.prepare('SELECT id, name FROM locations').all();
-    const locMap = Object.fromEntries(locs.map(l => [l.name, l.id]));
+    // خرائط لتحويل أسماء الأعمدة العربية/الإنجليزية إلى معرّفات.
+    const typeMap = new Map();
+    db.prepare('SELECT id, name FROM device_types').all().forEach((t) => typeMap.set(String(t.name).trim(), t.id));
+    const locMap = new Map();
+    db.prepare('SELECT id, name FROM locations').all().forEach((l) => locMap.set(String(l.name).trim(), l.id));
+
+    // مجموعة كل عناوين IP الموجودة فعلاً في قاعدة البيانات + داخل هذا الملف.
+    const existingIps = new Set(
+      db.prepare('SELECT ip FROM devices').all().map((r) => String(r.ip).trim())
+    );
+    const seenInFile = new Set(); // لكتشاف التكرار داخل نفس ملف Excel أيضاً.
 
     let imported = 0;
     let skipped = 0;
     const errors = [];
 
+    const insertStmt = db.prepare(
+      `INSERT INTO devices
+        (name, ip, device_type_id, location_id, check_protocol, port,
+         check_interval_seconds, failure_threshold, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const name = (row['الاسم'] || '').toString().trim();
-      const ip = (row['IP'] || '').toString().trim();
-      const typeName = (row['النوع'] || '').toString().trim();
-      const locName = (row['الموقع'] || '').toString().trim();
-      const checkProtocol = (row['طريقة الفحص'] || 'ping').toString().trim().toLowerCase();
-      const port = row['المنفذ'] ? parseInt(row['المنفذ'], 10) : null;
-      const checkInterval = row['فترة الفحص (ثانية)'] ? parseInt(row['فترة الفحص (ثانية)'], 10) : 30;
-      const failureThreshold = row['حد التنبيه'] ? parseInt(row['حد التنبيه'], 10) : 3;
-      const isActive = (row['مفعّل'] || 'نعم').toString().trim() === 'نعم' ? 1 : 0;
+      const name = String(row['الاسم'] || row.name || row.Name || '').trim();
+      const ip = String(row['IP'] || row.ip || row.IP || '').trim();
+      const typeName = String(row['النوع'] || row.type || row['device_type'] || '').trim();
+      const locName = String(row['الموقع'] || row.location || '').trim();
+      const protocol = String(row['طريقة الفحص'] || row.protocol || row.check_protocol || 'ping').trim() || 'ping';
+      const port = row['المنفذ'] || row.port || null;
+      const interval = Number(row['فترة الفحص (ثانية)'] || row.interval || row.check_interval_seconds || 30);
+      const threshold = Number(row['حد التنبيه'] || row.threshold || row.failure_threshold || 3);
+      const activeRaw = String(row['مفعّل'] || row.is_active || 'نعم').trim();
+      const isActive = /^(1|true|نعم|yes|y)$/i.test(activeRaw) ? 1 : 0;
 
       if (!name || !ip || !typeName) {
         skipped++;
-        errors.push(`صف ${i + 2}: حقول الاسم/IP/النوع مطلوبة`);
+        errors.push(`الصف ${i + 2}: حقول مفقودة (الاسم/IP/النوع)`);
         continue;
       }
 
-      const deviceTypeId = typeMap[typeName];
-      if (!deviceTypeId) {
+      // تخطّي IP الموجود بالفعل في قاعدة البيانات (بدلاً من تكراره).
+      if (existingIps.has(ip)) {
         skipped++;
-        errors.push(`صف ${i + 2}: نوع الجهاز "${typeName}" غير موجود`);
+        errors.push(`الصف ${i + 2}: IP "${ip}" موجود بالفعل في قاعدة البيانات — تم تخطّيه`);
+        continue;
+      }
+      // تخطّي IP المكرر داخل نفس ملف Excel.
+      if (seenInFile.has(ip)) {
+        skipped++;
+        errors.push(`الصف ${i + 2}: IP "${ip}" مكرر داخل الملف — تم تخطّيه`);
         continue;
       }
 
-      const locationId = locName ? locMap[locName] || null : null;
+      const typeId = typeMap.get(typeName);
+      if (!typeId) {
+        skipped++;
+        errors.push(`الصف ${i + 2}: النوع "${typeName}" غير موجود`);
+        continue;
+      }
+      const locId = locName ? locMap.get(locName) || null : null;
 
       try {
-        db.prepare(
-          `INSERT INTO devices
-            (name, ip, device_type_id, location_id, check_protocol, port,
-             check_interval_seconds, failure_threshold, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).run(name, ip, deviceTypeId, locationId, checkProtocol, port, checkInterval, failureThreshold, isActive);
+        insertStmt.run(
+          name,
+          ip,
+          typeId,
+          locId,
+          protocol === 'port' ? 'port' : (protocol === 'http' ? 'http' : (protocol === 'https' ? 'https' : 'ping')),
+          port ? Number(port) : null,
+          interval || 30,
+          threshold || 3,
+          isActive
+        );
         imported++;
+        // أضف IP لقائمة الموجودة حتى لا يتكرر داخل نفس الملف.
+        existingIps.add(ip);
+        seenInFile.add(ip);
       } catch (e) {
         skipped++;
-        errors.push(`صف ${i + 2}: ${e.message}`);
+        errors.push(`الصف ${i + 2}: ${e.message}`);
       }
     }
 
     return res.json({
       success: true,
-      data: { imported, skipped, errors }
+      data: {
+        imported,
+        skipped,
+        errors,
+        message: `تم استيراد ${imported} جهاز، تم تخطّي ${skipped} (IPs مكررة أو ناقصة)`,
+      },
     });
   } catch (e) {
+    console.error('Excel import error:', e);
     return res.status(500).json({ success: false, error: 'فشل قراءة ملف Excel: ' + e.message });
   }
 });

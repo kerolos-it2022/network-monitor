@@ -10,9 +10,13 @@
 
 - **Node.js 18+** (موصى به 20 LTS).
 - **Python 3** + مكتبة `sqlite3` (مع أداة `sqlite3` CLI لتنفيذ مخطط قاعدة البيانات).
-  - على ويندوز: يمكنك تثبيت `sqlite-tools` من الموقع الرسمي https://sqlite.org/download.html
-  - أو استخدام أي واجهة رسومية مثل "DB Browser for SQLite" لتنفيذ `database/schema.sql`.
-- **pm2** (اختياري، فقط لإدارة العملية في الإنتاج): `npm install -g pm2`.
+- **pm2** (للإنتاج): `npm install -g pm2`.
+- **أدوات البناء** (لترجمة better-sqlite3):
+  - Debian/Ubuntu: `sudo apt install -y python3 make g++ build-essential`
+  - RHEL/CentOS/Fedora: `sudo dnf install -y python3 make gcc gcc-c++`
+  - Arch: `sudo pacman -S python make gcc`
+  - Alpine: `sudo apk add python3 make g++ build-base`
+  - openSUSE: `sudo zypper install python3 make gcc gcc-c++`
 
 ---
 
@@ -99,20 +103,30 @@ Monitoring engine started (every 10s tick).
 
 ---
 
-## 🐳 النشر على سيرفر Ubuntu عبر Docker
+## 🐧 النشر على سيرفر Linux (بدون Docker)
 
-للنشر في بيئة إنتاجية (شركتك)، استخدم Docker + السكريبت الجاهز:
+للنشر في بيئة إنتاجية (شركتك)، استخدم السكريبت الجاهز الذي يعمل **بشكل مباشر** عبر Node.js + PM2 و**يدعم أي توزيعة Linux رئيسية**:
+
+| العائلة | التوزيعات المدعومة | مدير الحزم |
+|---|---|---|
+| Debian | Ubuntu، Mint، Pop!_OS، Kali | `apt` |
+| Red Hat | RHEL، CentOS، Rocky، Alma، Fedora | `dnf`/`yum` |
+| Arch | Arch Linux، Manjaro | `pacman` |
+| Alpine | Alpine Linux | `apk` |
+| SUSE | openSUSE، SLES | `zypper` |
 
 ```bash
-# على سيرفر Ubuntu:
-git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
+# على أي توزيعة Linux مدعومة:
+sudo mkdir -p /opt && sudo chown $USER:$USER /opt
+cd /opt
+git clone https://github.com/kerolos-it2022/REPO.git network-monitor
 cd network-monitor
 sudo bash deploy.sh install
 ```
 
-سيقوم السكريبت تلقائياً بـ: تثبيت Docker + بناء الصورة + تشغيل الحاوية + تهيئة قاعدة البيانات + إنشاء حساب المدير.
+السكريبت يكتشف التوزيعة تلقائياً ويثبّت: الأدوات الأساسية (git, curl, wget) + أدوات البناء (python3, make, g++) + Node.js 20 LTS + PM2 + sqlite3 + حزم الخادم + تهيئة قاعدة البيانات + تشغيل التطبيق.
 
-📖 **دليل كامل بالنشر**: راجع [`DEPLOY.md`](./DEPLOY.md) — يشمل HTTPS، Firewall، النسخ الاحتياطي، والنشر في عدة شركات.
+📖 **دليل كامل بالنشر**: راجع [`DEPLOY.md`](./DEPLOY.md) — يشمل تثبيت Nginx + HTTPS، Firewall، النسخ الاحتياطي، والنشر في عدة شركات.
 
 ---
 

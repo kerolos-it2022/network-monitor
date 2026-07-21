@@ -13,6 +13,7 @@ const devicesRoutes = require('./routes/devices.routes');
 const locationsRoutes = require('./routes/locations.routes');
 const deviceTypesRoutes = require('./routes/deviceTypes.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
+const toolsRoutes = require('./routes/tools.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -44,6 +45,10 @@ app.use(
   })
 );
 
+// خدمة ملفات الواجهة (frontend/public) من نفس الخادم — قبل الـ API.
+const publicDir = path.join(__dirname, '../../frontend/public');
+app.use(express.static(publicDir));
+
 // health check.
 app.get('/api/health', (req, res) => {
   res.json({ success: true, data: 'ok' });
@@ -55,10 +60,16 @@ app.use('/api/devices', devicesRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/device-types', deviceTypesRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/tools', toolsRoutes);
 
-// خدمة ملفات الواجهة (frontend/public) من نفس الخادم.
-const publicDir = path.join(__dirname, '../../frontend/public');
-app.use(express.static(publicDir));
+// SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
+app.get('*', (req, res, next) => {
+  // لا تعترض طلبات API.
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(publicDir, 'index.html'), (err) => {
+    if (err) return next(err);
+  });
+});
 
 // معالج عام للأخطاء غير المعالجة.
 app.use((err, req, res, next) => {
@@ -66,17 +77,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, error: 'خطأ داخلي في الخادم' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  // بدء محرك المراقبة بعد نجاح تشغيل الخادم.
-  startMonitoring();
-});
-
-// التحقق من الاتصال بقاعدة البيانات عند الإقلاع.
+// التحقق من الاتصال بقاعدة البيانات قبل بدء الخادم.
 try {
   db.prepare('SELECT 1').get();
   console.log('Database connection OK.');
 } catch (e) {
   console.error('Database connection FAILED:', e.message);
   console.error('تأكد من تنفيذ database/schema.sql وتعيين DB_PATH في .env');
+  process.exit(1);
 }
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  // بدء محرك المراقبة بعد نجاح تشغيل الخادم.
+  startMonitoring();
+});

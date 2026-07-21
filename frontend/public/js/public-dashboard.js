@@ -5,11 +5,24 @@ let currentView = 'cards'; // 'cards' | 'table'
 let currentSort = 'name';  // 'name' | 'ip' | 'status' | 'type' | 'location' | 'last_checked'
 const VIEW_STORAGE_KEY = 'nm.publicView';
 const SORT_STORAGE_KEY = 'nm.publicSort';
+const THEME_STORAGE_KEY = 'nm.publicTheme'; // 'dark' | 'light'
 
 // ====== \u062c\u0644\u0628 \u0648\u0639\u0631\u0636 \u0627\u0644\u0623\u062c\u0647\u0632\u0629 ======
 async function fetchApi(url) {
-  const r = await fetch(url);
-  return r.json();
+  try {
+    const r = await fetch(url);
+    if (!r.ok) {
+      return { success: false, error: 'HTTP ' + r.status };
+    }
+    const text = await r.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return { success: false, error: '\u0631\u062f \u063a\u064a\u0631 \u0635\u062d\u064a\u062d' };
+    }
+  } catch (e) {
+    return { success: false, error: '\u062e\u0637\u0623 \u0641\u064a \u0627\u0644\u0627\u062a\u0635\u0627\u0644' };
+  }
 }
 
 function statusText(status) {
@@ -84,6 +97,16 @@ function renderDevices(devicesList) {
     const statusClass = 'status-' + sc;
     const badgeClass = 'badge-' + sc;
 
+    // بناء رابط الواجهة إذا كان الجهاز يدعم HTTP/HTTPS (فحص تلقائي)
+    var openBtnHtml = '';
+    if (d.https_accessible == 1) {
+      var url = 'https://' + d.ip + '/';
+      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTPS)" type="button">🔒 فتح HTTPS</button>';
+    } else if (d.http_accessible == 1) {
+      var url = 'http://' + d.ip + '/';
+      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTP)" type="button">🌐 فتح HTTP</button>';
+    }
+
     const card = document.createElement('div');
     card.className = 'device-card ' + statusClass;
     card.innerHTML =
@@ -92,12 +115,23 @@ function renderDevices(devicesList) {
       '<div class="meta">\u0627\u0644\u0646\u0648\u0639: ' + escapeHtml(d.device_type_name || '-') + '</div>' +
       '<div class="meta">\u0627\u0644\u0645\u0648\u0642\u0639: ' + escapeHtml(d.location_name || '-') + '</div>' +
       '<div class="meta">\u0622\u062e\u0631 \u0641\u062d\u0635: ' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
-      '<span class="status-badge ' + badgeClass + '">' + statusText(d.current_status) + '</span>';
-    card.addEventListener('click', function () {
+      '<span class="status-badge ' + badgeClass + '">' + statusText(d.current_status) + '</span>' +
+      (openBtnHtml ? '<div class="card-actions">' + openBtnHtml + '</div>' : '');
+    card.addEventListener('click', function (e) {
+      // لا تفتح المودال إذا تم الضغط على زر الفتح
+      if (e.target.closest('.open-device-btn')) return;
       if (typeof window.openDeviceModal === 'function') window.openDeviceModal(d.id);
     });
     grid.appendChild(card);
   }
+
+  // إضافة مستمعي الأحداث لأزرار الفتح
+  grid.querySelectorAll('.open-device-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      window.open(this.dataset.url, '_blank');
+    });
+  });
 }
 
 // ====== \u0646\u0645\u0637 \u0627\u0644\u062c\u062f\u0648\u0644 ======
@@ -105,11 +139,20 @@ function renderTable(devicesList) {
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
   if (!devicesList || devicesList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:1rem;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u062c\u0647\u0632\u0629 \u0645\u0637\u0627\u0628\u0642\u0629.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:1rem;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u062c\u0647\u0632\u0629 \u0645\u0637\u0627\u0628\u0642\u0629.</td></tr>';
     return;
   }
   for (const d of devicesList) {
     const dot = statusDotClass(d);
+    // بناء رابط الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
+    let openBtnHtml = '';
+    if (d.https_accessible == 1) {
+      const url = 'https://' + d.ip + '/';
+      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS)">🔒 فتح HTTPS</button>';
+    } else if (d.http_accessible == 1) {
+      const url = 'http://' + d.ip + '/';
+      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP)">🌐 فتح HTTP</button>';
+    }
     const tr = document.createElement('tr');
     tr.className = 'public-row';
     tr.innerHTML =
@@ -119,11 +162,20 @@ function renderTable(devicesList) {
       '<td>' + escapeHtml(d.device_type_name || '-') + '</td>' +
       '<td>' + escapeHtml(d.location_name || '-') + '</td>' +
       '<td style="font-size:0.85rem;color:var(--muted);">' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '-') + '</td>' +
+      '<td>' + (openBtnHtml || '') + '</td>' +
       '<td><button class="btn" data-detail="' + d.id + '">\u062a\u0641\u0627\u0635\u064a\u0644</button></td>';
+    // إضافة مستمع للزر التفاصيل
     tr.querySelector('[data-detail]').addEventListener('click', function (e) {
       e.stopPropagation();
       if (typeof window.openDeviceModal === 'function') window.openDeviceModal(d.id);
     });
+    // إضافة مستمع لزر الفتح
+    if (openBtnHtml) {
+      tr.querySelector('.open-device-btn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        window.open(this.dataset.url, '_blank');
+      });
+    }
     tr.addEventListener('click', function () {
       if (typeof window.openDeviceModal === 'function') window.openDeviceModal(d.id);
     });
@@ -191,24 +243,36 @@ function applyFilters() {
 // ====== \u0641\u062a\u062d \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632 (\u0627\u0644\u0645\u0648\u062f\u0627\u0644) ======
 window.openDeviceModal = async function (deviceId) {
   var modal = document.getElementById('device-modal');
+  // إغلاق أي مودال/رسم سابق أولاً.
+  if (currentChart && typeof currentChart.destroy === 'function') {
+    try { currentChart.destroy(); } catch (e) {}
+    currentChart = null;
+  }
   try {
     var devRes = await fetchApi('/api/devices/' + deviceId);
-    if (!devRes.success) { alert('\u062a\u0639\u0630\u0631 \u062c\u0644\u0628 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062c\u0647\u0627\u0632'); return; }
+    if (!devRes || !devRes.success) {
+      alert(devRes && devRes.error ? devRes.error : '\u062a\u0639\u0630\u0631 \u062c\u0644\u0628 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062c\u0647\u0627\u0632');
+      return;
+    }
     document.getElementById('modal-device-name').textContent = devRes.data.name;
 
     var histRes = await fetchApi('/api/devices/' + deviceId + '/history?range=24h');
-    if (!histRes.success) { alert('\u062a\u0639\u0630\u0631 \u062c\u0644\u0628 \u0633\u062c\u0644 \u0627\u0644\u062c\u0647\u0627\u0632'); return; }
+    if (!histRes || !histRes.success) {
+      alert(histRes && histRes.error ? histRes.error : '\u062a\u0639\u0630\u0631 \u062c\u0644\u0628 \u0633\u062c\u0644 \u0627\u0644\u062c\u0647\u0627\u0632');
+      return;
+    }
     var data = histRes.data;
 
     document.getElementById('modal-uptime').textContent =
       '\u0646\u0633\u0628\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644: ' + data.uptime_percentage + '%';
 
-    if (currentChart && typeof currentChart.destroy === 'function') {
-      currentChart = null;
-    }
     var canvas = document.getElementById('modal-chart-canvas');
     if (typeof window.renderDeviceChart === 'function') {
-      currentChart = window.renderDeviceChart(canvas, data.status_points);
+      try {
+        currentChart = window.renderDeviceChart(canvas, data.status_points);
+      } catch (e) {
+        console.error('chart render error', e);
+      }
     }
 
     var list = document.getElementById('modal-downtime-list');
@@ -228,7 +292,7 @@ window.openDeviceModal = async function (deviceId) {
     modal.classList.remove('hidden');
   } catch (e) {
     console.error('openDeviceModal error', e);
-    alert('\u062e\u0637\u0623 \u0641\u064a \u062c\u0644\u0628 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632');
+    alert('\u062e\u0637\u0623 \u0641\u064a \u062c\u0644\u0628 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632: ' + (e && e.message ? e.message : ''));
   }
 };
 
@@ -273,11 +337,164 @@ async function init() {
     document.getElementById('device-modal').classList.add('hidden');
   });
 
+  // --- قسم أدوات الشبكة (بث مباشر SSE) ---
+  var toolsOutput = document.getElementById('tools-output');
+  var toolsStatus = document.getElementById('tools-status');
+  var toolsStatusText = document.getElementById('tools-status-text');
+  var toolsStopBtn = document.getElementById('tools-stop-btn');
+  var toolsClearBtn = document.getElementById('tools-clear-btn');
+  var toolsPingBtn = document.getElementById('tools-ping-btn');
+  var toolsTracertBtn = document.getElementById('tools-tracert-btn');
+  var currentAbortController = null; // للإلغاء
+
+  document.getElementById('tools-ping-btn').addEventListener('click', function () {
+    runTool('ping');
+  });
+  document.getElementById('tools-tracert-btn').addEventListener('click', function () {
+    runTool('tracert');
+  });
+  document.getElementById('tools-stop-btn').addEventListener('click', function () {
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+    }
+    toolsStatusText.textContent = 'تم الإيقاف';
+    finishTool();
+  });
+  document.getElementById('tools-clear-btn').addEventListener('click', function () {
+    toolsOutput.textContent = '';
+    toolsOutput.classList.add('hidden');
+    toolsClearBtn.classList.add('hidden');
+  });
+
+  function startToolUI() {
+    toolsOutput.textContent = '';
+    toolsOutput.classList.remove('hidden');
+    toolsStatus.classList.remove('hidden');
+    toolsStatusText.textContent = 'جاري التنفيذ...';
+    toolsStopBtn.classList.remove('hidden');
+    toolsPingBtn.disabled = true;
+    toolsTracertBtn.disabled = true;
+    toolsPingBtn.style.opacity = '0.5';
+    toolsTracertBtn.style.opacity = '0.5';
+  }
+
+  function finishTool() {
+    toolsStatus.classList.add('hidden');
+    toolsStopBtn.classList.add('hidden');
+    toolsClearBtn.classList.remove('hidden');
+    toolsPingBtn.disabled = false;
+    toolsTracertBtn.disabled = false;
+    toolsPingBtn.style.opacity = '1';
+    toolsTracertBtn.style.opacity = '1';
+  }
+
+  async function runTool(tool) {
+    var target = document.getElementById('tools-ip-input').value.trim();
+    if (!target) {
+      alert('من فضلك أدخل IP أو اسم مضيف');
+      return;
+    }
+    if (!/^[a-zA-Z0-9.\-_]+$/.test(target)) {
+      alert('حروف غير مسموحة في IP/اسم المضيف');
+      return;
+    }
+
+    startToolUI();
+
+    // إلغاء أي طلب سابق
+    if (currentAbortController) currentAbortController.abort();
+    currentAbortController = new AbortController();
+
+    try {
+      var response = await fetch('/api/tools/' + tool + '?ip=' + encodeURIComponent(target), {
+        signal: currentAbortController.signal,
+      });
+
+      if (!response.ok) {
+        toolsOutput.textContent = 'خطأ: HTTP ' + response.status;
+        finishTool();
+        return;
+      }
+
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder();
+      var sseBuffer = '';
+
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+
+        sseBuffer += decoder.decode(result.value, { stream: true });
+        var parts = sseBuffer.split('\n\n');
+        sseBuffer = parts.pop() || '';
+
+        for (var i = 0; i < parts.length; i++) {
+          var block = parts[i].trim();
+          if (!block) continue;
+
+          var eventType = '';
+          var data = '';
+          var lines = block.split('\n');
+          for (var j = 0; j < lines.length; j++) {
+            if (lines[j].indexOf('event:') === 0) {
+              eventType = lines[j].substring(6).trim();
+            } else if (lines[j].indexOf('data:') === 0) {
+              data = lines[j].substring(5).trim();
+            }
+          }
+
+          if (eventType === 'start') {
+            toolsStatusText.textContent = 'جاري ' + (tool === 'ping' ? 'Ping' : 'Tracert') + ' إلى ' + target + '...';
+          } else if (eventType === 'line') {
+            try {
+              var lineText = JSON.parse(data);
+              toolsOutput.textContent += lineText + '\n';
+            } catch (e) {
+              toolsOutput.textContent += data + '\n';
+            }
+            // التمرير التلقائي لآخر سطر
+            toolsOutput.scrollTop = toolsOutput.scrollHeight;
+          } else if (eventType === 'error') {
+            try {
+              var errMsg = JSON.parse(data);
+              toolsOutput.textContent += '\n❌ ' + errMsg + '\n';
+            } catch (e) {
+              toolsOutput.textContent += '\n❌ ' + data + '\n';
+            }
+          } else if (eventType === 'done') {
+            toolsStatusText.textContent = 'اكتمل ✓';
+            finishTool();
+            return;
+          }
+        }
+      }
+      finishTool();
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        // المستخدم أوقف العملية — تم التعامل أعلاه
+        finishTool();
+      } else {
+        toolsOutput.textContent += '\n❌ خطأ: ' + e.message + '\n';
+        finishTool();
+      }
+    }
+  }
+  // --- نهاية قسم أدوات الشبكة ---
+
   var themeBtn = document.getElementById('theme-toggle');
+  // تطبيق الوضع الليلي المحفوظ عند الإقلاع.
+  try {
+    if (localStorage.getItem(THEME_STORAGE_KEY) === 'dark') {
+      document.body.classList.add('dark');
+      themeBtn.textContent = '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a';
+    }
+  } catch (e) {}
   themeBtn.addEventListener('click', function () {
     document.body.classList.toggle('dark');
     var isDark = document.body.classList.contains('dark');
-    themeBtn.textContent = isDark ? '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a' : '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a';
+    themeBtn.textContent = isDark ? '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a' : '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u062a\u064a\u0644\u064a';
+    try { localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light'); } catch (e) {}
   });
 
   setInterval(async function () {
@@ -311,7 +528,7 @@ function escapeHtml(s) {
     .replace(/</g, '<')
     .replace(/>/g, '>')
     .replace(/"/g, '"')
-    .replace(/'/g, "'");
+    .replace(/'/g, '&#39;');
 }
 
 document.addEventListener('DOMContentLoaded', init);

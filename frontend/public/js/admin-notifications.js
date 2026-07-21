@@ -79,4 +79,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('ntf-save-btn').addEventListener('click', saveNotificationSettings);
   // عند فتح تبويب السجل: تحميل السجل تلقائياً.
   document.getElementById('tab-logs').addEventListener('click', loadNotificationLogs);
+  // زر مسح السجلات
+  document.getElementById('logs-clear-btn').addEventListener('click', async () => {
+    if (!confirm('تأكيد مسح السجلات الأقدم من الفترة المحددة؟')) return;
+    const days = Number(document.getElementById('logs-clear-range').value);
+    try {
+      const r = await fetch(`/api/notifications/logs?older_than_days=${days}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await r.json();
+      if (data.success) {
+        alert(`✅ تم مسح ${data.data.deleted} سجل (أقدم من ${data.data.older_than_days} يوم)`);
+        await loadNotificationLogs();
+      } else {
+        alert('❌ ' + (data.error || 'فشل المسح'));
+      }
+    } catch (e) {
+      alert('❌ خطأ في الاتصال بالخادم');
+    }
+  });
 });
