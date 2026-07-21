@@ -13,7 +13,7 @@
 # 1) استنساخ المشروع
 sudo mkdir -p /opt && sudo chown $USER:$USER /opt
 cd /opt
-git clone https://github.com/kerolos-it2022/network-monitor_V1.git
+git clone https://github.com/kerolos-it2022/network-monitor.git
 cd network-monitor
 
 # 2) تثبيت + تشغيل آلي (يكتشف التوزيعة تلقائياً)
@@ -63,7 +63,7 @@ npm -v
 
 ```bash
 cd ~
-git clone https://github.com/kerolos-it2022/network-monitor_V1.git
+git clone https://github.com/kerolos-it2022/network-monitor.git
 cd network-monitor
 
 # تثبيت حزم الخادم

@@ -213,7 +213,7 @@ npx prebuild-install -r node
 ```bash
 sudo mkdir -p /opt && sudo chown $USER:$USER /opt
 cd /opt
-git clone https://github.com/kerolos-it2022/network-monitor_V1.git network-monitor
+git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
 cd network-monitor
 sudo bash deploy.sh install
 ```

@@ -65,11 +65,11 @@ sudo bash deploy.sh install
 5. ✅ تثبيت **Node.js 20 LTS** (عبر NodeSource على Debian/RHEL، أو مدير الحزم على الباقي)
 6. ✅ تثبيت **PM2** عالمياً (إدارة العمليات)
 7. ✅ تثبيت **sqlite3 CLI** (لاستيراد مخطط قاعدة البيانات)
-8. ✅ إنشاء `backend/.env` من القالب + توليد `SESSION_SECRET` عشوائي
-9. ✅ **بناء نظيف للتبعية**: يحذف `node_modules` و `package-lock.json` ثم `npm install` — يضمن بناء `better-sqlite3` للنظام المستهدف
+8. ✅ إنشاء `backend/.env` من القالب + توليد `SESSION_SECRET` عشوائي + **توليد مفاتيح VAPID تلقائياً**
+9. ✅ تثبيت حزم الخادم: `npm install` (يشمل `web-push`, `axios`, `better-sqlite3`, `xlsx` ...)
 10. ✅ تهيئة قاعدة البيانات + إنشاء حساب المدير الافتراضي
 11. ✅ تشغيل التطبيق عبر PM2 + ضبط بدء تلقائي مع النظام (systemd)
-12. ✅ إظهار عنوان URL للوصول
+12. ✅ إظهار عنوان URL للوصول + إرشادات تفعيل إشعارات الموبايل
 
 **ملاحظة هامة**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند نقل المشروع من Windows إلى Linux.
 
@@ -88,7 +88,19 @@ nano backend/.env   # أو: vi backend/.env
 DEFAULT_ADMIN_PASSWORD=كلمة_مرور_قوية_جداً_فريدة
 TELEGRAM_BOT_TOKEN=ضع_التوكين_الجديد_هنا
 TELEGRAM_CHAT_ID=ضع_الـ_chat_id_هنا
+
+# لإشعارات الموبايل (PWA + Web Push) — مُولّدة تلقائياً من deploy.sh
+VAPID_PUBLIC_KEY=...     # مولّد تلقائياً
+VAPID_PRIVATE_KEY=...    # مولّد تلقائياً
+VAPID_SUBJECT=mailto:you@example.com
+MOBILE_ENABLED=1
 ```
+
+> 💡 `deploy.sh install` يولّد مفاتيح VAPID تلقائياً ويكتبها في `.env`. لو أردت إعادة توليدها يدوياً:
+> ```bash
+> cd /opt/network-monitor/backend
+> node -e "console.log(require('web-push').generateVAPIDKeys())"
+> ```
 
 بعد التعديل:
 ```bash
@@ -108,6 +120,21 @@ curl http://localhost:4000/api/health
 ```
 
 افتح في المتصفح: `http://<IP-السيرفر>:4000/`
+
+### 3) تفعيل إشعارات الموبايل (PWA)
+
+النظام الآن **PWA قابل للتثبيت** على أي جهاز. للسماح بإشعارات Web Push:
+
+1. **على الخادم**: تأكد من ضبط مفاتيح VAPID في `.env` (يتم تلقائياً مع `deploy.sh install`).
+2. **في لوحة التحكم** → تبويب الإشعارات → فعّل "إشعارات الهاتف مفعّلة" → احفظ.
+3. **على الهاتف**:
+   - افتح `http://<IP-السيرفر>:4000` من Chrome
+   - اضغط **🔔 تفعيل الإشعارات** أعلى الصفحة → اسمح بالإشعارات
+   - Add to Home Screen من قائمة Chrome (⋮)
+4. **اختبار**: من لوحة التحكم → تبويب الإشعارات → اضغط **🔔 اختبار إشعار الهاتف**.
+
+> ⚠️ **HTTPS إلزامي لإشعارات Web Push على الشبكة الخارجية** — راجع قسم "Reverse Proxy + HTTPS" أدناه.
+> على الشبكة المحلية `http://localhost:4000` يعمل من Chrome (لكن Safari iOS يتطلب HTTPS دائماً).
 
 ---
 
