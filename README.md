@@ -119,12 +119,19 @@ Monitoring engine started (every 10s tick).
 # على أي توزيعة Linux مدعومة:
 sudo mkdir -p /opt && sudo chown $USER:$USER /opt
 cd /opt
-git clone https://github.com/kerolos-it2022/REPO.git network-monitor
+git clone https://github.com/kerolos-it2022/network-monitor_V1.git network-monitor
 cd network-monitor
 sudo bash deploy.sh install
 ```
 
 السكريبت يكتشف التوزيعة تلقائياً ويثبّت: الأدوات الأساسية (git, curl, wget) + أدوات البناء (python3, make, g++) + Node.js 20 LTS + PM2 + sqlite3 + حزم الخادم + تهيئة قاعدة البيانات + تشغيل التطبيق.
+
+**المميزات الجديدة في `deploy.sh`:**
+- ✅ **بناء نظيف**: يحذف `node_modules` و `package-lock.json` قبل التثبيت لضمان بناء `better-sqlite3` للنظام المستهدف
+- ✅ **مسار ديناميكي**: `ecosystem.config.js` يستخدم متغير `PROJECT_DIR` ليعمل من أي مكان
+- ✅ **دعم Alpine Linux**: يستخدم `--build-from-source` للـ `better-sqlite3`
+- ✅ **تحديث متغيرات البيئة**: `pm2 restart --update-env` عند إعادة التشغيل
+- ✅ **توافق Bash واسع**: يعمل على إصدارات Bash القديمة
 
 📖 **دليل كامل بالنشر**: راجع [`DEPLOY.md`](./DEPLOY.md) — يشمل تثبيت Nginx + HTTPS، Firewall، النسخ الاحتياطي، والنشر في عدة شركات.
 

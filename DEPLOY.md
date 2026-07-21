@@ -66,10 +66,12 @@ sudo bash deploy.sh install
 6. ✅ تثبيت **PM2** عالمياً (إدارة العمليات)
 7. ✅ تثبيت **sqlite3 CLI** (لاستيراد مخطط قاعدة البيانات)
 8. ✅ إنشاء `backend/.env` من القالب + توليد `SESSION_SECRET` عشوائي
-9. ✅ تثبيت حزم الخادم: `npm install`
+9. ✅ **بناء نظيف للتبعية**: يحذف `node_modules` و `package-lock.json` ثم `npm install` — يضمن بناء `better-sqlite3` للنظام المستهدف
 10. ✅ تهيئة قاعدة البيانات + إنشاء حساب المدير الافتراضي
-11. ✅ تشغيل التطبيق عبر PM2 + ضبط بدء تلقائي مع النظام
+11. ✅ تشغيل التطبيق عبر PM2 + ضبط بدء تلقائي مع النظام (systemd)
 12. ✅ إظهار عنوان URL للوصول
+
+**ملاحظة هامة**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند نقل المشروع من Windows إلى Linux.
 
 ---
 
@@ -251,7 +253,7 @@ pm2 logs network-monitor --err       # أخطاء فقط
 ```
 
 ### `better-sqlite3` فشل في البناء
-نادر جداً بعد تثبيت أدوات البناء. لو حدث:
+السكريبت يعيد بناءه تلقائياً عند النشر. لو حدث خطأ:
 ```bash
 # Debian/Ubuntu:    sudo apt install -y python3 make g++ build-essential
 # RHEL/CentOS/Fed:  sudo dnf install -y python3 make gcc gcc-c++
@@ -263,6 +265,8 @@ cd /opt/network-monitor/backend
 npm rebuild better-sqlite3
 sudo bash deploy.sh restart
 ```
+
+**على Alpine Linux**: السكريبت يستخدم `--build-from-source` تلقائياً.
 
 ### المنفذ 4000 محجوز
 ```bash

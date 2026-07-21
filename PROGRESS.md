@@ -155,73 +155,80 @@ network-monitor/
 
 ---
 
-## ⚠️ الحالة الحالية والعائق الوحيد
+## ⚠️ الحالة الحالية — **تم الحل للنشر على Linux**
 
 ### ما تم إنجازه بالكامل
 - **كل ملفات الكود** (Backend + Frontend + قاعدة البيانات + PM2 + README) تم إنشاؤها ومطابقتها لعقد الـ API وللدستور.
 - **كل ملفات JavaScript تجتاز فحص الصياغة** `node --check` بنجاح (20 ملف).
 - **مخطط قاعدة البيانات valid**: 8 جداول + 7 أنواع افتراضية تنشأ بنجاح في SQLite.
 - **JOINs و Uptime% و history endpoint**: تم التحقق منها عملياً بـ Python sqlite3 على بيانات تجريبية.
-- **npm install للحزم الـ JS البحتة** (~128 حزمة)成功了 عبر `--ignore-scripts`.
+- **npm install للحزم الـ JS البحتة** (~128 حزمة) نجح.
+- **اختبار النشر على Ubuntu 26.04 (WSL)**: نجح بنجاح كامل ✅
 
-### العائق الوحيد المتبقي (بيئة، وليس كود)
-`better-sqlite3@11.10.0` **لا تملك binary مسبق البناء** (prebuilt binary) لـ **Node.js v26.5.0** (إصدار جديد جداً صدر حديثاً)، والمحاولة فشلت بأدوات node-gyp لأن ماكينة التطوير لا تحتوي Visual Studio Build Tools:
-```
-npm error gyp ERR! find VS Could not find any Visual Studio installation to use
-```
-ونتيجة لهذا، يتعذر إقلاع خادم Express فعلياً على هذا الجهاز لإجراء HTTP smoke test حي.
+### العائق على Windows (بيئة، وليس كود) — **مُحَلّ على Linux**
+`better-sqlite3@11.10.0` **لا تملك binary مسبق البناء** (prebuilt binary) لـ **Node.js v26.5.0** على Windows، والمحاولة فشلت بأدوات node-gyp لأن ماكينة التطوير لا تحتوي Visual Studio Build Tools.
 
-### ✅ ثلاثة حلول لأي مطور/موديل يتابع العمل
+**الحل المطبق للنشر على Linux**: `deploy.sh` المحدث يعيد بناء `better-sqlite3` من المصدر تلقائياً على النظام المستهدف، مما يحل المشكلة نهائياً.
 
-#### الحل A (الأسهل والأوحد عموماً) — تنزيل إصدار Node الأقل
+### ✅ حلول لأي مطور/موديل يتابع العمل
+
+#### الحل A (للنشر على Linux) — استخدام deploy.sh المحدث ⭐
 ```bash
-# تثبيت Node.js 20 LTS (مستقر وله prebuilt binaries لـ better-sqlite3)
-# عبر nvm-windows أو من https://nodejs.org/en/download
+# على أي توزيعة Linux مدعومة (Ubuntu/Debian/RHEL/Arch/Alpine/openSUSE):
+sudo bash deploy.sh install
+# السكريبت يعيد بناء better-sqlite3 للنظام المستهدف تلقائياً
+```
+
+#### الحل B (للتطوير على Windows) — تنزيل Node.js 20 LTS
+```bash
 nvm install 20
 nvm use 20
 cd network-monitor/backend
 rm -rf node_modules package-lock.json
-npm install            # ✅ سينجح لأن better-sqlite3@11 يملك prebuilds لـ Node 20
+npm install            # ✅ سينجح لأن better-sqlite3 يملك prebuilds لـ Node 20
 ```
 
-#### الحل B — تثبيت Visual Studio Build Tools على ويندوز
+#### الحل C — تثبيت Visual Studio Build Tools على ويندوز
 ```powershell
 # تنزيل من https://visualstudio.microsoft.com/visual-cpp-build-tools/
 # اختر: "Desktop development with C++"
-# ثم إعادة محاولة:
 cd network-monitor/backend
 npm rebuild better-sqlite3
 ```
 
-#### الحل C — تجربة إصدارة أحدث من better-sqlite3 قد تكون أضافت prebuilds لـ Node 26
+#### الحل D — تجربة أحدث better-sqlite3
 ```bash
 cd network-monitor/backend
 npm install better-sqlite3@latest --ignore-scripts
-npx prebuild-install -r node   # تحقق إن وُجد binary
-# إن نجح: node src/server.js يجب أن يعمل الآن
+npx prebuild-install -r node
 ```
 
 ---
 
 ## 🔄 الخطوة الحالية (لمن يتابع)
 
-> **آخر تحديث:** 2026-07-18 — اكتملت **كل المهام البرمجية** (T0 → T8). المشروع جاهز للتشغيل بمجرد حل العائق البيئي `better-sqlite3` عبر أحد الحلول الثلاثة أعلاه.
+> **آخر تحديث:** 2026-07-21 — اكتملت **كل المهام البرمجية** (T0 → T8) + **تحديث deploy.sh للنشر على جميع توزيعات Linux**. المشروع جاهز للتشغيل على Linux مباشرة.
 
-**الخطوة التالية الموصى بها:**
-1. طبّق أحد الحلول (A موصى به: تنزيل Node 20 LTS).
+**للنشر على Linux:**
+```bash
+sudo mkdir -p /opt && sudo chown $USER:$USER /opt
+cd /opt
+git clone https://github.com/kerolos-it2022/network-monitor_V1.git network-monitor
+cd network-monitor
+sudo bash deploy.sh install
+```
+
+**للتطوير على Windows:**
+1. طبّق أحد الحلول أعلاه (B موصى به: Node 20 LTS).
 2. شغّل:
    ```bash
    cd network-monitor/backend
-   cp .env.example .env            # إن لم يكن موجوداً
+   cp .env.example .env
    # عدّل .env: SESSION_SECRET و DEFAULT_ADMIN_PASSWORD
    node src/seedAdmin.js
    node src/server.js
    ```
 3. افتح `http://localhost:4000/` و جرب التصميم.
-4. افتح `http://localhost:4000/admin/login.html` و سجّل الدخول ببيانات المدير.
-5. أضف موقعاً + نوعاً من تبويب المواقع والأنواع، ثم جهازاً من تبويب الأجهزة.
-6. خلال 30 ثانية (الفترة الافتراضية) يجب أن يظهر الجهاز بحالة "متصل" في الصفحة العامة.
-7. لتسيير الإيقاف: أوقف جهازاً على الشبكة وراقب الصفحة العامة + الإشعارات في تبويب السجل.
 
 ---
 
@@ -263,5 +270,10 @@ npx prebuild-install -r node   # تحقق إن وُجد binary
 - **2026-07-18:** ✅ تم إنشاء **كامل بنية المشروع** وكل ملفات الكود (Backend + Frontend + قاعدة البيانات + PM2 + README + .gitignore).
 - **2026-07-18:** ✅ كل ملفات JS تمر بفحص `node --check` (20 ملف OK).
 - **2026-07-18:** ✅ تم التحقق من مخطط قاعدة البيانات وJOINs وUptime% بـ Python.
-- **2026-07-18:** ⚠️ تم تثبيت ~128 حزمة JS عبر `--ignore-scripts`، لكن `better-sqlite3` يحتاج Visual Studio Build Tools أو Node 20 LTS لإكمال بنائه (مشكلة بيئة وليست مشكلة كود).
-- **2026-07-18:** ❌ HTTP smoke test حي محجوب بسبب العائق أعلاه — ويحتاج أحد الحلول الثلاثة في قسم "الحالة الحالية" قبل المتابعة.
+- **2026-07-18:** ⚠️ تم تثبيت ~128 حزمة JS عبر `--ignore-scripts`، لكن `better-sqlite3` يحتاج Visual Studio Build Tools أو Node 20 LTS على Windows (مشكلة بيئة وليست مشكلة كود).
+- **2026-07-18:** ❌ HTTP smoke test حي محجوب بسبب العائق أعلاه — ويحتاج أحد الحلول في قسم "الحالة الحالية" قبل المتابعة.
+- **2026-07-21:** ✅ **تحديث deploy.sh بالكامل** للعمل على جميع توزيعات Linux (Ubuntu/Debian/RHEL/Arch/Alpine/openSUSE).
+- **2026-07-21:** ✅ **إصلاح ecosystem.config.js** بمسار ديناميكي (`${PROJECT_DIR}/backend`).
+- **2026-07-21:** ✅ **إضافة Dockerfile.ubuntu** للنشر السريع عبر Docker.
+- **2026-07-21:** ✅ **اختبار نشر كامل على Ubuntu 26.04 (WSL)** — نجح بنجاح كامل (APIs، الصفحات، PM2، الإشعارات).
+- **2026-07-21:** ✅ **حل مشكلة better-sqlite3** بإعادة بنائه على النظام المستهدف تلقائياً عبر `npm install` في `deploy.sh`.
