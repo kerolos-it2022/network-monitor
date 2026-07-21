@@ -298,6 +298,10 @@ install_node() {
             ;;
     esac
 
+    # تحديث PATH والتحقق من التثبيت
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    hash -r 2>/dev/null || true
+    
     if ! command -v node &> /dev/null; then
         error "فشل تثبيت Node.js."
         error "حاول تثبيته يدوياً من https://nodejs.org/en/download/package-manager"
@@ -316,6 +320,18 @@ install_pm2() {
         log "PM2 مثبّت: ${pm2_ver}"
         return
     fi
+    
+    # التأكد من توفر npm
+    if ! command -v npm &> /dev/null; then
+        export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+        hash -r 2>/dev/null || true
+    fi
+    
+    if ! command -v npm &> /dev/null; then
+        error "npm غير متاح. تأكد من تثبيت Node.js بشكل صحيح."
+        exit 1
+    fi
+    
     log "تثبيت PM2 عالمياً..."
     npm install -g pm2
     log "تم تثبيت PM2: $(pm2 --version)"
@@ -397,17 +413,19 @@ init_database() {
                 log "تم تنفيذ schema.sql عبر sqlite3 CLI." || \
                 warn "تعذّر تنفيذ schema.sql عبر CLI. سنحاول عبر Node."
         fi
-        # تنفيذ احتياطي عبر Node better-sqlite3
-        if ! sqlite3 "$PROJECT_DIR/database/monitoring.db" "SELECT 1 FROM device_types LIMIT 1" 2>/dev/null; then
-            log "تنفيذ احتياطي للمخطط عبر Node better-sqlite3..."
-            (cd "$PROJECT_DIR/backend" && node -e "
-                const db = require('better-sqlite3')(process.env.DB_PATH || '../database/monitoring.db');
-                const fs = require('fs');
-                db.exec(fs.readFileSync('../database/schema.sql', 'utf-8'));
-                console.log('schema OK via node');
-                db.close();
-            ") || warn "تعذّر تهيئة المخطط تماماً — تحقق من السجلات."
-        fi
+# تنفيذ احتياطي عبر Node better-sqlite3
+    if ! sqlite3 "$PROJECT_DIR/database/monitoring.db" "SELECT 1 FROM device_types LIMIT 1" 2>/dev/null; then
+        log "تنفيذ احتياطي للمخطط عبر Node better-sqlite3..."
+        export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+        hash -r 2>/dev/null || true
+        (cd "$PROJECT_DIR/backend" && node -e "
+            const db = require('better-sqlite3')(process.env.DB_PATH || '../database/monitoring.db');
+            const fs = require('fs');
+            db.exec(fs.readFileSync('../database/schema.sql', 'utf-8'));
+            console.log('schema OK via node');
+            db.close();
+        ") || warn "تعذّر تهيئة المخطط تماماً — تحقق من السجلات."
+    fi
     else
         warn "database/schema.sql غير موجود."
     fi
@@ -421,6 +439,11 @@ init_database() {
 # =========================================================
 install_project_deps() {
     log "تثبيت حزم الخادم (npm install)..."
+    
+    # التأكد من توفر npm
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    hash -r 2>/dev/null || true
+    
     cd "$PROJECT_DIR/backend"
     
     # حذف node_modules و package-lock.json لضمان بناء نظيف
@@ -440,14 +463,14 @@ install_project_deps() {
 # =========================================================
 fix_ecosystem_config() {
     local ecosystem_file="$PROJECT_DIR/ecosystem.config.js"
-    cat > "$ecosystem_file" <<'EOF'
+    cat > "$ecosystem_file" <<EOF
 // ecosystem.config.js: إعدادات PM2 لتشغيل خادم المراقبة في الإنتاج.
 module.exports = {
   apps: [
     {
       name: 'network-monitor',
       script: './src/server.js',
-      cwd: "${PROJECT_DIR}/backend",
+      cwd: '${PROJECT_DIR}/backend',
       env: {
         NODE_ENV: 'production',
       },
@@ -459,9 +482,7 @@ module.exports = {
   ],
 };
 EOF
-    # استبدال المسار الثابت بالمسار الفعلي للمشروع
-    sed -i "s|/home/ubuntu/network-monitor_V1|$PROJECT_DIR|g" "$ecosystem_file"
-    log "تم تحديث ecosystem.config.js للمسار: $PROJECT_DIR/backend"
+    log "تم تحديث ecosystem.config.js للمسار: \$PROJECT_DIR/backend"
 }
 
 # =========================================================
@@ -522,6 +543,10 @@ case "${1:-install}" in
     update)
         log "تحديث المشروع: إعادة تثبيت الحزم وإعادة تشغيل PM2..."
         detect_distro
+        
+        export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+        hash -r 2>/dev/null || true
+        
         cd "$PROJECT_DIR/backend"
         if [[ "$OS_FAMILY" == "alpine" ]]; then
             npm install --omit=dev --build-from-source 2>/dev/null || npm install --omit=dev
