@@ -3,8 +3,8 @@ module.exports = {
   apps: [
     {
       name: 'network-monitor',
-      script: './backend/src/server.js',
-      cwd: __dirname,
+      script: './src/server.js',
+      cwd: __dirname + '/backend',
       env: {
         NODE_ENV: 'production',
       },

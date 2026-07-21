@@ -13,7 +13,9 @@
 #   sudo bash deploy.sh status       # حالة العملية
 #   sudo bash deploy.sh uninstall    # حذف النظام (البيانات تبقى)
 # =========================================================
-set -euo pipefail
+
+# استخدام set -e فقط (بدون pipefail لتوافق أفضل مع bash الأقدم)
+set -eu
 
 # ---- إعدادات قابلة للتعديل ----
 PROJECT_DIR="${PROJECT_DIR:-/opt/network-monitor}"
@@ -33,7 +35,7 @@ warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 error() { echo -e "${RED}[✗]${NC} $1"; }
 info()  { echo -e "${BLUE}[i]${NC} $1"; }
 
-# التأكد من تشغيل السكريبت بـ root
+# التأكد من تشغيل السكريبت بصلاحية root
 if [[ $EUID -ne 0 ]]; then
     error "يجب تشغيل هذا السكريبت بصلاحية root. استخدم: sudo bash deploy.sh"
     exit 1
@@ -237,8 +239,8 @@ install_sqlite_cli() {
     case "$OS_FAMILY" in
         debian|alpine) pkg_install sqlite3 ;;
         rhel)          pkg_install sqlite ;;
-        arch)         pkg_install sqlite ;;
-        suse)         pkg_install sqlite3 ;;
+        arch)          pkg_install sqlite ;;
+        suse)          pkg_install sqlite3 ;;
     esac
 }
 
@@ -371,6 +373,7 @@ EOF
         secret=$(head -c 32 /dev/urandom | base64)
     fi
     if [[ -n "$secret" ]]; then
+        # استخدام sed مع محدد مختلف لتجنب مشاكل الشرطة المائلة
         sed -i "s|^SESSION_SECRET=.*|SESSION_SECRET=$secret|g" "$env_file" 2>/dev/null || \
         sed -i.bak "s|^SESSION_SECRET=.*|SESSION_SECRET=$secret|g" "$env_file"
         log "تم توليد SESSION_SECRET عشوائي وتخزينه في backend/.env"
@@ -414,6 +417,54 @@ init_database() {
 }
 
 # =========================================================
+# تثبيت تبعيات المشروع (npm install) مع إعادة بناء better-sqlite3 للنظام المستهدف
+# =========================================================
+install_project_deps() {
+    log "تثبيت حزم الخادم (npm install)..."
+    cd "$PROJECT_DIR/backend"
+    
+    # حذف node_modules و package-lock.json لضمان بناء نظيف
+    rm -rf node_modules package-lock.json
+    
+    # على Alpine قد نحتاج --build-from-source لـ better-sqlite3 إذا لم يوجد prebuilt
+    if [[ "$OS_FAMILY" == "alpine" ]]; then
+        npm install --omit=dev --build-from-source 2>/dev/null || npm install --omit=dev
+    else
+        npm install --omit=dev
+    fi
+    log "تم تثبيت حزم الخادم."
+}
+
+# =========================================================
+# إنشاء/إصلاح ecosystem.config.js للمسار الصحيح
+# =========================================================
+fix_ecosystem_config() {
+    local ecosystem_file="$PROJECT_DIR/ecosystem.config.js"
+    cat > "$ecosystem_file" <<'EOF'
+// ecosystem.config.js: إعدادات PM2 لتشغيل خادم المراقبة في الإنتاج.
+module.exports = {
+  apps: [
+    {
+      name: 'network-monitor',
+      script: './src/server.js',
+      cwd: "${PROJECT_DIR}/backend",
+      env: {
+        NODE_ENV: 'production',
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '512M',
+    },
+  ],
+};
+EOF
+    # استبدال المسار الثابت بالمسار الفعلي للمشروع
+    sed -i "s|/home/ubuntu/network-monitor_V1|$PROJECT_DIR|g" "$ecosystem_file"
+    log "تم تحديث ecosystem.config.js للمسار: $PROJECT_DIR/backend"
+}
+
+# =========================================================
 # تشغيل/إدارة PM2
 # =========================================================
 pm2_start() {
@@ -452,16 +503,8 @@ case "${1:-install}" in
             exit 1
         fi
 
-        log "تثبيت حزم الخادم (npm install)..."
-        cd "$PROJECT_DIR/backend"
-        # على Alpine قد نحتاج --build-from-source لـ better-sqlite3 إذا لم يوجد prebuilt
-        if [[ "$OS_FAMILY" == "alpine" ]]; then
-            npm install --omit=dev --build-from-source 2>/dev/null || npm install --omit=dev
-        else
-            npm install --omit=dev
-        fi
-        log "تم تثبيت حزم الخادم."
-
+        install_project_deps
+        fix_ecosystem_config
         init_database
 
         log "تشغيل التطبيق عبر PM2..."
@@ -486,7 +529,8 @@ case "${1:-install}" in
             npm install --omit=dev
         fi
         cd "$PROJECT_DIR"
-        pm2 restart network-monitor
+        fix_ecosystem_config
+        pm2 restart network-monitor --update-env
         log "تم التحديث. البيانات محفوظة في قاعدة البيانات."
         ;;
 
@@ -506,7 +550,8 @@ case "${1:-install}" in
     restart)
         log "إعادة تشغيل النظام..."
         cd "$PROJECT_DIR"
-        pm2 restart network-monitor
+        fix_ecosystem_config
+        pm2 restart network-monitor --update-env
         log "تمت إعادة التشغيل."
         ;;
 
