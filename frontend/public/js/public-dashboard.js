@@ -496,6 +496,82 @@ async function init() {
     themeBtn.textContent = isDark ? '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a' : '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u062a\u064a\u0644\u064a';
     try { localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light'); } catch (e) {}
   });
+  // ===== زر تفعيل إشعارات الموبايل (Web Push + VAPID) =====
+  var notifyBtn = document.getElementById('notify-btn');
+  if (notifyBtn) {
+    function updateNotifyBtnState() {
+      if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+        notifyBtn.disabled = true;
+        notifyBtn.textContent = "🔕 الإشعارات غير مدعومة";
+        return;
+      }
+      if (Notification.permission === "granted") {
+        notifyBtn.textContent = "🔔 الإشعارات مفعّلة";
+        notifyBtn.style.color = "var(--online)";
+      } else if (Notification.permission === "denied") {
+        notifyBtn.disabled = true;
+        notifyBtn.textContent = "🔕 الإشعارات محجوبة";
+      } else {
+        notifyBtn.textContent = "🔔 تفعيل الإشعارات";
+      }
+    }
+    updateNotifyBtnState();
+
+    notifyBtn.addEventListener("click", async function () {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert("متصفحك لا يدعم الإشعارات");
+        return;
+      }
+      var permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        alert("تم رفض الإذن. لتلقي الإشعارات يجب السماح بها من إعدادات المتصفح.");
+        updateNotifyBtnState();
+        return;
+      }
+      try {
+        var vRes = await fetchApi("/api/notifications/vapid-public");
+        if (!vRes.success || !vRes.data || !vRes.data.publicKey) {
+          alert("⚠️ الإشعارات غير مُهيّأة على الخادم. اطلب من المدير ضبط VAPID keys في .env");
+          updateNotifyBtnState();
+          return;
+        }
+        var vapidPublicKey = vRes.data.publicKey;
+        function urlBase64ToUint8Array(base64String) {
+          var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+          var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+          var rawData = atob(base64);
+          var arr = new Uint8Array(rawData.length);
+          for (var i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+          return arr;
+        }
+        var reg = await navigator.serviceWorker.ready;
+        var subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+        await fetch("/api/notifications/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: JSON.stringify(subscription),
+            platform: "web",
+            deviceInfo: navigator.userAgent || "",
+          }),
+        });
+        notifyBtn.textContent = "✅ تم التفعيل بنجاح";
+        notifyBtn.style.color = "var(--online)";
+        reg.showNotification("🔔 تم تفعيل الإشعارات", {
+          body: "ستصلك إشعارات فورية عند انقطاع أي جهاز أو عودته.",
+          icon: "/icon-192.png",
+        });
+      } catch (e) {
+        console.error("Push subscribe error", e);
+        alert("❌ فشل تفعيل الإشعارات: " + (e.message || "خطأ غير معروف"));
+      }
+      updateNotifyBtnState();
+    });
+  }
+
 
   setInterval(async function () {
     try {

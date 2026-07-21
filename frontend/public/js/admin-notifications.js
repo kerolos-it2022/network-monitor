@@ -28,10 +28,15 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-whatsapp_api_token').placeholder = d.whatsapp_api_token || 'غير مضبوط';
   document.getElementById('ntf-whatsapp_api_token').value = '';
   document.getElementById('ntf-whatsapp_to_number').value = d.whatsapp_to_number || '';
+  // إعدادات الموبايل/FCM
+  document.getElementById('ntf-mobile_enabled').checked = !!d.mobile_enabled;
+  document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
+  document.getElementById('ntf-fcm_server_key').value = '';
 }
 
 async function saveNotificationSettings() {
   const statusEl = document.getElementById('ntf-status');
+  statusEl.style.color = 'var(--online)';
   statusEl.textContent = 'جارٍ الحفظ…';
   const body = {
     telegram_enabled: document.getElementById('ntf-telegram_enabled').checked,
@@ -41,6 +46,8 @@ async function saveNotificationSettings() {
     whatsapp_api_url: document.getElementById('ntf-whatsapp_api_url').value.trim(),
     whatsapp_api_token: document.getElementById('ntf-whatsapp_api_token').value.trim(),
     whatsapp_to_number: document.getElementById('ntf-whatsapp_to_number').value.trim(),
+    mobile_enabled: document.getElementById('ntf-mobile_enabled').checked,
+    fcm_server_key: document.getElementById('ntf-fcm_server_key').value.trim(),
   };
   const r = await api('/api/notifications/settings', {
     method: 'PUT',
@@ -56,17 +63,46 @@ async function saveNotificationSettings() {
   }
 }
 
+// إرسال إشعار تجريبي للتسجيلات النشطة
+async function testNotification() {
+  const statusEl = document.getElementById('ntf-status');
+  statusEl.style.color = 'var(--online)';
+  statusEl.textContent = '🔔 جارٍ إرسال إشعار تجريبي…';
+  try {
+    const r = await fetch('/api/notifications/test', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    const data = await r.json();
+    if (data.success) {
+      statusEl.textContent = '✅ تم الإرسال (افتح هاتفك للتأكد)';
+    } else {
+      statusEl.style.color = 'var(--offline)';
+      statusEl.textContent = '❌ ' + (data.error || 'فشل الإرسال — تأكد من FCM Key و وجود تسجيلات نشطة');
+    }
+  } catch (e) {
+    statusEl.style.color = 'var(--offline)';
+    statusEl.textContent = '❌ خطأ في الاتصال بالخادم';
+  }
+}
+
 async function loadNotificationLogs() {
   const r = await api('/api/notifications/logs');
   const tbody = document.getElementById('logs-table-body');
   tbody.innerHTML = '';
   if (!r.success) return;
+  const channelText = (c) => {
+    if (c === 'telegram') return 'تلجرام';
+    if (c === 'whatsapp') return 'واتساب';
+    if (c === 'mobile') return 'هاتف (PWA)';
+    return c;
+  };
   for (const l of r.data) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${esc(l.sent_at ? new Date(l.sent_at).toLocaleString('ar') : '-')}</td>
       <td>${esc(l.device_name || '-')}</td>
-      <td>${esc(l.channel)}</td>
+      <td>${esc(channelText(l.channel))}</td>
       <td>${esc(l.status === 'sent' ? 'تم الإرسال' : 'فشل')}</td>
       <td>${esc(l.message)}</td>
     `;
@@ -77,6 +113,8 @@ async function loadNotificationLogs() {
 document.addEventListener('DOMContentLoaded', async () => {
   await loadNotificationSettings();
   document.getElementById('ntf-save-btn').addEventListener('click', saveNotificationSettings);
+  const testBtn = document.getElementById('ntf-test-btn');
+  if (testBtn) testBtn.addEventListener('click', testNotification);
   // عند فتح تبويب السجل: تحميل السجل تلقائياً.
   document.getElementById('tab-logs').addEventListener('click', loadNotificationLogs);
   // زر مسح السجلات

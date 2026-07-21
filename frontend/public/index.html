@@ -6,6 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مراقبة أجهزة الشبكة</title>
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- ===== PWA Meta ===== -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="نظام مراقبة حالة أجهزة الشبكة المحلية بشكل لحظي مع إشعارات فورية" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="مراقبة الشبكة" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
 </head>
 <body>
   <!-- شريط علوي بالعنوان وملخص الحالة -->
@@ -16,6 +26,7 @@
     </div>
     <div id="summary-bar" class="summary-bar">جارٍ التحميل…</div>
     <button id="theme-toggle" class="theme-toggle" type="button">🌙 وضع ليلي</button>
+    <button id="notify-btn" class="theme-toggle" type="button" title="تفعيل إشعارات الهاتف">🔔 تفعيل الإشعارات</button>
   </header>
 
   <!-- أدوات الفلترة والبحث + مبدّل نمط العرض + الترتيب -->
@@ -107,5 +118,20 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/public-dashboard.js"></script>
+
+  <!-- ===== تسجيل Service Worker (PWA + Push Notifications) ===== -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function (reg) {
+            console.log('[PWA] Service Worker مُسجّل:', reg.scope);
+          })
+          .catch(function (err) {
+            console.warn('[PWA] فشل تسجيل Service Worker:', err);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

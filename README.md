@@ -1,8 +1,24 @@
 # نظام مراقبة أجهزة الشبكة المحلية
 
 تطبيق ويب لمراقبة حالة أجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات…)
-بشكل لحظي، مع إدارة كاملة لبيانات الأجهزة ومواقعها، وإشعارات فورية على تلجرام وواتساب عند انقطاع
-أو عودة أي جهاز.
+بشكل لحظي، مع إدارة كاملة لبيانات الأجهزة ومواقعها، وإشعارات فورية عبر **تلجرام** و**واتساب**
+و**تطبيق الموبايل (PWA)** عند انقطاع أو عودة أي جهاز.
+
+> ✨ **جديد في الإصدار 1.1**: تطبيق ويب تدريجي (PWA) قابل للتثبيت على الهاتف مع إشعارات Web Push فورية
+> عبر VAPID — تعمل حتى وإذا كان المتصفح/التطبيق مغلقاً.
+
+---
+
+## ✨ المزايا
+
+- 📊 مراقبة لحظية لأي بروتوكول (Ping / HTTP / HTTPS / TCP Port)
+- 📱 **تطبيق PWA قابل للتثبيت** على أندروند/iOS/سطح المكتب
+- 🔔 **إشعارات Web Push فورية** عبر VAPID (تعمل حتى والتطبيق مغلق)
+- 🤖 إشعارات متوازية عبر تلجرام وواتساب
+- 🛠️ أدوات شبكة مباشرة (Ping + Tracert) ببث SSE خط بخط
+- 🌓 وضع ليلي/نهاري + واجهة عربية RTL كاملة
+- 🔒 فحص تلقائي لـ HTTP/HTTPS عند إضافة كل جهاز + زر فتح فوري للواجهة
+- 📈 رسوم بيانية للاستجابة و Uptime% + سجل الانقطاعات
 
 ---
 
@@ -11,6 +27,7 @@
 - **Node.js 18+** (موصى به 20 LTS).
 - **Python 3** + مكتبة `sqlite3` (مع أداة `sqlite3` CLI لتنفيذ مخطط قاعدة البيانات).
 - **pm2** (للإنتاج): `npm install -g pm2`.
+- **متصفح حديث** يدعم Service Workers و Web Push (Chrome 90+, Firefox 90+, Safari 16.4+, Edge 90+) — للاستفادة من PWA وإشعارات الموبايل.
 - **أدوات البناء** (لترجمة better-sqlite3):
   - Debian/Ubuntu: `sudo apt install -y python3 make g++ build-essential`
   - RHEL/CentOS/Fedora: `sudo dnf install -y python3 make gcc gcc-c++`
@@ -100,6 +117,56 @@ Monitoring engine started (every 10s tick).
 
 > ملاحظة: النظام يعمل بالكامل حتى لو كانت متغيرات تلجرام/واتساب فارغة —
 > تحدّث الإعدادات جملة في `.env` أو من لوحة التحكم وتُحفظ في الجدول `notification_settings`.
+
+---
+
+## 📱 إعداد إشعارات الموبايل (PWA + Web Push)
+
+النظام الآن **PWA قابل للتثبيت** على أي جهاز (أندرويد/iOS/سطح المكتب)، مع إشعارات Web Push فورية
+عبر **VAPID** (بدون الحاجة لـ Firebase SDK أو حساب Google).
+
+### 1) توليد مفاتيح VAPID (مرة واحدة على الخادم)
+
+```bash
+cd backend
+node -e "console.log(require('web-push').generateVAPIDKeys())"
+```
+
+سيُطبع:
+```
+{
+  publicKey: 'BHTp...qpY',
+  privateKey: 'u2vn...wS4'
+}
+```
+
+### 2) أضفها إلى `backend/.env`
+
+```env
+VAPID_PUBLIC_KEY=BHTp...qpY
+VAPID_PRIVATE_KEY=u2vn...wS4
+VAPID_SUBJECT=mailto:you@example.com
+MOBILE_ENABLED=1
+```
+
+> 💡 `deploy.sh install` يقوم بكل ذلك تلقائياً على سيرفر Linux.
+
+### 3) فعّلها من لوحة التحكم
+
+1. سجّل الدخول → تبويب **الإشعارات**
+2. فعّل **"إشعارات الهاتف مفعّلة"**
+3. احفظ، واضغط **🔔 اختبار إشعار الهاتف** للتأكد
+
+### 4) على هاتفك
+
+1. افتح **`http://<IP-الخادم>:4000`** من متصفح Chrome على الهاتف
+2. اضغط زر **🔔 تفعيل الإشعارات** أعلى الصفحة
+3. اسمح بالإشعارات → سيظهر إشعار تجريبي للتأكيد
+4. اضغط قائمة Chrome (⋮) → **Add to Home Screen** لتثبيت التطبيق
+
+🎉 الآن ستصل الإشعارات حتى والتطبيق مغلق.
+
+> ⚠️ **iOS**: متاح على iOS 16.4+ عبر Safari فقط. الأجهزة الأقدم لا تدعم Web Push لكن التطبيق يعمل كـ PWA.
 
 ---
 
@@ -203,8 +270,14 @@ network-monitor/
 | DELETE | `/api/devices/:id` | 🔒 | حذف جهاز |
 | GET / POST / PUT / DELETE | `/api/locations` | الكتابة 🔒 | إدارة المواقع |
 | GET / POST / PUT / DELETE | `/api/device-types` | الكتابة 🔒 | إدارة أنواع الأجهزة |
-| GET / PUT | `/api/notifications/settings` | 🔒 | إعدادات قنوات الإشعار |
+| GET / PUT | `/api/notifications/settings` | 🔒 | إعدادات قنوات الإشعار (تلجرام/واتساب/موبايل) |
+| POST | `/api/notifications/register` | لا | تسجيل جهاز موبايل لتلقي Web Push |
+| DELETE | `/api/notifications/register` | لا | إلغاء تسجيل جهاز موبايل |
+| GET | `/api/notifications/vapid-public` | لا | مفتاح VAPID العام للاشتراك في Web Push |
+| POST | `/api/notifications/test` | 🔒 | إرسال إشعار تجريبي للموبايل |
 | GET | `/api/notifications/logs` | 🔒 | آخر 100 إشعار مُرسل |
+| GET | `/api/tools/ping?ip=...` | لا | تنفيذ Ping مع بث SSE مباشر |
+| GET | `/api/tools/tracert?ip=...` | لا | تنفيذ Tracert مع بث SSE مباشر |
 
 ---
 
@@ -225,16 +298,19 @@ network-monitor/
 - كل استعلامات SQL عبر Prepared Statements (لاحقن SQL).
 - قنوات الإشعار تُقرأ من `process.env` أو من الجدول فقط — لا شيء مشفّر بـ hardcoded.
 - التوكنات في API الإعدادات تُرجع مقنّعة (آخر 4 خانات فقط).
+- مفاتيح VAPID الخاصة (`VAPID_PRIVATE_KEY`) محفوظة في `.env` فقط ولا تُرسل لأي عميل.
+- تسجيلات الموبايل (`mobile_registrations`) تُعطّل تلقائياً عند انتهاء صلاحيتها (404/410 من FCM).
+- فحص تلقائي لـ HTTP/HTTPS عند إضافة أي جهاز جديد (تحديث `http_accessible`/`https_accessible`).
 
 ---
 
-## 📌 المهام المؤجلة (خارج الإصدار الأول)
+## 📌 المهام المؤجلة (خارج الإصدار الحالي)
 
-- التحديث اللحظي عبر WebSocket بدل Polling كل 10 ثوانٍ.
+- التحديث اللحظي عبر WebSocket/SSE لدفع تغييرات الحالة بدل Polling كل 10 ثوانٍ.
 - تقارير PDF/Excel قابلة للتصدير.
 - صلاحيات متعددة المستويات (Admin / Operator).
 - دعم SNMP.
-- استيراد/تصدير قائمة الأجهزة عبر Excel.
 - الانتقال إلى PostgreSQL عند تجاوز بضع مئات من الأجهزة.
+- مهلة هدوء (cooldown) لتجنب سبام الإشعارات للأجهزة المتذبذبة (flapping).
 
 انظر `PROGRESS.md` لتفاصيل ما تم تنفيذه وما تأجّل.

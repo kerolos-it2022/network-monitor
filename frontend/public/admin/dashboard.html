@@ -130,10 +130,26 @@
           <label>WhatsApp API Token <input type="text" id="ntf-whatsapp_api_token" /></label>
           <label>WhatsApp To Number <input type="text" id="ntf-whatsapp_to_number" /></label>
         </div>
+        <!-- ===== قسم إشعارات الموبايل (PWA + FCM) ===== -->
+        <h3 style="margin-top:1.5rem;">📱 إشعارات الموبايل (PWA)</h3>
+        <div class="form-grid">
+          <label>إشعارات الهاتف مفعّلة <input type="checkbox" id="ntf-mobile_enabled" /></label>
+          <label>FCM Server Key <input type="password" id="ntf-fcm_server_key" placeholder="AAAA…" autocomplete="off" /></label>
+        </div>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0.5rem 0;">
+          للحصول على المفتاح: أنشئ مشروعاً في <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>
+          → Project Settings → Cloud Messaging → Legacy Server Key.
+        </p>
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="ntf-save-btn">حفظ الإعدادات</button>
+          <button type="button" class="btn" id="ntf-test-btn">🔔 اختبار إشعار الهاتف</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
+        <p style="font-size:0.8rem; color:var(--muted); margin-top:0.75rem;">
+          💡 لإضافة إشعارات على هاتفك: افتح الصفحة العامة
+          (<a href="../index.html" target="_blank">هنا</a>) من Chrome على الهاتف،
+          اضغط زر "🔔 تفعيل الإشعارات" ثم ثبّت التطبيق (Add to Home Screen).
+        </p>
       </div>
     </section>
 

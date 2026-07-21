@@ -83,20 +83,35 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     whatsapp_enabled INTEGER NOT NULL DEFAULT 0,
     whatsapp_api_url TEXT,
     whatsapp_api_token TEXT,
-    whatsapp_to_number TEXT
+    whatsapp_to_number TEXT,
+    mobile_enabled INTEGER NOT NULL DEFAULT 0,   -- تفعيل إشعارات الهاتف (PWA/Web Push عبر FCM)
+    fcm_server_key TEXT                           -- Firebase Cloud Messaging Server Key
 );
 INSERT OR IGNORE INTO notification_settings (id) VALUES (1);
+
+-- تسجيلات تطبيق الموبايل (PWA) — كل متصفح/هاتف يُسجّل مرة واحدة
+CREATE TABLE IF NOT EXISTS mobile_registrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    endpoint TEXT NOT NULL UNIQUE,   -- توكن FCM الكامل (يُستخدم كـ registration_id)
+    platform TEXT,                    -- 'web' | 'android' | 'ios' (اختياري)
+    device_info TEXT,                 -- معلومات الجهاز (User-Agent، الخ)
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_notified_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mobile_active ON mobile_registrations(is_active);
 
 -- سجل الإشعارات المُرسلة فعلياً
 CREATE TABLE IF NOT EXISTS notification_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     device_id INTEGER,
-    channel TEXT NOT NULL,        -- 'telegram' | 'whatsapp'
+    channel TEXT NOT NULL,        -- 'telegram' | 'whatsapp' | 'mobile'
     message TEXT NOT NULL,
     status TEXT NOT NULL,         -- 'sent' | 'failed'
     sent_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE SET NULL
 );
+CREATE INDEX IF NOT EXISTS idx_notif_logs_sent ON notification_logs(sent_at);
 
 -- بيانات ابتدائية لأنواع الأجهزة الشائعة
 INSERT OR IGNORE INTO device_types (name, icon) VALUES
