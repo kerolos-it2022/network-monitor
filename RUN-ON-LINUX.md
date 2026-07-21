@@ -13,7 +13,7 @@
 # 1) استنساخ المشروع
 sudo mkdir -p /opt && sudo chown $USER:$USER /opt
 cd /opt
-git clone https://github.com/kerolos-it2022/network-monitor.git
+git clone https://github.com/kerolos-it2022/network-monitor_V1.git
 cd network-monitor
 
 # 2) تثبيت + تشغيل آلي (يكتشف التوزيعة تلقائياً)
@@ -63,7 +63,7 @@ npm -v
 
 ```bash
 cd ~
-git clone https://github.com/kerolos-it2022/network-monitor.git
+git clone https://github.com/kerolos-it2022/network-monitor_V1.git
 cd network-monitor
 
 # تثبيت حزم الخادم
@@ -195,8 +195,8 @@ sudo dnf install -y nginx certbot python3-certbot-nginx      # RHEL
 
 # ضبط Nginx
 sudo cp nginx.example.conf /etc/nginx/sites-available/network-monitor
-sudo nano /etc/nginx/sites-available/network-monitor   # عدّل server_name
-sudo ln -s /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/
+sudo nano /etc/nginx/sites-available/network-monitor_V1   # عدّل server_name
+sudo ln -s /etc/nginx/sites-available/network-monitor_V1 /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # تفعيل HTTPS مجاناً
@@ -209,16 +209,16 @@ sudo certbot --nginx -d monitor.company.com
 
 ```bash
 # نسخة يدوية
-cp /opt/network-monitor/database/monitoring.db ~/backups/nm-$(date +%F).db
+cp /opt/network-monitor_V/database/monitoring.db ~/backups/nm-$(date +%F).db
 
 # نسخة يومية تلقائية (كل يوم 2 صباحاً)
 crontab -e
 # أضف:
-0 2 * * * cp /opt/network-monitor/database/monitoring.db ~/backups/nm-$(date +\%F).db
+0 2 * * * cp /opt/network-monitor_V1/database/monitoring.db ~/backups/nm-$(date +\%F).db
 
 # للاستعادة:
 sudo bash deploy.sh stop
-cp backup-2026-07-21.db /opt/network-monitor/database/monitoring.db
+cp backup-2026-07-21.db /opt/network-monitor_V1/database/monitoring.db
 sudo bash deploy.sh restart
 ```
 
