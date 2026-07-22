@@ -99,7 +99,14 @@ MOBILE_ENABLED=1
 > 💡 `deploy.sh install` يولّد مفاتيح VAPID تلقائياً ويكتبها في `.env`. لو أردت إعادة توليدها يدوياً:
 > ```bash
 > cd /opt/network-monitor/backend
-> node -e "console.log(require('web-push').generateVAPIDKeys())"
+> node -e "
+> const crypto = require('crypto');
+> const privateKey = crypto.randomBytes(32);
+> const publicKey = crypto.createECDH('prime256v1').setPrivateKey(privateKey).getPublicKey('uncompressed');
+> function toBase64Url(buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''); }
+> console.log('PUBLIC=' + toBase64Url(publicKey.slice(1)));
+> console.log('PRIVATE=' + toBase64Url(privateKey));
+> "
 > ```
 
 بعد التعديل:
