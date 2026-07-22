@@ -60,7 +60,7 @@ sudo bash deploy.sh install
 ### 👉 ما سيفعله السكريبت تلقائياً:
 1. ✅ **كشف التوزيعة** ومدير الحزم المناسب (apt/dnf/yum/pacman/apk/zypper)
 2. ✅ **تحديث الحزم** (apt update + upgrade على Debian-based)
-3. ✅ تثبيت **الأدوات الأساسية**: git, curl, wget, ca-certificates, sudo, gnupg
+3. ✅ تثبيت **الأدوات الأساسية**: git, curl, wget, ca-certificates, sudo, gnupg, **traceroute**
 4. ✅ تثبيت **أدوات البناء**: python3, make, g++/gcc (ضرورية لـ better-sqlite3)
 5. ✅ تثبيت **Node.js 20 LTS** (عبر NodeSource على Debian/RHEL، أو مدير الحزم على الباقي)
 6. ✅ تثبيت **PM2** عالمياً (إدارة العمليات)

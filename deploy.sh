@@ -162,26 +162,26 @@ install_system_tools() {
     log "تحديث فهرس الحزم وتحديث النظام..."
     pkg_update
 
-    log "تثبيت الأدوات الأساسية (git, curl, wget, ca-certificates, sudo)..."
+    log "تثبيت الأدوات الأساسية (git, curl, wget, ca-certificates, sudo, traceroute)..."
     case "$OS_FAMILY" in
         debian)
-            pkg_install git curl wget ca-certificates sudo gnupg lsb-release
+            pkg_install git curl wget ca-certificates sudo gnupg lsb-release traceroute
             ;;
         rhel)
-            pkg_install git curl wget ca-certificates sudo gnupg2
+            pkg_install git curl wget ca-certificates sudo gnupg2 traceroute
             # on RHEL/CentOS قد تحتاج EPEL
             if command -v dnf &> /dev/null; then
                 dnf install -y epel-release 2>/dev/null || true
             fi
             ;;
         arch)
-            pkg_install git curl wget ca-certificates sudo gnupg
+            pkg_install git curl wget ca-certificates sudo gnupg traceroute
             ;;
         alpine)
-            pkg_install git curl wget ca-certificates sudo gnupg bash
+            pkg_install git curl wget ca-certificates sudo gnupg bash traceroute
             ;;
         suse)
-            pkg_install git curl wget ca-certificates sudo gpg2
+            pkg_install git curl wget ca-certificates sudo gpg2 traceroute
             ;;
     esac
     log "الأدوات الأساسية مثبّتة."
