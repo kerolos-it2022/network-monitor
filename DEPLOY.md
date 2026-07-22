@@ -203,7 +203,105 @@ sudo certbot --nginx -d monitor.company.com
 
 ---
 
-## 💾 النسخ الاحتياطي للبيانات
+## 🌐 **بدون دومين حقيقي؟ — 3 خيارات للعمل على الشبكة المحلية مع HTTPS**
+
+> **Let's Encrypt يتطلب دومين عام صالح.** لو لم يكن لديك دومين، لديك هذه الحلول:
+
+### 🥇 الخيار 1: **mkcert** — الأفضل للتطوير المحلي (مُوصى به)
+يُنشئ شهادة **موثوقة محلياً** بدون تحذيرات المتصفح، ويعمل مع PWA/Web Push.
+
+```bash
+# 1. تثبيت mkcert
+sudo apt install libnss3-tools
+curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
+chmod +x mkcert-v*-linux-amd64 && sudo mv mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+
+# 2. إنشاء CA محلي وشهادة لـ net-monitor.local
+mkcert -install
+mkcert net-monitor.local localhost 127.0.0.1 192.168.1.50
+# (ضع IP السيرفر الحقيقي مكان 192.168.1.50)
+
+# ينتج: net-monitor.local+3.pem و net-monitor.local+3-key.pem
+```
+
+**إعداد Nginx:**
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name net-monitor.local;
+
+    ssl_certificate /path/to/net-monitor.local+3.pem;
+    ssl_certificate_key /path/to/net-monitor.local+3-key.pem;
+
+    location / {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+server {
+    listen 80;
+    server_name net-monitor.local;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+**حل اسم الدومين محلياً** — على **كل جهاز** سيصل للنظام، أضف في `/etc/hosts` (لينكس/ماك) أو `C:\Windows\System32\drivers\etc\hosts` (ويندوز):
+```
+192.168.1.50  net-monitor.local
+```
+(ضع IP السيرفر الحقيقي)
+
+✅ **النتيجة:** HTTPS موثوق محلياً، PWA/Web Push يعملان، لا تحذيرات متصفح.
+
+---
+
+### 🥈 الخيار 2: **Self-Signed Certificate** — سريع لكن مع تحذير متصفح
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/net-monitor.key \
+  -out /etc/ssl/certs/net-monitor.crt \
+  -subj "/CN=net-monitor.local" \
+  -addext "subjectAltName=DNS:net-monitor.local,DNS:localhost,IP:127.0.0.1,IP:192.168.1.50"
+```
+**العيب:** المتصفح سيظهر تحذير "Your connection is not private" ويجب النقر **Advanced → Proceed** في كل متصفح/جهاز.
+
+---
+
+### 🥉 الخيار 3: **أنفاق آمنة (Tailscale / ngrok / Cloudflare Tunnel)** — للوصول من خارج الشبكة بدون دومين
+| الأداة | الميزة | HTTPS |
+|--------|--------|-------|
+| **Tailscale** | VPN mesh مجاني، يعطيك `https://device-name.tailnet.ts.net` | ✅ تلقائي |
+| **ngrok** | نفق سريع: `ngrok http 4000` → يعطيك `https://xxx.ngrok.io` | ✅ تلقائي |
+| **Cloudflare Tunnel** | `cloudflared tunnel run` → دومين مجاني `*.trycloudflare.com` | ✅ تلقائي |
+
+**مثال Tailscale (الأسهل للوصول من أي مكان):**
+```bash
+# على السيرفر:
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+# سيعطيك: https://your-device.tailnet.ts.net
+# يعمل من أي جهاز عليه Tailscale
+```
+
+---
+
+## 📋 ملخص سريع: ماذا تختار؟
+
+| السيناريو | الحل الأنسب |
+|------------|-------------|
+| **تطوير/اختبار على الشبكة المحلية فقط** | **mkcert + hosts file** (لا تحذيرات، يعمل PWA/Web Push) |
+| **وصول سريع مؤقت من خارج الشبكة** | **ngrok** أو **Cloudflare Tunnel** |
+| **وصول دائم من أي مكان بدون دومين** | **Tailscale** (يمنحك دومين `*.ts.net` مع HTTPS تلقائي) |
+| **إنتاج حقيقي لعملاء/شركة** | **اشترِ دومين + Let's Encrypt** (الخيار الاحترافي) |
+
+---
 
 قاعدة البيانات موجودة في: `/opt/network-monitor/database/monitoring.db`
 
