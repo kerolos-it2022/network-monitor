@@ -394,6 +394,56 @@ EOF
         sed -i.bak "s|^SESSION_SECRET=.*|SESSION_SECRET=$secret|g" "$env_file"
         log "تم توليد SESSION_SECRET عشوائي وتخزينه في backend/.env"
     fi
+
+    # توليد مفاتيح VAPID لـ Web Push (PWA) إن لم تكن موجودة
+    if ! grep -q "^VAPID_PUBLIC_KEY=" "$env_file" || ! grep -q "^VAPID_PRIVATE_KEY=" "$env_file"; then
+        log "توليد مفاتيح VAPID لـ Web Push (PWA)..."
+        local vapid_keys=""
+        if command -v node &> /dev/null && command -v npm &> /dev/null; then
+            # محاولة استخدام web-push إذا كان مثبتاً
+            if npm list web-push >/dev/null 2>&1; then
+                vapid_keys=$(node -e "const webpush = require('web-push'); const keys = webpush.generateVAPIDKeys(); console.log('PUBLIC=' + keys.publicKey); console.log('PRIVATE=' + keys.privateKey);")
+            else
+                # تثبيت web-push مؤقتاً أو استخدام crypto الأصلي
+                vapid_keys=$(node -e "
+                    const crypto = require('crypto');
+                    const privateKey = crypto.randomBytes(32);
+                    const ecdh = crypto.createECDH('prime256v1');
+                    ecdh.setPrivateKey(privateKey);
+                    const publicKey = ecdh.getPublicKey();
+                    // تحويل إلى base64url (بدون padding)
+                    function toBase64Url(buf) {
+                        return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+                    }
+                    console.log('PUBLIC=' + toBase64Url(publicKey.slice(1))); // إزالة البايت الأول (0x04)
+                    console.log('PRIVATE=' + toBase64Url(privateKey));
+                ")
+            fi
+        fi
+        
+        if [[ -n "$vapid_keys" ]]; then
+            local pub_key=$(echo "$vapid_keys" | grep "^PUBLIC=" | cut -d= -f2)
+            local priv_key=$(echo "$vapid_keys" | grep "^PRIVATE=" | cut -d= -f2)
+            if [[ -n "$pub_key" && -n "$priv_key" ]]; then
+                # إضافة مفاتيح VAPID إلى .env
+                {
+                    echo ""
+                    echo "# PWA / Web Push (VAPID) - تم توليدها تلقائياً"
+                    echo "VAPID_PUBLIC_KEY=$pub_key"
+                    echo "VAPID_PRIVATE_KEY=$priv_key"
+                    echo "VAPID_SUBJECT=mailto:admin@example.com"
+                    echo "MOBILE_ENABLED=1"
+                } >> "$env_file"
+                log "تم توليد مفاتيح VAPID وتخزينها في backend/.env"
+                log "VAPID_PUBLIC_KEY: ${pub_key:0:20}..."
+            else
+                warn "فشل استخراج مفاتيح VAPID من node. ستحتاج لتوليدها يدوياً."
+            fi
+        else
+            warn "Node.js غير متاح لتوليد مفاتيح VAPID. ستحتاج لتوليدها يدوياً لاحقاً."
+        fi
+    fi
+
     warn "تذكير: عدّل DEFAULT_ADMIN_PASSWORD في backend/.env إلى كلمة مرور قوية!"
 }
 
