@@ -22,14 +22,13 @@ RUN npm ci --production && npm cache clean --force
 
 # Copy source code
 COPY src/ ./src/
-COPY database/ ./database/
+
+# Create database directory with proper permissions
+RUN mkdir -p /app/database && chown -R node:node /app
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs \
     && adduser -S nodejs -u 1001 -G nodejs
-
-# Create database directory with proper permissions
-RUN mkdir -p /app/database && chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs
