@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  network-monitor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: network-monitor
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - SESSION_SECRET=${SESSION_SECRET}
+      - DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
+      - DB_PATH=/app/database/monitoring.db
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - WHATSAPP_API_URL=${WHATSAPP_API_URL}
+      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
+      - WHATSAPP_TO_NUMBER=${WHATSAPP_TO_NUMBER}
+      - MOBILE_ENABLED=${MOBILE_ENABLED}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=${VAPID_SUBJECT}
+    volumes:
+      - ./database:/app/database
+      - ./backend/.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - network-monitor-net
+
+  # Optional: Reverse proxy with SSL (using Caddy)
+  # caddy:
+  #   image: caddy:2-alpine
+  #   container_name: network-monitor-caddy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     - network-monitor
+  #   networks:
+  #     - network-monitor-net
+
+networks:
+  network-monitor-net:
+    driver: bridge
+
+# volumes:
+#   caddy_data:
+#   caddy_config:

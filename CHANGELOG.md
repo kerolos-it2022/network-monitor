@@ -5,6 +5,37 @@
 التنسيق مستند إلى [Keep a Changelog](https://keepachangelog.com/ar/1.0.0/)،
 وهذا المشروع يتبع [Semantic Versioning](https://semver.org/lang/ar/).
 
+## [2.1.0] - 2026-07-23
+
+### 🚀 الميزات الجديدة
+
+#### 🔄 نظام التحديثات من GitHub (GitHub Updates)
+- **فحص التحديثات** - التحقق من وجود إصدارات جديدة عبر GitHub API
+- **عرض سجل التغييرات** - عرض Changelog في مودال تفاعلي
+- **تحديث بنقرة واحدة** - Git Pull + npm install + PM2 Restart
+- **سكريبت التحديث (update.sh)** - حفظ التغييرات المحلية، تحديث التبعيات، إعادة تشغيل PM2
+- **اختيار الفرع** - دعم main/develop/master
+
+#### 🐳 دعم Docker
+- **Dockerfile** - صورة محسنة مع health check
+- **docker-compose.yml** - نشر كامل مع volumes وhealthcheck
+- **Dockerfile** محسن مع multi-stage build
+
+- **Dockerfile** يحتوي على health check
+- **docker-compose.yml** مع volumes وhealthcheck
+
+#### 🔧 التحسينات التقنية
+- **إصلاح عرض التحديثات** - إظهار رقم الإصدار السيمانتك (مثل 2.1.0) بدلاً من commit hash
+- **معالجة خطأ الفرع** - التحقق من وجود الفرع على البعيد قبل الفحص
+- **اقتراح الفرع الافتراضي** - اقتراح الفرع الافتراضي عند اختيار فرع غير موجود
+- **تحسين GitHub API** - جلب التاجات والإصدارات بشكل صحيح
+
+### 🐛 إصلاحات الأخطاء
+- ✅ إصلاح خطأ `isGitRepo is not defined` في `/api/update/status`
+- ✅ إصلاح خطأ `checkBranchExists` عند فحص فرع غير موجود
+- ✅ إصلاح خطأ `SyntaxError` في `checkBranchExists` function
+- ✅ إصلاح عرض الإصدار الحالي - الآن يقرأ من package.json بدلاً من git commit hash
+
 ## [2.0.0] - 2026-07-23
 
 ### 🚀 الميزات الرئيسية الجديدة
