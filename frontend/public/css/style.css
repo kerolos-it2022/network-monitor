@@ -91,6 +91,16 @@ body {
 }
 .filters-bar input { flex: 1; min-width: 200px; }
 
+/* تنسيق قوائم الترتيب في لوحة التحكم */
+.sort-select {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+}
+
 /* ===== مبدّل نمط العرض (بطاقات / جدول) ===== */
 .view-toggle {
   display: inline-flex;
