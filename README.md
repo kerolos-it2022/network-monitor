@@ -1,147 +1,325 @@
-# نظام مراقبة أجهزة الشبكة المحلية
+# 📡 نظام مراقبة أجهزة الشبكة المحلية - Network Monitor
 
-تطبيق ويب لمراقبة حالة أجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات…)
-بشكل لحظي، مع إدارة كاملة لبيانات الأجهزة ومواقعها، وإشعارات فورية عبر **تلجرام** و**واتساب**
-و**تطبيق الموبايل (PWA)** عند انقطاع أو عودة أي جهاز.
+[![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](docker-compose.yml)
+[![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
+[![CI/CD](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> ✨ **جديد في الإصدار 1.1**: تطبيق ويب تدريجي (PWA) قابل للتثبيت على الهاتف مع إشعارات Web Push فورية
-> عبر VAPID — تعمل حتى وإذا كان المتصفح/التطبيق مغلقاً.
+> **نظام مراقبة احترافي** لأجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات...) مع مراقبة لحظية، إدارة شاملة، وإشعارات فورية عبر **Telegram** و **WhatsApp** و **تطبيق الموبايل (PWA)**.
 
----
-
-## ✨ المزايا
-
-- 📊 مراقبة لحظية لأي بروتوكول (Ping / HTTP / HTTPS / TCP Port)
-- 📱 **تطبيق PWA قابل للتثبيت** على أندروند/iOS/سطح المكتب
-- 🔔 **إشعارات Web Push فورية** عبر VAPID (تعمل حتى والتطبيق مغلق)
-- 🤖 إشعارات متوازية عبر تلجرام وواتساب
-- 🛠️ أدوات شبكة مباشرة (Ping + Tracert) ببث SSE خط بخط
-- 🌓 وضع ليلي/نهاري + واجهة عربية RTL كاملة
-- 🔒 فحص تلقائي لـ HTTP/HTTPS عند إضافة كل جهاز + زر فتح فوري للواجهة
-- 📈 رسوم بيانية للاستجابة و Uptime% + سجل الانقطاعات
+> 🌟 **الإصدار الحالي: v2.1.1** - تحديثات GitHub، دعم Docker، CI/CD، Network Discovery، إصلاحات Docker Build.
 
 ---
 
-## 🧰 المتطلبات
+## 📋 **جدول المحتويات**
 
-- **Node.js 18+** (موصى به 20 LTS).
-- **Python 3** + مكتبة `sqlite3` (مع أداة `sqlite3` CLI لتنفيذ مخطط قاعدة البيانات).
-- **pm2** (للإنتاج): `npm install -g pm2`.
-- **متصفح حديث** يدعم Service Workers و Web Push (Chrome 90+, Firefox 90+, Safari 16.4+, Edge 90+) — للاستفادة من PWA وإشعارات الموبايل.
-- **أدوات البناء** (لترجمة better-sqlite3):
-  - Debian/Ubuntu: `sudo apt install -y python3 make g++ build-essential`
-  - RHEL/CentOS/Fedora: `sudo dnf install -y python3 make gcc gcc-c++`
-  - Arch: `sudo pacman -S python make gcc`
-  - Alpine: `sudo apk add python3 make g++ build-base`
-  - openSUSE: `sudo zypper install python3 make gcc gcc-c++`
+- [✨ المميزات الرئيسية](#-المميزات-الرئيسية)
+- [🎯 المتطلبات](#-المتطلبات)
+- [🚀 التثبيت السريع](#-التثبيت-السريع)
+- [🐳 النشر عبر Docker](#-النشر-عبر-docker)
+- [🔄 نظام التحديثات من GitHub](#-نظام-التحديثات-من-github)
+- [🔍 Network Discovery (اكتشاف الشبكة)](#-network-discovery-اكتشاف-الشبكة)
+- [🔄 CI/CD Pipeline](#-cicd-pipeline)
+- [🤖 إعداد بوت تيليجرام](#-إعداد-بوت-تيليجرام)
+- [📱 إشعارات الموبايل (PWA + Web Push)](#-إشعارات-الموبايل-pwa--web-push)
+- [🐧 النشر على سيرفر Linux](#-النشر-على-سيرفر-linux)
+- [🔧 إعدادات متقدمة](#-إعدادات-متقدمة)
+- [📁 هيكل المشروع](#-هيكل-المشروع)
+- [🔌 مرجع API](#-مرجع-api)
+- [✅ اختبار سريع](#-اختبار-سريع)
+- [🛡️ الأمان](#️-الأمان)
+- [🗺️ خارطة الطريق](#️-خارطة-الطريق)
 
 ---
 
-## 🚀 خطوات التشغيل المحلي
+## ✨ **المميزات الرئيسية**
 
-### 1) تثبيت Node.js
-نزّل Node.js 18+ من https://nodejs.org ثم تأكد من التثبيت:
+| الميزة | الوصف |
+|----------|---------|
+| 📊 **مراقبة لحظية** | Ping / HTTP / HTTPS / TCP Port كل 10 ثوانٍ (قابل للتعديل) |
+| 📱 **PWA جاهز** | تثبيت على Android/iOS/Desktop، يعمل أوفلاين |
+| 🔔 **إشعارات فورية** | Telegram + WhatsApp + Web Push (VAPID) |
+| 🌐 **واجهة عربية RTL** | دعم كامل للغة العربية، وضع ليلي/نهاري |
+| 📊 **رسوم بيانية** | زمن الاستجابة، Uptime%، سجل الانقطاعات |
+| 🔍 **أدوات الشبكة** | Ping + Tracert مباشر عبر SSE |
+| 🔐 **أمان عالي** | bcrypt، Prepared Statements، Sessions آمنة |
+| 🐳 **Docker Ready** | صورة محسنة، docker-compose، health checks |
+| 🔄 **CI/CD** | GitHub Actions، Docker Hub، Deploy تلقائي |
+| 🔄 **تحديثات GitHub** | تحديث بنقرة واحدة من لوحة التحكم |
+| 🔍 **Network Discovery** | اكتشاف تلقائي للأجهزة على الشبكة |
+
+---
+
+## 🎯 **المتطلبات**
+
+| المتطلب | الإصدار | ملاحظات |
+|-----------|---------|---------|
+| **Node.js** | 20 LTS أو أعلى | [تحميل](https://nodejs.org/) |
+| **Python 3** | 3.8+ | لبناء `better-sqlite3` |
+| **sqlite3 CLI** | - | لإنشاء قاعدة البيانات |
+| **pm2** | أحدث إصدار | `npm install -g pm2` |
+| **Git** | - | لاستنساخ المشروع |
+| **متصفح حديث** | Chrome 90+ / Firefox 90+ / Safari 16.4+ / Edge 90+ | لـ PWA و Web Push |
+
+### أدوات البناء (لبناء `better-sqlite3`):
+| النظام | الأمر |
+|----------|-------|
+| **Debian/Ubuntu/Mint** | `sudo apt install -y python3 make g++ build-essential` |
+| **RHEL/CentOS/Fedora/Rocky/Alma** | `sudo dnf install -y python3 make gcc gcc-c++` |
+| **Arch/Manjaro** | `sudo pacman -S python make gcc` |
+| **Alpine** | `sudo apk add python3 make g++ build-base` |
+| **openSUSE** | `sudo zypper install python3 make gcc gcc-c++` |
+
+---
+
+## 🚀 **التثبيت السريع (3 خطوات)**
+
+### **الطريقة الأولى: التثبيت المحلي (للتطوير/الاختبار)**
+
 ```bash
-node -v   # يجب أن يطبع v18.x أو أعلى
-```
+# 1. استنساخ المشروع
+git clone https://github.com/kerolos-it2022/network-monitor.git
+cd network-monitor
 
-### 2) إنشاء قاعدة البيانات
-من جذر المشروع (`network-monitor/`):
-```bash
+# 2. إنشاء قاعدة البيانات
 mkdir -p database
 sqlite3 database/monitoring.db < database/schema.sql
-```
-> على ويندوز إن لم تتوفر `sqlite3`: افتح ملف `database/monitoring.db` الجديد (ملف فارغ)
-> في "DB Browser for SQLite" ثم نفّذ محتوى `database/schema.sql` عبر تبويب "Execute SQL".
 
-### 3) إعداد متغيرات البيئة
-انسخ ملف المثال وعدّله:
-```bash
+# 3. إعداد متغيرات البيئة
 cp backend/.env.example backend/.env
-```
-افتح `backend/.env` وعدّل:
-- `SESSION_SECRET`: سلسلة عشوائية طويلة (مهم للأمان).
-- `DEFAULT_ADMIN_USERNAME` و `DEFAULT_ADMIN_PASSWORD`: حساب المدير الأول.
-- (اختياري) `TELEGRAM_BOT_TOKEN` و `TELEGRAM_CHAT_ID` (انظر القسم التالي).
-- (اختياري) إعدادات واتساب إن وُجد مزود.
+# عدّل backend/.env بأدواتك المفضلة (nano/vim/code)
 
-### 4) تثبيت حزم الخادم
-```bash
-cd backend
-npm install
+# 4. تثبيت التبعيات وتشغيل
+cd backend && npm install
+node src/seedAdmin.js    # إنشاء مدير افتراضي
+npm start                # تشغيل الخادم
 ```
 
-### 5) إنشاء حساب المدير الافتراضي (مرة واحدة فقط)
-```bash
-node src/seedAdmin.js
-```
-> تشغيله مرّتين لن يُنشئ مستخدماً مكرراً — السكريبت يتحقق من وجود مستخدم قبل الإدراج.
-
-### 6) تشغيل الخادم
-```bash
-node src/server.js
-```
-سينتج عنه رسالة مثل:
-```
-Server running on port 4000
-Database connection OK.
-Monitoring engine started (every 10s tick).
-```
-
-### 7) فتح الواجهة
-بعد تشغيل الخادم:
-
-| الصفحة | الرابط |
-|---|---|
-| الصفحة العامة (عرض حالة الأجهزة) | http://localhost:4000/ |
-| تسجيل الدخول للوحة التحكم | http://localhost:4000/admin/login.html |
-| لوحة التحكم (بعد تسجيل الدخول) | http://localhost:4000/admin/dashboard.html |
-
-> قبل تفعيل T8.2 (الموجود في `server.js`)، كان الفرونت إند يُفتح مباشرة كملفات HTML —
-> الآن يُخدَم الموقعان معًا من نفس خادم Express على المنفذ `4000`.
+> **📝 ملاحظة**: على Windows، إذا لم تتوفر `sqlite3`، استخدم [DB Browser for SQLite](https://sqlitebrowser.org/) لاستيراد `database/schema.sql`.
 
 ---
 
-## 🤖 إعداد بوت تلجرام (للإشعارات)
+### **الوصول للواجهات**
 
-1. من تلجرام، ابحث عن **@BotFather** وابدأ محادثة.
-2. أرسل `/newbot` واتبع التعليمات لإنشاء بوت جديد.
-3. ستحصل على **Bot Token** بالشكل `123456789:ABC-DEF…`. 
-   ضعه في `backend/.env` تحت `TELEGRAM_BOT_TOKEN`.
-4. لإيجاد **Chat ID**:
-   - أرسل أي رسالة إلى البوت الذي أنشأته.
-   - افتح في المتصفح: `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`
-   - ابحث في الاستجابة عن `"chat":{"id":<رقم>}` — هذا الرقم هو `TELEGRAM_CHAT_ID`.
-   - للقنوات/المجموعات: أضف البوت كمسؤول ثم استخدم الـ Chat ID بالسالب (`-100123…`).
-5. من لوحة تحكم المدير (تبويب "الإشعارات")، فعّل تلجرام وضع الـ Token و Chat ID واحفظ.
-
-> ملاحظة: النظام يعمل بالكامل حتى لو كانت متغيرات تلجرام/واتساب فارغة —
-> تحدّث الإعدادات جملة في `.env` أو من لوحة التحكم وتُحفظ في الجدول `notification_settings`.
+| الواجهة | الرابط |
+|----------|--------|
+| 🌐 **الصفحة العامة** (عرض حالة الأجهزة) | `http://localhost:4000/` |
+| 🔐 **تسجيل الدخول** | `http://localhost:4000/admin/login.html` |
+| 📊 **لوحة التحكم** | `http://localhost:4000/admin/dashboard.html` |
 
 ---
 
-## 📱 إعداد إشعارات الموبايل (PWA + Web Push)
+## 🐳 **النشر عبر Docker (الأسهل والأسرع)**
 
-النظام الآن **PWA قابل للتثبيت** على أي جهاز (أندرويد/iOS/سطح المكتب)، مع إشعارات Web Push فورية
-عبر **VAPID** (بدون الحاجة لـ Firebase SDK أو حساب Google).
+### 🚀 النشر السريع بـ Docker Compose
 
-### 1) توليد مفاتيح VAPID (مرة واحدة على الخادم)
+```bash
+# 1. استنساخ
+git clone https://github.com/kerolos-it2022/network-monitor.git
+cd network-monitor
 
+# 2. إعداد البيئة
+cp backend/.env.example backend/.env
+# عدّل backend/.env بالقيم المطلوبة
+
+# 3. بناء وتشغيل
+docker-compose up -d --build
+
+# التحقق
+docker-compose logs -f
+```
+
+### 📋 **الخدمات في docker-compose.yml**
+| الخدمة | البورت | الوصف |
+|---------|--------|-------|
+| `network-monitor` | 4000 | التطبيق الرئيسي |
+| (اختياري) `caddy` | 80/443 | Reverse Proxy + HTTPS تلقائي |
+
+### 📋 **Dockerfile (مُحسّن)**
+- **Base**: `node:20-alpine` (خفيف، آمن)
+- **Build tools**: python3, make, g++ (لبناء better-sqlite3)
+- **Non-root user**: `nodejs:1001`
+- **Health Check**: كل 30 ثانية على `/api/health`
+
+### Docker Compose (جاهز للإنتاج)
+```yaml
+services:
+  network-monitor:
+    build: ./backend
+    ports: ["4000:4000"]
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    volumes:
+      - ./database:/app/database
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+```
+
+### أوامر Docker المفيدة
+```bash
+# بناء بدون كاش
+docker-compose build --no-cache
+
+# عرض السجلات
+docker-compose logs -f network-monitor
+
+# إعادة تشغيل
+docker-compose restart network-monitor
+
+# تحديث للصورة الجديدة
+docker-compose pull && docker-compose up -d --build
+
+# تنظيف الصور القديمة
+docker system prune -a
+```
+
+---
+
+## 🔄 **نظام التحديثات من GitHub (GitHub Updates)**
+
+### ✨ المميزات
+- **فحص التحديثات** - التحقق من وجود إصدارات جديدة عبر GitHub API
+- **عرض سجل التغييرات** - عرض Changelog في مودال تفاعلي
+- **تحديث بنقرة واحدة** - Git Pull + npm install + PM2 Restart
+- **سكريبت التحديث (update.sh)** - حفظ التغييرات المحلية، تحديث التبعيات، إعادة تشغيل PM2
+
+### 🎯 كيفية الاستخدام
+1. افتح لوحة التحكم → تبويب **"🔄 التحديثات"**
+2. اختر الفرع (main/develop/master)
+3. اضغط **"🔍 فحص التحديثات"**
+4. إذا وجد تحديث → اضغط **"🚀 تطبيق التحديث"**
+4. النظام سينفذ: `git pull` → `npm install` → `pm2 restart`
+
+### 📋 سكريبت التحديث (update.sh)
+```bash
+# على السيرفر:
+cd /opt/network-monitor
+./update.sh
+```
+
+---
+
+## 🔍 **Network Discovery (اكتشاف الشبكة)**
+
+### 🔍 المميزات
+- **Ping Sweep** - مسح نطاق الشبكة بالكامل لاكتشاف الأجهزة المستجيبة
+- **Port Scanning** - مسح 24 منفذاً شائعاً (SSH, HTTP, HTTPS, RDP, SMB, RTSP، إلخ)
+- **MAC Vendor Lookup** - تحديد الشركة المصنعة من عنوان MAC (50+ بائع معروف)
+- **Reverse DNS Lookup** - حل اسم المضيف عبر DNS العكسي
+- **SMB/NetBIOS Name Resolution** - استخراج اسم الجهاز الحقيقي عبر nbtstat (Windows) / nmblookup (Linux)
+- **Device Type Detection** - تحديد نوع الجهاز تلقائياً (Camera, Printer, Router, Server, NAS، إلخ)
+
+### 🎯 كيفية الاستخدام
+1. افتح لوحة التحكم → تبويب **"🔍 اكتشاف الأجهزة"**
+2. أدخل نطاق الشبكة (مثال: `192.168.1.0/24`)
+3. اختر الخيارات: مسح المنافذ، استعلام SNMP
+3. اضغط **"🚀 بدء المسح"**
+4. ستظهر الأجهزة المكتشفة مع:
+   - IP، اسم مقترح، النوع، الشركة المصنعة (MAC)
+   - المنافذ المفتوحة، زمن الاستجابة
+4. حدد الأجهزة → اضغط **"➕ إضافة للمراقبة"**
+
+---
+
+## 🔄 **CI/CD Pipeline (GitHub Actions)**
+
+### 🔧 Pipeline Stages
+| Job | الوصف |
+|-----|-------|
+| `lint-and-test` | فحص الكود والاختبارات |
+| `build` | بناء Docker Image ورفعه لـ GHCR |
+| `deploy` | نشر تلقائي للخادم عبر SSH |
+| `release` | تحديث ملاحظات الإصدار تلقائياً |
+| `notify` | إشعارات Discord |
+
+### 📋 الملف: `.github/workflows/ci-cd.yml`
+```yaml
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  build:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # مطلوب لـ GHCR
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          script: |
+            cd /opt/network-monitor
+            git pull origin main
+            cd backend && npm ci --production
+            pm2 restart network-monitor --update-env
+```
+
+---
+
+## 🤖 **إعداد بوت تيليجرام (للإشعارات)**
+
+> **⚡ اختياري** - النظام يعمل بدونه، لكن الإشعارات تتطلبه.
+
+1. افتح **[BotFather](https://t.me/BotFather)** في تيليجرام
+2. أرسل `/newbot` واتبع التعليمات
+3. احصل على **Bot Token** (مثال: `123456789:ABC-DEF...`)
+3. احصل على **Chat ID**:
+   - أرسل رسالة للبوت
+   - افتح: `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`
+   - ابحث عن `"chat":{"id":123456789}` → هذا هو Chat ID
+4. أضف إلى `backend/.env`:
+   ```env
+   TELEGRAM_BOT_TOKEN=123456789:ABC-DEF...
+   TELEGRAM_CHAT_ID=123456789
+   ```
+
+---
+
+## 📱 **إشعارات الموبايل (PWA + Web Push)**
+
+النظام **PWA جاهز** - يعمل على Android/iOS/Desktop مع إشعارات فورية عبر **VAPID** (بدون Firebase).
+
+### 1️⃣ توليد مفاتيح VAPID (مرة واحدة)
 ```bash
 cd backend
 node -e "console.log(require('web-push').generateVAPIDKeys())"
 ```
-
-سيُطبع:
-```
+**النتيجة:**
+```json
 {
-  publicKey: 'BHTp...qpY',
-  privateKey: 'u2vn...wS4'
+  "publicKey": "BHTp...qpY",
+  "privateKey": "u2vn...wS4"
 }
 ```
 
-### 2) أضفها إلى `backend/.env`
-
+### 2️⃣ إضافة المفاتيح لـ `.env`
 ```env
 VAPID_PUBLIC_KEY=BHTp...qpY
 VAPID_PRIVATE_KEY=u2vn...wS4
@@ -149,41 +327,41 @@ VAPID_SUBJECT=mailto:you@example.com
 MOBILE_ENABLED=1
 ```
 
-> 💡 `deploy.sh install` يقوم بكل ذلك تلقائياً على سيرفر Linux.
+### 3️⃣ تفعيل من لوحة التحكم
+1. تسجيل دخول → تبويب **الإشعارات**
+2. تفعيل **"إشعارات الهاتف مفعّلة"**
+3. حفظ → اضغط **🔔 اختبار إشعار الهاتف**
 
-### 3) فعّلها من لوحة التحكم
+### 4️⃣ على هاتفك (Android/iOS)
+1. افتح `http://<IP-السيرفر>:4000` من **Chrome** (Android) أو **Safari** (iOS 16.4+)
+2. اضغط **🔔 تفعيل الإشعارات** → اسمح
+3. اضغط قائمة المتصفح (⋮) → **Add to Home Screen** لتثبيت التطبيق
+3. **اختبر**: من لوحة التحكم → 🔔 اختبار إشعار الهاتف
 
-1. سجّل الدخول → تبويب **الإشعارات**
-2. فعّل **"إشعارات الهاتف مفعّلة"**
-3. احفظ، واضغط **🔔 اختبار إشعار الهاتف** للتأكد
-
-### 4) على هاتفك
-
-1. افتح **`http://<IP-الخادم>:4000`** من متصفح Chrome على الهاتف
-2. اضغط زر **🔔 تفعيل الإشعارات** أعلى الصفحة
-3. اسمح بالإشعارات → سيظهر إشعار تجريبي للتأكيد
-4. اضغط قائمة Chrome (⋮) → **Add to Home Screen** لتثبيت التطبيق
-
-🎉 الآن ستصل الإشعارات حتى والتطبيق مغلق.
-
-> ⚠️ **iOS**: متاح على iOS 16.4+ عبر Safari فقط. الأجهزة الأقدم لا تدعم Web Push لكن التطبيق يعمل كـ PWA.
+> ⚠️ **iOS**: يتطلب iOS 16.4+ و Safari. الأجهزة الأقدم لا تدعم Web Push لكن التطبيق يعمل كـ PWA.
 
 ---
 
-## 🐧 النشر على سيرفر Linux (بدون Docker)
+## 🐧 **النشر على سيرفر Linux (Production Ready)**
 
-للنشر في بيئة إنتاجية (شركتك)، استخدم السكريبت الجاهز الذي يعمل **بشكل مباشر** عبر Node.js + PM2 و**يدعم أي توزيعة Linux رئيسية**:
+يدعم **جميع التوزيعات الرئيسية** - السكريبت يكتشف التوزيعة تلقائياً:
 
-| العائلة | التوزيعات المدعومة | مدير الحزم |
-|---|---|---|
-| Debian | Ubuntu، Mint، Pop!_OS، Kali | `apt` |
-| Red Hat | RHEL، CentOS، Rocky، Alma، Fedora | `dnf`/`yum` |
-| Arch | Arch Linux، Manjaro | `pacman` |
-| Alpine | Alpine Linux | `apk` |
-| SUSE | openSUSE، SLES | `zypper` |
+| العائلة | التوزيعات | مدير الحزم |
+|----------|-----------|------------|
+| **Debian** | Ubuntu, Mint, Pop!_OS, Kali, Debian | `apt` |
+| **Red Hat** | RHEL, CentOS, Rocky, Alma, Fedora | `dnf` / `yum` |
+| **Arch** | Arch, Manjaro, EndeavourOS | `pacman` |
+| **Alpine** | Alpine Linux | `apk` |
+| **SUSE** | openSUSE, SLES | `zypper` |
+
+### 🚀 النشر السريع (5 دقائق)
 
 ```bash
-# على أي توزيعة Linux مدعومة:
+# على جهازك: ادفع الكود لـ GitHub
+git remote add origin https://github.com/kerolos-it2022/network-monitor.git
+git push -u origin main
+
+# على السيرفر:
 sudo mkdir -p /opt && sudo chown $USER:$USER /opt
 cd /opt
 git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
@@ -191,126 +369,235 @@ cd network-monitor
 sudo bash deploy.sh install
 ```
 
-السكريبت يكتشف التوزيعة تلقائياً ويثبّت: الأدوات الأساسية (git, curl, wget) + أدوات البناء (python3, make, g++) + Node.js 20 LTS + PM2 + sqlite3 + حزم الخادم + تهيئة قاعدة البيانات + تشغيل التطبيق.
+### 👉 **ما يفعله `deploy.sh install` تلقائياً:**
+1. ✅ **يكشف التوزيعة** ومدير الحزم المناسب
+2. ✅ **يحدث النظام** ويثبت الأدوات الأساسية (git, curl, traceroute, ...)
+3. ✅ يثبّت **أدوات البناء** (python3, make, g++)
+4. ✅ يثبّت **Node.js 20 LTS** (عبر NodeSource)
+4. ✅ يثبّت **PM2** عالمياً
+5. ✅ يثبّت **sqlite3 CLI**
+5. ✅ ينشئ `.env` + يولّد `SESSION_SECRET` عشوائي + **مفاتيح VAPID تلقائياً**
+6. ✅ `npm install` + بناء `better-sqlite3` للنظام المستهدف
+6. ✅ تهيئة قاعدة البيانات + إنشاء مدير افتراضي
+6. ✅ تشغيل التطبيق عبر PM2 + تفعيل البدء التلقائي (systemd/OpenRC)
+7. ✅ يعرض روابط الوصول + تعليمات الموبايل
 
-**المميزات الجديدة في `deploy.sh`:**
-- ✅ **بناء نظيف**: يحذف `node_modules` و `package-lock.json` قبل التثبيت لضمان بناء `better-sqlite3` للنظام المستهدف
-- ✅ **مسار ديناميكي**: `ecosystem.config.js` يستخدم متغير `PROJECT_DIR` ليعمل من أي مكان
-- ✅ **دعم Alpine Linux**: يستخدم `--build-from-source` للـ `better-sqlite3`
-- ✅ **تحديث متغيرات البيئة**: `pm2 restart --update-env` عند إعادة التشغيل
-- ✅ **توافق Bash واسع**: يعمل على إصدارات Bash القديمة
-
-📖 **دليل كامل بالنشر**: راجع [`DEPLOY.md`](./DEPLOY.md) — يشمل تثبيت Nginx + HTTPS، Firewall، النسخ الاحتياطي، والنشر في عدة شركات.
-
----
-
-## ▶️ التشغيل عبر PM2 (للإنتاج)
-
-```bash
-npm install -g pm2
-pm2 start ecosystem.config.js
-pm2 save
-pm2 logs network-monitor      # متابعة السجل
-pm2 stop network-monitor      # إيقاف
-pm2 restart network-monitor   # إعادة تشغيل
-```
-
-لجعله يبدأ تلقائياً مع نظام التشغيل (على لينكس/ماك):
-```bash
-pm2 startup
-pm2 save
-```
+> 💡 **مهم**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند النقل من Windows إلى Linux.
 
 ---
 
-## 📁 هيكل المشروع
+## 🔧 **إعدادات متقدمة**
+
+### 🔐 متغيرات البيئة الأساسية (`backend/.env`)
+```env
+# أساسي
+PORT=4000
+SESSION_SECRET=سلسلة_عشوائية_طويلة_جداً_مهمة_للأمان
+DB_PATH=../database/monitoring.db
+
+# المدير الافتراضي
+DEFAULT_ADMIN_USERNAME=admin
+DEFAULT_ADMIN_PASSWORD=كلمة_مرور_قوية_جداً
+
+# جلسة
+SESSION_MAX_AGE=43200000  # 12 ساعة
+
+# تيليجرام (اختياري)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+
+# واتساب (اختياري - عبر مزود)
+WHATSAPP_API_URL=
+WHATSAPP_API_TOKEN=
+WHATSAPP_TO_NUMBER=
+
+# موبايل / Web Push
+MOBILE_ENABLED=1
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:admin@example.com
+```
+
+### 🔐 توليد مفاتيح VAPID يدوياً (إذا احتجت)
+```bash
+cd backend
+node -e "
+const crypto = require('crypto');
+const privateKey = crypto.randomBytes(32);
+const publicKey = crypto.createECDH('prime256v1').setPrivateKey(privateKey).getPublicKey('uncompressed');
+function toBase64Url(buf) { return buf.toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
+console.log('PUBLIC=' + toBase64Url(Buffer.from(publicKey.slice(1))));
+console.log('PRIVATE=' + toBase64Url(privateKey));
+"
+```
+
+---
+
+## 📁 **هيكل المشروع**
 
 ```
 network-monitor/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js         نقطة بدء الخادم + إعداد session + static
-│   │   ├── db.js             اتصال better-sqlite3
-│   │   ├── seedAdmin.js      إنشاء المدير الافتراضي
-│   │   ├── routes/           مسارات API (auth, devices, locations, deviceTypes, notifications)
-│   │   ├── services/         محرك المراقبة + الفاحصون + الإشعارات + إدارة الانقطاع
-│   │   └── middleware/       requireAuth
+│   │   ├── server.js         # نقطة البداية + Express + Static
+│   │   ├── db.js             # اتصال better-sqlite3
+│   │   ├── seedAdmin.js      # إنشاء المدير الافتراضي
+│   │   ├── routes/           # مسارات API (auth, devices, locations, deviceTypes, notifications, tools, update)
+│   │   ├── services/         # محرك المراقبة + الفاحصون + الإشعارات + إدارة الانقطاع
+│   │   └── middleware/       # requireAuth
 │   ├── package.json
-│   └── .env.example
+│   ├── .env.example
+│   └── Dockerfile
 ├── frontend/
 │   └── public/
-│       ├── index.html        الصفحة العامة
-│       ├── admin/            login.html + dashboard.html
+│       ├── index.html        # الصفحة العامة
+│       ├── admin/            # login.html + dashboard.html
 │       ├── css/style.css
-│       └── js/               public-dashboard, charts, admin-*
+│       └── js/               # public-dashboard, charts, admin-*
 ├── database/
 │   └── schema.sql
-├── ecosystem.config.js       إعدادات PM2
-├── PROGRESS.md               سجل تقدم البناء (لمتابعة العمل بأي موديل آخر)
-└── README.md                 هذا الملف
+├── ecosystem.config.js       # إعدادات PM2
+├── PROGRESS.md               # سجل تقدم البناء
+├── CHANGELOG.md              # سجل التغييرات
+├── DEPLOY.md                 # دليل النشر المفصل
+├── README.md                 # هذا الملف
+├── deploy.sh                 # سكريبت النشر التلقائي
+├── update.sh                 # سكريبت التحديث التلقائي
+├── .github/workflows/ci-cd.yml  # GitHub Actions CI/CD
+├── .github/dependabot.yml    # تحديثات تلقائية للتبعيات
+├── docker-compose.yml
+├── backend/Dockerfile
+└── README.md
 ```
 
 ---
 
-## 🔌 ملخّص عقد الـ API
+## 🔌 **مرجع API**
 
-كل المسارات تبدأ بـ `/api`. المسارات المعلّمة 🔒 تتطلب جلسة تسجيل دخول.
+**Base URL**: `http://<host>:4000/api`
 
-| الطريقة | المسار | الحماية | الوصف |
-|---|---|---|---|
-| GET | `/api/health` | لا | فحص صحة الخادم |
-| POST | `/api/auth/login` | لا | تسجيل الدخول |
-| POST | `/api/auth/logout` | 🔒 | تسجيل الخروج |
-| GET | `/api/auth/me` | لا | معرفة الجلسة الحالية |
-| GET | `/api/devices` | لا | قائمة كل الأجهزة وحالتها |
-| GET | `/api/devices/:id` | لا | تفاصيل جهاز واحد |
-| GET | `/api/devices/:id/history?range=24h\|7d\|30d` | لا | سجل الحالة + Uptime + الانقطاعات |
-| POST | `/api/devices` | 🔒 | إضافة جهاز |
-| PUT | `/api/devices/:id` | 🔒 | تعديل جهاز |
-| DELETE | `/api/devices/:id` | 🔒 | حذف جهاز |
-| GET / POST / PUT / DELETE | `/api/locations` | الكتابة 🔒 | إدارة المواقع |
-| GET / POST / PUT / DELETE | `/api/device-types` | الكتابة 🔒 | إدارة أنواع الأجهزة |
-| GET / PUT | `/api/notifications/settings` | 🔒 | إعدادات قنوات الإشعار (تلجرام/واتساب/موبايل) |
-| POST | `/api/notifications/register` | لا | تسجيل جهاز موبايل لتلقي Web Push |
-| DELETE | `/api/notifications/register` | لا | إلغاء تسجيل جهاز موبايل |
-| GET | `/api/notifications/vapid-public` | لا | مفتاح VAPID العام للاشتراك في Web Push |
-| POST | `/api/notifications/test` | 🔒 | إرسال إشعار تجريبي للموبايل |
-| GET | `/api/notifications/logs` | 🔒 | آخر 100 إشعار مُرسل |
-| GET | `/api/tools/ping?ip=...` | لا | تنفيذ Ping مع بث SSE مباشر |
-| GET | `/api/tools/tracert?ip=...` | لا | تنفيذ Tracert مع بث SSE مباشر |
-
----
-
-## ✅ اختبار سريع بعد التشغيل
-
-1. افتح `http://localhost:4000/` — يجب أن تظهر الصفحة العامة (قد تكون فارغة).
-2. افتح `http://localhost:4000/admin/login.html` وسجّل الدخول ببيانات المدير من `.env`.
-3. من تبويب الأنواع أضف نوعاً (مثل "Router")، ومن تبويب المواقع أضف موقعاً.
-4. من تبويب الأجهزة أضف جهازاً بـ IP محلي (مثل `127.0.0.1`) وبروتوكول `Ping`.
-5. خلال 30 ثانية (حسب فترة الفحص الافتراضية) سيظهر الجهاز بحالة "متصل" في الصفحة العامة.
-6. من تبويب الإشعارات فعّل تلجرام وجرّب عبر إيقاف جهاز على الشبكة.
+| المسار | الطريقة | الحماية | الوصف |
+|--------|---------|---------|-------|
+| `/health` | GET | لا | فحص صحة الخادم |
+| `/auth/login` | POST | لا | تسجيل الدخول |
+| `/auth/logout` | POST | 🔒 | تسجيل الخروج |
+| `/auth/me` | GET | لا | الجلسة الحالية |
+| `/devices` | GET | لا | قائمة كل الأجهزة |
+| `/devices` | POST | 🔒 | إضافة جهاز |
+| `/devices/:id` | PUT/DELETE | 🔒 | تعديل/حذف جهاز |
+| `/devices/:id/history?range=24h\|7d\|30d` | GET | لا | سجل الحالة + Uptime |
+| `/devices/export/excel` | GET | 🔒 | تصدير Excel |
+| `/devices/import/excel` | POST | 🔒 | استيراد Excel |
+| `/locations` | GET/POST/PUT/DELETE | الكتابة 🔒 | إدارة المواقع |
+| `/device-types` | GET/POST/PUT/DELETE | الكتابة 🔒 | إدارة الأنواع |
+| `/notifications/settings` | GET/PUT | 🔒 | إعدادات الإشعارات |
+| `/notifications/register` | POST/DELETE | لا | تسجيل/إلغاء موبايل |
+| `/notifications/vapid-public` | GET | لا | مفتاح VAPID العام |
+| `/notifications/test` | POST | 🔒 | اختبار إشعار |
+| `/notifications/logs` | GET | 🔒 | آخر 100 إشعار |
+| `/tools/ping` | GET | لا | Ping مباشر (SSE) |
+| `/tools/tracert` | GET | لا | Traceroute مباشر (SSE) |
+| `/update/check` | POST | 🔒 | فحص التحديثات |
+| `/update/perform` | POST | 🔒 | تنفيذ التحديث |
+| `/update/history` | GET | لا | سجل الـ 20 commit الأخيرة |
 
 ---
 
-## 🛡️ ملاحظات أمان
+## ✅ **اختبار سريع بعد التشغيل**
 
-- كلمات المرور مشفّرة بـ `bcryptjs` (10 rounds).
-- كل استعلامات SQL عبر Prepared Statements (لاحقن SQL).
-- قنوات الإشعار تُقرأ من `process.env` أو من الجدول فقط — لا شيء مشفّر بـ hardcoded.
-- التوكنات في API الإعدادات تُرجع مقنّعة (آخر 4 خانات فقط).
-- مفاتيح VAPID الخاصة (`VAPID_PRIVATE_KEY`) محفوظة في `.env` فقط ولا تُرسل لأي عميل.
-- تسجيلات الموبايل (`mobile_registrations`) تُعطّل تلقائياً عند انتهاء صلاحيتها (404/410 من FCM).
-- فحص تلقائي لـ HTTP/HTTPS عند إضافة أي جهاز جديد (تحديث `http_accessible`/`https_accessible`).
+```bash
+# 1. فحص الصحة
+curl http://localhost:4000/api/health
+# {"success":true,"data":"ok"}
+
+# 2. افتح المتصفح
+# http://localhost:4000/          # الصفحة العامة
+# http://localhost:4000/admin/login.html  # تسجيل الدخول
+
+# 3. سجل دخول: admin / admin123
+# 4. اضغط تبويب "الأنواع" → أضف نوعاً (مثل "Router")
+# 5. اضغط تبويب "المواقع" → أضف موقعاً
+# 6. اضغط تبويب "الأجهزة" → أضف جهازاً
+#    IP: 192.168.1.1، النوع: Router، البروتوكول: ping
+# 6. انتظر 30 ثانية → سيظهر الجهاز بحالة "متصل" ✅
+
+# 7. جرّب أدوات الشبكة
+# http://localhost:4000/ → قسم "أدوات الشبكة" → Ping / Tracert
+```
 
 ---
 
-## 📌 المهام المؤجلة (خارج الإصدار الحالي)
+## 🛡️ **الأمان**
 
-- التحديث اللحظي عبر WebSocket/SSE لدفع تغييرات الحالة بدل Polling كل 10 ثوانٍ.
-- تقارير PDF/Excel قابلة للتصدير.
-- صلاحيات متعددة المستويات (Admin / Operator).
-- دعم SNMP.
-- الانتقال إلى PostgreSQL عند تجاوز بضع مئات من الأجهزة.
-- مهلة هدوء (cooldown) لتجنب سبام الإشعارات للأجهزة المتذبذبة (flapping).
+| الطبقة | الوصف |
+|--------|--------|
+| **كلمات المرور** | bcryptjs (10 rounds) |
+| **SQL Injection** | Prepared Statements فقط |
+| **Sessions** | express-session + سر عشوائي طويل |
+| **XSS/CSRF** | Helmet + SameSite Cookies |
+| **API Tokens** | مقنعة في الواجهة (آخر 4 خانات) |
+| **VAPID Keys** | خاصة في `.env` فقط، عامة في API |
+| **Mobile Registrations** | معطلة تلقائياً عند انتهاء الصلاحية (404/410 من FCM) |
 
-انظر `PROGRESS.md` لتفاصيل ما تم تنفيذه وما تأجّل.
+---
+
+## 🗺️ **خارطة الطريق**
+
+| الميزة | الحالة | الأولوية |
+|---------|--------|----------|
+| تحديثات لحظية عبر WebSocket/SSE | 📋 مخطط | عالية |
+| تقارير PDF/Excel قابلة للتصدير | 📋 مخطط | متوسطة |
+| صلاحيات متعددة (Admin / Operator) | 📋 مخطط | عالية |
+| دعم SNMP | 📋 مخطط | متوسطة |
+| الانتقال إلى PostgreSQL | 📋 مخطط | عند النمو |
+| مهلة هدوء (cooldown) للإشعارات | 📋 مخطط | متوسطة |
+
+> انظر [`PROGRESS.md`](./PROGRESS.md) لتفاصيل ما تم تنفيذه وما تأجل.
+
+---
+
+## 📚 **ملفات التوثيق المرتبطة**
+
+| الملف | الوصف |
+|-------|---------|
+| [`CHANGELOG.md`](./CHANGELOG.md) | سجل التغييرات الكامل |
+| [`DEPLOY.md`](./DEPLOY.md) | دليل النشر المفصل (Nginx، HTTPS، Firewall، Backup) |
+| [`PROGRESS.md`](./PROGRESS.md) | سجل تقدم البناء |
+| [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | تشغيل على Linux بدون Docker |
+| [`deploy.sh`](./deploy.sh) | سكريبت النشر التلقائي |
+| [`update.sh`](./update.sh) | سكريبت التحديث التلقائي |
+| [`ecosystem.config.js`](./ecosystem.config.js) | إعدادات PM2 |
+| [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) | GitHub Actions CI/CD |
+| [`.github/dependabot.yml`](.github/dependabot.yml) | تحديثات تلقائية للتبعيات |
+
+---
+
+## 🤝 **المساهمة**
+
+1. Fork المشروع
+2. أنشئ فرع: `git checkout -b feature/amazing-feature`
+2. Commit: `git commit -m 'Add amazing feature'`
+3. Push: `git push origin feature/amazing-feature`
+4. افتح Pull Request
+
+---
+
+## 📄 **الترخيص**
+
+هذا المشروع مرخص تحت رخصة **MIT** - راجع ملف [LICENSE](LICENSE) للتفاصيل.
+
+---
+
+## 🙏 **الشكر والتقدير**
+
+- [Express.js](https://expressjs.com/) - إطار العمل
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - قاعدة بيانات سريعة
+- [web-push](https://github.com/web-push-libs/web-push) - إشعارات Web Push
+- [Chart.js](https://www.chartjs.org/) - الرسوم البيانية
+- [PM2](https://pm2.keymetrics.io/) - إدارة العمليات
+
+---
+
+**⭐ إذا أعجبك المشروع، لا تنسَ إضافة نجمة على GitHub!**
+
+[⬆️ العودة للأعلى](#-نظام-مراقبة-أجهزة-الشبكة-المحلية---network-monitor)
