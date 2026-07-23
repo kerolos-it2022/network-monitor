@@ -14,6 +14,8 @@ const locationsRoutes = require('./routes/locations.routes');
 const deviceTypesRoutes = require('./routes/deviceTypes.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 const toolsRoutes = require('./routes/tools.routes');
+const scanRoutes = require('./routes/scan.routes');
+const updateRoutes = require('./routes/update.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -61,6 +63,8 @@ app.use('/api/locations', locationsRoutes);
 app.use('/api/device-types', deviceTypesRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/tools', toolsRoutes);
+app.use('/api/scan', scanRoutes);
+app.use('/api/update', updateRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {

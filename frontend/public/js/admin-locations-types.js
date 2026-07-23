@@ -2,6 +2,63 @@
 let currentLocationsSort = 'name'; // متغير عام لتخزين الترتيب الحالي للمواقع
 let currentTypesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأنواع
 
+// دالة لتحويل اسم الأيقونة إلى إيموجي
+function getIconEmoji(iconName) {
+  if (!iconName) return '❓';
+  const iconMap = {
+    'server': '🖥️',
+    'router': '🌐',
+    'switch': '🔀',
+    'firewall': '🛡️',
+    'printer': '🖨️',
+    'camera': '📷',
+    'nvr': '📹',
+    'dvr': '📼',
+    'access-point': '📡',
+    'ap': '📡',
+    'nas': '💾',
+    'ups': '🔋',
+    'sensor': '📟',
+    'phone': '📞',
+    'pc': '💻',
+    'laptop': '💻',
+    'workstation': '🖥️',
+    'vm': '☁️',
+    'cloud': '☁️',
+    'database': '🗄️',
+    'web': '🌐',
+    'mail': '📧',
+    'dns': '🔍',
+    'dhcp': '🔢',
+    'vpn': '🔐',
+    'load-balancer': '⚖️',
+    'proxy': '🔀',
+    'gateway': '🚪',
+    'modem': '📡',
+    'bridge': '🌉',
+    'repeater': '📶',
+    'extender': '📶',
+    'controller': '🎮',
+    'iot': '🏠',
+    'smart-home': '🏠',
+    'tv': '📺',
+    'display': '🖥️',
+    'projector': '📽️',
+    'scanner': '📄',
+    'fax': '📠',
+    'pos': '💳',
+    'atm': '🏧',
+    'kiosk': '🏪',
+    'default': '📦',
+    'network': '🌐',
+    'wifi': '📶',
+    'wireless': '📶',
+    'shield': '🛡️',
+  };
+  const key = iconName.toLowerCase().trim();
+  return iconMap[key] || iconMap['default'];
+}
+
 function esc(s) {
   if (s == null) return '';
   return String(s)
@@ -51,8 +108,8 @@ async function loadLocations() {
       <td>${l.id}</td>
       <td>${esc(l.name)}</td>
       <td>
-        <button class="btn" data-edit="${l.id}">تعديل</button>
-        <button class="btn btn-danger" data-del="${l.id}">حذف</button>
+        <button class="btn" data-edit="${l.id}" title="تعديل الموقع">✏️ تعديل</button>
+        <button class="btn btn-danger" data-del="${l.id}" title="حذف الموقع">🗑️ حذف</button>
       </td>
     `;
     tr.querySelector('[data-edit]').addEventListener('click', () => editLocation(l));
@@ -132,13 +189,14 @@ async function loadTypes() {
   
   for (const t of sortedData) {
     const tr = document.createElement('tr');
+    const iconEmoji = getIconEmoji(t.icon);
     tr.innerHTML = `
       <td>${t.id}</td>
       <td>${esc(t.name)}</td>
-      <td>${esc(t.icon || '-')}</td>
+      <td style="text-align:center; font-size:1.2rem;">${iconEmoji}</td>
       <td>
-        <button class="btn" data-edit="${t.id}">تعديل</button>
-        <button class="btn btn-danger" data-del="${t.id}">حذف</button>
+        <button class="btn" data-edit="${t.id}" title="تعديل النوع">✏️ تعديل</button>
+        <button class="btn btn-danger" data-del="${t.id}" title="حذف النوع">🗑️ حذف</button>
       </td>
     `;
     tr.querySelector('[data-edit]').addEventListener('click', () => editType(t));

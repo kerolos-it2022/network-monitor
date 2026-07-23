@@ -3,9 +3,11 @@ const TAB_TO_SECTION = {
   'tab-devices': 'section-devices',
   'tab-locations': 'section-locations',
   'tab-types': 'section-types',
+  'tab-discovery': 'section-discovery',
   'tab-notifications': 'section-notifications',
   'tab-logs': 'section-logs',
   'tab-profile': 'section-profile',
+  'tab-updates': 'section-updates',
 };
 
 function showSection(tabId) {
@@ -29,6 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById(tabId);
     if (el) el.addEventListener('click', () => showSection(tabId));
   });
-  // افتراضياً: قسم الأجهزة ظاهر.
+  // افتراضياً: قسم الأجهزة ظاهر (أول تبويب).
   showSection('tab-devices');
 });

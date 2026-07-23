@@ -32,21 +32,21 @@
   <!-- أدوات الفلترة والبحث + مبدّل نمط العرض + الترتيب -->
   <section class="filters-bar">
     <input id="search-input" type="search" placeholder="بحث بالاسم أو IP…" />
-    <select id="filter-type"><option value="">كل الأنواع</option></select>
-    <select id="filter-location"><option value="">كل المواقع</option></select>
-    <select id="filter-status">
+    <select id="filter-type" title="فلترة حسب نوع الجهاز"><option value="">كل الأنواع</option></select>
+    <select id="filter-location" title="فلترة حسب الموقع"><option value="">كل المواقع</option></select>
+    <select id="filter-status" title="فلترة حسب الحالة">
       <option value="">كل الحالات</option>
-      <option value="online">متصل</option>
-      <option value="offline">متوقف</option>
-      <option value="unknown">غير معروف</option>
+      <option value="online">✅ متصل</option>
+      <option value="offline">❌ متوقف</option>
+      <option value="unknown">❓ غير معروف</option>
     </select>
-    <select id="filter-sort">
-      <option value="name">ترتيب: حسب الاسم</option>
-      <option value="ip">ترتيب: حسب IP</option>
-      <option value="status">ترتيب: حسب الحالة</option>
-      <option value="type">ترتيب: حسب النوع</option>
-      <option value="location">ترتيب: حسب الموقع</option>
-      <option value="last_checked">ترتيب: حسب آخر فحص</option>
+    <select id="filter-sort" title="ترتيب الأجهزة">
+      <option value="name">🔤 ترتيب: حسب الاسم</option>
+      <option value="ip">🌐 ترتيب: حسب IP</option>
+      <option value="status">📶 ترتيب: حسب الحالة</option>
+      <option value="type">🏷️ ترتيب: حسب النوع</option>
+      <option value="location">📍 ترتيب: حسب الموقع</option>
+      <option value="last_checked">⏰ ترتيب: حسب آخر فحص</option>
     </select>
 <div class="view-toggle" role="group" aria-label="نمط العرض">
         <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات">🗂️</button>
@@ -59,10 +59,10 @@
       <div class="tools-title">🛠️ أدوات الشبكة</div>
       <div class="tools-input-row">
         <input id="tools-ip-input" type="text" placeholder="أدخل IP أو اسم المضيف..." />
-        <button id="tools-ping-btn" class="btn btn-primary" type="button">📡 Ping</button>
-        <button id="tools-tracert-btn" class="btn btn-primary" type="button">🌐 Tracert</button>
-        <button id="tools-stop-btn" class="btn btn-danger hidden" type="button">⏹ إيقاف</button>
-        <button id="tools-clear-btn" class="btn hidden" type="button">🗑️ مسح</button>
+        <button id="tools-ping-btn" class="btn btn-primary" type="button" title="تنفيذ Ping">📡 Ping</button>
+        <button id="tools-tracert-btn" class="btn btn-primary" type="button" title="تنفيذ Tracert">🌐 Tracert</button>
+        <button id="tools-stop-btn" class="btn btn-danger hidden" type="button" title="إيقاف العملية">⏹ إيقاف</button>
+        <button id="tools-clear-btn" class="btn hidden" type="button" title="مسح المخرجات">🗑️ مسح</button>
       </div>
       <div class="tools-status hidden" id="tools-status">
         <span id="tools-status-text">جاري التنفيذ...</span>

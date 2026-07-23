@@ -100,8 +100,8 @@ async function loadDevices() {
       <td>${esc(statusText(d.current_status))}</td>
       <td>
         ${openBtn}
-        <button class="btn" data-edit="${d.id}">تعديل</button>
-        <button class="btn btn-danger" data-del="${d.id}">حذف</button>
+        <button class="btn" data-edit="${d.id}" title="تعديل الجهاز">✏️ تعديل</button>
+        <button class="btn btn-danger" data-del="${d.id}" title="حذف الجهاز">🗑️ حذف</button>
       </td>
     `;
     // مستمع زر الفتح

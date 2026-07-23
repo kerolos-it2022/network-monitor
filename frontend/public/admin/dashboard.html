@@ -10,41 +10,43 @@
 <body>
   <header class="topbar">
     <h1>لوحة التحكم</h1>
-    <a href="../index.html" class="admin-link">الصفحة العامة</a>
+    <a href="../index.html" class="admin-link">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
-    <button id="theme-toggle" class="btn" type="button">🌙 وضع ليلي</button>
-    <button id="logout-btn" type="button" class="btn">تسجيل الخروج</button>
+    <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع">🌙 وضع ليلي</button>
+    <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج">🚪 تسجيل الخروج</button>
   </header>
 
   <!-- تبويبات -->
   <nav class="filters-bar" style="gap:0;">
-    <button class="tab-btn active" id="tab-devices" type="button">الأجهزة</button>
-    <button class="tab-btn" id="tab-locations" type="button">المواقع</button>
-    <button class="tab-btn" id="tab-types" type="button">الأنواع</button>
-    <button class="tab-btn" id="tab-notifications" type="button">الإشعارات</button>
-    <button class="tab-btn" id="tab-logs" type="button">السجل</button>
-    <button class="tab-btn" id="tab-profile" type="button">الملف الشخصي</button>
+    <button class="tab-btn active" id="tab-devices" type="button" title="إدارة الأجهزة">📱 الأجهزة</button>
+    <button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع">📍 المواقع</button>
+    <button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة">🏷️ الأنواع</button>
+    <button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً">🔍 اكتشاف الأجهزة</button>
+    <button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات">🔔 الإشعارات</button>
+    <button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث">📋 السجل</button>
+    <button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي">👤 الملف الشخصي</button>
+    <button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub">🔄 التحديثات</button>
   </nav>
 
   <main class="admin-wrap">
     <!-- ============ قسم الأجهزة ============ -->
     <section id="section-devices">
-      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-        <button id="add-device-btn" type="button" class="btn btn-primary">+ إضافة جهاز جديد</button>
-        <button id="export-devices-btn" type="button" class="btn">📤 تصدير Excel</button>
-        <label class="btn" style="cursor:pointer;">
+<div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <button id="add-device-btn" type="button" class="btn btn-primary" title="إضافة جهاز جديد للمراقبة">➕ إضافة جهاز</button>
+        <button id="export-devices-btn" type="button" class="btn" title="تصدير قائمة الأجهزة لملف Excel">📤 تصدير Excel</button>
+        <label class="btn" style="cursor:pointer;" title="استيراد أجهزة من ملف Excel">
           📥 استيراد Excel
           <input type="file" id="import-devices-file" accept=".xlsx,.xls" style="display:none;" />
         </label>
         <div style="flex:1;"></div>
         <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
         <select id="filter-sort-devices" class="sort-select">
-          <option value="name">حسب الاسم</option>
-          <option value="ip">حسب IP</option>
-          <option value="status">حسب الحالة</option>
-          <option value="type">حسب النوع</option>
-          <option value="location">حسب الموقع</option>
-          <option value="last_checked">حسب آخر فحص</option>
+          <option value="name">🔤 حسب الاسم</option>
+          <option value="ip">🌐 حسب IP</option>
+          <option value="status">📶 حسب الحالة</option>
+          <option value="type">🏷️ حسب النوع</option>
+          <option value="location">📍 حسب الموقع</option>
+          <option value="last_checked">⏰ حسب آخر فحص</option>
         </select>
       </div>
 
@@ -77,8 +79,8 @@
           </label>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">حفظ</button>
-          <button type="button" class="btn" id="device-form-cancel">إلغاء</button>
+          <button type="submit" class="btn btn-primary" title="حفظ الجهاز">💾 حفظ</button>
+          <button type="button" class="btn" id="device-form-cancel" title="إلغاء العملية">✖️ إلغاء</button>
         </div>
       </form>
 
@@ -98,15 +100,15 @@
           <label>اسم الموقع <input type="text" id="loc-name" placeholder="الفرع الرئيسي - الطابق الثاني" /></label>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="loc-save-btn">حفظ الموقع</button>
-          <button type="button" class="btn" id="loc-cancel-btn">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
+          <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء">✖️ إلغاء</button>
         </div>
       </div>
       <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
         <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
         <select id="filter-sort-locations" class="sort-select">
-          <option value="name">حسب الاسم</option>
-          <option value="id">حسب المعرف</option>
+          <option value="name">📝 حسب الاسم</option>
+          <option value="id">🆔 حسب المعرف</option>
         </select>
       </div>
       <table class="data-table">
@@ -124,21 +126,96 @@
           <label>الأيقونة <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="type-save-btn">حفظ النوع</button>
-          <button type="button" class="btn" id="type-cancel-btn">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع">💾 حفظ النوع</button>
+          <button type="button" class="btn" id="type-cancel-btn" title="إلغاء">✖️ إلغاء</button>
         </div>
       </div>
       <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
         <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
         <select id="filter-sort-types" class="sort-select">
-          <option value="name">حسب الاسم</option>
-          <option value="id">حسب المعرف</option>
+          <option value="name">📝 حسب الاسم</option>
+          <option value="id">🆔 حسب المعرف</option>
         </select>
       </div>
       <table class="data-table">
         <thead><tr><th>المعرّف</th><th>الاسم</th><th>الأيقونة</th><th>إجراءات</th></tr></thead>
         <tbody id="types-table-body"></tbody>
       </table>
+    </section>
+
+    <!-- ============ قسم اكتشاف الأجهزة ============ -->
+    <section id="section-discovery" class="hidden">
+      <div class="form-card">
+        <h3>🔍 اكتشاف الأجهزة في الشبكة</h3>
+        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
+          امسح نطاق الشبكة لاكتشاف الأجهزة المتصلة تلقائياً وتحديد نوعها من المنافذ المفتوحة ومعلومات MAC.
+        </p>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto; gap:0.75rem; align-items:end;">
+          <label style="display:flex; flex-direction:column; gap:0.25rem;">
+            نطاق الشبكة (CIDR)
+            <div style="display:flex; gap:0.5rem;">
+              <input type="text" id="discovery-cidr" list="cidr-history" placeholder="192.168.1.0/24" value="192.168.1.0/24" required style="flex:1; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
+              <datalist id="cidr-history">
+                <option value="192.168.1.0/24">
+                <option value="192.168.0.0/24">
+                <option value="10.0.0.0/24">
+                <option value="172.16.0.0/24">
+              </datalist>
+            </div>
+          </label>
+          <label>
+            <input type="checkbox" id="discovery-scan-ports" checked />
+            مسح المنافذ الشائعة
+          </label>
+          <label>
+            <input type="checkbox" id="discovery-scan-snmp" />
+            استعلام SNMP (Community: public)
+          </label>
+          <button type="button" class="btn btn-primary" id="discovery-start-btn" style="height:fit-content;">🚀 بدء المسح</button>
+        </div>
+        <div style="margin-top:1rem;">
+          <label style="font-size:0.85rem; color:var(--muted);">Community String (للـ SNMP):</label>
+          <input type="text" id="discovery-snmp-community" value="public" style="width:200px; padding:0.4rem; margin-left:0.5rem;" />
+        </div>
+      </div>
+
+      <div id="discovery-progress" class="form-card hidden" style="margin-top:1rem;">
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <div class="tools-spinner" style="width:24px; height:24px; border-width:3px;"></div>
+          <span id="discovery-progress-text" style="font-weight:600;">جاري المسح...</span>
+          <span id="discovery-progress-count" style="color:var(--muted);">0 / 0</span>
+          <div style="flex:1;"></div>
+          <button type="button" class="btn btn-danger" id="discovery-stop-btn">⏹ إيقاف</button>
+        </div>
+      </div>
+
+      <div id="discovery-results" class="hidden" style="margin-top:1rem;">
+        <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+          <span style="font-weight:600;">الأجهزة المكتشفة:</span>
+          <span id="discovery-count" style="color:var(--accent);"></span>
+          <div style="flex:1;"></div>
+          <button type="button" class="btn btn-primary" id="discovery-add-selected-btn" disabled title="إضافة الأجهزة المحددة للمراقبة">➕ إضافة للمراقبة</button>
+          <button type="button" class="btn" id="discovery-select-all-btn" title="تحديد جميع الأجهزة">☑️ تحديد الكل</button>
+          <button type="button" class="btn" id="discovery-clear-selection-btn" title="إلغاء تحديد الكل">☐ إلغاء التحديد</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:40px;"><input type="checkbox" id="discovery-select-all-checkbox" /></th>
+              <th>IP</th>
+              <th>الاسم المقترح</th>
+              <th>النوع</th>
+              <th>الشركة المصنعة (MAC)</th>
+              <th>المنافذ المفتوحة</th>
+              <th>معلومات SNMP</th>
+              <th>زمن الاستجابة</th>
+            </tr>
+          </thead>
+          <tbody id="discovery-table-body"></tbody>
+        </table>
+      </div>
+
+      <div id="discovery-error" class="error-msg hidden" style="margin-top:1rem;"></div>
     </section>
 
     <!-- ============ قسم الإشعارات ============ -->
@@ -165,8 +242,8 @@
           → Project Settings → Cloud Messaging → Legacy Server Key.
         </p>
         <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="ntf-save-btn">حفظ الإعدادات</button>
-          <button type="button" class="btn" id="ntf-test-btn">🔔 اختبار إشعار الهاتف</button>
+          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات">💾 حفظ الإعدادات</button>
+          <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي">🔔 اختبار الإشعار</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
         <p style="font-size:0.8rem; color:var(--muted); margin-top:0.75rem;">
@@ -187,16 +264,16 @@
             <option value="7">أسبوع</option>
             <option value="30">شهر</option>
           </select>
-          <button id="logs-clear-btn" class="btn btn-danger">🗑️ مسح السجلات</button>
+          <button id="logs-clear-btn" class="btn btn-danger" title="مسح السجلات القديمة">🗑️ مسح السجلات</button>
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
           <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
           <select id="filter-sort-logs" class="sort-select">
-            <option value="sent_at_desc">الأحدث أولاً</option>
-            <option value="sent_at_asc">الأقدم أولاً</option>
-            <option value="device_name">حسب الجهاز</option>
-            <option value="channel">حسب القناة</option>
-            <option value="status">حسب الحالة</option>
+            <option value="sent_at_desc">🔽 الأحدث أولاً</option>
+            <option value="sent_at_asc">🔼 الأقدم أولاً</option>
+            <option value="device_name">📱 حسب الجهاز</option>
+            <option value="channel">📢 حسب القناة</option>
+            <option value="status">📊 حسب الحالة</option>
           </select>
         </div>
       </div>
@@ -219,7 +296,7 @@
             <label>تأكيد كلمة المرور الجديدة <input type="password" id="cp-confirm" required minlength="6" /></label>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">تغيير كلمة المرور</button>
+            <button type="submit" class="btn btn-primary" title="تغيير كلمة المرور">🔐 تغيير كلمة المرور</button>
           </div>
           <div id="cp-status" class="error-msg" style="margin-top:0.5rem;"></div>
         </form>
@@ -232,7 +309,77 @@
         </div>
       </div>
     </section>
+
+    <!-- ============ قسم التحديثات ============ -->
+    <section id="section-updates" class="hidden">
+      <div class="form-card">
+        <h3>🔄 تحديثات النظام</h3>
+        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
+          تحقق من وجود تحديثات جديدة من مستودع GitHub وقم بتطبيقها بسهولة.
+        </p>
+        
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+          <div class="form-card" style="text-align:center; padding:1.5rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">الإصدار الحالي</div>
+            <div id="update-current-version" style="font-size:1.5rem; font-weight:bold; color:var(--text);">—</div>
+          </div>
+          <div class="form-card" style="text-align:center; padding:1.5rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">أحدث إصدار</div>
+            <div id="update-latest-version" style="font-size:1.5rem; font-weight:bold; color:var(--accent);">—</div>
+          </div>
+          <div class="form-card" style="text-align:center; padding:1.5rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">الحالة</div>
+            <div id="update-status" style="font-size:1.2rem; font-weight:bold;">⏳ جاري الفحص...</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1.5rem;">
+          <label style="font-size:0.9rem; color:var(--muted);">الفرع:</label>
+          <select id="update-branch" style="padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text); min-width:150px;">
+            <option value="main">main</option>
+            <option value="develop">develop</option>
+            <option value="master">master</option>
+          </select>
+          <span id="update-branch-name" style="font-size:0.9rem; color:var(--muted);"></span>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+          <button type="button" class="btn btn-primary" id="update-check-btn">🔍 فحص التحديثات</button>
+          <button type="button" class="btn" id="update-view-changelog-btn" disabled>📋 عرض التغييرات</button>
+          <button type="button" class="btn" id="update-download-btn" disabled style="display:none;">⬇️ تحميل التحديث</button>
+          <button type="button" class="btn btn-primary" id="update-apply-btn" disabled style="display:none;">🚀 تطبيق التحديث</button>
+        </div>
+
+        <div id="update-progress" class="form-card hidden" style="margin-top:1rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">⏳ جاري التحديث...</div>
+          <div class="tools-spinner" style="width:30px; height:30px; border-width:3px; margin:0 auto;"></div>
+          <div id="update-progress-text" style="margin-top:0.5rem; color:var(--muted); font-size:0.9rem;">جاري التحضير...</div>
+        </div>
+
+        <div id="update-output" class="form-card hidden" style="margin-top:1rem; max-height:300px; overflow:auto;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">📋 سجل العملية:</div>
+          <pre id="update-log" style="background:#1e293b; color:#e2e8f0; padding:1rem; border-radius:6px; font-family:monospace; font-size:0.85rem; white-space:pre-wrap;"></pre>
+        </div>
+
+        <div id="update-changelog" class="form-card hidden" style="margin-top:1rem; max-height:400px; overflow:auto;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <div style="font-weight:600;">📋 سجل التغييرات</div>
+            <button type="button" class="btn" id="update-close-changelog-btn" style="padding:0.25rem 0.5rem; font-size:0.8rem;">إغلاق</button>
+          </div>
+          <div id="update-changelog-content" style="background:var(--bg); padding:1rem; border-radius:6px; font-size:0.9rem; line-height:1.6;"></div>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <!-- Changelog Modal -->
+  <div id="changelog-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:800px;">
+      <button id="changelog-close" type="button" class="modal-close" aria-label="إغلاق">✕</button>
+      <h3>📋 سجل التغييرات (Changelog)</h3>
+      <div id="changelog-content" style="background:var(--bg); padding:1rem; border-radius:6px; font-size:0.9rem; line-height:1.6; max-height:500px; overflow:auto;"></div>
+    </div>
+  </div>
 
   <!-- سكريبتات -->
   <script src="../js/admin-devices.js"></script>
@@ -241,6 +388,8 @@
   <script src="../js/admin-tabs.js"></script>
   <script src="../js/admin-profile.js"></script>
   <script src="../js/admin-theme.js"></script>
+  <script src="../js/admin-discovery.js"></script>
+  <script src="../js/admin-update.js"></script>
 
   <!-- ذيل الصفحة -->
   <footer class="site-footer">
