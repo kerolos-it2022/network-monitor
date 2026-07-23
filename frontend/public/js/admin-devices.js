@@ -1,4 +1,6 @@
 // admin-devices.js: إدارة الأجهزة في لوحة التحكم (جلب، إضافة، تعديل، حذف، تسجيل خروج، حماية الجلسة).
+let currentDevicesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأجهزة
+
 const ad = {}; // مساحة أسماء صغيرة لتفادي التضارب.
 
 async function api(url, opts) {
@@ -41,7 +43,45 @@ async function loadDevices() {
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
   if (!r.success) return;
-  for (const d of r.data) {
+  
+  // تطبيق الترتيب
+  const sortBy = currentDevicesSort;
+  const sortedData = [...r.data].sort((a, b) => {
+    let valA, valB;
+    switch (sortBy) {
+      case 'name':
+        valA = (a.name || '').toLowerCase();
+        valB = (b.name || '').toLowerCase();
+        break;
+      case 'ip':
+        valA = a.ip || '';
+        valB = b.ip || '';
+        break;
+      case 'status':
+        valA = a.current_status || '';
+        valB = b.current_status || '';
+        break;
+      case 'type':
+        valA = (a.device_type_name || '').toLowerCase();
+        valB = (b.device_type_name || '').toLowerCase();
+        break;
+      case 'location':
+        valA = (a.location_name || '').toLowerCase();
+        valB = (b.location_name || '').toLowerCase();
+        break;
+      case 'last_checked':
+        valA = a.last_checked ? new Date(a.last_checked).getTime() : 0;
+        valB = b.last_checked ? new Date(b.last_checked).getTime() : 0;
+        break;
+      default:
+        return 0;
+    }
+    if (valA < valB) return -1;
+    if (valA > valB) return 1;
+    return 0;
+  });
+  
+  for (const d of sortedData) {
     // زر الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
     let openBtn = '';
     if (d.https_accessible == 1) {
@@ -258,6 +298,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('logout-btn').addEventListener('click', logoutNow);
 
+  // مستمع تغيير الترتيب للأجهزة
+  const sortDevicesEl = document.getElementById('filter-sort-devices');
+  if (sortDevicesEl) {
+    sortDevicesEl.addEventListener('change', (e) => {
+      currentDevicesSort = e.target.value;
+      loadDevices();
+    });
+  }
+
   // تحديث placeholder حقل المنفذ حسب البروتوكول المختار
   const protoSel = document.getElementById('df-check_protocol');
   const portInput = document.getElementById('df-port');
@@ -287,4 +336,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.files[0]) importDevicesExcel(e.target.files[0]);
     e.target.value = ''; // السماح بإعادة نفس الملف
   });
+
+  // مستمع dropdown الترتيب
+  const sortSel = document.getElementById('filter-sort-devices');
+  if (sortSel) {
+    sortSel.addEventListener('change', (e) => {
+      currentDevicesSort = e.target.value;
+      loadDevices();
+    });
+  }
 });

@@ -1,4 +1,6 @@
 // admin-notifications.js: تحميل وحفظ إعدادات الإشعارات + عرض سجل الإشعارات عند فتح التبويب.
+let currentLogsSort = 'sent_at_desc'; // متغير عام لتخزين الترتيب الحالي للسجلات
+
 async function api(url, opts) {
   const r = await fetch(url, opts);
   return r.json();
@@ -91,13 +93,47 @@ async function loadNotificationLogs() {
   const tbody = document.getElementById('logs-table-body');
   tbody.innerHTML = '';
   if (!r.success) return;
+  
+  // تطبيق الترتيب
+  const sortBy = currentLogsSort;
+  const sortedData = [...r.data].sort((a, b) => {
+    let valA, valB;
+    switch (sortBy) {
+      case 'sent_at_desc':
+        valA = a.sent_at ? new Date(a.sent_at).getTime() : 0;
+        valB = b.sent_at ? new Date(b.sent_at).getTime() : 0;
+        return valB - valA; // الأحدث أولاً
+      case 'sent_at_asc':
+        valA = a.sent_at ? new Date(a.sent_at).getTime() : 0;
+        valB = b.sent_at ? new Date(b.sent_at).getTime() : 0;
+        return valA - valB; // الأقدم أولاً
+      case 'device_name':
+        valA = (a.device_name || '').toLowerCase();
+        valB = (b.device_name || '').toLowerCase();
+        break;
+      case 'channel':
+        valA = (a.channel || '').toLowerCase();
+        valB = (b.channel || '').toLowerCase();
+        break;
+      case 'status':
+        valA = (a.status || '').toLowerCase();
+        valB = (b.status || '').toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+    if (valA < valB) return -1;
+    if (valA > valB) return 1;
+    return 0;
+  });
+  
   const channelText = (c) => {
     if (c === 'telegram') return 'تلجرام';
     if (c === 'whatsapp') return 'واتساب';
     if (c === 'mobile') return 'هاتف (PWA)';
     return c;
   };
-  for (const l of r.data) {
+  for (const l of sortedData) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${esc(l.sent_at ? new Date(l.sent_at).toLocaleString('ar') : '-')}</td>
@@ -117,6 +153,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (testBtn) testBtn.addEventListener('click', testNotification);
   // عند فتح تبويب السجل: تحميل السجل تلقائياً.
   document.getElementById('tab-logs').addEventListener('click', loadNotificationLogs);
+  // مستمع تغيير الترتيب للسجل
+  const sortLogsEl = document.getElementById('filter-sort-logs');
+  if (sortLogsEl) {
+    sortLogsEl.addEventListener('change', (e) => {
+      currentLogsSort = e.target.value;
+      loadNotificationLogs();
+    });
+  }
   // زر مسح السجلات
   document.getElementById('logs-clear-btn').addEventListener('click', async () => {
     if (!confirm('تأكيد مسح السجلات الأقدم من الفترة المحددة؟')) return;

@@ -1,4 +1,7 @@
 // admin-locations-types.js: إدارة المواقع وأنواع الأجهزة في لوحة التحكم (CRUD كامل عبر الواجهة).
+let currentLocationsSort = 'name'; // متغير عام لتخزين الترتيب الحالي للمواقع
+let currentTypesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأنواع
+
 function esc(s) {
   if (s == null) return '';
   return String(s)
@@ -20,7 +23,29 @@ async function loadLocations() {
   const tbody = document.getElementById('locations-table-body');
   tbody.innerHTML = '';
   if (!r.success) return;
-  for (const l of r.data) {
+  
+  // تطبيق الترتيب
+  const sortBy = currentLocationsSort;
+  const sortedData = [...r.data].sort((a, b) => {
+    let valA, valB;
+    switch (sortBy) {
+      case 'name':
+        valA = (a.name || '').toLowerCase();
+        valB = (b.name || '').toLowerCase();
+        break;
+      case 'id':
+        valA = a.id || 0;
+        valB = b.id || 0;
+        break;
+      default:
+        return 0;
+    }
+    if (valA < valB) return -1;
+    if (valA > valB) return 1;
+    return 0;
+  });
+  
+  for (const l of sortedData) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${l.id}</td>
@@ -83,7 +108,29 @@ async function loadTypes() {
   const tbody = document.getElementById('types-table-body');
   tbody.innerHTML = '';
   if (!r.success) return;
-  for (const t of r.data) {
+  
+  // تطبيق الترتيب
+  const sortBy = currentTypesSort;
+  const sortedData = [...r.data].sort((a, b) => {
+    let valA, valB;
+    switch (sortBy) {
+      case 'name':
+        valA = (a.name || '').toLowerCase();
+        valB = (b.name || '').toLowerCase();
+        break;
+      case 'id':
+        valA = a.id || 0;
+        valB = b.id || 0;
+        break;
+      default:
+        return 0;
+    }
+    if (valA < valB) return -1;
+    if (valA > valB) return 1;
+    return 0;
+  });
+  
+  for (const t of sortedData) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${t.id}</td>
@@ -152,4 +199,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('loc-cancel-btn').addEventListener('click', resetLocationForm);
   document.getElementById('type-save-btn').addEventListener('click', saveType);
   document.getElementById('type-cancel-btn').addEventListener('click', resetTypeForm);
+
+  // مستمع تغيير الترتيب للمواقع
+  const sortLocationsEl = document.getElementById('filter-sort-locations');
+  if (sortLocationsEl) {
+    sortLocationsEl.addEventListener('change', (e) => {
+      currentLocationsSort = e.target.value;
+      loadLocations();
+    });
+  }
+
+  // مستمع تغيير الترتيب للأنواع
+  const sortTypesEl = document.getElementById('filter-sort-types');
+  if (sortTypesEl) {
+    sortTypesEl.addEventListener('change', (e) => {
+      currentTypesSort = e.target.value;
+      loadTypes();
+    });
+  }
 });

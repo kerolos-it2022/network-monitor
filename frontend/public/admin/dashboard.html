@@ -29,13 +29,23 @@
   <main class="admin-wrap">
     <!-- ============ قسم الأجهزة ============ -->
     <section id="section-devices">
-      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
         <button id="add-device-btn" type="button" class="btn btn-primary">+ إضافة جهاز جديد</button>
         <button id="export-devices-btn" type="button" class="btn">📤 تصدير Excel</button>
         <label class="btn" style="cursor:pointer;">
           📥 استيراد Excel
           <input type="file" id="import-devices-file" accept=".xlsx,.xls" style="display:none;" />
         </label>
+        <div style="flex:1;"></div>
+        <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
+        <select id="filter-sort-devices" style="padding:0.35rem 0.5rem; font-size:0.9rem;">
+          <option value="name">حسب الاسم</option>
+          <option value="ip">حسب IP</option>
+          <option value="status">حسب الحالة</option>
+          <option value="type">حسب النوع</option>
+          <option value="location">حسب الموقع</option>
+          <option value="last_checked">حسب آخر فحص</option>
+        </select>
       </div>
 
       <!-- نموذج إضافة/تعديل جهاز -->
@@ -92,6 +102,13 @@
           <button type="button" class="btn" id="loc-cancel-btn">إلغاء</button>
         </div>
       </div>
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+        <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
+        <select id="filter-sort-locations" style="padding:0.35rem 0.5rem; font-size:0.9rem;">
+          <option value="name">حسب الاسم</option>
+          <option value="id">حسب المعرف</option>
+        </select>
+      </div>
       <table class="data-table">
         <thead><tr><th>المعرّف</th><th>الاسم</th><th>إجراءات</th></tr></thead>
         <tbody id="locations-table-body"></tbody>
@@ -110,6 +127,13 @@
           <button type="button" class="btn btn-primary" id="type-save-btn">حفظ النوع</button>
           <button type="button" class="btn" id="type-cancel-btn">إلغاء</button>
         </div>
+      </div>
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+        <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
+        <select id="filter-sort-types" style="padding:0.35rem 0.5rem; font-size:0.9rem;">
+          <option value="name">حسب الاسم</option>
+          <option value="id">حسب المعرف</option>
+        </select>
       </div>
       <table class="data-table">
         <thead><tr><th>المعرّف</th><th>الاسم</th><th>الأيقونة</th><th>إجراءات</th></tr></thead>
@@ -155,14 +179,26 @@
 
     <!-- ============ قسم السجل ============ -->
     <section id="section-logs" class="hidden">
-      <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
-        <span>مسح السجلات الأقدم من:</span>
-        <select id="logs-clear-range">
-          <option value="1">يوم</option>
-          <option value="7">أسبوع</option>
-          <option value="30">شهر</option>
-        </select>
-        <button id="logs-clear-btn" class="btn btn-danger">🗑️ مسح السجلات</button>
+      <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; justify-content:space-between;">
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <span>مسح السجلات الأقدم من:</span>
+          <select id="logs-clear-range">
+            <option value="1">يوم</option>
+            <option value="7">أسبوع</option>
+            <option value="30">شهر</option>
+          </select>
+          <button id="logs-clear-btn" class="btn btn-danger">🗑️ مسح السجلات</button>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
+          <select id="filter-sort-logs" style="padding:0.35rem 0.5rem; font-size:0.9rem;">
+            <option value="sent_at_desc">الأحدث أولاً</option>
+            <option value="sent_at_asc">الأقدم أولاً</option>
+            <option value="device_name">حسب الجهاز</option>
+            <option value="channel">حسب القناة</option>
+            <option value="status">حسب الحالة</option>
+          </select>
+        </div>
       </div>
       <table class="data-table">
         <thead>
