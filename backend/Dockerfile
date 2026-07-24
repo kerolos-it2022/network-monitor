@@ -17,18 +17,18 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (production only)
-RUN npm ci --production && npm cache clean --force
+# Install dependencies (production only — --omit=dev هو البديل المدعوم في npm الحديث بدل --production)
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy source code
 COPY src/ ./src/
 
-# Create database directory with proper permissions
-RUN mkdir -p /app/database && chown -R node:node /app
-
-# Create non-root user
+# Create non-root user/group BEFORE changing ownership so files belong to the runtime user
 RUN addgroup -g 1001 -S nodejs \
     && adduser -S nodejs -u 1001 -G nodejs
+
+# Create database directory with proper permissions (owned by runtime user)
+RUN mkdir -p /app/database && chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs

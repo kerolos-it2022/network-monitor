@@ -29,6 +29,15 @@ Thumbs.db
 # Test / sample data files
 test_import.xlsx
 
+# Datesbase runtime artifacts (backups, WAL/SHM/journal) — لا تُرفع
+database/backups/
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ZCode workspace (اجتهاد محلي للذكاء)
+.zcode/
+
 # Root-level package-lock (npm files belong to backend/)
 /package-lock.json
 /nul
