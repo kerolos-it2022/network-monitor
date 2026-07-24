@@ -1,20 +1,6 @@
 // admin-notifications.js: تحميل وحفظ إعدادات الإشعارات + عرض سجل الإشعارات عند فتح التبويب.
+// ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 let currentLogsSort = 'sent_at_desc'; // متغير عام لتخزين الترتيب الحالي للسجلات
-
-async function api(url, opts) {
-  const r = await fetch(url, opts);
-  return r.json();
-}
-
-function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, String.fromCharCode(38) + 'amp;')
-    .replace(/</g, String.fromCharCode(38) + 'lt;')
-    .replace(/>/g, String.fromCharCode(38) + 'gt;')
-    .replace(/"/g, String.fromCharCode(38) + 'quot;')
-    .replace(/'/g, String.fromCharCode(38) + '#39;');
-}
 
 async function loadNotificationSettings() {
   const r = await api('/api/notifications/settings');

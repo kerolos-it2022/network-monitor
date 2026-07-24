@@ -1,36 +1,8 @@
 // admin-devices.js: إدارة الأجهزة في لوحة التحكم (جلب، إضافة، تعديل، حذف، تسجيل خروج، حماية الجلسة).
+// ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 let currentDevicesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأجهزة
 
 const ad = {}; // مساحة أسماء صغيرة لتفادي التضارب.
-
-async function api(url, opts) {
-  try {
-    const r = await fetch(url, opts);
-    if (!r.ok && r.status !== 401 && r.status !== 404) {
-      // محاولة قراءة رسالة الخطأ من الرد.
-      try {
-        const data = await r.json();
-        return data || { success: false, error: 'HTTP ' + r.status };
-      } catch (e) {
-        return { success: false, error: 'HTTP ' + r.status };
-      }
-    }
-    return await r.json();
-  } catch (e) {
-    return { success: false, error: 'تعذّر الاتصال بالخادم' };
-  }
-}
-
-// أداة تهريب بسيطة (الحروف الكاملة) لكسر الـ XSS في القيم المُدرجة في innerHTML.
-function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, String.fromCharCode(38) + 'amp;')
-    .replace(/</g, String.fromCharCode(38) + 'lt;')
-    .replace(/>/g, String.fromCharCode(38) + 'gt;')
-    .replace(/"/g, String.fromCharCode(38) + 'quot;')
-    .replace(/'/g, String.fromCharCode(38) + '#39;');
-}
 
 function statusText(status) {
   if (status === 'online') return 'متصل';
