@@ -1,0 +1,22 @@
+# إعدادات قوالب Issues
+# ===========================
+# نعطّل الـ blank issues لتشجيع المستخدمين على استخدام القوالب المنظَّمة (bug_report / feature_request)
+# للحصول على معلومات كافية للتشخيص منذ البداية.
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 سؤال عام أو نقاش
+    url: https://github.com/kerolos-it2022/network-monitor/discussions
+    about: |
+      للأسئلة العامة، الاستخدام، النقاشات، والأفكار قبل تحويلها إلى طلب ميزة.
+      استخدم GitHub Discussions بدل فتح Issue.
+
+  - name: 🔒 الإبلاغ عن ثغرة أمنية
+    url: https://github.com/kerolos-it2022/network-monitor/security/advisories/new
+    about: |
+      ⚠️ لا تفتح Issue عام للثغرات الأمنية.
+      استخدم GitHub Security Advisories (خاص وآمن) — راجع SECURITY.md.
+
+  - name: 📚 الوثائق (README / DEPLOY / RUN-ON-LINUX)
+    url: https://github.com/kerolos-it2022/network-monitor#readme
+    about: راجع الوثائق أولاً — قد تكون الإجابة موجودة في README / DEPLOY.md / RUN-ON-LINUX.md.

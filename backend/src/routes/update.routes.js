@@ -9,6 +9,43 @@ const requireAuth = require('../middleware/requireAuth');
 const REPO_DIR = path.join(__dirname, '../../../'); // Project root (../../../ from backend/src/routes)
 const PACKAGE_JSON_PATH = path.join(REPO_DIR, 'backend', 'package.json');
 
+// ─────────────────────────────────────────────────────────────
+// إعدادات GitHub (قابلة للتهيئة عبر .env لدعم الـ forks والمستودعات الخاصة)
+// ─────────────────────────────────────────────────────────────
+// GITHUB_REPO_URL: رابط المستودع (مثال: https://github.com/owner/repo.git)
+// GITHUB_TOKEN: رمز وصول شخصي (اختياري — مطلوب للمستودعات الخاصة ويُرفع حد API)
+const GITHUB_REPO_URL = process.env.GITHUB_REPO_URL || '';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+
+// تفكيك owner/repo من رابط المستودع أو القيمة الافتراضية العامة
+function getRepoConfig() {
+  const DEFAULT = { owner: 'kerolos-it2022', repo: 'network-monitor' };
+  if (!GITHUB_REPO_URL) return DEFAULT;
+  // أنماط مدعومة: https://github.com/owner/repo(.git)?  أو  owner/repo
+  const match = GITHUB_REPO_URL.match(/github\.com[/:]([^/]+)\/([^/\.?#]+?)(?:\.git)?(?:[?#].*)?$/i)
+             || GITHUB_REPO_URL.match(/^([^/]+)\/([^/\.]+)$/);
+  if (match && match[1] && match[2]) {
+    return { owner: match[1], repo: match[2] };
+  }
+  return DEFAULT;
+}
+
+// رؤوس HTTP الموحّدة لطلبات GitHub API (مع مصادقة عند توفر التوكن)
+function githubApiHeaders() {
+  const headers = {
+    'User-Agent': 'Network-Monitor-Updater',
+    'Accept': 'application/vnd.github.v3+json'
+  };
+  if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  return headers;
+}
+
+// رابط نسخة الأرشيف لـ tag (للتحميل البديل عند غياب assets)
+function getArchiveUrl(tag) {
+  const { owner, repo } = getRepoConfig();
+  return `https://github.com/${owner}/${repo}/archive/refs/tags/${tag}.zip`;
+}
+
 // قراءة الإصدار من package.json (في مجلد backend)
 function getCurrentVersion() {
   try {
@@ -88,19 +125,21 @@ async function checkBranchExists(branch) {
 }
 
 // الحصول على الفرع الافتراضي للمستودع البعيد
+// fallback: GITHUB_BRANCH إن ضُبط في .env، وإلا 'main'
+const DEFAULT_BRANCH_FALLBACK = process.env.GITHUB_BRANCH || 'main';
 async function getDefaultBranch() {
   try {
     return new Promise((resolve) => {
       exec('git remote show origin | grep "HEAD branch" | cut -d" " -f5', { cwd: REPO_DIR }, (err, stdout) => {
         if (err || !stdout.trim()) {
-          resolve('main');
+          resolve(DEFAULT_BRANCH_FALLBACK);
         } else {
           resolve(stdout.trim());
         }
       });
     });
   } catch (error) {
-    return 'main';
+    return DEFAULT_BRANCH_FALLBACK;
   }
 }
 
@@ -415,18 +454,14 @@ router.get('/download', requireAuth, async (req, res) => {
     
     try {
       const https = require('https');
-      const repoOwner = 'kerolos-it2022';
-      const repoName = 'network-monitor';
+      const { owner: repoOwner, repo: repoName } = getRepoConfig();
       
       // استخدام GitHub API لجلب أحدث إصدار
       const githubApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`;
       
       const releaseData = await new Promise((resolve, reject) => {
         https.get(githubApiUrl, { 
-          headers: { 
-            'User-Agent': 'Network-Monitor-Updater',
-            'Accept': 'application/vnd.github.v3+json'
-          } 
+          headers: githubApiHeaders()
         }, (response) => {
           let data = '';
           response.on('data', chunk => data += chunk);
@@ -474,7 +509,7 @@ router.get('/download', requireAuth, async (req, res) => {
           sendEvent('line', { message: '💡 لتطبيق التحديث، اضغط زر "🚀 تطبيق التحديث"' });
         } else {
           // لا توجد أصول، استخدم كود المصدر
-          const sourceUrl = `https://github.com/${repoOwner}/${repoName}/archive/refs/tags/${check.latestVersion}.zip`;
+          const sourceUrl = getArchiveUrl(check.latestVersion);
           sendEvent('line', { message: `⬇️ جاري تحميل الكود المصدري من: ${sourceUrl}` });
           await downloadWithProgress(sourceUrl, `network-monitor-${check.latestVersion}.zip`, sendEvent);
           sendEvent('line', { message: '✅ تم تحميل الكود المصدري بنجاح' });
@@ -487,8 +522,7 @@ router.get('/download', requireAuth, async (req, res) => {
       sendEvent('line', { message: `⚠️ لا يوجد إصدار منشور على GitHub، جاري تحميل الكود المصدري من الـ tag...` });
       
       // تحميل الكود المصدري مباشرة من الـ tag
-      const repoOwner = 'kerolos-it2022';
-      const repoName = 'network-monitor';
+      const { owner: repoOwner, repo: repoName } = getRepoConfig();
       const sourceUrl = `https://github.com/${repoOwner}/${repoName}/archive/refs/tags/v${check.latestVersion}.zip`;
       
       sendEvent('line', { message: `⬇️ جاري تحميل الكود المصدري: network-monitor-v${check.latestVersion}.zip` });
@@ -501,7 +535,7 @@ router.get('/download', requireAuth, async (req, res) => {
       } catch (downloadError) {
         sendEvent('line', { message: `❌ فشل التحميل: ${downloadError.message}` });
         sendEvent('line', { message: '🔗 فتح صفحة الإصدارات في المتصفح...' });
-        sendEvent('done', { message: 'افتح الرابط يدوياً: https://github.com/kerolos-it2022/network-monitor/releases' });
+        sendEvent('done', { message: `افتح الرابط يدوياً: https://github.com/${repoOwner}/${repoName}/releases` });
       }
     }
     

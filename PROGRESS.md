@@ -274,6 +274,5 @@ sudo bash deploy.sh install
 - **2026-07-18:** ❌ HTTP smoke test حي محجوب بسبب العائق أعلاه — ويحتاج أحد الحلول في قسم "الحالة الحالية" قبل المتابعة.
 - **2026-07-21:** ✅ **تحديث deploy.sh بالكامل** للعمل على جميع توزيعات Linux (Ubuntu/Debian/RHEL/Arch/Alpine/openSUSE).
 - **2026-07-21:** ✅ **إصلاح ecosystem.config.js** بمسار ديناميكي (`${PROJECT_DIR}/backend`).
-- **2026-07-21:** ✅ **إضافة Dockerfile.ubuntu** للنشر السريع عبر Docker.
 - **2026-07-21:** ✅ **اختبار نشر كامل على Ubuntu 26.04 (WSL)** — نجح بنجاح كامل (APIs، الصفحات، PM2، الإشعارات).
 - **2026-07-21:** ✅ **حل مشكلة better-sqlite3** بإعادة بنائه على النظام المستهدف تلقائياً عبر `npm install` في `deploy.sh`.
