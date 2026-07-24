@@ -2,11 +2,12 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "fix/**", "feat/**"]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   release:
     types: [published]
+  workflow_dispatch:  # تشغيل يدوي من تبويب Actions للتحقق عند الحاجة
 
 env:
   NODE_VERSION: '20'
