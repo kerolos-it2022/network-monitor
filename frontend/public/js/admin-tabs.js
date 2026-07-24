@@ -7,6 +7,7 @@ const TAB_TO_SECTION = {
   'tab-notifications': 'section-notifications',
   'tab-logs': 'section-logs',
   'tab-profile': 'section-profile',
+  'tab-backup': 'section-backup',
   'tab-updates': 'section-updates',
 };
 

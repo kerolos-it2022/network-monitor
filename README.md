@@ -2,14 +2,12 @@
 
 [![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](docker-compose.yml)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
-[![CI/CD](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > **نظام مراقبة احترافي** لأجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات...) مع مراقبة لحظية، إدارة شاملة، وإشعارات فورية عبر **Telegram** و **WhatsApp** و **تطبيق الموبايل (PWA)**.
 
-> 🌟 **الإصدار الحالي: v2.1.1** - تحديثات GitHub، دعم Docker، CI/CD، Network Discovery، إصلاحات Docker Build.
+> 🌟 **الإصدار الحالي: v2.1.1** - تحديثات GitHub، Network Discovery، نسخ احتياطي، إصلاحات أمنية.
 
 ---
 
@@ -18,13 +16,11 @@
 - [✨ المميزات الرئيسية](#-المميزات-الرئيسية)
 - [🎯 المتطلبات](#-المتطلبات)
 - [🚀 التثبيت السريع](#-التثبيت-السريع)
-- [🐳 النشر عبر Docker](#-النشر-عبر-docker)
+- [🐧 النشر على سيرفر Linux](#-النشر-على-سيرفر-linux)
 - [🔄 نظام التحديثات من GitHub](#-نظام-التحديثات-من-github)
 - [🔍 Network Discovery (اكتشاف الشبكة)](#-network-discovery-اكتشاف-الشبكة)
-- [🔄 CI/CD Pipeline](#-cicd-pipeline)
 - [🤖 إعداد بوت تيليجرام](#-إعداد-بوت-تيليجرام)
 - [📱 إشعارات الموبايل (PWA + Web Push)](#-إشعارات-الموبايل-pwa--web-push)
-- [🐧 النشر على سيرفر Linux](#-النشر-على-سيرفر-linux)
 - [🔧 إعدادات متقدمة](#-إعدادات-متقدمة)
 - [📁 هيكل المشروع](#-هيكل-المشروع)
 - [🔌 مرجع API](#-مرجع-api)
@@ -45,8 +41,7 @@
 | 📊 **رسوم بيانية** | زمن الاستجابة، Uptime%، سجل الانقطاعات |
 | 🔍 **أدوات الشبكة** | Ping + Tracert مباشر عبر SSE |
 | 🔐 **أمان عالي** | bcrypt، Prepared Statements، Sessions آمنة |
-| 🐳 **Docker Ready** | صورة محسنة، docker-compose، health checks |
-| 🔄 **CI/CD** | GitHub Actions، Docker Hub، Deploy تلقائي |
+| 🐧 **جاهز لـ Linux** | سكريبت نشر آلي، PM2، systemd/Nginx، يدعم كل التوزيعات |
 | 🔄 **تحديثات GitHub** | تحديث بنقرة واحدة من لوحة التحكم |
 | 🔍 **Network Discovery** | اكتشاف تلقائي للأجهزة على الشبكة |
 
@@ -111,74 +106,62 @@ npm start                # تشغيل الخادم
 
 ---
 
-## 🐳 **النشر عبر Docker (الأسهل والأسرع)**
+## 🐧 **النشر على سيرفر Linux (الطريقة المعتمدة)**
 
-### 🚀 النشر السريع بـ Docker Compose
+يدعم **جميع التوزيعات الرئيسية** — السكريبت يكتشف التوزيعة ومدير الحزم تلقائياً:
+
+| العائلة | التوزيعات | مدير الحزم |
+|----------|-----------|------------|
+| **Debian** | Ubuntu, Mint, Pop!_OS, Kali, Debian | `apt` |
+| **Red Hat** | RHEL, CentOS, Rocky, Alma, Fedora | `dnf` / `yum` |
+| **Arch** | Arch, Manjaro, EndeavourOS | `pacman` |
+| **Alpine** | Alpine Linux | `apk` |
+| **SUSE** | openSUSE, SLES | `zypper` |
+
+### 🚀 النشر السريع بـ سكريبت آلي (5 دقائق)
 
 ```bash
-# 1. استنساخ
-git clone https://github.com/kerolos-it2022/network-monitor.git
+# على جهازك: ادفع الكود لـ GitHub
+git remote add origin https://github.com/kerolos-it2022/network-monitor.git
+git push -u origin main
+
+# على السيرفر:
+sudo mkdir -p /opt && sudo chown $USER:$USER /opt
+cd /opt
+git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
 cd network-monitor
-
-# 2. إعداد البيئة
-cp backend/.env.example backend/.env
-# عدّل backend/.env بالقيم المطلوبة
-
-# 3. بناء وتشغيل
-docker-compose up -d --build
-
-# التحقق
-docker-compose logs -f
+sudo bash deploy.sh install
 ```
 
-### 📋 **الخدمات في docker-compose.yml**
-| الخدمة | البورت | الوصف |
-|---------|--------|-------|
-| `network-monitor` | 4000 | التطبيق الرئيسي |
-| (اختياري) `caddy` | 80/443 | Reverse Proxy + HTTPS تلقائي |
+### 👉 **ما يفعله `deploy.sh install` تلقائياً:**
+1. ✅ **يكشف التوزيعة** ومدير الحزم المناسب
+2. ✅ **يحدّث النظام** ويثبّت الأدوات الأساسية (git, curl, traceroute, ...)
+3. ✅ يثبّت **أدوات البناء** (python3, make, g++)
+4. ✅ يثبّت **Node.js 20 LTS** (عبر NodeSource)
+5. ✅ يثبّت **PM2** عالمياً + **sqlite3 CLI**
+6. ✅ ينشئ `.env` + يولّد `SESSION_SECRET` عشوائي + **مفاتيح VAPID تلقائياً**
+7. ✅ `npm install` + بناء `better-sqlite3` للنظام المستهدف
+8. ✅ يهيّئ قاعدة البيانات + ينشئ مديراً افتراضياً
+9. ✅ يشغّل التطبيق عبر **PM2** + يفعّل البدء التلقائي (systemd/OpenRC)
+10. ✅ يعرض روابط الوصول + تعليمات الموبايل
 
-### 📋 **Dockerfile (مُحسّن)**
-- **Base**: `node:20-alpine` (خفيف، آمن)
-- **Build tools**: python3, make, g++ (لبناء better-sqlite3)
-- **Non-root user**: `nodejs:1001`
-- **Health Check**: كل 30 ثانية على `/api/health`
+> 💡 **مهم**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند النقل من Windows إلى Linux.
 
-### Docker Compose (جاهز للإنتاج)
-```yaml
-services:
-  network-monitor:
-    build: ./backend
-    ports: ["4000:4000"]
-    environment:
-      - NODE_ENV=production
-      - PORT=4000
-    volumes:
-      - ./database:/app/database
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:4000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-```
-
-### أوامر Docker المفيدة
+### 📋 **أوامر إدارة الخدمة (PM2)**
 ```bash
-# بناء بدون كاش
-docker-compose build --no-cache
-
-# عرض السجلات
-docker-compose logs -f network-monitor
-
-# إعادة تشغيل
-docker-compose restart network-monitor
-
-# تحديث للصورة الجديدة
-docker-compose pull && docker-compose up -d --build
-
-# تنظيف الصور القديمة
-docker system prune -a
+pm2 status                    # حالة التطبيق
+pm2 logs network-monitor      # عرض السجلات اللحظية
+pm2 restart network-monitor   # إعادة تشغيل
+pm2 stop network-monitor      # إيقاف
+pm2 delete network-monitor    # إزالة من PM2
 ```
+
+### 📚 **أدلة النشر التفصيلية**
+| الدليل | المحتوى |
+|-------|---------|
+| [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي خطوة بخطوة (بدون سكريبت) |
+| [`DEPLOY.md`](./DEPLOY.md) | نشر إنتاجي كامل (Nginx, HTTPS, Firewall, Backup) |
+| [`linux-setup/`](./linux-setup/) | ملفات systemd + Nginx جاهزة (بديل عن PM2) |
 
 ---
 
@@ -225,61 +208,6 @@ cd /opt/network-monitor
    - IP، اسم مقترح، النوع، الشركة المصنعة (MAC)
    - المنافذ المفتوحة، زمن الاستجابة
 4. حدد الأجهزة → اضغط **"➕ إضافة للمراقبة"**
-
----
-
-## 🔄 **CI/CD Pipeline (GitHub Actions)**
-
-### 🔧 Pipeline Stages
-| Job | الوصف |
-|-----|-------|
-| `lint-and-test` | فحص الكود والاختبارات |
-| `build` | بناء Docker Image ورفعه لـ GHCR |
-| `deploy` | نشر تلقائي للخادم عبر SSH |
-| `release` | تحديث ملاحظات الإصدار تلقائياً |
-| `notify` | إشعارات Discord |
-
-### 📋 الملف: `.github/workflows/ci-cd.yml`
-```yaml
-jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-
-  build:
-    needs: lint-and-test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write  # مطلوب لـ GHCR
-    steps:
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-      - uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          script: |
-            cd /opt/network-monitor
-            git pull origin main
-            cd backend && npm ci --production
-            pm2 restart network-monitor --update-env
-```
 
 ---
 
@@ -339,50 +267,6 @@ MOBILE_ENABLED=1
 3. **اختبر**: من لوحة التحكم → 🔔 اختبار إشعار الهاتف
 
 > ⚠️ **iOS**: يتطلب iOS 16.4+ و Safari. الأجهزة الأقدم لا تدعم Web Push لكن التطبيق يعمل كـ PWA.
-
----
-
-## 🐧 **النشر على سيرفر Linux (Production Ready)**
-
-يدعم **جميع التوزيعات الرئيسية** - السكريبت يكتشف التوزيعة تلقائياً:
-
-| العائلة | التوزيعات | مدير الحزم |
-|----------|-----------|------------|
-| **Debian** | Ubuntu, Mint, Pop!_OS, Kali, Debian | `apt` |
-| **Red Hat** | RHEL, CentOS, Rocky, Alma, Fedora | `dnf` / `yum` |
-| **Arch** | Arch, Manjaro, EndeavourOS | `pacman` |
-| **Alpine** | Alpine Linux | `apk` |
-| **SUSE** | openSUSE, SLES | `zypper` |
-
-### 🚀 النشر السريع (5 دقائق)
-
-```bash
-# على جهازك: ادفع الكود لـ GitHub
-git remote add origin https://github.com/kerolos-it2022/network-monitor.git
-git push -u origin main
-
-# على السيرفر:
-sudo mkdir -p /opt && sudo chown $USER:$USER /opt
-cd /opt
-git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
-cd network-monitor
-sudo bash deploy.sh install
-```
-
-### 👉 **ما يفعله `deploy.sh install` تلقائياً:**
-1. ✅ **يكشف التوزيعة** ومدير الحزم المناسب
-2. ✅ **يحدث النظام** ويثبت الأدوات الأساسية (git, curl, traceroute, ...)
-3. ✅ يثبّت **أدوات البناء** (python3, make, g++)
-4. ✅ يثبّت **Node.js 20 LTS** (عبر NodeSource)
-4. ✅ يثبّت **PM2** عالمياً
-5. ✅ يثبّت **sqlite3 CLI**
-5. ✅ ينشئ `.env` + يولّد `SESSION_SECRET` عشوائي + **مفاتيح VAPID تلقائياً**
-6. ✅ `npm install` + بناء `better-sqlite3` للنظام المستهدف
-6. ✅ تهيئة قاعدة البيانات + إنشاء مدير افتراضي
-6. ✅ تشغيل التطبيق عبر PM2 + تفعيل البدء التلقائي (systemd/OpenRC)
-7. ✅ يعرض روابط الوصول + تعليمات الموبايل
-
-> 💡 **مهم**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند النقل من Windows إلى Linux.
 
 ---
 
@@ -447,7 +331,6 @@ network-monitor/
 │   │   └── middleware/       # requireAuth
 │   ├── package.json
 │   ├── .env.example
-│   └── Dockerfile
 ├── frontend/
 │   └── public/
 │       ├── index.html        # الصفحة العامة
@@ -456,6 +339,7 @@ network-monitor/
 │       └── js/               # public-dashboard, charts, admin-*
 ├── database/
 │   └── schema.sql
+├── linux-setup/              # ملفات systemd + Nginx (بديل عن PM2)
 ├── ecosystem.config.js       # إعدادات PM2
 ├── PROGRESS.md               # سجل تقدم البناء
 ├── CHANGELOG.md              # سجل التغييرات
@@ -463,11 +347,14 @@ network-monitor/
 ├── README.md                 # هذا الملف
 ├── deploy.sh                 # سكريبت النشر التلقائي
 ├── update.sh                 # سكريبت التحديث التلقائي
-├── .github/workflows/ci-cd.yml  # GitHub Actions CI/CD
-├── .github/dependabot.yml    # تحديثات تلقائية للتبعيات
-├── docker-compose.yml
-├── backend/Dockerfile
-└── README.md
+├── .github/
+│   ├── workflows/ci-cd.yml     # CI/CD: فحص الكود + اختبار صحة + نشر SSH
+│   ├── dependabot.yml          # تحديثات تلقائية للتبعيات + GitHub Actions
+│   ├── CODEOWNERS              # مالكو مستودع/موافقات تلقائية على PRs
+│   ├── SECURITY.md             # سياسة الإبلاغ عن الثغرات
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── ISSUE_TEMPLATE/         # قوالب تقرير الأخطاء + طلبات الميزات
+└── README.md                 # هذا الملف
 ```
 
 ---
@@ -563,12 +450,13 @@ curl http://localhost:4000/api/health
 | [`CHANGELOG.md`](./CHANGELOG.md) | سجل التغييرات الكامل |
 | [`DEPLOY.md`](./DEPLOY.md) | دليل النشر المفصل (Nginx، HTTPS، Firewall، Backup) |
 | [`PROGRESS.md`](./PROGRESS.md) | سجل تقدم البناء |
-| [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | تشغيل على Linux بدون Docker |
+| [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي على Linux خطوة بخطوة |
 | [`deploy.sh`](./deploy.sh) | سكريبت النشر التلقائي |
 | [`update.sh`](./update.sh) | سكريبت التحديث التلقائي |
 | [`ecosystem.config.js`](./ecosystem.config.js) | إعدادات PM2 |
-| [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) | GitHub Actions CI/CD |
-| [`.github/dependabot.yml`](.github/dependabot.yml) | تحديثات تلقائية للتبعيات |
+| [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) | CI/CD: فحص الكود + اختبار صحة + نشر SSH اختياري |
+| [`.github/dependabot.yml`](.github/dependabot.yml) | تحديثات تلقائية للتبعيات + GitHub Actions |
+| [`.github/SECURITY.md`](.github/SECURITY.md) | سياسة الإبلاغ عن الثغرات الأمنية |
 
 ---
 

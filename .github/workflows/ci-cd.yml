@@ -1,203 +1,180 @@
+# CI/CD Pipeline — Network Monitor (بدون Docker)
+# فحص الكود + اختبار صحة الخادم + نشر اختياري عبر SSH + إشعارات Discord
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "fix/**", "feat/**"]
   pull_request:
-    branches: [main]
-  release:
-    types: [published]
+    branches: [main, develop]
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  PORT: '4000'
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ==========================================
-  # Lint & Test
-  # ==========================================
+  # ─────────────────────────────────────────────────────────────
+  # 1) فحص الكود + اختبار صحة الخادم
+  # ─────────────────────────────────────────────────────────────
   lint-and-test:
+    name: Lint & Health Test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./backend
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: 🟢 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies (better-sqlite3 native build)
         run: npm ci
+        env:
+          # بناء better-sqlite3 من المصدر على النظام المستهدف
+          npm_config_build_from_source: 'true'
 
-      - name: Run linter
-        run: npm run lint 2>/dev/null || echo "No lint script defined"
+      - name: 🔍 Syntax check — all source files (node --check)
+        run: |
+          set -e
+          echo "::group::فحص قواعد JavaScript syntax لكل ملفات src/"
+          status=0
+          # العثور على كل ملفات .js داخل src/ وفحصها بـ node --check
+          find src -name '*.js' -type f | sort | while read -r file; do
+            if node --check "$file" 2>err.log; then
+              echo "  ✓ $file"
+            else
+              echo "  ✗ $file"
+              cat err.log
+              status=1
+            fi
+            rm -f err.log
+          done
+          exit $status
 
-      - name: Run tests
-        run: npm test 2>/dev/null || echo "No test script defined"
+      - name: 🗄️ Initialize database for health test
+        run: |
+          cd ..
+          mkdir -p database
+          sqlite3 database/monitoring.db < database/schema.sql
+          # إنشاء مدير افتراضي للتشغيل
+          cd backend
+          node src/seedAdmin.js
 
-  # ==========================================
-  # Build Docker Image
-  # ==========================================
-  build:
+      - name: 🩺 Health check — run server & probe /api/health
+        run: |
+          set -e
+          echo "::group::تشغيل الخادم وفحص /api/health"
+          # تشغيل الخادم في الخلفية
+          PORT=${PORT} node src/server.js > server.log 2>&1 &
+          SERVER_PID=$!
+
+          # انتظار حتى يستجيب الخادم (مع مهلة 30 ثانية)
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://localhost:${PORT}/api/health > health.json 2>/dev/null; then
+              echo "✅ الخادم استجاب عند المحاولة #$i"
+              cat health.json
+              echo ""
+              # التحقق من محتوى الاستجابة
+              if grep -q '"success":true' health.json; then
+                echo "✅ فحص الصحة ناجح: {success:true, data:ok}"
+                kill $SERVER_PID 2>/dev/null || true
+                wait $SERVER_PID 2>/dev/null || true
+                exit 0
+              fi
+            fi
+            sleep 0.5
+          done
+
+          # فشل الوصول للخادم
+          echo "❌ الخادم لم يستجب خلال 30 ثانية"
+          echo "::group::سجلات الخادم"
+          cat server.log || true
+          echo "::endgroup::"
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit 1
+
+      - name: 📤 Upload server logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            backend/server.log
+            backend/health.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────
+  # 2) النشر الاختياري على سيرفر الإنتاج عبر SSH (PM2)
+  #    يعمل فقط عند: push على main + وجود SERVER_HOST secret
+  # ─────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production (SSH + PM2)
     needs: lint-and-test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'release'
-    permissions:
-      contents: read
-      packages: write  # مطلوب لدفع الصور إلى GHCR
-    defaults:
-      run:
-        working-directory: ./backend
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ==========================================
-  # Deploy to Server (via SSH) - Optional
-  # ==========================================
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.SERVER_HOST != ''
     environment: production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.SERVER_HOST != ''
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Deploy to server
+      - name: 🚀 Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            cd /opt/network-monitor
-            git pull origin main
+            set -e
+            cd /opt/network-monitor 2>/dev/null || {
+              echo "❌ /opt/network-monitor غير موجود — نفّذ deploy.sh install أولاً على السيرفر"
+              exit 1
+            }
+            echo "📥 سحب أحدث التغييرات من main..."
+            git fetch origin main
+            git reset --hard origin/main
             cd backend
-            npm ci --production
+            echo "📦 تحديث التبعيات (إنتاج فقط)..."
+            npm ci --omit=dev
+            echo "🔄 إعادة تشغيل PM2..."
             pm2 restart network-monitor --update-env
             pm2 save
+            echo "✅ النشر اكتمل"
 
-  # ==========================================
-  # Create Release
-  # ==========================================
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Generate Changelog
-        id: changelog
-        run: |
-          # Get previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -z "$PREV_TAG" ]; then
-            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
-          fi
-          
-          # Generate changelog
-          CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
-          
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Update Release Notes
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: context.payload.release.tag_name
-            });
-            
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              body: context.payload.release.body + '\n\n---\n\n## Changes\n' + '${{ steps.changelog.outputs.changelog }}'
-            });
-
-  # ==========================================
-  # Notify (Discord/Slack/Telegram)
-  # ==========================================
+  # ─────────────────────────────────────────────────────────────
+  # 3) إشعارات Discord (دائمًا — نجاح/فشل)
+  # ─────────────────────────────────────────────────────────────
   notify:
-    needs: [build, deploy]
+    name: Discord Notification
+    needs: [lint-and-test]
     runs-on: ubuntu-latest
     if: always()
+
     steps:
-      - name: Send Discord notification
-        if: env.DISCORD_WEBHOOK != ''
-        run: |
-          STATUS="${{ job.status }}"
-          COLOR=$([ "$STATUS" = "success" ] && echo "5814783" || echo "15158332")
-          
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"embeds\": [{
-                \"title\": \"Network Monitor - Deployment ${STATUS}\",
-                \"description\": \"Branch: \${{ github.ref_name }}\nCommit: \${{ github.sha }}\nWorkflow: \${{ github.workflow }}\",
-                \"color\": $COLOR,
-                \"url\": \"https://github.com/\${{ github.repository }}/actions/runs/\${{ github.run_id }}\",
-                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-              }]
-            }"
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: 📢 Notify Discord
+        # يعمل فقط إذا أُعدّ secret DISCORD_WEBHOOK على المستودع
+        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: ${{ github.workflow }}
+          description: |
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.event.head_commit.message }}
+            **Author:** ${{ github.actor }}
+          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          color: ${{ job.status == 'success' && 0x57F287 || 0xED4245 }}

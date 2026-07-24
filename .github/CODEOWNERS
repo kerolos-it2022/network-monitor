@@ -1,0 +1,23 @@
+# CODEOWNERS — Network Monitor
+# =============================
+# توافق هذه القاعدة تلقائياً على @kerolos-it2022 لكل ملفات المستودع،
+# فيُطلب موافقته (كـ review) على أي Pull Request قبل الدمج.
+#
+# ملاحظة: لتفعيل مراجعات CODEOWNERS الإلزامية، فعّل "Require code owner reviews"
+# في Settings → Branches → Branch protection rules.
+#
+# الصيغة: <pattern> <owner(s)>
+# كل شيء في المستودع (افتراضي):
+* @kerolos-it2022
+
+# ★ الملفات الحساسة أدناه قد تُضاف إن رغبت في اشتراط موافقك موافقة صريحة عليها:
+
+# إعدادات النشر أكثر حساسية
+# /deploy.sh                 @kerolos-it2022
+# /update.sh                 @kerolos-it2022
+
+# متغيرات البيئة (مثال فقط — .env مُتجاهل في .gitignore ولا يُرفع)
+# /.env*                     @kerolos-it2022
+
+# سيرفر الإنتاج CI/CD
+# /.github/workflows/        @kerolos-it2022
