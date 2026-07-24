@@ -121,7 +121,7 @@ jobs:
             cd /opt/network-monitor
             git pull origin main
             cd backend
-            npm ci --production
+            npm ci --omit=dev
             pm2 restart network-monitor --update-env
             pm2 save
 
