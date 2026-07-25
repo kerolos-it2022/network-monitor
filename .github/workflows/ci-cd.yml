@@ -125,11 +125,21 @@ jobs:
     name: Deploy to Production (SSH + PM2)
     needs: lint-and-test
     runs-on: ubuntu-latest
-    environment: production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.SERVER_HOST != ''
+    # ملاحظة: لا نستخدم "environment: production" هنا لتفادي ظهور Environment فارغ
+    # في تبويب Deployments على GitHub. النشر يُسجّل عبر سجلات SSH/PM2 على السيرفر مباشرة.
+    # النشر يعمل فقط عند push على main — والـ step الداخلي يتحقق من وجود SERVER_HOST secret.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
+      - name: 🛑 Skip if SERVER_HOST not configured
+        if: ${{ secrets.SERVER_HOST == '' }}
+        run: |
+          echo "ℹ️ لم يُضبط secret SERVER_HOST — تم تخطّي النشر."
+          echo "لتفعيل النشر التلقائي، أضف secrets: SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, SERVER_PORT"
+          exit 0
+
       - name: 🚀 Deploy via SSH
+        if: ${{ secrets.SERVER_HOST != '' }}
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
