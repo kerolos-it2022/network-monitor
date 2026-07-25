@@ -1,18 +1,5 @@
 // admin-profile.js: إدارة الملف الشخصي (تغيير كلمة المرور، عرض معلومات الحساب).
-async function api(url, opts) {
-  const r = await fetch(url, opts);
-  return r.json();
-}
-
-function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, String.fromCharCode(38) + 'amp;')
-    .replace(/</g, String.fromCharCode(38) + 'lt;')
-    .replace(/>/g, String.fromCharCode(38) + 'gt;')
-    .replace(/"/g, String.fromCharCode(38) + 'quot;')
-    .replace(/'/g, String.fromCharCode(38) + '#39;');
-}
+// ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 
 async function loadProfile() {
   try {

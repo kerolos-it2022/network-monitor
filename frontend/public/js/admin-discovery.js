@@ -1,4 +1,5 @@
 // admin-discovery.js: منطق اكتشاف الأجهزة في لوحة التحكم.
+// ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 let discoveryAbortController = null;
 
 // ========== CIDR History Management (localStorage) ==========
@@ -84,33 +85,6 @@ function initCidrDatalist() {
   const lastUsed = getLastUsedCidr();
   if (lastUsed) {
     input.value = lastUsed;
-  }
-}
-
-function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
-    .replace(/'/g, "'");
-}
-
-async function api(url, opts) {
-  try {
-    const r = await fetch(url, opts);
-    if (!r.ok && r.status !== 401 && r.status !== 404) {
-      try {
-        const data = await r.json();
-        return data || { success: false, error: 'HTTP ' + r.status };
-      } catch (e) {
-        return { success: false, error: 'HTTP ' + r.status };
-      }
-    }
-    return await r.json();
-  } catch (e) {
-    return { success: false, error: 'تعذر الاتصال بالخادم' };
   }
 }
 

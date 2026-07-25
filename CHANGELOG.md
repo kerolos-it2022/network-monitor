@@ -16,14 +16,6 @@
 - **سكريبت التحديث (update.sh)** - حفظ التغييرات المحلية، تحديث التبعيات، إعادة تشغيل PM2
 - **اختيار الفرع** - دعم main/develop/master
 
-#### 🐳 دعم Docker
-- **Dockerfile** - صورة محسنة مع health check
-- **docker-compose.yml** - نشر كامل مع volumes وhealthcheck
-- **Dockerfile** محسن مع multi-stage build
-
-- **Dockerfile** يحتوي على health check
-- **docker-compose.yml** مع volumes وhealthcheck
-
 #### 🔧 التحسينات التقنية
 - **إصلاح عرض التحديثات** - إظهار رقم الإصدار السيمانتك (مثل 2.1.0) بدلاً من commit hash
 - **معالجة خطأ الفرع** - التحقق من وجود الفرع على البعيد قبل الفحص

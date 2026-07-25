@@ -1,4 +1,5 @@
 // admin-locations-types.js: إدارة المواقع وأنواع الأجهزة في لوحة التحكم (CRUD كامل عبر الواجهة).
+// ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 let currentLocationsSort = 'name'; // متغير عام لتخزين الترتيب الحالي للمواقع
 let currentTypesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأنواع
 
@@ -57,21 +58,6 @@ function getIconEmoji(iconName) {
   };
   const key = iconName.toLowerCase().trim();
   return iconMap[key] || iconMap['default'];
-}
-
-function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, String.fromCharCode(38) + 'amp;')
-    .replace(/</g, String.fromCharCode(38) + 'lt;')
-    .replace(/>/g, String.fromCharCode(38) + 'gt;')
-    .replace(/"/g, String.fromCharCode(38) + 'quot;')
-    .replace(/'/g, String.fromCharCode(38) + '#39;');
-}
-
-async function api(url, opts) {
-  const r = await fetch(url, opts);
-  return r.json();
 }
 
 // ============ المواقع ============

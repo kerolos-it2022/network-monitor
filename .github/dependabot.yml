@@ -1,6 +1,8 @@
 version: 2
 updates:
-  # Backend npm dependencies
+  # ─────────────────────────────────────────────────────────────
+  # تبعات backend npm (شامل الإنتاج والتطوير)
+  # ─────────────────────────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/backend"
     schedule:
@@ -29,7 +31,9 @@ updates:
           - "*"
         dependency-type: "production"
 
-  # GitHub Actions dependencies
+  # ─────────────────────────────────────────────────────────────
+  # تحديثات GitHub Actions المستخدمة في workflows/ (checkout, setup-node, ...)
+  # ─────────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -40,9 +44,12 @@ updates:
     open-pull-requests-limit: 5
     reviewers:
       - "kerolos-it2022"
+    assignees:
+      - "kerolos-it2022"
     labels:
       - "dependencies"
       - "github-actions"
+      - "ci"
     commit-message:
       prefix: "ci(deps): "
       include: "scope"
