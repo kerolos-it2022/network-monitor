@@ -295,6 +295,26 @@ button.tab-btn.active {
   background: var(--bg);
   color: var(--text);
 }
+/* لا نطبّق تنسيق text-input على checkboxes/radios (تبقيها نظيفة الظهور) */
+.form-grid input[type="checkbox"],
+.form-grid input[type="radio"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+/* تسمية checkbox: تظهر افقيًا (المربع + النص جنبًا إلى جنب) بدلًا من عموديًا */
+.form-grid label.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.form-grid label.checkbox-label span {
+  user-select: none;
+}
 .form-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
 .error-msg { color: var(--offline); font-size: 0.9rem; }
 

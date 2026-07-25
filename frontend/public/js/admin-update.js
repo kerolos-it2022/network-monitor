@@ -50,8 +50,8 @@ async function checkUpdates() {
   hideUpdateStatus();
 
   try {
-    const branchEl = document.getElementById('update-branch');
-    const branch = (branchEl && branchEl.value) ? branchEl.value : 'main';
+    // التحديث يُسحب دائمًا من فرع main (لا يوجد اختيار للفرع في الواجهة)
+    const branch = 'main';
 
     const r = await api('/api/update/check', {
       method: 'POST',
@@ -71,10 +71,8 @@ async function checkUpdates() {
     // عرض معلومات الإصدار
     const curEl = document.getElementById('update-current-version');
     const latEl = document.getElementById('update-latest-version');
-    const branchNameEl = document.getElementById('update-branch-name');
     if (curEl) curEl.textContent = r.currentVersion || 'غير معروف';
     if (latEl) latEl.textContent = r.latestVersion || 'غير معروف';
-    if (branchNameEl) branchNameEl.textContent = r.branch || 'main';
 
     const hasUpdate = !!(r.hasUpdate || r.updateAvailable);
 
@@ -136,8 +134,8 @@ async function applyUpdate() {
   showUpdateStatus('🔄 جاري تنفيذ التحديث...', false);
 
   try {
-    const branchEl = document.getElementById('update-branch');
-    const branch = (branchEl && branchEl.value) ? branchEl.value : 'main';
+    // التحديث يُسحب دائمًا من فرع main
+    const branch = 'main';
 
     const r = await api('/api/update/perform', {
       method: 'POST',
@@ -187,8 +185,8 @@ async function downloadUpdate() {
   if (logPre) logPre.textContent += '⏳ جاري بدء عملية التحميل...\n';
 
   try {
-    const branchEl = document.getElementById('update-branch');
-    const branch = (branchEl && branchEl.value) ? branchEl.value : 'main';
+    // التحميل دائمًا من فرع main
+    const branch = 'main';
     const url = `/api/update/download?branch=${encodeURIComponent(branch)}`;
 
     console.log('[DOWNLOAD] Fetching:', url);
@@ -278,19 +276,7 @@ async function downloadUpdate() {
 }
 
 function initUpdateTab() {
-  // جلب الفروع المتاحة من API
-  loadAvailableBranches();
-
-  // حدث تغيير الفرع
-  const branchInput = document.getElementById('update-branch');
-  if (branchInput) {
-    branchInput.addEventListener('change', () => {
-      const latEl = document.getElementById('update-latest-version');
-      if (latEl) latEl.textContent = '—';
-      setUpdateButtonsVisibility(false);
-      hideUpdateStatus();
-    });
-  }
+  // ملاحظة: تم إزالة اختيار الفرع — التحديث يُسحب دائمًا من main تلقائيًا.
 
   // ===== ربط الأزرار بشكل دائم وموثوق (بدلاً من التعيين الديناميكي) =====
   const checkBtn = document.getElementById('update-check-btn');
@@ -354,47 +340,6 @@ function initUpdateTab() {
         if (!lastCheckResult) checkUpdates();
       }, 200);
     });
-  }
-}
-
-async function loadAvailableBranches() {
-  const branchSelect = document.getElementById('update-branch');
-  const branchNameEl = document.getElementById('update-branch-name');
-
-  if (!branchSelect) return;
-
-  try {
-    branchSelect.disabled = true;
-    branchSelect.innerHTML = '<option value="">جاري تحميل الفروع...</option>';
-
-    const response = await api('/api/update/branches');
-
-    if (response.success && response.branches && response.branches.length > 0) {
-      branchSelect.innerHTML = '';
-      response.branches.forEach(branch => {
-        const option = document.createElement('option');
-        option.value = branch;
-        option.textContent = branch;
-        if (branch === response.defaultBranch) {
-          option.selected = true;
-          option.textContent += ' (افتراضي)';
-        }
-        branchSelect.appendChild(option);
-      });
-
-      if (branchNameEl && response.defaultBranch) {
-        branchNameEl.textContent = `الفرع الافتراضي: ${response.defaultBranch}`;
-      }
-    } else {
-      branchSelect.innerHTML = '<option value="main">main</option>';
-      if (branchNameEl) branchNameEl.textContent = 'الفرع الافتراضي: main';
-    }
-  } catch (e) {
-    console.error('[UPDATE] Failed to load branches:', e);
-    branchSelect.innerHTML = '<option value="main">main</option>';
-    if (branchNameEl) branchNameEl.textContent = 'الفرع الافتراضي: main';
-  } finally {
-    branchSelect.disabled = false;
   }
 }
 

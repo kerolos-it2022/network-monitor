@@ -18,4 +18,10 @@ db.prepare(
   'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)'
 ).run(username, passwordHash, 'admin');
 
-console.log(`Admin created successfully — username: ${username}`);
+console.log('========================================================');
+console.log('✅ تم إنشاء حساب المدير الافتراضي بنجاح');
+console.log(`   👤 اسم المستخدم: ${username}`);
+console.log(`   🔑 كلمة المرور:  ${password}`);
+console.log('   ⚠️  غيّر كلمة المرور فورًا من لوحة التحكم بعد أول تسجيل دخول.');
+console.log('   🔒 أو عدّل DEFAULT_ADMIN_PASSWORD في backend/.env وأعد التشغيل.');
+console.log('========================================================');

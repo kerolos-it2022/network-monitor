@@ -105,6 +105,9 @@ TELEGRAM_CHAT_ID=
 node src/seedAdmin.js
 ```
 
+> 🔑 **بيانات الدخول الافتراضية**: `admin` / `ChangeMe123!`
+> ⚠️ **غيّرها فورًا** من لوحة التحكم بعد أول تسجيل دخول، أو من `backend/.env` (`DEFAULT_ADMIN_PASSWORD`) ثم أعد التشغيل.
+
 ### 7) تشغيل الخادم (للتطوير)
 
 ```bash

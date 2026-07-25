@@ -99,15 +99,9 @@ MOBILE_ENABLED=1
 > 💡 `deploy.sh install` يولّد مفاتيح VAPID تلقائياً ويكتبها في `.env`. لو أردت إعادة توليدها يدوياً:
 > ```bash
 > cd /opt/network-monitor/backend
-> node -e "
-> const crypto = require('crypto');
-> const privateKey = crypto.randomBytes(32);
-> const publicKey = crypto.createECDH('prime256v1').setPrivateKey(privateKey).getPublicKey('uncompressed');
-> function toBase64Url(buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''); }
-> console.log('PUBLIC=' + toBase64Url(publicKey.slice(1)));
-> console.log('PRIVATE=' + toBase64Url(privateKey));
-> "
+> node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY='+k.publicKey); console.log('VAPID_PRIVATE_KEY='+k.privateKey)"
 > ```
+> الناتج جاهز للّصق مباشرةً في `backend/.env`.
 
 بعد التعديل:
 ```bash
@@ -127,6 +121,16 @@ curl http://localhost:4000/api/health
 ```
 
 افتح في المتصفح: `http://<IP-السيرفر>:4000/`
+
+### 🔑 بيانات الدخول الافتراضية
+
+| الحقل | القيمة |
+|------|--------|
+| اسم المستخدم | `admin` |
+| كلمة المرور | `ChangeMe123!` |
+
+> ⚠️ **غيّرها فورًا** بعد أول تسجيل دخول من لوحة التحكم (تبويب الملف الشخصي)، أو عدّل `DEFAULT_ADMIN_PASSWORD` في `backend/.env` ومن ثم أعد التشغيل.
+> تشغيل `node src/seedAdmin.js` يطبع اسم المستخدم وكلمة المرور على الطرفية عند إنشاء الحساب.
 
 ### 3) تفعيل إشعارات الموبايل (PWA)
 

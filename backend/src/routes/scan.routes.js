@@ -518,13 +518,12 @@ router.post('/subnet', async (req, res) => {
       }
     });
     
-    // تنفيذ المسح في الخلفية مع تخزين النتائج
-    try {
-      await performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity);
-    } catch (scanError) {
+    // تنفيذ المسح في الخلفية (fire-and-forget) دون انتظار — لا نُبقي طلب /subnet مفتوحًا
+    // نتائج المسح تُقرأ لاحقاً عبر SSE /stream/:scanId و /results/:scanId
+    performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity).catch(scanError => {
       console.error('[SCAN] Scan error:', scanError);
       scanResults[scanId] = { error: scanError.message, completed: true };
-    }
+    });
     
   } catch (error) {
     console.error('[SCAN] Scan subnet error:', error);
@@ -641,9 +640,6 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
     scanResults[scanId].completed = true;
     scanResults[scanId].devices = detailedResults;
     
-    // أيضاً حفظ في lastScanResults للتوافق مع الكود القديم
-    lastScanResults = detailedResults;
-    
     console.log(`[SCAN] Network scan completed: ${detailedResults.length} devices found`);
   } catch (error) {
     console.error('[SCAN] Perform scan error:', error);
@@ -683,11 +679,13 @@ router.get('/stream/:scanId', (req, res) => {
     res.end();
   }
   
-  // مراقبة النتائج
+  // مراقبة النتائج + heartbeat دوري لمنع إغلاق الاتصال الخامل
+  let lastWrite = Date.now();
   const checkProgress = setInterval(() => {
     const result = scanResults[scanId];
     if (!result) {
       sendLine('في الانتظار...');
+      lastWrite = Date.now();
       return;
     }
     
@@ -699,6 +697,7 @@ router.get('/stream/:scanId', (req, res) => {
     
     if (result.progress) {
       sendLine(result.progress);
+      lastWrite = Date.now();
     }
     
     if (result.completed) {
@@ -709,6 +708,10 @@ router.get('/stream/:scanId', (req, res) => {
       clearInterval(checkProgress);
       // تنظيف بعد دقيقة
       setTimeout(() => delete scanResults[scanId], 60000);
+    } else if (Date.now() - lastWrite >= 15000) {
+      // heartbeat: تعليق SSE فارغ يبقي الاتصال حيًّا مع الـ proxies/load balancers
+      res.write(': keep-alive\n\n');
+      lastWrite = Date.now();
     }
   }, 1000);
   

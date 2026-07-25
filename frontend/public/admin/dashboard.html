@@ -151,8 +151,8 @@
         <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
           امسح نطاق الشبكة لاكتشاف الأجهزة المتصلة تلقائياً وتحديد نوعها من المنافذ المفتوحة ومعلومات MAC.
         </p>
-        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto; gap:0.75rem; align-items:end;">
-          <label style="display:flex; flex-direction:column; gap:0.25rem;">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr auto; gap:0.75rem; align-items:end;">
+          <label style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
             نطاق الشبكة (CIDR)
             <div style="display:flex; gap:0.5rem;">
               <input type="text" id="discovery-cidr" list="cidr-history" placeholder="192.168.1.0/24" value="192.168.1.0/24" required style="flex:1; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
@@ -164,19 +164,20 @@
               </datalist>
             </div>
           </label>
-          <label>
+          <label class="checkbox-label">
             <input type="checkbox" id="discovery-scan-ports" checked />
-            مسح المنافذ الشائعة
+            <span>مسح المنافذ الشائعة</span>
           </label>
-          <label>
+          <label class="checkbox-label">
             <input type="checkbox" id="discovery-scan-snmp" />
-            استعلام SNMP (Community: public)
+            <span>استعلام SNMP</span>
           </label>
           <button type="button" class="btn btn-primary" id="discovery-start-btn" style="height:fit-content;">🚀 بدء المسح</button>
         </div>
-        <div style="margin-top:1rem;">
-          <label style="font-size:0.85rem; color:var(--muted);">Community String (للـ SNMP):</label>
-          <input type="text" id="discovery-snmp-community" value="public" style="width:200px; padding:0.4rem; margin-left:0.5rem;" />
+        <div style="margin-top:0.75rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <label for="discovery-snmp-community" style="font-size:0.85rem; color:var(--muted);">Community String (للـ SNMP):</label>
+          <input type="text" id="discovery-snmp-community" value="public" style="width:200px; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
+          <span style="font-size:0.8rem; color:var(--muted);">(يُستخدم فقط عند تفعيل استعلام SNMP)</span>
         </div>
       </div>
 
@@ -224,13 +225,27 @@
       <div class="form-card">
         <h3>إعدادات الإشعارات</h3>
         <div class="form-grid">
-          <label>Telegram مفعّل <input type="checkbox" id="ntf-telegram_enabled" /></label>
-          <label>Bot Token <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" /></label>
-          <label>Chat ID <input type="text" id="ntf-telegram_chat_id" /></label>
-          <label>WhatsApp مفعّل <input type="checkbox" id="ntf-whatsapp_enabled" /></label>
-          <label>WhatsApp API URL <input type="text" id="ntf-whatsapp_api_url" /></label>
-          <label>WhatsApp API Token <input type="text" id="ntf-whatsapp_api_token" /></label>
-          <label>WhatsApp To Number <input type="text" id="ntf-whatsapp_to_number" /></label>
+          <fieldset style="grid-column:1/-1; display:flex; flex-direction:column; gap:0.5rem; padding:0.75rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); margin:0;">
+            <label class="checkbox-label" style="font-weight:600;">
+              <input type="checkbox" id="ntf-telegram_enabled" />
+              <span>Telegram مفعّل</span>
+            </label>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:0.25rem;">
+              <label>Bot Token <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" /></label>
+              <label>Chat ID <input type="text" id="ntf-telegram_chat_id" /></label>
+            </div>
+          </fieldset>
+          <fieldset style="grid-column:1/-1; display:flex; flex-direction:column; gap:0.5rem; padding:0.75rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); margin:0;">
+            <label class="checkbox-label" style="font-weight:600;">
+              <input type="checkbox" id="ntf-whatsapp_enabled" />
+              <span>WhatsApp مفعّل</span>
+            </label>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:0.5rem; margin-top:0.25rem;">
+              <label>WhatsApp API URL <input type="text" id="ntf-whatsapp_api_url" /></label>
+              <label>WhatsApp API Token <input type="text" id="ntf-whatsapp_api_token" /></label>
+              <label>WhatsApp To Number <input type="text" id="ntf-whatsapp_to_number" /></label>
+            </div>
+          </fieldset>
         </div>
         <!-- ===== قسم إشعارات الموبايل (PWA + FCM) ===== -->
         <h3 style="margin-top:1.5rem;">📱 إشعارات الموبايل (PWA)</h3>
@@ -406,14 +421,9 @@
           </div>
         </div>
 
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1.5rem;">
-          <label style="font-size:0.9rem; color:var(--muted);">الفرع:</label>
-          <select id="update-branch" style="padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text); min-width:150px;">
-            <option value="main">main</option>
-            <option value="develop">develop</option>
-            <option value="master">master</option>
-          </select>
-          <span id="update-branch-name" style="font-size:0.9rem; color:var(--muted);"></span>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1.5rem; padding:0.6rem 0.9rem; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <span style="font-size:0.9rem; color:var(--muted);">🔄 التحديثات تُسحب تلقائيًا من فرع:</span>
+          <span style="font-size:0.9rem; font-weight:600; color:var(--accent); font-family:monospace;">main</span>
         </div>
 
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">

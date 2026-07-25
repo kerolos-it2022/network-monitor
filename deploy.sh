@@ -395,16 +395,17 @@ EOF
         log "تم توليد SESSION_SECRET عشوائي وتخزينه في backend/.env"
     fi
 
-    # توليد مفاتيح VAPID لـ Web Push (PWA) إن لم تكن موجودة
-    if ! grep -q "^VAPID_PUBLIC_KEY=" "$env_file" || ! grep -q "^VAPID_PRIVATE_KEY=" "$env_file"; then
+    # توليد مفاتيح VAPID لـ Web Push (PWA) إن لم تكن موجودة بقيم غير فارغة
+    # ملاحظة: الشرط يتطلب قيمة (إضافة .+) لتجـاوز الأسطر الفارغة المنسوخة من .env.example
+    if ! grep -qE "^VAPID_PUBLIC_KEY=.+" "$env_file" || ! grep -qE "^VAPID_PRIVATE_KEY=.+" "$env_file"; then
         log "توليد مفاتيح VAPID لـ Web Push (PWA)..."
         local vapid_keys=""
         if command -v node &> /dev/null && command -v npm &> /dev/null; then
-            # محاولة استخدام web-push إذا كان مثبتاً
-            if npm list web-push >/dev/null 2>&1; then
-                vapid_keys=$(node -e "const webpush = require('web-push'); const keys = webpush.generateVAPIDKeys(); console.log('PUBLIC=' + keys.publicKey); console.log('PRIVATE=' + keys.privateKey);")
+            # محاولة استخدام web-push من داخل backend (ضمان resolve صحيح + توفر الـ module بعد npm install)
+            if (cd "$PROJECT_DIR/backend" && npm list web-push >/dev/null 2>&1); then
+                vapid_keys=$(cd "$PROJECT_DIR/backend" && node -e "const webpush = require('web-push'); const keys = webpush.generateVAPIDKeys(); console.log('PUBLIC=' + keys.publicKey); console.log('PRIVATE=' + keys.privateKey);")
             else
-                # تثبيت web-push مؤقتاً أو استخدام crypto الأصلي
+                # fallback باستخدام crypto الأصلي (لا يحتاج أي module خارجي — يعمل دائمًا)
                 vapid_keys=$(node -e "
                     const crypto = require('crypto');
                     const privateKey = crypto.randomBytes(32);
@@ -425,9 +426,10 @@ EOF
             local pub_key=$(echo "$vapid_keys" | grep "^PUBLIC=" | cut -d= -f2)
             local priv_key=$(echo "$vapid_keys" | grep "^PRIVATE=" | cut -d= -f2)
             if [[ -n "$pub_key" && -n "$priv_key" ]]; then
-                # إضافة مفاتيح VAPID إلى .env
+                # إضافة مفاتيح VAPID إلى .env مع استبدال أي أسطر فارغة موجودة
+                # إزالة الأسطور الفارغة القديمة (إن وُجدت من .env.example) قبل الإضافة
+                sed -i '/^VAPID_PUBLIC_KEY=$/d; /^VAPID_PRIVATE_KEY=$/d; /^VAPID_SUBJECT=mailto:admin@example.com$/d; /^MOBILE_ENABLED=$/d' "$env_file" 2>/dev/null || true
                 {
-                    echo ""
                     echo "# PWA / Web Push (VAPID) - تم توليدها تلقائياً"
                     echo "VAPID_PUBLIC_KEY=$pub_key"
                     echo "VAPID_PRIVATE_KEY=$priv_key"
@@ -585,7 +587,7 @@ case "${1:-install}" in
         log "تم النشر بنجاح على ($DISTRO_ID)!"
         log "النظام يعمل على: http://$(hostname -I 2>/dev/null | awk '{print $1}' || echo localhost):$PORT"
         log "صفحة الدخول:     http://localhost:$PORT/admin/login.html"
-        log "البيانات الافتراضية للمدير موجودة في: $PROJECT_DIR/backend/.env"
+        log "👤 المدير الافتراضي: admin (كلمة المرور: ChangeMe123!) — ⚠️ غيّرها من backend/.env فورًا"
         log "لعرض السجلات:    sudo bash deploy.sh logs"
         log "============================================"
         ;;

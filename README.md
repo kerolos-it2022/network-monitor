@@ -104,6 +104,8 @@ npm start                # تشغيل الخادم
 | 🔐 **تسجيل الدخول** | `http://localhost:4000/admin/login.html` |
 | 📊 **لوحة التحكم** | `http://localhost:4000/admin/dashboard.html` |
 
+> 🔑 **بيانات الدخول الافتراضية**: `admin` / `ChangeMe123!` — ⚠️ **غيّرها فورًا** من لوحة التحكم بعد أول تسجيل دخول (أو عدّل `DEFAULT_ADMIN_PASSWORD` في `backend/.env` ثم أعد تشغيل الباك إند).
+
 ---
 
 ## 🐧 **النشر على سيرفر Linux (الطريقة المعتمدة)**
@@ -305,15 +307,10 @@ VAPID_SUBJECT=mailto:admin@example.com
 ### 🔐 توليد مفاتيح VAPID يدوياً (إذا احتجت)
 ```bash
 cd backend
-node -e "
-const crypto = require('crypto');
-const privateKey = crypto.randomBytes(32);
-const publicKey = crypto.createECDH('prime256v1').setPrivateKey(privateKey).getPublicKey('uncompressed');
-function toBase64Url(buf) { return buf.toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
-console.log('PUBLIC=' + toBase64Url(Buffer.from(publicKey.slice(1))));
-console.log('PRIVATE=' + toBase64Url(privateKey));
-"
+node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY='+k.publicKey); console.log('VAPID_PRIVATE_KEY='+k.privateKey)"
 ```
+> 💡 `web-push` مثبّت بالفعل ضمن تبعات `backend/`، فلا حاجة لأي إعداد إضافي.
+> الناتج جاهز للّصق مباشرة في `backend/.env`.
 
 ---
 
@@ -401,7 +398,7 @@ curl http://localhost:4000/api/health
 # http://localhost:4000/          # الصفحة العامة
 # http://localhost:4000/admin/login.html  # تسجيل الدخول
 
-# 3. سجل دخول: admin / admin123
+# 3. سجل دخول: admin / ChangeMe123!  ⚠️ غيّرها فورًا من لوحة التحكم بعد الدخول
 # 4. اضغط تبويب "الأنواع" → أضف نوعاً (مثل "Router")
 # 5. اضغط تبويب "المواقع" → أضف موقعاً
 # 6. اضغط تبويب "الأجهزة" → أضف جهازاً
