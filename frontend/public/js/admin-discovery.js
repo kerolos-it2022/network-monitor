@@ -234,10 +234,18 @@ function connectSSE(scanId) {
     document.getElementById('discovery-progress-count').textContent = '';
   });
 
-  eventSource.addEventListener('done', () => {
+  eventSource.addEventListener('done', (e) => {
     consecutiveErrors = 0;
     eventSource.close();
-    // جلب النتائج النهائية
+    // عرض عدد الأجهزة من بيانات الحدث (إن وُجد) — يَعطي feedback فوريًّا ولو فشل fetchResults لاحقًا
+    try {
+      const info = e.data ? JSON.parse(e.data) : null;
+      if (info && typeof info.deviceCount === 'number') {
+        document.getElementById('discovery-progress-text').textContent =
+          '✅ اكتمل المسح! تم العثور على ' + info.deviceCount + ' جهاز';
+      }
+    } catch (err) { /* تجاهل: لا data أو ليست JSON — نَعتمد على fetchResults */ }
+    // جلب النتائج الكاملة من /results/:scanId
     fetchResults(scanId);
   });
 
@@ -263,7 +271,9 @@ function connectSSE(scanId) {
   discoveryAbortController = eventSource;
 }
 
-async function fetchResults(scanId) {
+async function fetchResults(scanId, attempt) {
+  attempt = attempt || 0;
+  const MAX_FETCH_ATTEMPTS = 8;  // حد أقصى للمحاولات (~8 ثوانٍ) قبل الإعلان بالفشل
   try {
     const r = await api('/api/scan/results/' + scanId);
     if (r.success && r.data && r.data.length > 0) {
@@ -273,11 +283,23 @@ async function fetchResults(scanId) {
       resetStartButton();
       return;
     }
+    // منع تكرار لانهائي: لو فشل عدد محدود من المحاولات، نُظهر رسالة ولو بدلاً من التعليق
+    if (attempt >= MAX_FETCH_ATTEMPTS) {
+      showError('اكتمل المسح لكن تعذّر تحميل النتائج من الخادم عبر الـ proxy. ' +
+                'قد تكون انتهت صلاحية scanResults. جرّب إعادة المسح أو استخدم اتصالًا مباشرًا (localhost:4000).');
+      resetStartButton();
+      return;
+    }
     // إذا لم تكن النتائج جاهزة، ننتظر قليلاً ونحاول مرة أخرى
-    setTimeout(() => fetchResults(scanId), 1000);
+    setTimeout(() => fetchResults(scanId, attempt + 1), 1000);
   } catch (e) {
     console.error('Fetch results error:', e);
-    setTimeout(() => fetchResults(scanId), 1000);
+    if (attempt >= MAX_FETCH_ATTEMPTS) {
+      showError('تعذّر الاتصال بالخادم لجلب النتائج: ' + (e.message || e));
+      resetStartButton();
+      return;
+    }
+    setTimeout(() => fetchResults(scanId, attempt + 1), 1000);
   }
 }
 

@@ -667,9 +667,12 @@ router.get('/stream/:scanId', (req, res) => {
     res.write('data: ' + JSON.stringify(line) + '\n\n');
   }
   
-  function sendDone() {
+  function sendDone(deviceCount) {
     res.write('event: done\n');
-    res.write('data: \n\n');
+    // إرسال عدد الأجهزة في data (JSON) ليُمكن للواجهة عرض النتائج مباشرةً دون
+    // الاعتماد فقط على استدعاء /results/:scanId (الذي قد يفشل عبر proxy/ngrok
+    // إذا انتهت صلاحية scanResults[scanId] أو تأخر الطلب).
+    res.write('data: ' + JSON.stringify({ deviceCount: deviceCount || 0 }) + '\n\n');
     res.end();
   }
   
@@ -704,7 +707,7 @@ router.get('/stream/:scanId', (req, res) => {
       if (result.devices) {
         sendLine('اكتمل المسح! تم العثور على ' + result.devices.length + ' جهاز');
       }
-      sendDone();
+      sendDone(result.devices ? result.devices.length : 0);
       clearInterval(checkProgress);
       // تنظيف بعد دقيقة
       setTimeout(() => delete scanResults[scanId], 60000);
