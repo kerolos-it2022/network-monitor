@@ -180,6 +180,31 @@ sudo bash deploy.sh update
 > git push origin main && git push origin v<X.Y.Z>
 > ```
 
+### ⚠️ ملاحظات الانتقال من 2.2.0 إلى 2.3.0
+
+نسخة 2.3.0 تُصلح مشاكل VAPID و SSE (مسح الأجهزة عبر reverse proxy). بعد `deploy.sh update`:
+
+**1) مفاتيح VAPID العاطلة (إن وُلِّدت في 2.2.0 عبر fallback)**
+في 2.2.0 قد يكون `deploy.sh` كَتب مفتاحًا عامًّا 64-بايت (عاطل) في `backend/.env`، فظهر خطأ المتصفح `Vapid public key should be 65 bytes long`. الحل في 2.3.0: شرط التوليد صار يَتحقق من **طول المفتاح** (≥86 char) ويُعيد التوليد تلقائيًا. لتفعيله:
+
+```bash
+sudo sed -i '/^VAPID_PUBLIC_KEY=/d; /^VAPID_PRIVATE_KEY=/d' /opt/network-monitor/backend/.env
+sudo bash /opt/network-monitor/deploy.sh update
+# أو ولّد يدويًا والصقها في backend/.env:
+cd /opt/network-monitor/backend
+node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY='+k.publicKey); console.log('VAPID_PRIVATE_KEY='+k.privateKey)"
+```
+
+**2) إعدادات Nginx العاطلة لمسار SSE**
+نسخة 2.2.0 شحنَت `nginx.example.conf` بـ hardcoded `Connection "upgrade"` ولا `proxy_buffering off` — ما يَكسر `/api/scan/stream/` (المتصفح قد يَتلقى تقدم المسح ثم يَنقطع). نسخة 2.3.0 تُصلحها. حدّث الإعداد على الخادم:
+
+```bash
+sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> 💡 `map $http_upgrade $connection_upgrade {...}` يجب أن يكون في `http {}` context وليس داخل `server {}`. مثلاً: `/etc/nginx/conf.d/connection-map.conf`.
+
 ### أوامر PM2 المباشرة (بديلة)
 ```bash
 pm2 status                       # قائمة العمليات

@@ -216,29 +216,49 @@ async function startDiscovery() {
 
 function connectSSE(scanId) {
   const eventSource = new EventSource('/api/scan/stream/' + scanId);
-  
+
+  // عدّاد الأخطاء العابرة — EventSource يُعيد الاتصال تلقائيًا، لكننا نتجاوز فقط بعد
+  // عدد محدد من الأخطاء المتتالية دون استقبال أي حدث (احتمال انقطاع فعلي لا استرداد تام).
+  let consecutiveErrors = 0;
+  const MAX_SSE_ERRORS = 5;
+
   eventSource.addEventListener('start', (e) => {
+    consecutiveErrors = 0;
     document.getElementById('discovery-progress-text').textContent = e.data;
   });
-  
+
   eventSource.addEventListener('line', (e) => {
+    consecutiveErrors = 0;
     const line = JSON.parse(e.data);
     document.getElementById('discovery-progress-text').textContent = line;
     document.getElementById('discovery-progress-count').textContent = '';
   });
-  
+
   eventSource.addEventListener('done', () => {
+    consecutiveErrors = 0;
     eventSource.close();
     // جلب النتائج النهائية
     fetchResults(scanId);
   });
-  
+
   eventSource.addEventListener('error', (e) => {
-    eventSource.close();
-    showError('انقطع الاتصال بالخادم');
-    resetStartButton();
+    // readyState === CLOSED يعني اتصالًا مغلقًا فعلاً (خادم رفض/انتهى) — خطأ جوهري.
+    // خلاف ذلك EventSource يُعيد الاتصال تلقائيًا فلا نقطعه على الأخطاء العابرة (proxy idle-drop مثلاً).
+    if (eventSource.readyState === EventSource.CLOSED) {
+      eventSource.close();
+      showError('انقطع الاتصال بالخادم');
+      resetStartButton();
+      return;
+    }
+    // عابر: نسمح EventSource بإعادة المحاولة، لكن نُحدّد سقفًا لتفادي التعليق الأبدي.
+    consecutiveErrors += 1;
+    if (consecutiveErrors >= MAX_SSE_ERRORS) {
+      eventSource.close();
+      showError('انقطع الاتصال بالخادم — تعذّرت إعادة الاتصال بعد عدة محاولات');
+      resetStartButton();
+    }
   });
-  
+
   // تخزين reference للإيقاف
   discoveryAbortController = eventSource;
 }

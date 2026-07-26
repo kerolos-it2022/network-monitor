@@ -395,10 +395,22 @@ EOF
         log "تم توليد SESSION_SECRET عشوائي وتخزينه في backend/.env"
     fi
 
-    # توليد مفاتيح VAPID لـ Web Push (PWA) إن لم تكن موجودة بقيم غير فارغة
-    # ملاحظة: الشرط يتطلب قيمة (إضافة .+) لتجـاوز الأسطر الفارغة المنسوخة من .env.example
-    if ! grep -qE "^VAPID_PUBLIC_KEY=.+" "$env_file" || ! grep -qE "^VAPID_PRIVATE_KEY=.+" "$env_file"; then
+    # توليد مفاتيح VAPID لـ Web Push (PWA) إن لم تكن موجودة بقيم صالحة الطول.
+    # مفتاح P-256 العام غير مضغوط = 65 بايت = 86 char base64url (بدون padding)؛
+    # المفتاح الخاص = 32 بايت = 43 char. نقبل القيم بهذا الطول الأدنى فقط،
+    # وإلا أَعدنا التوليد (يُصلح المفاتيح العاطلة 64-بايت من fallback قديم + الأسطر الفارغة).
+    local need_vapid=0
+    local vapid_pub_curr vapid_priv_curr
+    vapid_pub_curr=$(grep -E "^VAPID_PUBLIC_KEY=" "$env_file" | tail -n1 | cut -d= -f2-)
+    vapid_priv_curr=$(grep -E "^VAPID_PRIVATE_KEY=" "$env_file" | tail -n1 | cut -d= -f2-)
+    if [[ ${#vapid_pub_curr} -lt 86 || ${#vapid_priv_curr} -lt 43 ]]; then
+        need_vapid=1
+    fi
+    if [[ "$need_vapid" == "1" ]]; then
         log "توليد مفاتيح VAPID لـ Web Push (PWA)..."
+        if [[ -n "$vapid_pub_curr" || -n "$vapid_priv_curr" ]]; then
+            log "  (المفاتيح الحالية العاطلة/مختصرة الطول سيتم استبدالها)"
+        fi
         local vapid_keys=""
         if command -v node &> /dev/null && command -v npm &> /dev/null; then
             # محاولة استخدام web-push من داخل backend (ضمان resolve صحيح + توفر الـ module بعد npm install)
@@ -416,7 +428,9 @@ EOF
                     function toBase64Url(buf) {
                         return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
                     }
-                    console.log('PUBLIC=' + toBase64Url(publicKey.slice(1))); // إزالة البايت الأول (0x04)
+                    // إبقاء الـ 65 بايت كاملة (مع بادئة 0x04) — مطابق لـ web-push.generateVAPIDKeys()
+                    // المتصفح يَتطلب فك تشفير المفتاح إلى 65 بايت بالضبط عند pushManager.subscribe.
+                    console.log('PUBLIC=' + toBase64Url(publicKey));
                     console.log('PRIVATE=' + toBase64Url(privateKey));
                 ")
             fi
