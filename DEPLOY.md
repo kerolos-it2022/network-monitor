@@ -160,6 +160,26 @@ curl http://localhost:4000/api/health
 | تحديث بعد `git pull` | `sudo bash deploy.sh update` |
 | حذف التطبيق (بياناتك تبقى) | `sudo bash deploy.sh uninstall` |
 
+### 🔄 تحديث النظام إلى أحدث نسخة
+
+تبويب "التحديثات" في لوحة التحكم يقرأ "أحدث إصدار" من **git tags** (وليس من الكود) — لذا يجب جلب الـ tags مع كل تحديث وإلا ستظهر نسخة قديمة في الواجهة.
+
+```bash
+cd /opt/network-monitor
+git fetch --tags          # مهم: يجلب التاغات الجديدة (مثل v2.3.0)
+git pull                  # يجلب كود أحدث نسخة
+sudo bash deploy.sh update
+```
+
+> ⚠️ **عند إصدار نسخة جديدة من جهاز التطوير**: ارفع الكود **والتاغ** معًا، وإلا فلن يَرى الخادم النسخة الجديدة في تبويب التحديثات:
+> ```bash
+> # من جهاز التطوير بعد كل التزام إصدار:
+> git tag -a v<X.Y.Z> -m "Release v<X.Y.Z>"
+> git push origin main --follow-tags     # الأنسب: يرفع الكود + التاغات المرتبطة
+> # أو يدويًا:
+> git push origin main && git push origin v<X.Y.Z>
+> ```
+
 ### أوامر PM2 المباشرة (بديلة)
 ```bash
 pm2 status                       # قائمة العمليات
