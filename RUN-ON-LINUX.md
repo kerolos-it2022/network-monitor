@@ -196,10 +196,11 @@ sudo iptables -A INPUT -p tcp --dport 4000 -j ACCEPT
 sudo apt install -y nginx certbot python3-certbot-nginx      # Debian
 sudo dnf install -y nginx certbot python3-certbot-nginx      # RHEL
 
-# ضبط Nginx
+# ضبط Nginx (نسخة 2.4.0: ملفان — server في sites-available، map في conf.d)
 sudo cp nginx.example.conf /etc/nginx/sites-available/network-monitor
-sudo nano /etc/nginx/sites-available/network-monitor_V1   # عدّل server_name
-sudo ln -s /etc/nginx/sites-available/network-monitor_V1 /etc/nginx/sites-enabled/
+sudo cp nginx.connection-map.conf /etc/nginx/conf.d/connection-map.conf
+sudo nano /etc/nginx/sites-available/network-monitor   # عدّل server_name
+sudo ln -s /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # تفعيل HTTPS مجاناً
@@ -289,7 +290,8 @@ node src/seedAdmin.js
 | [`DEPLOY.md`](./DEPLOY.md) | دليل النشر الإنتاجي المفصّل (Nginx, HTTPS, Multi-tenant) |
 | [`deploy.sh`](./deploy.sh) | سكريبت النشر التلقائي (install, restart, logs, ...) |
 | [`ecosystem.config.js`](./ecosystem.config.js) | إعدادات PM2 |
-| [`nginx.example.conf`](./nginx.example.conf) | مثال إعدادات Nginx |
+| [`nginx.example.conf`](./nginx.example.conf) | إعداد Nginx — كِتلة `server{}` فقط (يُنسخ لـ `/etc/nginx/sites-available/`) |
+| [`nginx.connection-map.conf`](./nginx.connection-map.conf) | إعداد Nginx — كِتلة `map{}` فقط (يُنسخ لـ `/etc/nginx/conf.d/connection-map.conf`) |
 | [`database/schema.sql`](./database/schema.sql) | مخطط قاعدة البيانات |
 | [`backend/.env.example`](./backend/.env.example) | مثال ملف البيئة |
 

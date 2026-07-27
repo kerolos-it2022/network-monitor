@@ -196,14 +196,22 @@ node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUB
 ```
 
 **2) إعدادات Nginx العاطلة لمسار SSE**
-نسخة 2.2.0 شحنَت `nginx.example.conf` بـ hardcoded `Connection "upgrade"` ولا `proxy_buffering off` — ما يَكسر `/api/scan/stream/` (المتصفح قد يَتلقى تقدم المسح ثم يَنقطع). نسخة 2.3.0 تُصلحها. حدّث الإعداد على الخادم:
+نسخة 2.2.0 شحنَت `nginx.example.conf` بـ hardcoded `Connection "upgrade"` ولا `proxy_buffering off` — ما يَكسر `/api/scan/stream/` (المتصفح قد يَتلقى تقدم المسح ثم يَنقطع). نسخة 2.3.0 تُصلحها، ثم نسخة **2.4.0** فَصلت `map` عن `server{}` في ملفين لتفادي فشل `nginx -t`. حدّث الإعداد على الخادم:
 
 ```bash
+# 1) server block (يُوضع في sites-available — سياق http عبر sites-enabled)
 sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor
+sudo ln -sf /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/
+
+# 2) map block (يُوضع في conf.d — سياق http {})
+sudo cp /opt/network-monitor/nginx.connection-map.conf /etc/nginx/conf.d/connection-map.conf
+
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-> 💡 `map $http_upgrade $connection_upgrade {...}` يجب أن يكون في `http {}` context وليس داخل `server {}`. مثلاً: `/etc/nginx/conf.d/connection-map.conf`.
+> 💡 **لماذا ملفان؟** كِتلة `map $http_upgrade $connection_upgrade {...}` تُقبَل فقط داخل `http { }`، وليس داخل `server { }` أو `location { }`. لو نَسخ المُستخدم ملفًّا واحدًا يَحوي `map` + `server` إلى `sites-available/` (الذي يُضمَّن داخل `http{}`)، فقد يَنجح MA على بعض إصدارات nginx، لكن نَسخه إلى `conf.d/` مع `server{}` داخله يَفشل مُباشرةً. الفَصل يَضمن أَن `map` دائمًا في سياق `http{}` الصّحيح.
+
+> 📌 **لو كان لديك setup قديم** من 2.3.x يَحوي `map` داخل `nginx.example.conf`: احذف الـ block القَديم من `/etc/nginx/sites-available/network-monitor` (أَو أَعد النَّسخ من نسخة 2.4.0 الجديدة التي لا تَحوي `map`)، واعتمد على `conf.d/connection-map.conf` فقط.
 
 ### أوامر PM2 المباشرة (بديلة)
 ```bash
@@ -238,12 +246,14 @@ sudo zypper install nginx certbot python3-certbot-nginx
 
 ### الخطوة 2: ضبط Nginx
 ```bash
-sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor 2>/dev/null \
-  || sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/conf.d/network-monitor.conf
+# 1) server block (يَقبل فقط server{...}، بلا map التي فُصلت)
+sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor
+
+# 2) map block (يَجب أن يَكون في conf.d — سياق http {})
+sudo cp /opt/network-monitor/nginx.connection-map.conf /etc/nginx/conf.d/connection-map.conf
 
 # عدّل server_name إلى دومينك (مثل: monitor.company.com)
-sudo nano /etc/nginx/sites-available/network-monitor 2>/dev/null \
-  || sudo nano /etc/nginx/conf.d/network-monitor.conf
+sudo nano /etc/nginx/sites-available/network-monitor
 
 # فعّل (على Debian/Ubuntu فقط):
 sudo ln -s /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/ 2>/dev/null || true

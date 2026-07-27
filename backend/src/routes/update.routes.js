@@ -143,17 +143,70 @@ async function getDefaultBranch() {
   }
 }
 
+// تصنيف خطأ git إلى رسالة عربية واضحة بدل الرسالة الفنية الخام
+// يَلتقط: صلاحيات .git/، شبكة، .git مكسورة، مصادقة... إلخ.
+function classifyGitError(error) {
+  const msg = (error && error.message) ? String(error.message) : '';
+  const lower = msg.toLowerCase();
+
+  // صلاحيات .git/ (FETCH_HEAD / index / refs مملوكة لمستخدم آخر)
+  if (/permission denied|cannot open|fatal:\s*not a git repository/i.test(msg)) {
+    return {
+      category: 'permissions',
+      message: 'فشل في الوصول إلى مجلد .git/ — غالبًا بسبب ملكية خاطئة (تَعمل العملية كمستخدم مختلف).',
+      hint: 'على الخادم: sudo chown -R $USER:$USER /opt/network-monitor/.git  (شغّل كمستخدم العملية، لا root)',
+    };
+  }
+  // مشكلة شبكة / DNS / GitHub غير مُتاح
+  if (/could not resolve host|connection timed out|connection refused|failed to connect|temporary failure in name resolution|network is unreachable/i.test(msg)) {
+    return {
+      category: 'network',
+      message: 'تعذّر الوصول إلى المستودع البعيد — تحقق من اتصال الخادم بالإنترنت/GitHub.',
+      hint: 'حاول مجددًا لاحقًا؛ تحقق من DNS/防火墙： nslookup github.com',
+    };
+  }
+  // مصادقة (مستودع خاص بدون token، أو token منتهٍ)
+  if (/authentication failed|could not read username|403|401|requests require authentication/i.test(msg)) {
+    return {
+      category: 'auth',
+      message: 'المستودع يتطلب مصادقة. تحقق من GITHUB_TOKEN إن كان المستودع خاصًا.',
+      hint: 'اضبط GITHUB_TOKEN في backend/.env أو اجعل المستودع عامًا.',
+    };
+  }
+  // غير مُصنّف: نُعيد الرسالة الخام كما هي
+  return { category: 'unknown', message: msg || 'خطأ غير معروف', hint: null };
+}
+
 // التحقق من وجود تحديثات متاحة
 async function checkForUpdates(branch = 'main') {
   try {
-    // التحقق من وجود الفرع على المستودع البعيد
+    // ملاحظة: checkBranchExists يَنفّذ `git ls-remote` (read-only عبر الشبكة، لا يَكتب .git/).
+    // إن نجح وفشل `git fetch` فيما بَعد، فالجذر ليس "الفرع غير موجود" بل صلاحيات .git/ أو شبكة.
+    // لذلك نُجَرّب `git fetch` الفِعلي أَوّلًا، ونَلتقط رسالة الخطأ الأَصلية بدل الإصمات على الرسالة المُضلِّلة.
     const branchExists = await checkBranchExists(branch);
-    
+
+    // جلب أحدث التغييرات + التاجات صراحةً (--tags يَضمن وصول تاجات الإصدارات حتى لو
+    // remote.origin.tagOpt=--no-tags أو التاج خفيف lightweight؛ --force آمن هنا لأن origin هو المصدر)
+    await new Promise((resolve, reject) => {
+      exec(`git fetch --tags --force origin ${branch}`, { cwd: REPO_DIR }, (err, stdout, stderr) => {
+        if (err) {
+          // نَرفع err كَكائن يَحمل stderr لِيَصِل إلى classifyGitError
+          const enriched = new Error((err.message || 'git fetch failed') + (stderr ? `\n${stderr}` : ''));
+          enriched.stderr = stderr;
+          enriched.cmd = 'git fetch --tags --force origin';
+          reject(enriched);
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    // إن فَشل `git fetch` رَغم نَجاح `ls-remote` لا يَجب أصلًا الوصول إلى هنا.
+    // لكن لو وَصلنا و`branchExists=false` فهذا يَعني فعلاً أن الفرع غير موجود على الـ remote.
     if (!branchExists) {
-      // محاولة الحصول على الفرع الافتراضي
       const defaultBranch = await getDefaultBranch();
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: `الفرع "${branch}" غير موجود على المستودع البعيد. الفرع الافتراضي هو: ${defaultBranch}`,
         currentVersion: getCurrentVersion(),
         latestVersion: getCurrentVersion(),
@@ -162,14 +215,6 @@ async function checkForUpdates(branch = 'main') {
         updateAvailable: false
       };
     }
-
-    // جلب أحدث التغييرات
-    await new Promise((resolve, reject) => {
-      exec(`git fetch origin ${branch}`, { cwd: REPO_DIR }, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // الحصول على الإصدار الحالي من package.json
     const currentVersion = getCurrentVersion();
@@ -212,7 +257,20 @@ async function checkForUpdates(branch = 'main') {
       updateAvailable: hasUpdate
     };
   } catch (error) {
-    return { success: false, error: error.message };
+    // تصنيف الخطأ إلى رسالة عربية واضحة بدل "الفرع main غير موجود" المُضلِّلة
+    const classified = classifyGitError(error);
+    return {
+      success: false,
+      error: classified.message,
+      hint: classified.hint,
+      errorCategory: classified.category,
+      rawError: error.message,
+      currentVersion: getCurrentVersion(),
+      latestVersion: getCurrentVersion(),
+      branch,
+      changelog: classified.hint || classified.message,
+      updateAvailable: false
+    };
   }
 }
 
@@ -220,7 +278,7 @@ async function checkForUpdates(branch = 'main') {
 async function performUpdate(branch = 'main') {
   return new Promise((resolve) => {
     const steps = [
-      { name: 'جلب أحدث التغييرات', cmd: `git fetch origin ${branch}` },
+      { name: 'جلب أحدث التغييرات', cmd: `git fetch --tags --force origin ${branch}` },
       { name: 'سحب التغييرات', cmd: `git pull origin ${branch}` },
       { name: 'تحديث التبعيات', cmd: 'npm ci --omit=dev', cwd: path.join(__dirname, '../../backend') }
     ];

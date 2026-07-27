@@ -23,6 +23,21 @@ APP_USER="${APP_USER:-root}"
 NODE_REQUIRED="${NODE_REQUIRED:-20}"
 PORT="${PORT:-4000}"
 
+# ---- مسار Home لمستخدم العملية و PM2_HOME لتفادي نشوء daemon root عابر ----
+# ملاحظة مهمة: عندما يُشَغّل deploy.sh بـ sudo (root) دون تحديد PM2_HOME،
+# فإن pm2 restart/start يَستخدم daemon root (/root/.pm2) بدل daemon المستخدم الحقيقي.
+# تَصحيح هذا: نُصدّر PM2_HOME = home المستخدم دائماً قبل أي استدعاء pm2.
+# APP_USER="root" => APP_HOME="/root" (السلوك التاريخي يُحافظ عليه).
+# APP_USER="it"   => APP_HOME="/home/it" => PM2_HOME="/home/it/.pm2".
+if [[ "$APP_USER" == "root" ]]; then
+    APP_HOME="${APP_HOME:-/root}"
+else
+    APP_HOME="${APP_HOME:-/home/${APP_USER}}"
+fi
+export PM2_HOME="${PM2_HOME:-${APP_HOME}/.pm2}"
+# ضمان وجود المسار (mkdir آمن إذا كان موجودًا)
+mkdir -p "$PM2_HOME" 2>/dev/null || true
+
 # ألوان لإخراج أوضح
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -557,17 +572,19 @@ EOF
 pm2_start() {
     cd "$PROJECT_DIR"
     pm2 delete network-monitor 2>/dev/null || true
-    pm2 start ecosystem.config.js
-    pm2 save
+    # PM2_HOME مُصدَّر في رأس السكريبت؛ تَطبيق صَريح لِضمان استهداف daemon الصحيح
+    env PM2_HOME="$PM2_HOME" pm2 start ecosystem.config.js
+    env PM2_HOME="$PM2_HOME" pm2 save
     # ضمان بدء PM2 مع إقلاع النظام (systemd على الأنظمة الحديثة)
     local startup_cmd
-    startup_cmd=$(pm2 startup systemd -u "$APP_USER" --hp "/root" 2>/dev/null | grep -E "^sudo " | head -1)
+    # --hp يَجب أن يُطابق home المستخدم الفِعلي (ليس /root دائماً)
+    startup_cmd=$(env PM2_HOME="$PM2_HOME" pm2 startup systemd -u "$APP_USER" --hp "$APP_HOME" 2>/dev/null | grep -E "^sudo " | head -1)
     if [[ -n "$startup_cmd" ]]; then
         eval "$startup_cmd" 2>/dev/null || true
     else
-        pm2 startup systemd 2>/dev/null || true
+        env PM2_HOME="$PM2_HOME" pm2 startup systemd 2>/dev/null || true
     fi
-    pm2 save
+    env PM2_HOME="$PM2_HOME" pm2 save
 }
 
 # =========================================================
@@ -621,20 +638,22 @@ case "${1:-install}" in
         fi
         cd "$PROJECT_DIR"
         fix_ecosystem_config
-        pm2 restart network-monitor --update-env
+        # تَصحيح جوهري: تَحديد PM2_HOME صراحةً لِتفادي نشوء daemon root عابر
+        # عندما لا يَعثر PM2 على daemon it نشط. اقرأ رأس deploy.sh (APP_HOME/PM2_HOME).
+        env PM2_HOME="$PM2_HOME" pm2 restart network-monitor --update-env
         log "تم التحديث. البيانات محفوظة في قاعدة البيانات."
         ;;
 
     logs)
         log "عرض سجلات PM2 (Ctrl+C للخروج)..."
         cd "$PROJECT_DIR"
-        pm2 logs network-monitor
+        env PM2_HOME="$PM2_HOME" pm2 logs network-monitor
         ;;
 
     stop)
         log "إيقاف النظام..."
         cd "$PROJECT_DIR"
-        pm2 stop network-monitor
+        env PM2_HOME="$PM2_HOME" pm2 stop network-monitor
         log "تم الإيقاف."
         ;;
 
@@ -642,13 +661,13 @@ case "${1:-install}" in
         log "إعادة تشغيل النظام..."
         cd "$PROJECT_DIR"
         fix_ecosystem_config
-        pm2 restart network-monitor --update-env
+        env PM2_HOME="$PM2_HOME" pm2 restart network-monitor --update-env
         log "تمت إعادة التشغيل."
         ;;
 
     status)
         cd "$PROJECT_DIR"
-        pm2 describe network-monitor
+        env PM2_HOME="$PM2_HOME" pm2 describe network-monitor
         ;;
 
     uninstall)
@@ -656,8 +675,8 @@ case "${1:-install}" in
         read -p "هل أنت متأكد؟ (y/N) " confirm
         if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
             cd "$PROJECT_DIR"
-            pm2 delete network-monitor
-            pm2 save
+            env PM2_HOME="$PM2_HOME" pm2 delete network-monitor
+            env PM2_HOME="$PM2_HOME" pm2 save
             log "تم الحذف من PM2."
             log "قاعدة البيانات محفوظة في: $PROJECT_DIR/database/monitoring.db"
             log "لإزالة PM2 نهائياً: npm uninstall -g pm2"
