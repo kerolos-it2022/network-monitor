@@ -106,13 +106,13 @@
 |---|---|
 | المستودع | `https://github.com/kerolos-it2022/network-monitor.git` (public) |
 | الفرع | `main` |
-| التزامات v2.4.0 | `git fetch --tags --force` + `classifyGitError` + `PM2_HOME` + nginx split + bump 2.4.0 + DEPLOY/RUN-ON-LINUX + HANDOFF |
+| التزامات v2.4.0 | `ea24f52` — `git fetch --tags --force` + `classifyGitError` + `PM2_HOME` + nginx split + bump 2.4.0 + DEPLOY/RUN-ON-LINUX + HANDOFF |
 | التَاجات المتوفرة على الـ remote بعد الرفع | `v2.4.0`, `v2.3.2`, `v2.3.1`, `v2.3.0`, `v2.2.0`, `v2.1.1`, `v2.1.0`, `v2.0.0`, `v1.2.0`, `v1.1.0` |
 | النسخة الحالية على الخادم | `2.3.2` (التزام `4785cc9`) → **يمكن تَحديثها إلى 2.4.0 عبر تبويب التحديثات (لا أَوامر يدوية بَعد الإِصلاحات الجذرية)** |
 
 ### سجل الالتزامات على `main` (الأحدث أَعلى):
 ```
-<v2.4.0-hash>  fix(release): v2.4.0 — git fetch --tags + classifyGitError + PM2_HOME + nginx split     ← HEAD بعد الرفع
+ea24f52  fix(release): v2.4.0 — git fetch --tags + classifyGitError + PM2_HOME + nginx split     ← HEAD على origin/main (مرفوع بالفعل، تاج v2.4.0)
 4785cc9  fix(release): v2.3.2 — SSE عبر ngrok (sendDone with deviceCount + bounded fetchResults)
 1d29848  fix(release): v2.3.1 — VAPID 65-byte + SSE عبر reverse proxy + مرونة الواجهة
 6d13ac5  docs(deploy): إضافة قسم تحديث النظام + تذكير برفع git tags مع الكود
@@ -120,7 +120,7 @@
 d382cc8  fix(ci): إزالة environment: production لتفادي ظهور Environment فارغ في تبويب Deployments
 ```
 
-> **رقم الالتزام الفِعلي لِـ v2.4.0** يُسَجَّل آليًّا في القسم "[9] تَدوين رقم الالتزام" بعد `git push` (لم يُحدَّد بَعد وقت كتابة هذا السطر).
+> **رقم الالتزام الفِعلي لِـ v2.4.0** = `ea24f52` (مُؤكَّد بَعد `git push`: `4785cc9..ea24f52 main -> main` + `[new tag] v2.4.0 -> v2.4.0`). ✅ مَرفوع فِعليًّا إلى `origin/main` + `v2.4.0` tag على GitHub.
 
 ---
 
