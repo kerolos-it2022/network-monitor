@@ -22,6 +22,9 @@
     <button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع">📍 المواقع</button>
     <button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة">🏷️ الأنواع</button>
     <button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً">🔍 اكتشاف الأجهزة</button>
+    <button class="tab-btn" id="tab-discovered" type="button" title="الأجهزة الجديدة المُكتشَفة من المسح الدوري">🆕 الأجهزة المُكتشَفة</button>
+    <button class="tab-btn" id="tab-scheduler" type="button" title="المسح الدوري التلقائي">⏱️ المسح الدوري</button>
+    <button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية">🗺️ خريطة المواقع</button>
     <button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات">🔔 الإشعارات</button>
     <button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث">📋 السجل</button>
     <button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي">👤 الملف الشخصي</button>
@@ -40,14 +43,19 @@
           <input type="file" id="import-devices-file" accept=".xlsx,.xls" style="display:none;" />
         </label>
         <div style="flex:1;"></div>
+        <div style="flex:1;"></div>
+        <label style="font-size:0.9rem; color:var(--muted);">فلتر الموقع:</label>
+        <select id="filter-location-devices" class="sort-select" title="تصفية الأَجهزة حسب الموقع">
+          <option value="">📍 كل المواقع</option>
+        </select>
         <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
         <select id="filter-sort-devices" class="sort-select">
-          <option value="name">🔤 حسب الاسم</option>
+          <option value="name">🔑 حسب الاسم</option>
           <option value="ip">🌐 حسب IP</option>
           <option value="status">📶 حسب الحالة</option>
           <option value="type">🏷️ حسب النوع</option>
           <option value="location">📍 حسب الموقع</option>
-          <option value="last_checked">⏰ حسب آخر فحص</option>
+          <option value="last_checked">⏱️ حسب آخر فحص</option>
         </select>
       </div>
 
@@ -98,7 +106,23 @@
       <div class="form-card">
         <input type="hidden" id="location-form-id" />
         <div class="form-grid">
-          <label>اسم الموقع <input type="text" id="loc-name" placeholder="الفرع الرئيسي - الطابق الثاني" /></label>
+          <label>اسم الموقع <input type="text" id="loc-name" placeholder="مصدر الإنترنت / المنطقة الرئيسية…" /></label>
+          <label>النوع
+            <select id="loc-kind" title="نوع الموقع في هرم الشبكة">
+              <option value="internet">🌐 الإنترنت/الراوتر (قمة الهرم)</option>
+              <option value="zone" selected>📍 منطقة (وَسَطية)</option>
+              <option value="site">🏛️ موقع (site)</option>
+              <option value="building">🏢 مبنى (building)</option>
+              <option value="floor">📐 طابق (floor)</option>
+              <option value="room">🚪 غرفة (room)</option>
+              <option value="rack">🗄️ خزانة (rack)</option>
+            </select>
+          </label>
+          <label>الموقع الأَب
+            <select id="loc-parent_id" title="الموقع الأَب في الهرم (internet يَكون جذرًا دائمًا)">
+              <option value="">— جذر (لا أَب) —</option>
+            </select>
+          </label>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
@@ -106,14 +130,25 @@
         </div>
       </div>
       <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
-        <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
+        <label style="font-size:0.9rem; color:var(--muted);">فلتر النوع:</label>
+        <select id="filter-kind-locations" class="sort-select" title="تصفية المواقع حسب النوع">
+          <option value="">🏝️ كل الأَنواع</option>
+          <option value="internet">🌐 internet</option>
+          <option value="zone">📍 zone</option>
+          <option value="site">🏛️ site</option>
+          <option value="building">🏢 building</option>
+          <option value="floor">📐 floor</option>
+          <option value="room">🚪 room</option>
+          <option value="rack">🗄️ rack</option>
+        </select>
+        <label style="font-size:0.9rem; color:var(--muted); margin-right:0.75rem;">ترتيب:</label>
         <select id="filter-sort-locations" class="sort-select">
           <option value="name">📝 حسب الاسم</option>
           <option value="id">🆔 حسب المعرف</option>
         </select>
       </div>
       <table class="data-table">
-        <thead><tr><th>المعرّف</th><th>الاسم</th><th>إجراءات</th></tr></thead>
+        <thead><tr><th>المعرّف</th><th>الاسم</th><th>النوع</th><th>الأَب</th><th>إجراءات</th></tr></thead>
         <tbody id="locations-table-body"></tbody>
       </table>
     </section>
@@ -165,7 +200,7 @@
             </div>
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" id="discovery-scan-ports" checked />
+            <input type="checkbox" id="discovery-scan-ports" />
             <span>مسح المنافذ الشائعة</span>
           </label>
           <label class="checkbox-label">
@@ -221,6 +256,127 @@
     </section>
 
     <!-- ============ قسم الإشعارات ============ -->
+    <!-- ============ قسم الأجهزة المُكتشَفة ============ -->
+    <section id="section-discovered" class="hidden">
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <button id="discovered-refresh-btn" type="button" class="btn" title="تحديث القائمة">🔄 تحديث</button>
+        <select id="discovered-filter-source" class="sort-select" title="تصفية حسب المصدر">
+          <option value="">كل المصادر</option>
+          <option value="scan">المسح الدوري</option>
+          <option value="mikrotik">MikroTik</option>
+          <option value="sophos">Sophos</option>
+          <option value="snmp">SNMP</option>
+          <option value="lldp">LLDP</option>
+        </select>
+        <select id="discovered-filter-status" class="sort-select" title="تصفية حسب الحالة">
+          <option value="">كل الحالات</option>
+          <option value="0">بانتظار الاعتماد</option>
+          <option value="1">تم اعتماده</option>
+          <option value="-1">مرفوض</option>
+        </select>
+        <button id="discovered-bulk-approve-btn" type="button" class="btn btn-primary" title="اعتماد جميع الأجهزة المحددة">✅ اعتماد المحدد</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="discovered-select-all" title="تحديد الكل" /></th>
+            <th>IP</th><th>MAC</th><th>الاسم</th><th>الصانع</th><th>النوع المتوقَّع</th><th>المصدر</th><th>آخر رؤية</th><th>التكرار</th><th>الحالة</th><th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="discovered-table-body"></tbody>
+      </table>
+      <p id="discovered-empty" class="hidden" style="color:var(--muted); text-align:center; padding:1rem;">لا توجد أجهزة مُكتشَفة حالياً. شَغّل المسح الدوري أو المسح الفوري.</p>
+    </section>
+
+    <!-- ============ قسم المسح الدوري ============ -->
+    <section id="section-scheduler" class="hidden">
+      <div class="form-card">
+        <h3>⏱️ إعدادات المسح الدوري</h3>
+        <div class="form-grid">
+          <label>تَفعيل المسح الدوري
+            <input type="checkbox" id="sched-enabled" />
+          </label>
+          <label>الفترة (دقيقة)
+            <input type="number" id="sched-interval" min="5" max="1440" value="15" />
+          </label>
+          <label>الشبكات الفرعية (CIDR مفصولة بفاصلة)
+            <input type="text" id="sched-subnets" placeholder="192.168.1.0/24,10.0.0.0/24" />
+          </label>
+          <label>مسح المنافذ
+            <input type="checkbox" id="sched-scan-ports" />
+          </label>
+          <label>مسح SNMP
+            <input type="checkbox" id="sched-scan-snmp" />
+          </label>
+          <label>SNMP Community
+            <input type="text" id="sched-snmp-community" value="public" />
+          </label>
+          <label>تنبيه عند جهاز جديد
+            <input type="checkbox" id="sched-new-device-alert" checked />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="sched-save-btn" title="حفظ وتطبيق الإعدادات">💾 حفظ وتطبيق</button>
+          <button type="button" class="btn" id="sched-run-now-btn" title="تشغيل مسح فوري الآن">⚡ شَغّل الآن</button>
+          <button type="button" class="btn" id="sched-stop-btn" title="إيقاف المسح الدوري">⏹️ إيقاف</button>
+        </div>
+      </div>
+      <div style="margin:1rem 0; padding:0.75rem; background:rgba(127,127,127,0.08); border-radius:6px;">
+        <strong>الحالة الحالية:</strong> <span id="sched-current-status">—</span>
+      </div>
+      <h3>📋 سجل المسحات الأخيرة</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>المعرّف</th><th>الشبكة</th><th>البدء</th><th>الانتهاء</th><th>وُجدت</th><th>أُضيفت</th><th>ضاعت</th><th>الحالة</th><th>الخطأ</th></tr>
+        </thead>
+        <tbody id="sched-runs-table-body"></tbody>
+      </table>
+    </section>
+
+    <!-- ============ قسم خريطة المواقع (شجرة هرمية) ============ -->
+    <section id="section-map" class="hidden">
+      <div class="form-card">
+        <h3>🗺️ شجرة المواقع والأَجهزة</h3>
+        <p style="color:var(--muted); margin:0 0 0.75rem; font-size:0.9rem;">
+          عرض هرم للشبكة: قمة <b>🌐 internet</b> (مصدر الإنترنت/الراوتر) ← <b>📍 zones</b> وَسَطية
+          ← <b>الأَجهزة (IPs)</b> كأَوراق. إِطار العُقدة الأَبوية يُلخّص حالة أَجهزتها
+          (أَحمر لو وُجد offline، أَخضر لو كلها online). اِنقر على موقع لِـ طي/تَوسيع،
+          أَو على جهاز لِـ عرض تَفاصيله في اللوحة الجانبية. نَقر مزدوج على موقع يَذهب
+          لِـ تَبويب «الأَجهزة» مُصفّى بِـ الموقع.
+        </p>
+        <div class="form-actions" style="margin-bottom:0.75rem;">
+          <button type="button" class="btn" id="map-refresh-btn" title="تحديث الشجرة الآن">🔄 تحديث</button>
+          <button type="button" class="btn" id="map-expand-btn" title="تَوسيع كل المواقع">⤢ تَوسيع الكل</button>
+          <button type="button" class="btn" id="map-collapse-btn" title="طي كل المواقع">⤧ طي الكل</button>
+          <span style="flex:1;"></span>
+          <span id="map-summary" style="color:var(--muted); font-size:0.9rem;"></span>
+        </div>
+        <div id="tree-container" class="d3-tree" style="width:100%; overflow:auto; min-height:300px; max-height:78vh;">
+          <p id="tree-empty" style="color:var(--muted); text-align:center; padding:2rem;">
+            لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- modal تَفاصيل الجهاز (عائم فوق صفحة الخريطة — يُملأ من admin-map.js عند نقر عقدة جهاز) -->
+    <div id="map-device-modal" class="map-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="map-modal-content">
+        <button type="button" class="modal-close" id="map-device-close" aria-label="إغلاق">✕</button>
+        <div class="details-header">
+          <span class="details-icon" id="map-device-icon">🖥️</span>
+          <div class="details-title-wrap">
+            <h4 class="details-title" id="map-device-name">—</h4>
+            <span class="details-status-badge" id="map-device-status">—</span>
+          </div>
+        </div>
+        <div class="details-fields" id="map-device-fields">
+          <p class="details-placeholder">اِنقر عقدة جهاز في الشجرة لِـ عرض تَفاصيله هنا.</p>
+        </div>
+        <div class="details-actions" id="map-device-actions"></div>
+      </div>
+    </div>
+
     <section id="section-notifications" class="hidden">
       <div class="form-card">
         <h3>إعدادات الإشعارات</h3>
@@ -473,6 +629,10 @@
   <script src="../js/admin-profile.js"></script>
   <script src="../js/admin-theme.js"></script>
   <script src="../js/admin-discovery.js"></script>
+  <script src="../js/admin-discovered.js"></script>
+  <script src="../js/admin-scheduler.js"></script>
+  <!-- شرح فضاء خريطة المواقع كان يَستعمل D3 لكن أُعيد كتابته بِـ HTML/CSS ul/li — لا حاجة لِـ CDN -->
+  <script src="../js/admin-map.js"></script>
   <script src="../js/admin-update.js"></script>
   <script src="../js/admin-backup.js"></script>
 

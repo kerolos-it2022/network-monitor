@@ -18,6 +18,12 @@ CREATE TABLE IF NOT EXISTS locations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     parent_id INTEGER,
+    -- نوع الموقع لِـ هرم الشبكة المُدمَج. القيم المَسمُوحة (يُتحقَّق منها في
+    -- locations.routes عبر VALID_KINDS): 'internet' (قمة الهرم = مصدر الإنترنت/الراوتر)،
+    -- 'zone' (منطقة وَسَطية، تَدعم تَداخل أَي نوع)، ثم الأَنواع الورقية: 'site' | 'building'
+    -- | 'floor' | 'room' | 'rack'. الافتراضي 'zone' لِيَدخل الموقع الجديد في الهرم آليًّا.
+    -- يُضاف أيضًا عبر migration آمنة في db.js على DB قائمة من v2.4.0.
+    kind TEXT NOT NULL DEFAULT 'zone',
     FOREIGN KEY (parent_id) REFERENCES locations(id) ON DELETE SET NULL
 );
 
@@ -85,7 +91,8 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     whatsapp_api_token TEXT,
     whatsapp_to_number TEXT,
     mobile_enabled INTEGER NOT NULL DEFAULT 0,   -- تفعيل إشعارات الهاتف (PWA/Web Push عبر FCM)
-    fcm_server_key TEXT                           -- Firebase Cloud Messaging Server Key
+    fcm_server_key TEXT,                          -- Firebase Cloud Messaging Server Key
+    webhook_url TEXT                              -- v2.5.0 — webhook خارجي لأي تنبيه (مثل: جهاز جديد)
 );
 INSERT OR IGNORE INTO notification_settings (id) VALUES (1);
 
@@ -112,6 +119,60 @@ CREATE TABLE IF NOT EXISTS notification_logs (
     FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE SET NULL
 );
 CREATE INDEX IF NOT EXISTS idx_notif_logs_sent ON notification_logs(sent_at);
+
+-- ─────────────────────────────────────────────────────────────
+-- v2.5.0 — المسح الدوري + الأَجهزة المُكتشَفة + Webhook
+-- ─────────────────────────────────────────────────────────────
+
+-- إعدادات المسح الدوري (صف واحد فقط — CHECK id=1 مثل notification_settings)
+CREATE TABLE IF NOT EXISTS scan_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0,           -- 0=متوقف، 1=مُفعّل
+    interval_minutes INTEGER NOT NULL DEFAULT 15, -- كل كم دقيقة يُعاد المسح
+    subnets TEXT NOT NULL DEFAULT '',             -- قائمة CIDR مفصولة بفواصل: 192.168.1.0/24,10.0.0.0/24
+    scan_ports_enabled INTEGER NOT NULL DEFAULT 0,
+    scan_snmp_enabled INTEGER NOT NULL DEFAULT 0,
+    snmp_community TEXT NOT NULL DEFAULT 'public',
+    new_device_alert INTEGER NOT NULL DEFAULT 1,  -- تنبيه عند ظهور جهاز جديد
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- سجل المسحات الدورية (أي مسح تلقائي يُسجَّل هنا)
+CREATE TABLE IF NOT EXISTS scan_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subnet TEXT NOT NULL,                         -- CIDR المَمسُوح (أو 'multi' لو أَكثر من واحد)
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    ended_at TEXT,
+    devices_found INTEGER NOT NULL DEFAULT 0,     -- إجمالي الأَجهزة المَكتشَفة في هذا المسح
+    devices_added INTEGER NOT NULL DEFAULT 0,    -- أَجهزة جديدة لم تَكن معروفة
+    devices_lost INTEGER NOT NULL DEFAULT 0,     -- أَجهزة معروفة اختفت عن هذا المسح (منذ آخر مسح ناجح)
+    status TEXT NOT NULL DEFAULT 'running',      -- 'running' | 'completed' | 'failed'
+    error_message TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_scan_runs_started ON scan_runs(started_at);
+
+-- الأَجهزة المُكتشَفة (غير معروفة في جدول devices بعد) — من المسح الدوري أَو المَصادر الخارجية
+CREATE TABLE IF NOT EXISTS discovered_devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT NOT NULL,
+    mac TEXT,
+    hostname TEXT,
+    vendor TEXT,                                  -- من OUI lookup
+    detected_type TEXT,                           -- 'Camera' | 'Printer' | 'Router' | ...
+    source TEXT NOT NULL DEFAULT 'scan',          -- 'scan' | 'mikrotik' | 'sophos' | 'snmp' | 'lldp' | 'manual'
+    first_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+    seen_count INTEGER NOT NULL DEFAULT 1,        -- كم مرة اكتُشِف (لِـ ترتيب عرض التكرار)
+    is_approved INTEGER NOT NULL DEFAULT 0,       -- 0=بانتظار الاعتماد، 1=تم اعتماده (وبالتالي يُنقل لِـ devices)، -1=مرفوض
+    approved_at TEXT,
+    UNIQUE(ip, mac, source)                       -- لا تكرار لنفس الجهاز من نفس المصدر
+);
+CREATE INDEX IF NOT EXISTS idx_discovered_seen ON discovered_devices(last_seen_at);
+CREATE INDEX IF NOT EXISTS idx_discovered_approved ON discovered_devices(is_approved);
+
+-- v2.5.0 — إضافة عمود webhook_url لِـ notification_settings (لو لم يَكُن موجُودًا — آمن عبر IF NOT EXISTS غير متوفر في ALTER، لِذا SID نظامي عبر migrate فيها).
+-- ملاحظة: better-sqlite3 لا يَدعم ALTER TABLE ADD COLUMN IF NOT EXISTS. لِذا نَنفّذها يدويًّا من migrateWebhook() في db.js (لا هنا).
+-- بعد migrate: notification_settings يَ gaining webhook_url TEXT NULL.
 
 -- بيانات ابتدائية لأنواع الأجهزة الشائعة
 INSERT OR IGNORE INTO device_types (name, icon) VALUES

@@ -7,6 +7,7 @@ const multer = require('multer');
 
 const db = require('./db');
 const { startMonitoring } = require('./services/monitor.service');
+const scanScheduler = require('./services/scan-scheduler.service');
 
 const authRoutes = require('./routes/auth.routes');
 const devicesRoutes = require('./routes/devices.routes');
@@ -17,6 +18,12 @@ const toolsRoutes = require('./routes/tools.routes');
 const scanRoutes = require('./routes/scan.routes');
 const backupRoutes = require('./routes/backup.routes');
 const updateRoutes = require('./routes/update.routes');
+// v2.5.0 — المسح الدوري + الأَجهزة المُكتشَفة + المَصادر (stub لِـ v2.6.0).
+const scanSchedulerRoutes = require('./routes/scan-scheduler.routes');
+const discoveredRoutes = require('./routes/discovered.routes');
+const sourcesRoutes = require('./routes/sources.routes');
+// v2.5.1 — شجرة المواقع الهرمية + الأَجهزة (تبويب «🗺️ خريطة المواقع»).
+const mapRoutes = require('./routes/map.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -67,6 +74,12 @@ app.use('/api/tools', toolsRoutes);
 app.use('/api/scan', scanRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/update', updateRoutes);
+// v2.5.0 — المسح الدوري + الأَجهزة المُكتشَفة + المَصادر الخارجية (stub لِـ المرحلة 2).
+app.use('/api/scan-scheduler', scanSchedulerRoutes);
+app.use('/api/discovered', discoveredRoutes);
+app.use('/api/sources', sourcesRoutes);
+// v2.5.1 — شجرة المواقع الهرمية لِـ تبويب «🗺️ خريطة المواقع».
+app.use('/api/map', mapRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {
@@ -97,4 +110,10 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   // بدء محرك المراقبة بعد نجاح تشغيل الخادم.
   startMonitoring();
+  // v2.5.0 — بدء مُجدوِل المسح الدوري (يَقرأ scan_settings ثم يُشغّل لو enabled=1).
+  try {
+    scanScheduler.startScheduler();
+  } catch (e) {
+    console.error('[SCHEDULER] Failed to start scan scheduler:', e.message);
+  }
 });

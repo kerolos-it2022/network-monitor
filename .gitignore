@@ -31,13 +31,17 @@ test_import.xlsx
 
 # Datesbase runtime artifacts (backups, WAL/SHM/journal) — لا تُرفع
 database/backups/
+# مجلدات النّسخ الاحتياطية الفاسدة / المستردّة (أَسماء متغيّرة) — لا تُلتزم
+database/_corrupt_backup_*/
+database/corrupt_*/
 *.db-journal
 *.db-wal
 *.db-shm
+*.db.bak
 
 # ZCode workspace (اجتهاد محلي للذكاء)
 .zcode/
 
 # Root-level package-lock (npm files belong to backend/)
 /package-lock.json
-/nul
+

@@ -186,4 +186,15 @@ function formatDuration(seconds) {
   return `${Math.floor(s / 3600)} ساعة و${Math.floor((s % 3600) / 60)} دقيقة`;
 }
 
-module.exports = { sendTelegram, sendWhatsapp, sendMobile, notifyDeviceDown, notifyDeviceRecovered };
+// sendGenericNotification(message): إشعار عام لِـ أحاديث ليست مَربُوطة بجهاز محدد
+// (مِثل: جهاز جديد مُكتشَف في scan-scheduler.service.js، تَنبيه مَنشئي admin، ...).
+// لا يَستقبل device_id — يُسجّل في notification_logs بـ device_id=NULL.
+async function sendGenericNotification(message) {
+  await Promise.all([
+    sendTelegram(message, null),
+    sendWhatsapp(message, null),
+    sendMobile(message, null),
+  ]);
+}
+
+module.exports = { sendTelegram, sendWhatsapp, sendMobile, notifyDeviceDown, notifyDeviceRecovered, sendGenericNotification };

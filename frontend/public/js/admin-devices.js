@@ -1,6 +1,7 @@
 // admin-devices.js: إدارة الأجهزة في لوحة التحكم (جلب، إضافة، تعديل، حذف، تسجيل خروج، حماية الجلسة).
 // ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 let currentDevicesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأجهزة
+let currentLocationFilter = ''; // فلتر location_id الحالي (فارغ = كل المواقع).
 
 const ad = {}; // مساحة أسماء صغيرة لتفادي التضارب.
 
@@ -15,10 +16,16 @@ async function loadDevices() {
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
   if (!r.success) return;
-  
+
+  // تَصفية client-side حسب location_id لو الفلتر فعّال (نَتفادى تَعديل SELECT في الخادم).
+  const locFilter = currentLocationFilter ? Number(currentLocationFilter) : null;
+  const filtered = locFilter != null
+    ? r.data.filter((d) => Number(d.location_id) === locFilter)
+    : r.data;
+
   // تطبيق الترتيب
   const sortBy = currentDevicesSort;
-  const sortedData = [...r.data].sort((a, b) => {
+  const sortedData = [...filtered].sort((a, b) => {
     let valA, valB;
     switch (sortBy) {
       case 'name':
@@ -52,7 +59,7 @@ async function loadDevices() {
     if (valA > valB) return 1;
     return 0;
   });
-  
+
   for (const d of sortedData) {
     // زر الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
     let openBtn = '';
@@ -89,6 +96,12 @@ async function loadDevices() {
   }
 }
 
+// خريطة kind → (أيقونة, تسمية قَصيرة) لِـ عرض الخيارات في القائمة الهرمية.
+const DEVICE_LOC_KIND = {
+  internet: '🌐', zone: '📍', site: '🏛️', building: '🏢',
+  floor: '📐', room: '🚪', rack: '🗄️',
+};
+
 async function loadFormOptions() {
   const [types, locs] = await Promise.all([
     api('/api/device-types'),
@@ -96,8 +109,13 @@ async function loadFormOptions() {
   ]);
   const typeSel = document.getElementById('df-device_type_id');
   const locSel = document.getElementById('df-location_id');
+  const filterLocSel = document.getElementById('filter-location-devices');
   typeSel.innerHTML = '';
   locSel.innerHTML = '<option value="">— بدون —</option>';
+  // فلتر الجدول: خيار "كل المواقع" + خيارات هرمية لِـ كل موقع.
+  if (filterLocSel) {
+    filterLocSel.innerHTML = '<option value="">📍 كل المواقع</option>';
+  }
   for (const t of types.success ? types.data : []) {
     const o = document.createElement('option');
     o.value = t.id;
@@ -105,10 +123,29 @@ async function loadFormOptions() {
     typeSel.appendChild(o);
   }
   for (const l of locs.success ? locs.data : []) {
+    const icon = DEVICE_LOC_KIND[l.kind] || '📍';
+    const disp = `${icon} ${l.name}`;
+    // خيار نموذج الجهاز (يَعرض الاسم مع أَيقونة النوع).
     const o = document.createElement('option');
     o.value = l.id;
-    o.textContent = l.name;
+    o.textContent = disp;
     locSel.appendChild(o);
+    // خيار فلتر الجدول (نفس العرض).
+    if (filterLocSel) {
+      const f = document.createElement('option');
+      f.value = l.id;
+      f.textContent = disp;
+      filterLocSel.appendChild(f);
+    }
+  }
+  // إِعادة ضبط قيمة الفلتر لو ما زالت موجُودة (بَعْد إِعادة التَحميل من admin-locations).
+  if (filterLocSel && currentLocationFilter) {
+    if ([...filterLocSel.options].some((o) => o.value === currentLocationFilter)) {
+      filterLocSel.value = currentLocationFilter;
+    } else {
+      currentLocationFilter = '';
+      filterLocSel.value = '';
+    }
   }
 }
 
@@ -263,6 +300,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadFormOptions();
   await loadDevices();
 
+  // اِستماع لِـ حدث «اِنتقاء موقع من شجرة المواقع» (من admin-map.js).
+  // ضَبط فلتر الموقع في الجدول + إعادة تَحميل الأَجهزة + تنظيف الـ hash.
+  window.addEventListener('map:filter-location', async (ev) => {
+    const filterLocSel = document.getElementById('filter-location-devices');
+    const locId = ev?.detail?.location_id;
+    if (filterLocSel && locId != null) {
+      currentLocationFilter = String(locId);
+      if ([...filterLocSel.options].some((o) => o.value === currentLocationFilter)) {
+        filterLocSel.value = currentLocationFilter;
+      } else {
+        // الموقع غير موجُود في قائمة الفلتر → نُعيد تَعبئتها ثم نَضبط القيمة.
+        await loadFormOptions();
+        if ([...filterLocSel.options].some((o) => o.value === currentLocationFilter)) {
+          filterLocSel.value = currentLocationFilter;
+        }
+      }
+      loadDevices();
+    }
+    // تَنظيف الـ hash لِـ تجنّب التَكرار.
+    if (window.location.hash.startsWith('#tab-devices')) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  });
+
   document.getElementById('add-device-btn').addEventListener('click', openDeviceForm);
   document.getElementById('device-form').addEventListener('submit', submitDeviceForm);
   document.getElementById('device-form-cancel').addEventListener('click', () => {
@@ -275,6 +336,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (sortDevicesEl) {
     sortDevicesEl.addEventListener('change', (e) => {
       currentDevicesSort = e.target.value;
+      loadDevices();
+    });
+  }
+
+  // مستمع فلتر الموقع للجدول (client-side filter على location_id).
+  const filterLocDeviceEl = document.getElementById('filter-location-devices');
+  if (filterLocDeviceEl) {
+    filterLocDeviceEl.addEventListener('change', (e) => {
+      currentLocationFilter = e.target.value || '';
       loadDevices();
     });
   }
@@ -308,13 +378,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.files[0]) importDevicesExcel(e.target.files[0]);
     e.target.value = ''; // السماح بإعادة نفس الملف
   });
-
-  // مستمع dropdown الترتيب
-  const sortSel = document.getElementById('filter-sort-devices');
-  if (sortSel) {
-    sortSel.addEventListener('change', (e) => {
-      currentDevicesSort = e.target.value;
-      loadDevices();
-    });
-  }
 });

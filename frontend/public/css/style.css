@@ -439,3 +439,370 @@ table.data-table td .open-device-btn {
   .topbar { flex-direction: column; align-items: stretch; }
   .summary-bar { text-align: right; }
 }
+
+/* ===== شجرة المواقع الهرمية (D3) — v2.5.1 + v2.5.2 (internet/zone + zoom) ===== */
+.d3-tree {
+  direction: rtl;
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  padding: 0.5rem;
+  min-height: 320px;
+  overflow: auto;           /* سَماح بِـ scroll + zoom بدون تَسرّب للصفحة */
+  overscroll-behavior: contain;
+  cursor: grab;
+}
+.d3-tree:active { cursor: grabbing; }
+.d3-tree svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;          /* أَهم: نَرفض قَص الشجرة الواسعة (zoom/scroll بدلًا من القَص) */
+}
+
+/* العُقد */
+.map-node { transition: opacity 0.15s ease; cursor: pointer; }
+.map-node.kind-root { cursor: default; }
+.map-node.kind-device { cursor: pointer; }
+.map-node:hover { opacity: 0.88; }
+.map-node-bg { transition: fill 0.15s ease, stroke 0.15s ease; }
+
+/* أَلوان خلفية العُقد بحسب kind (نَدعُم أَنماط CSS بدل inline fillOpacity) */
+.map-node.kind-internet .map-node-bg { fill: rgba(37, 99, 235, 0.18); stroke: #2563eb; }
+.map-node.kind-zone .map-node-bg { fill: rgba(234, 179, 8, 0.18); stroke: #eab308; }
+.map-node.kind-unassigned .map-node-bg { fill: rgba(156, 163, 175, 0.18); stroke: #9ca3af; }
+/* نَتعامل مع overflow على أَي نوع: نَغلّف الـ text */
+.map-node:hover .map-node-bg { filter: brightness(0.95); }
+
+/* نص العُقدة */
+.map-label {
+  font-family: var(--font, system-ui, "Segoe UI", Tahoma, sans-serif);
+  font-weight: 500;
+  user-select: none;
+  direction: rtl;
+  unicode-bidi: plaintext;
+}
+.map-meta {
+  user-select: none;
+  opacity: 0.85;
+  direction: rtl;
+  unicode-bidi: plaintext;
+}
+
+/* روابط الشجرة */
+.map-link { opacity: 0.7; }
+
+/* زر طي/تَوسيع */
+.map-toggle {
+  font-weight: 700;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.map-node:hover .map-toggle { opacity: 1; }
+
+/* scrollbar أَنيق */
+.d3-tree::-webkit-scrollbar { width: 8px; height: 8px; }
+.d3-tree::-webkit-scrollbar-thumb { background: var(--border, #ccc); border-radius: 4px; }
+.d3-tree::-webkit-scrollbar-thumb:hover { background: var(--muted, #999); }
+.d3-tree::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== شجرة المواقع HTML/CSS (v2.5.3 — بلا zoom + transitions سلسة + لوحة تَفاصيل) ===== */
+/* admin-map.js يَبني ul/li متداخلة بدلًا من SVG؛ هذا الـ block يَدعمها.
+   متغيرات inline تُضبط من admin-map.js على كل li:
+     --node-bg : لون الخلفية (kind أَو status)
+     --node-border : لون الإِطار (تَلخيص حالة الأَبناء)
+     --node-border-w : سُمك الإِطار (2px لو offline)
+*/
+.map-tree,
+.map-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  direction: rtl;
+}
+.map-tree { padding: 0.25rem 0; }
+
+.map-node-html {
+  position: relative;
+  border: var(--node-border-w, 1px) solid var(--node-border, #9e9e9e);
+  background: var(--node-bg, var(--card-bg, #fff));
+  border-radius: 6px;
+  margin: 4px 0;                           /* تَنفّس أَوسع (v2.5.3) */
+  padding: 0;
+  user-select: none;
+  overflow: hidden;                        /* أَبناء مطوية لا تَظهر */
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.map-node-html:hover {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);   /* elevation أَنيس (v2.5.3) */
+}
+.map-node-html.kind-root {
+  border-width: 2px;
+  font-weight: 700;
+}
+.map-node-html.kind-device {
+  display: inline-block;
+  margin-inline-start: 0.4rem;
+  border-width: 2px;
+}
+.map-node-html.kind-unassigned,
+.map-node-html.kind-internet,
+.map-node-html.kind-zone {
+  border-width: 2px;
+}
+/* طي/تَوسيع سلس عبر max-height + opacity بدل display:none الفَوري (v2.5.3) */
+.map-node-html > .map-children {
+  max-height: 8000px;                      /* حد آمن كافٍ لِـ شَجَرٍ كَبير */
+  opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.map-node-html.collapsed > .map-children {
+  max-height: 0;
+  opacity: 0;
+}
+
+.map-node-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;                   /* تَنفّس أَكبر (v2.5.3) */
+  cursor: pointer;
+  direction: rtl;
+  unicode-bidi: plaintext;
+  transition: background 0.15s ease;
+}
+.map-node-html.kind-root > .map-node-row { cursor: default; }
+.map-node-html:hover > .map-node-row { background: rgba(127, 127, 127, 0.06); }
+
+.map-toggle {
+  width: 1.2rem;
+  text-align: center;
+  font-weight: 700;
+  opacity: 0.6;
+  flex: 0 0 auto;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.map-node-html:hover > .map-node-row > .map-toggle { opacity: 1; }
+.map-node-html:not(.has-children) > .map-node-row > .map-toggle { visibility: hidden; }
+/* سهم مطوي مَدوَّر (v2.5.3) */
+.map-node-html.collapsed > .map-node-row > .map-toggle { transform: rotate(-90deg); }
+
+.map-icon { flex: 0 0 auto; font-size: 1.05em; }
+/* v2.5.4 — المسار الرقمي الهرمي (1.2.3): خافت + monospace لِـ يُظهر التَسلسل دون
+   أَن يَجذب الانتباه عن اسم العقدة. */
+.map-path {
+  flex: 0 0 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--muted, #888);
+  background: color-mix(in srgb, var(--text, #444) 6%, transparent);
+  padding: 0.05rem 0.32rem;
+  border-radius: 4px;
+  line-height: 1.4;
+  unicode-bidi: plaintext;
+  user-select: text;
+  min-width: 1.6rem;
+  text-align: center;
+}
+/* الجذر: مسار "1" أَبرز قَليلًا */
+.map-node-html.kind-root > .map-node-row > .map-path {
+  font-weight: 700;
+  color: var(--text, #333);
+  background: color-mix(in srgb, var(--text, #444) 12%, transparent);
+}
+.map-name {
+  flex: 1 1 auto;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+.map-node-html.kind-root > .map-node-row > .map-name { font-weight: 700; }
+
+.map-meta {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  opacity: 0.82;
+  unicode-bidi: plaintext;
+}
+.map-count { opacity: 0.7; font-size: 0.78rem; }
+
+.map-status { font-weight: 600; }
+.map-status.online { color: var(--online, #22c55e); }
+.map-status.offline { color: var(--offline, #ef4444); }
+.map-status.unknown { color: var(--unknown, #9ca3af); }
+
+.map-children {
+  margin-inline-start: 1.4rem;             /* إِزاحة أَعمق بِحسب الـ RTL (v2.5.4) */
+  padding-inline-start: 0.75rem;
+  opacity: 0.92;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   v2.5.4 — خطوط وصل بصرية (L) بين الأَب وأَبنائه.
+   كل li داخل .map-children يَحصل على خط رأسي عبر ::before (على الـ edge الأَيمن
+   لِـ RTL)، وخط أَفقي قَصير عبر ::after على رأصف العقدة. آخر li في القائمة يَحصل
+   على `.map-children > li:last-child::before` بِـ height نصفية فقط (L قَصير).
+   هذا يُنتج شكل شجرة هرمية واضحة بَدل القوائم المسطحة.
+   ───────────────────────────────────────────────────────────── */
+.map-children > .map-node-html {
+  position: relative;
+}
+.map-children > .map-node-html::before {
+  /* خط رأسي: يَنزل من الأَعلى إِلى مركز العقدة (yx) */
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-start: -0.75rem;             /* محاذاة لِـ padding-inline-start */
+  width: 1px;
+  height: 100%;
+  background: var(--border, #ccc);
+}
+.map-children > .map-node-html::after {
+  /* خط أَفقي قَصير: من الخط الرأسي إِلى بداية العقدة (يلتقي عند رأصف العقدة) */
+  content: '';
+  position: absolute;
+  top: 0.95rem;                              /* تَقريبًا رأصف .map-node-row المُنتفِخ */
+  inset-inline-start: -0.75rem;
+  width: 0.75rem;
+  height: 1px;
+  background: var(--border, #ccc);
+}
+/* آخر ابن في القائمة: الخط الرأسي يَتوقف عند نقطة الالتقاء (L قَصير) لِـ no over-run */
+.map-children > .map-node-html:last-child::before {
+  height: 0.95rem;
+}
+/* مدلل LRP: loop لكن في الواقع li داخل ul الأَب مَحصور = li بأبنائه يُحسب آخرًا */
+.map-children[data-depth] { /* data-depth لِـ تَخصيص لاحق لو لَزم */ }
+
+/* تَغميق تَدريجي لِـ خلفية العُقد المواقع حسب العمق (v2.5.4) — يُميّز المستوى
+   الأَول عن الثاني عن الثالث بصريًّا. الجذر (depth 0) يَبقى بنفس لون kind.
+   نُضيف alpha بسيط على --node-bg على عُقد المجلدات فقط. */
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="1"] > .map-node-row { background-blend-mode: multiply; }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="2"] > .map-node-row { filter: brightness(0.975); }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="3"] > .map-node-row { filter: brightness(0.95); }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="4"] > .map-node-row { filter: brightness(0.925); }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="5"] > .map-node-row { filter: brightness(0.90); }
+
+/* اختصار مَخصوص - ضمان افتراضي لكل الأنواع القديمة من D3 كـ dead-code fallback آمن */
+.map-node-html.kind-site,
+.map-node-html.kind-building,
+.map-node-html.kind-floor,
+.map-node-html.kind-room,
+.map-node-html.kind-rack {
+  border-width: 1px;
+}
+
+/* ===== modal تَفاصيل الجهاز العائم (v2.5.3) ===== */
+.map-modal {
+  position: fixed;
+  inset: 0;                              /* overlay كامل الشاشة */
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.map-modal.hidden { display: none; }     /* نمط المشروع: hidden = لا عرض */
+
+.map-modal-content {
+  position: relative;
+  background: var(--card-bg, #fff);
+  color: var(--text, #333);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+  padding: 1.25rem 1.1rem 1.1rem;
+  width: min(560px, 95vw);
+  max-height: 88vh;
+  overflow: auto;
+  direction: rtl;
+}
+.map-modal-content .modal-close {
+  position: absolute;
+  inset-inline-end: 0.6rem;             /* RTL: زر × يسار */
+  top: 0.6rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text, #333);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+.map-modal-content .modal-close:hover { background: rgba(127,127,127,0.15); }
+
+.details-header {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  padding-inline-end: 2.4rem;            /* تَجنّب تَداخل × */
+}
+.details-icon { font-size: 1.7rem; flex: 0 0 auto; }
+.details-title-wrap { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.details-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22rem;
+}
+.details-status-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+.details-status-badge.online  { background: rgba(34,197,94,0.18);  color: var(--online, #22c55e); }
+.details-status-badge.offline { background: rgba(239,68,68,0.18);  color: var(--offline, #ef4444); }
+.details-status-badge.unknown { background: rgba(156,163,175,0.22); color: var(--unknown, #9ca3af); }
+
+.details-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;        /* حقلان لكل صف */
+  gap: 0.4rem 0.75rem;
+  direction: rtl;
+}
+.details-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(127,127,127,0.12);
+}
+.df-label { font-size: 0.74rem; color: var(--muted, #777); }
+.df-value { font-size: 0.92rem; font-weight: 600; unicode-bidi: plaintext; word-break: break-word; }
+
+.details-placeholder {
+  grid-column: 1 / -1;
+  color: var(--muted, #777);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+}
+
+.details-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border, #ddd);
+}
+
+/* قسم هيكل/رصف المواقع — أَنماط الـ select الهرمي (loc-kind / loc-parent_id) */
+#loc-parent_id option { padding-block: 2px; }
+
+/* فلاتر الجدول (devices + locations) تَتَدحرّج على الموبايل */
+@media (max-width: 640px) {
+  #filter-location-devices, #filter-kind-locations { width: 100%; }
+}

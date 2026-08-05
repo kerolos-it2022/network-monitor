@@ -828,4 +828,22 @@ router.get('/types', (req, res) => {
   res.json({ success: true, data: { types, locations } });
 });
 
+// ─────────────────────────────────────────────────────────────
+// v2.5.0 — تَصدير الـ helpers لِـ إعادة الاستِعمال من scan-scheduler.service.js
+// (المرحلة 1: المسح الدوري). نُلحِقها كخاصية على router لِأَن module.exports = router
+// هو المُتعارَف في بقية ملفات routes وَإعادة كتابته ستَكسر req.app بصمة server.js.
+// ─────────────────────────────────────────────────────────────
+router.helpers = {
+  isValidCIDR,
+  cidrToIPs,
+  pingSweep,
+  getMacAddress,
+  getMacVendor,
+  scanPorts,
+  identifyDeviceType,
+  resolveHostname,
+  getSMBName,
+  querySNMP,
+};
+
 module.exports = router;
