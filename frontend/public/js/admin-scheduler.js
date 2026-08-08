@@ -84,7 +84,7 @@ async function saveSchedulerSettings() {
     new_device_alert: document.getElementById('sched-new-device-alert').checked ? 1 : 0,
   };
   if (!patch.subnets) {
-    alert('الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24');
+    showToast('الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24', { type: 'warning' });
     return;
   }
   const r = await api('/api/scan-scheduler/settings', {
@@ -93,34 +93,34 @@ async function saveSchedulerSettings() {
     body: JSON.stringify(patch),
   });
   if (r && r.success) {
-    alert('تم حفظ إعدادات المسح الدوري وتطبيقها.');
+    showToast('تم حفظ إعدادات المسح الدوري وتطبيقها.', { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
-    alert('فشل الحفظ: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل الحفظ: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function runSchedulerNow() {
   const r = await api('/api/scan-scheduler/run-now', { method: 'POST' });
   if (r && r.success) {
-    alert('بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.');
+    showToast('بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.', { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
-    alert('فشل بدء المسح الفوري: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل بدء المسح الفوري: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function stopScheduler() {
   const r = await api('/api/scan-scheduler/stop', { method: 'POST' });
   if (r && r.success) {
-    alert('تم إيقاف المسح الدوري.');
+    showToast('تم إيقاف المسح الدوري.', { type: 'success' });
     // أَيضًا نُحدّث checkbox يدويًّا
     document.getElementById('sched-enabled').checked = false;
     await loadSchedulerStatus();
   } else {
-    alert('فشل الإيقاف: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل الإيقاف: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 

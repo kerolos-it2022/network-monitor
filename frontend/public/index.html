@@ -48,9 +48,10 @@
       <option value="location">📍 ترتيب: حسب الموقع</option>
       <option value="last_checked">⏰ ترتيب: حسب آخر فحص</option>
     </select>
-<div class="view-toggle" role="group" aria-label="نمط العرض">
+      <div class="view-toggle" role="group" aria-label="نمط العرض">
         <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات">🗂️</button>
         <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول">📋</button>
+        <button type="button" id="view-map-btn" class="view-btn" title="عرض الخريطة">🗺️</button>
       </div>
     </section>
 
@@ -93,6 +94,13 @@
         <tbody id="devices-table-body"></tbody>
       </table>
     </div>
+
+    <!-- نمط الخريطة (مخفي افتراضياً) — v2.6.0: zones كبطاقات مُربّعة -->
+    <div id="map-view" class="map-view hidden">
+      <div id="map-uptime-bar" class="map-uptime-bar" aria-live="polite" aria-atomic="true"></div>
+      <div id="public-map-grid" class="map-grid" role="list" aria-label="شبكة المواقع"></div>
+      <p id="public-map-empty" class="map-empty hidden" aria-live="polite"></p>
+    </div>
   </main>
 
   <!-- Modal تفاصيل الجهاز -->
@@ -118,6 +126,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/public-dashboard.js"></script>
+  <script src="js/public-map.js"></script>
 
   <!-- ===== تسجيل Service Worker (PWA + Push Notifications) ===== -->
   <script>

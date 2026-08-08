@@ -135,13 +135,17 @@ async function restoreBackup() {
   }
 
   // تأكيد ثنائي نظراً لأن العملية خطيرة
-  const confirmed = confirm(
-    '⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالكامل بالملف المختار.\n\n' +
-    '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
-    '• سيتم إعادة تشغيل الخادم بعد الانتهاء.\n' +
-    `• حجم الملف: ${(file.size / 1024 / 1024).toFixed(2)} ميجابايت\n\n` +
-    'هل تريد المتابعة؟'
-  );
+  const confirmed = await confirmAction({
+    title: '⚠️ تَأكيد استعادة النَسخة',
+    message:
+      '⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالكامل بالملف المختار.\n\n' +
+      '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
+      '• سيتم إعادة تشغيل الخادم بعد الانتهاء.\n' +
+      `• حجم الملف: ${(file.size / 1024 / 1024).toFixed(2)} ميجابايت\n\n` +
+      'هل تريد المتابعة؟',
+    confirmText: '🔄 استعادة',
+    danger: true,
+  });
   if (!confirmed) return;
 
   if (restoreBtn) {
@@ -200,11 +204,15 @@ async function restoreBackup() {
 
 // استعادة نسخة موجودة من مجلد backups/
 async function restoreFromExisting(filename) {
-  const confirmed = confirm(
-    `⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالنسخة:\n${filename}\n\n` +
-    '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
-    '• سيتم إعادة تشغيل الخادم.\n\nهل تريد المتابعة؟'
-  );
+  const confirmed = await confirmAction({
+    title: '⚠️ تَأكيد استعادة نَسخة موجودة',
+    message:
+      `⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالنسخة:\n${filename}\n\n` +
+      '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
+      '• سيتم إعادة تشغيل الخادم.\n\nهل تريد المتابعة؟',
+    confirmText: '🔄 استعادة',
+    danger: true,
+  });
   if (!confirmed) return;
 
   showBackupOutput(true);
@@ -246,7 +254,12 @@ async function restoreFromExisting(filename) {
 
 // حذف نسخة أمنية
 async function deleteBackup(filename, rowEl) {
-  const confirmed = confirm(`هل أنت متأكد من حذف النسخة:\n${filename}\n\nلا يمكن التراجع عن هذا الإجراء.`);
+  const confirmed = await confirmAction({
+    title: 'تَأكيد حذف النَسخة',
+    message: `هل أَنت متأَكّد من حذف النَسخة:\n${filename}\n\nلا يمكن التَراجُع عن هذا الإجراء.`,
+    confirmText: '🗑️ حذف',
+    danger: true,
+  });
   if (!confirmed) return;
 
   try {

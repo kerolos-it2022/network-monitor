@@ -37,4 +37,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   // افتراضياً: قسم الأجهزة ظاهر (أول تبويب).
   showSection('tab-devices');
+
+  // v2.7.0 — sidebar drawer في < 768px: زرّ 🍔 يَفتح/يُغلق القائمة الجانبية المعتمة.
+  const sidebar = document.getElementById('admin-sidebar');
+  const toggle = document.getElementById('sidebar-toggle');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  function openSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+  }
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+  if (toggle) toggle.addEventListener('click', () => {
+    if (sidebar && sidebar.classList.contains('open')) closeSidebar();
+    else openSidebar();
+  });
+  // نقر الخلفية يُغلق الـ drawer.
+  if (backdrop) backdrop.addEventListener('click', closeSidebar);
+  // اِختيار قسم في الموبايل يُغلق الـ drawer تلقائياً (لِـ تَجَنُّب التَرك مفتوحًا).
+  Object.keys(TAB_TO_SECTION).forEach((tabId) => {
+    const el = document.getElementById(tabId);
+    if (el) el.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeSidebar();
+    });
+  });
+  // مفتاح ESC يُغلق الـ drawer.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) closeSidebar();
+  });
 });

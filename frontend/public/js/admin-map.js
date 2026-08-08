@@ -1,22 +1,23 @@
-// admin-map.js (v2.5.4 — خريطة تسلسلية هرمية: خطوط L + مسار رقمي + خلفية متتابعة)
+// admin-map.js (v2.6.0 — عرض «بطاقات المُربّعات Zones-Grid»: مُسطّح بَسيط)
 // ─────────────────────────────────────────────────────────────
-// تَبويب «🗺️ خريطة المواقع»: هرم مُدمَج (internet ← zones ← devices).
+// تَبويب «🗺️ خريطة المواقع»: zones كبطاقات مُرتّبة في شَبكة grid (auto-fill 280px).
 //   - جَلب الشجرة من GET /api/map/tree (JSON مُتداخل؛ الجذر = internet لو وُجد واحد،
 //     وإلا «كل المواقع»).
-//   - تَنسيق (v2.5.4): شجرة HTML/CSS متداخلة (ul/li) بدلًا من D3 — RTL طبيعي، لا تَراص،
-//     النصوص داخل العُقد، scroll فقط (بلا zoom — أُزيل في v2.5.3).
-//   - خلفية العُقدة الموقع = لون حسب kind (internet=أَزرق، zone=أَصفر/برتقالي…)
-//     مُعمَّق تَدريجيًا حسب العمق (data-depth) لِـ تَمييز بَصري أَوضح بين المستويات.
-//     الأَجهزة مَلؤوة بلون الحالة (online/ offline/ unknown).
-//     إطار عُقدة الموقع = تَلخيص أَجهزته (أَحمر لو وُجد offline، أَخضر لو كلها online).
-//   - مسار رقمي هرمي (1.2.3) أمام كل عقدة (v2.5.4) يُولَّد باجتياز الشجرة ويمثّل
-//     المسار الكامل من الجذر بَدل id مجرّد.
-//   - خطوط وصل بصرية (L) بين الأَب وأَبنائه عبر ::before على كل li — تَرسم خط رأسي
-//     + خط أَفقي قَصير (RTL تلقائي عبر inset-inline-start)، آخر ابن يَحصل على L قَصير.
-//   - تَفاعل: نقر موقع ↔ طي/تَوسيع (toggle class بلا إِعادة بناء، transitions سلسة على
-//     max-height)؛ نَقر مزدوج على موقع ↔ اِنتقال لِـ تَبويب «الأَجهزة» مُصفّى بِـ
-//     location_id (حدث map:filter-location)؛ نقر جهاز ↔ فتح modal تَفاصيل عائم
-//     (showDeviceDetails ← GET /api/devices/:id).
+//   - v2.6.0: اِستبدال الشَجِرة المُتداخِلة (ul/li)بِـ «بطاقات مُربّعة» لِـ zones
+//     الرئيسية (internet/zone/unassigned/…). كُلّ بطاقة <article class="map-zone-card">
+//     تَعرض تَرويسة (أَيَقونة + اسم + إِحصائيات 🟢N·🔴N·⚪N (total) + سَهم ▼) و جِسمًا
+//     يَحوي الأَجهزة + sub-zones (building/floor/room/rack) كـ sub-headers صَغيرة.
+//   - طي/تَوسيع: نَقر التَرويسة يُبَدّل class `collapsed` على <article> (transition
+//     max-height على .map-zone-body بِـ CSS). لا إِعادة بناء innerHTML (delegation ثابت).
+//   - إِطار البطاقة = تَلخيص أَجهزتها (أَحمر لو وُجد offline، أَخضر لو كلها online)
+//     عبر متغيّرات inline `--node-bg/--node-border/--node-border-w` (نَفس مَيكانيكية
+//     v2.5.5). الأَجهزة chips مُلوّنة بِنُقطة الحالة (online/offline/unknown).
+//   - تَفاعل: نقر تَرويسة بطاقة ↔ طي/تَوسيع (toggle class)؛ نَقر مزدوج على تَرويسة
+//     موقع ↔ اِنتقال لِـ تَبويب «الأَجهزة» مُصفّى بِـ location_id (حدث map:filter-location)؛
+//     نقر device chip ↔ فتح modal تَفاصيل عائم (showDeviceDetails ← GET /api/devices/:id).
+//   - v2.5.5 المُحافَظ عليها في v2.6.0: بحث فوري + فلتر الحالة + chips تفاعلية في
+//     #map-summary + حفظ scroll عبر إِعادة الرَسم + حالات (لا بيانات/خطأ شبكة/لا
+//     مُطابِقات) — كُلّها عَبر نفس ميكانيكية client-side filtering المَوجُودة.
 //   - auto-refresh كل 30 ثانية عندما التبويب ظاهر.
 //   - modal: زِر × + مفتاح ESC + نقر على الخلفية يُغلقونه.
 // ─────────────────────────────────────────────────────────────
@@ -25,6 +26,13 @@ let mapAutoRefreshHandle = null;
 let mapRootData = null;
 const mapCollapsed = new Set();
 let mapHasInitialized = false;
+let mapNodeEventsBound = false;   // وِقاية تَسرّيب listeners في bindNodeEvents (يُربط مَرّة واحدة)
+// v2.5.5 — حالة البحث + فلتر الحالة (client-side، لا تَغيير على API).
+let mapSearchQuery = '';
+let mapStatusFilter = '';
+// مُؤقّتات debounce: search + toast.
+let mapSearchHandle = null;
+let mapToastHandle = null;
 
 // أيقونات أنواع المواقع (هرم الشبكة المُدمَج).
 const KIND_ICON = {
@@ -81,6 +89,75 @@ function hasChildren(node) {
   return Array.isArray(node.children) && node.children.length > 0;
 }
 
+// ═══ v2.5.5: فِلترة client-side للشَجرة (بحث + فلتر الحالة) ═══
+
+// هل تُطابِق العُقدة الـ query (اسم موقع/اسم جهاز/IP)؟ case-insensitive، substring.
+function nodeMatchesQuery(node, q) {
+  if (!q) return true;
+  const hay = [node.name, node.ip, node.device_type].filter(Boolean).join(' ').toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+// هل أَيّ سُلالة (device أَو location) تُطابِق الـ query؟ (اجتياز عُمق-أَوّلًا wide)
+function hasMatchInSubtree(node, q) {
+  if (!q) return true;
+  if (nodeMatchesQuery(node, q)) return true;
+  if (Array.isArray(node.children)) {
+    for (const c of node.children) {
+      if (hasMatchInSubtree(c, q)) return true;
+    }
+  }
+  return false;
+}
+
+// هل تُطابِق العُقدة فلتر الحالة؟ device → نَطابِق status مباشرة؛ الموقع يَمُرّ دائمًا
+// (الأَب يُحفظ لو لَديه جهاز بِـ الحالة المطلوبة — تَتحقّق hasDeviceInSubtree).
+function nodePassesStatusFilter(node) {
+  if (!mapStatusFilter) return true;
+  if (node.kind === 'device') return node.status === mapStatusFilter;
+  return true; // المواقع تُحفظ بِـ hasDeviceInSubtree
+}
+
+// أ‌ي‌ contiene عُقدة موقع جهازًا بِـ الحالة المطلوبة في سُلالتها؟
+function hasDeviceInSubtree(node, status) {
+  if (!status) return true;
+  if (node.kind === 'device') return node.status === status;
+  if (Array.isArray(node.children)) {
+    for (const c of node.children) {
+      if (hasDeviceInSubtree(c, status)) return true;
+    }
+  }
+  return false;
+}
+
+// هل تُمرّ العُقدة الكاملة (search + status filter)؟
+// للأَجهزة: كِلا الفِلترين مُعتمدان على العُقدة نفسها.
+// للمواقع: تُحفظ لو لَديها سُلالة تُطابِق الـ query و (لو statusFilter مُفعّل) سُلالة device
+// بالحالة المطلوبة. هذا يَحفظ سَلسلة الأَجداد المُؤدّية لِـ المُطابِقات.
+function nodeKeptByFilters(node) {
+  const passesStatus = !mapStatusFilter
+    || (node.kind === 'device' ? node.status === mapStatusFilter : hasDeviceInSubtree(node, mapStatusFilter));
+  if (!mapSearchQuery) return passesStatus;
+  // query فعّال: العُقدة نفسها أَو سُلالتها تُطابِق.
+  if (!hasMatchInSubtree(node, mapSearchQuery)) return false;
+  return passesStatus;
+}
+
+// عَدّ الأ‌جهزة الباقية بعد الفلترة (لِـ summary في وضع البحث/الفِلتر).
+function countVisibleDevices(node) {
+  if (!node) return 0;
+  if (node.kind === 'device') return nodeKeptByFilters(node) ? 1 : 0;
+  if (Array.isArray(node.children)) {
+    return node.children.reduce((sum, c) => sum + countVisibleDevices(c), 0);
+  }
+  return 0;
+}
+
+// هل الفِلترة فعّالة حاليًّا؟ (search أَو status)
+function hasActiveFilters() {
+  return !!(mapSearchQuery || mapStatusFilter);
+}
+
 // إِيجاد عقدة جهاز بِـ id داخل الشجرة (اجتياز عمق-أَولاً). يُستعمل عند نقر جهاز
 // لِـ جلب ip/name/status التي كانت على العقدة الأَصلية (ليست دومًا في data-id).
 function findDeviceNode(node, id) {
@@ -95,74 +172,172 @@ function findDeviceNode(node, id) {
   return null;
 }
 
-// بناء HTML لعُقدة واحدة (recursion).
-// path = المسار الرقمي الهرمي (v2.5.4) مثل "1.2.3"؛ الجذر يَحصل على "1"، أَبناؤه "1.1", "1.2"...
-function renderNode(node, depth, path) {
-  const kind = node.kind || 'zone';
-  const icon = KIND_ICON[kind] || '📍';
-  const isDev = kind === 'device';
-  const isRoot = kind === 'root';
-
-  // تَفاصيل العُقدة (counts للأَبوية، status للأَجهزة).
-  let meta = '';
-  if (isDev) {
-    meta = `${esc(node.device_type || 'جهاز')} · <span class="map-status ${node.status}">${esc(node.status)}</span>`;
-  } else if (node.device_count > 0) {
-    meta = `🟢 ${node.online} · 🔴 ${node.offline} · ⚪ ${node.unknown} <span class="map-count">(${node.device_count})</span>`;
-  } else {
-    meta = '—';
+// ═══ v2.6.0 — Zones-Grid renderer (خِيار A مُسطّح) ═══
+// بناء HTML لِـ شَبكة البطاقات من جذر الشَجِرة (rootData). يَمشي عَلى أَبناء الجذر
+// المُباشِرين (zones/internet/unassigned) — الجذر نفسه (root/internet المُصطَنَع which
+// يَتَراص أَبناؤه) لا نُولّد له بطاقة مستَقِلّة، إِنّما نَكشِف أَبناءه. هذا ما يُحوّل
+// الشَجِرة المُتداخِلة (ul/li) إِلى grid مُسطّح لِـ zones الرئيسية.
+function renderZonesGrid(rootData) {
+  if (!rootData) return '';
+  // الجذر يَحوي أَبناءً (zones/internet/unassigned) — نُولّد بطاقة لِـ كُلّ وَاحد.
+  const kids = Array.isArray(rootData.children) ? rootData.children : [];
+  // v2.6.0 — فصل الأَجهزة المُباشِرة في الجذر (kind=device) عَن zones الحَقيقية:
+  // router/sophos/DNS في جذر internet تَظهَر في JSON كـ children مُباشِرة للجذر،
+  // نُجمِعها في بطاقة وَاحِدة مَخصَّصة «أَجهزة مَدخل الإنترنت» لِـ تَجنّب بَطاقات فَارِغة.
+  const zoneKids = [];
+  const orphanDevices = [];
+  for (const c of kids) {
+    if (c.kind === 'device') orphanDevices.push(c);
+    else zoneKids.push(c);
   }
-
-  // مؤشّر طي/تَوسيع.
-  const canCollapse = !isDev && !isRoot && hasChildren(node);
-  const collapsedNow = canCollapse && isCollapsed(node);
-  const toggleMark = canCollapse ? (collapsedNow ? '▶' : '▼') : '';
-
-  // لون الخلفية/الإِطار.
-  let bg = cssVar('--card-bg', '#fff');
-  let border = '#9e9e9e';
-  let borderW = '1px';
-  if (isDev) {
-    bg = deviceColor(node.status);
-    border = deviceColor(node.status);
-    borderW = '2px';
-  } else {
-    bg = kindColor(kind);
-    border = locationBorderColor(node);
-    borderW = (node.offline > 0) ? '2px' : '1px';
-    if (kind === 'internet') border = '#2563eb';
-    if (kind === 'zone') border = '#eab308';
+  // v2.5.5 — فلترة client-side على zoneKids: اِسكِت الـ ones بِلا مُطابِقات في سُلالتها.
+  // للأَجهزة المُيَتِّمَة نُطبِّق nodeKeptByFilters مُباشِرة (filters device-level).
+  // v2.7.0 — تَمرير aria-posinset/aria-setsize للـ a11y (P)D.
+  const keptZoneKids = zoneKids.filter((c) => !hasActiveFilters() || nodeKeptByFilters(c));
+  let orphanCardCount = 0;
+  if (orphanDevices.length > 0) {
+    const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
+    if (kept.length > 0) orphanCardCount = 1;
   }
-
-  // الأَبناء: دائمًا نُولّد .map-children (حتى لو مطوية) — طي/تَوسيع يَتم بِـ class
-  // `collapsed` على li و الـ CSS يَطوي max-height (transition سلسة). هذا أَكثر متانة
-  // من إِعادة بناء innerHTML كاملة عند كل toggle.
-  // نَمرّر childPath لكل طفْل = path + '.' + (index+1) لِـ توليد المسار الرقمي الهرمي.
-  const kids = hasChildren(node) ? renderChildren(node.children, depth + 1, path) : '';
-
-  // class العُقدة. data-depth يَسمح لِـ CSS بِـ تَغميق تَدريجي حسب المستوى.
-  const cls = `map-node-html kind-${kind}${isDev ? ' kind-device' : ''}${canCollapse ? ' has-children' : ''}${collapsedNow ? ' collapsed' : ''}`;
-
-  // تَنسيق العقدة HTML.
-  // .map-path = المسار الرقمي الهرمي (v2.5.4) — خافت لِـ لا يُشتت لكنه يُظهر التَسلسل.
-  return `
-    <li class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" data-depth="${depth}" style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
-      <div class="map-node-row" title="${esc(nodeTooltip(node))}">
-        <span class="map-toggle">${toggleMark}</span>
-        <span class="map-path" title="المسار الهرمي">${esc(path)}</span>
-        <span class="map-icon">${icon}</span>
-        <span class="map-name">${esc(node.name || '')}</span>
-        <span class="map-meta">${meta}</span>
-      </div>
-      ${kids}
-    </li>`;
+  const setSize = keptZoneKids.length + orphanCardCount;
+  let cards = keptZoneKids
+    .map((c, i) => renderZoneCard(c, { posinset: i + 1, setsize: setSize }))
+    .join('');
+  // إِضافة بطاقة مَخصَّصة لِـ الأَجهزة المُيَتِّمَة (devices في جذر internet بِلا zone).
+  if (orphanDevices.length > 0) {
+    const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
+    if (kept.length > 0) {
+      const orphanNode = {
+        id: 'orphan-internet-devices',
+        name: 'أَجهزة مَدخل الإنترنت',
+        kind: 'unassigned',
+        device_count: kept.length,
+        online: kept.filter((d) => d.status === 'online').length,
+        offline: kept.filter((d) => d.status === 'offline').length,
+        unknown: kept.filter((d) => d.status === 'unknown').length,
+        children: kept,
+        _orphan: true,
+      };
+      // نُدرِجها في الأَخير لِـ تَظهَر بَعد zones في الأَسفل.
+      cards += renderZoneCard(orphanNode, { posinset: setSize, setsize: setSize });
+    }
+  }
+  return cards;
 }
 
-// renderChildren: يَولّد ul.map-children + li واحد لكل طفْل. نَمرّر childPath = parentPath + '.' + (index+1).
-function renderChildren(children, depth, parentPath) {
-  if (!Array.isArray(children) || children.length === 0) return '';
-  const items = children.map((c, i) => renderNode(c, depth, `${parentPath}.${i + 1}`)).join('');
-  return `<ul class="map-children" data-depth="${depth}">${items}</ul>`;
+// بطاقة zone واحدة: <article class="map-zone-card kind-X"> مع تَرويسة + جِسم.
+// isCollapsed: عند وجود فِلتر فعّال نَوسّع آليًّا (collapsed=false) لِـ تَظهر المُطابِقات.
+// v2.7.0 — opts.posinset/opts.setsize تُضاف كـ aria-posinset/aria-setsize للـ a11y.
+function renderZoneCard(node, opts) {
+  opts = opts || {};
+  const kind = node.kind || 'zone';
+  const icon = KIND_ICON[kind] || '📍';
+  const isUnassigned = kind === 'unassigned';
+  const collapsedNow = !hasActiveFilters() && isCollapsed(node);
+
+  // لون الخلفية/الإِطار (نَفس منطق v2.5.5 عَلى عُقد الشَجِرة).
+  const bg = kindColor(kind);
+  let border = locationBorderColor(node);
+  let borderW = (node.offline > 0) ? '2px' : '1px';
+  if (kind === 'internet') border = '#2563eb';
+  if (kind === 'zone') border = '#eab308';
+
+  // الإِحصائيات في التَرويسة.
+  const dc = node.device_count || 0;
+  const on = node.online || 0;
+  const off = node.offline || 0;
+  const unk = node.unknown || 0;
+  const stats = dc > 0
+    ? `🟢 ${on} · 🔴 ${off} · ⚪ ${unk} <span class="map-count">(${dc})</span>`
+    : '—';
+
+  // v2.7.0 — has-online: zone بأَجهزة كلها online (offline=0, online>0) → إِطار أَخضر مُميَّز.
+  const cls = `map-zone-card kind-${kind}${off > 0 ? ' has-offline' : ''}${(on > 0 && off === 0) ? ' has-online' : ''}${collapsedNow ? ' collapsed' : ''}${isUnassigned ? ' kind-unassigned' : ''}`;
+  const body = renderZoneBody(node);
+
+  // v2.7.0 (PD) — aria-posinset/aria-setsize من opts للـ a11y (اِختياري).
+  const ariaSet = opts.posinset != null && opts.setsize != null
+    ? ` aria-posinset="${opts.posinset}" aria-setsize="${opts.setsize}"`
+    : '';
+
+  return `
+    <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"${ariaSet}
+             style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
+      <div class="map-zone-header" title="${esc(nodeTooltip(node))}">
+        <span class="map-zone-icon">${icon}</span>
+        <span class="map-zone-name">${esc(node.name || '')}</span>
+        <span class="map-zone-stats">${stats}</span>
+        <button type="button" class="map-zone-toggle" aria-label="تَوسيع/طي" aria-expanded="${!collapsedNow}">▼</button>
+      </div>
+      <div class="map-zone-body">${body}</div>
+    </article>`;
+}
+
+// جِسم البطاقة: قَائمِة أَجهزة الموقع + sub-zones (building/floor/room/rack) كـ sub-headers.
+// مُتكرّرة: لو child هو location آخَر (/site/building/…) نَعرض sub-zone داخل نَفس البطاقة
+// (إِدخال عميق كـ sub-headers قَابلة للطي بالـ toggle الرئيسي). لو child جهاز → device chip.
+function renderZoneBody(node) {
+  const kids = Array.isArray(node.children) ? node.children : [];
+  if (kids.length === 0) {
+    // لا أَبناء — إِما فارِغة أو عقدة leaf; رِسالة hint قَد لا تَلزم لأَنّ reveal عبر
+    // has-offline / stats يُكفي. نُعيد سَلسلة فَارِغة فقط.
+    const dc = node.device_count || 0;
+    if (dc === 0) return '<p class="map-zone-empty">لا أَجهزة في هذه الموقع.</p>';
+    return '';
+  }
+  // نَفصل الأَبناء location عَن device.
+  const devices = [];
+  const subzones = [];
+  for (const c of kids) {
+    if (c.kind === 'device') devices.push(c);
+    else subzones.push(c);
+  }
+  let html = '';
+
+  // الأَجهزة المُباشِرة لهذه العُقدة (لو وُجدت).
+  if (devices.length > 0) {
+    html += devices
+      .filter((d) => !hasActiveFilters() || nodeKeptByFilters(d))
+      .map((d) => renderZoneDevice(d))
+      .join('');
+  }
+
+  // sub-zones داخل نَفس البطاقة (تَسلسل عميق بِلا grid مُنفَصِل — خِيار A مُسطّح).
+  for (const sz of subzones) {
+    // v2.5.5 فلترة: اِسكِت sub-zone التي لا تَملِك مُطابِقات في سُلالتها.
+    if (hasActiveFilters() && !nodeKeptByFilters(sz)) continue;
+    const szIcon = KIND_ICON[sz.kind] || '📍';
+    const szDc = sz.device_count || 0;
+    const szOn = sz.online || 0;
+    const szOff = sz.offline || 0;
+    const szUnk = sz.unknown || 0;
+    html += `
+      <div class="map-subzone" data-id="${esc(String(sz.id))}" data-kind="${esc(sz.kind)}">
+        <div class="map-subzone-title">
+          <span>${szIcon}</span>
+          <span class="map-subzone-name">${esc(sz.name || '')}</span>
+          <span class="map-subzone-stats">🟢${szOn} · 🔴${szOff} · ⚪${szUnk} (${szDc})</span>
+        </div>
+        ${renderZoneBody(sz)}
+      </div>`;
+  }
+  return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
+}
+
+// device chip داخل بطاقة zone/sub-zone.
+// data-id بِـ صيغة "dev-X" (نَفس تَوقّع v2.5.5 في bindNodeEvents لِـ استِخراج id الرقمي).
+function renderZoneDevice(node) {
+  const status = node.status || 'unknown';
+  const icon = deviceIcon(node.device_type) || DEVICE_TYPE_ICONS_FALLBACK;
+  const name = esc(node.name || '');
+  const meta = esc(`${node.device_type || 'جهاز'}`);
+  return `
+    <button type="button" class="map-zone-device" data-id="${esc(String(node.id))}" data-kind="device" data-status="${esc(status)}" title="${esc(nodeTooltip(node))}">
+      <span class="map-device-dot" aria-hidden="true"></span>
+      <span class="map-device-ic">${icon}</span>
+      <span class="map-device-name">${name}</span>
+      <span class="map-device-meta">${meta}</span>
+    </button>`;
 }
 
 // tooltip النصّي.
@@ -173,77 +348,156 @@ function nodeTooltip(node) {
   return `${node.name}\nأَجهزة: ${node.device_count} (🟢${node.online} 🔴${node.offline} ⚪${node.unknown})`;
 }
 
-// رَسم الشجرة كاملة في container.
+// رَسم الشَبكة كاملة في container (#map-grid — v2.6.0).
 function renderTree(rootData) {
-  const container = document.getElementById('tree-container');
+  const container = document.getElementById('map-grid');
   const emptyEl = document.getElementById('tree-empty');
+  const loadingEl = document.getElementById('tree-loading');
   const summaryEl = document.getElementById('map-summary');
   if (!container) return;
 
-  // حالة فارغة.
+  // P0.2 — حفظ موضع scroll عبر إِعادة الرَسم (auto-refresh / بحث / resize).
+  const savedScrollTop = container.scrollTop;
+  const savedScrollLeft = container.scrollLeft;
+
+  // حالة فَراغ: لا بيانات أَصلًا.
   const hasAny =
     rootData &&
     (rootData.device_count > 0 ||
       (Array.isArray(rootData.children) && rootData.children.length > 0));
-  if (emptyEl) emptyEl.style.display = hasAny ? 'none' : 'block';
   if (!hasAny) {
-    container.innerHTML = '<ul class="map-tree"></ul>';
-    if (summaryEl) summaryEl.textContent = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (loadingEl) loadingEl.hidden = true;
+    if (summaryEl) summaryEl.innerHTML = '';
+    // نَزيل أَيّ بطاقات zone سابِقة دون مَسّ #tree-empty/#tree-loading.
+    container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
+    restoreScroll(container, savedScrollTop, savedScrollLeft);
     return;
   }
 
-  // ملخص.
-  if (summaryEl) {
-    summaryEl.textContent = `الإِجمالي: ${rootData.device_count} جهاز · 🟢 ${rootData.online} online · 🔴 ${rootData.offline} offline · ⚪ ${rootData.unknown}`;
+  // P1.3 — عدّ الأَجهزة الباقية بعد الفِلترة (0 لو فلتر لا يَملِك مُطابِقات).
+  const visibleCount = hasActiveFilters() ? countVisibleDevices(rootData) : rootData.device_count;
+
+  if (loadingEl) loadingEl.hidden = true;
+
+  if (hasActiveFilters() && visibleCount === 0) {
+    // لا مُطابِقات للفِلتر الحالي.
+    if (emptyEl) {
+      emptyEl.style.display = 'block';
+      emptyEl.classList.add('map-empty-error');
+      const qPart = mapSearchQuery ? ` لِـ «<b>${esc(mapSearchQuery)}</b>»` : '';
+      const sPart = mapStatusFilter ? (mapSearchQuery ? ' و' : ' لِـ') + ` فلتر «${esc(mapStatusFilter)}»` : '';
+      emptyEl.innerHTML = `⚠️ لا توجد نَتائج${qPart}${sPart}.<br><button type="button" class="btn map-clear-btn" id="map-empty-clear" style="margin-top:0.6rem;">✖ مَسح الفِلترة</button>`;
+    }
+    if (summaryEl) summaryEl.innerHTML = `<span class="map-summary-count">لا مُطابِقات</span>`;
+    container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
+    bindNodeEvents(container);   // لِـ ربط زر #map-empty-clear عبر delegation على summary/container
+    restoreScroll(container, savedScrollTop, savedScrollLeft);
+    return;
   }
 
-  // بناء HTML.
-  // الجذر (root/internet) يُمَثَّل كـ root node؛ أَبناؤه (zones + sites + unassigned) كـ children.
-  // نُلفّ الجذر في ul/li واحدة بأَبنائه. الجذر path = "1" (v2.5.4).
-  const rootHtml = renderNode(rootData, 0, '1');
-  container.innerHTML = `<ul class="map-tree">${rootHtml}</ul>`;
+  // تَفعيل عادي: أَخفِ empty، أَزِل class error، اِعرض الـ summary (chips لو لا فلتر).
+  if (emptyEl) {
+    emptyEl.style.display = 'none';
+    emptyEl.classList.remove('map-empty-error');
+    emptyEl.textContent = 'لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.';
+  }
 
-  // رَبط الأَحداث (delegation).
+  // P1.3 — ملخص تفاعلي: chips (offline/online/unknown) عند عدم وجود فلتر، أَو عدّ المُطابِقات عند الفِلتر.
+  renderMapSummary(summaryEl, rootData, visibleCount);
+
+  // v2.6.0 — بناء HTML بطاقات zones (renderZonesGrid) و وَضعها في #map-grid.
+  const gridHtml = renderZonesGrid(rootData);
+  // نَستبدل البطاقات القَديمة فقط دون مَسّ #tree-loading/#tree-empty (يَحفظهم في DOM).
+  container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
+  // اِستِعمال Range لِـ إِدراج HTML بِـ شَكل آمن بَين loading/empty:
+  const tpl = document.createElement('template');
+  tpl.innerHTML = gridHtml;
+  // نُدرِج البطاقات قَبل #tree-loading (في بِداية container) لِـ نَضَمَن أَن تَظهَر قَبلها أَو بعد حِذف loading.
+  container.insertBefore(tpl.content, container.firstChild);
+
+  restoreScroll(container, savedScrollTop, savedScrollLeft);
+
+  // رَبط الأَحداث (delegation) — bindNodeEvents يَتولّى عدم التَكرار.
   bindNodeEvents(container);
 }
 
-// رَبط نقر/طي على كل العُقد عبر delegation.
-function bindNodeEvents(container) {
-  container.addEventListener('click', (event) => {
-    const li = event.target.closest('.map-node-html');
-    if (!li) return;
-    const id = li.dataset.id;
-    const kind = li.dataset.kind;
+// إِعادة scroll بعد reflow (rAF يَضمن تَطبيق القيم لبعض المتصفّحات).
+function restoreScroll(container, top, left) {
+  requestAnimationFrame(() => {
+    container.scrollTop = top;
+    container.scrollLeft = left;
+  });
+}
 
-    // النقر على toggle أَو على الصف نفسه لِـ المواقع (غير device/root) → طي/تَوسيع.
-    if (kind !== 'device' && kind !== 'root') {
-      // لو النقر على toggleMark أَو على الصف → بَدّل الطي.
-      const toggleClicked = event.target.closest('.map-toggle');
-      const rowClicked = event.target.closest('.map-node-row');
-      if (toggleClicked || rowClicked) {
-        // toggle class فقط على li موجود (لا إِعادة بناء innerHTML) — هذا يُمكّن
-        // transition max-height على .map-children و يَحفظ التَدَفّق و الـ delegation.
-        if (mapCollapsed.has(id)) {
-          mapCollapsed.delete(id);
-          li.classList.remove('collapsed');
-        } else {
-          mapCollapsed.add(id);
-          li.classList.add('collapsed');
-        }
-        // تَحديث علامة السهم ▼/▶ تَبَعًا للحالة.
-        const toggleEl = li.querySelector(':scope > .map-node-row > .map-toggle');
-        if (toggleEl) toggleEl.textContent = li.classList.contains('collapsed') ? '▶' : '▼';
-        return;
-      }
+// P1.3 — تَوليد HTML الملخّص (#map-summary).
+// لو الفِلترة فعّالة: «المُطابِقات: N جهاز». والا: chips offline/online/unknown.
+function renderMapSummary(summaryEl, rootData, visibleCount) {
+  if (!summaryEl) return;
+  if (hasActiveFilters()) {
+    summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} جهاز</span>`;
+    return;
+  }
+  const chips =
+    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="فلترة أَجهزة offline">🔴 ${rootData.offline} offline</button>` : '') +
+    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="فلترة أَجهزة online">🟢 ${rootData.online} online</button>` : '') +
+    (rootData.unknown > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="unknown" aria-label="فلترة أَجهزة unknown">⚪ ${rootData.unknown} unknown</button>` : '');
+  summaryEl.innerHTML = `<span class="map-summary-count">الإِجمالي: ${rootData.device_count} جهاز</span>${chips}`;
+}
+
+// رَبط نقر/طي على كل العُقد عبر delegation.
+// رَبط نقر/طي على كل العُقد عبر delegation.
+// v2.5.5 — ربط مَرّة واحدة فقط (علم mapNodeEventsBound) لِـ منع تَسرّيب listeners
+// عبر auto-refresh / resize / بحث (renderTree يُستدعى كثيرًا). delegation على container
+// الثابت (نفس #map-grid) يَكفي حتى لو اِستُبدل innerHTML.
+function bindNodeEvents(container) {
+  if (mapNodeEventsBound) return;
+  mapNodeEventsBound = true;
+
+  container.addEventListener('click', (event) => {
+    // v2.5.5 — زرّ مَسح الفِلترة داخل رسالة «لا نَتائج بحث».
+    const clearBtn = event.target.closest('#map-empty-clear');
+    if (clearBtn) {
+      clearMapFilters();
+      return;
     }
 
-    // نقر جهاز → عرض تَفاصيله في اللوحة الجانبية (same tab) بدل القفز لِـ tab الأَجهزة.
-    if (kind === 'device') {
-      // الـ API يُرجع id العقدة الجهاز بصيغة "dev-X" (map.routes.js)، لِـ ذلك نَستخرج الرقم
-      // الأَصلي للجهاز من البادئة حتى يَتطابق مع devices.id في /api/devices/:id.
-      const realDeviceId = (m => (m ? m[1] : id))(/^dev-(\d+)$/.exec(String(id)));
-      showDeviceDetails(realDeviceId);
+    // v2.6.0 — نقر device chip (.map-zone-device) له الأَولوية: اِفتح modal التَفاصيل.
+    // (نُعالِجه قَبل lookup البطاقة لِـ أَنّ chip الجهاز داخِل جِسم البطاقة، فلا يُريد toggle.)
+    const deviceChip = event.target.closest('.map-zone-device');
+    if (deviceChip) {
+      const id = deviceChip.dataset.id;
+      const m = /^dev-(\d+)$/.exec(String(id));
+      showDeviceDetails(m ? m[1] : id);
       return;
+    }
+
+    // lookup بطاقة zone. <article data-id data-kind>.
+    const card = event.target.closest('.map-zone-card');
+    if (!card) return;
+    const id = card.dataset.id;
+    const kind = card.dataset.kind;
+
+    // النقر على تَرويسة البطاقة (سَهم أَو header) لِـ الـ zones (غير device) → طي/تَوسيع.
+    if (kind !== 'device' && kind !== 'root') {
+      const toggleClicked = event.target.closest('.map-zone-toggle');
+      const headerClicked = event.target.closest('.map-zone-header');
+      if (toggleClicked || headerClicked) {
+        // toggle class فقط على <article> (لا إِعادة بناء innerHTML) — transition
+        // max-height على .map-zone-body بِـ CSS و يَحفظ التَدَفّق و الـ delegation.
+        if (mapCollapsed.has(id)) {
+          mapCollapsed.delete(id);
+          card.classList.remove('collapsed');
+        } else {
+          mapCollapsed.add(id);
+          card.classList.add('collapsed');
+        }
+        // تَحديث aria-expanded + السّهم (عَبر CSS rotate على .collapsed حاليًّا،
+        // لكنّنا نُحدّث aria-expanded لِـ الـ ARIA correctness).
+        const toggleEl = card.querySelector(':scope > .map-zone-header > .map-zone-toggle');
+        if (toggleEl) toggleEl.setAttribute('aria-expanded', !card.classList.contains('collapsed'));
+        return;
+      }
     }
   });
 
@@ -253,10 +507,10 @@ function bindNodeEvents(container) {
   // يُطلِق حدثًا بِـ location_id='unassigned' فيَنتُج Number('unassigned')=NaN في
   // admin-devices.js و يَترك الجدول فَارِغًا بِلا رِسالة. الآن no-op (شبيه بِـ root/device).
   container.addEventListener('dblclick', (event) => {
-    const li = event.target.closest('.map-node-html');
-    if (!li) return;
-    const kind = li.dataset.kind;
-    const id = li.dataset.id;
+    const card = event.target.closest('.map-zone-card');
+    if (!card) return;
+    const kind = card.dataset.kind;
+    const id = card.dataset.id;
     if (kind === 'device' || kind === 'root' || kind === 'unassigned') return;
     // نَنقر على زر التَبويب مباشرة (أَكثر متانة من showSection التي قد لا تكون مُعرّفة).
     const tabBtn = document.getElementById('tab-devices');
@@ -266,18 +520,32 @@ function bindNodeEvents(container) {
 }
 
 // تَحميل + رَسم.
+// v2.5.5 — حالات آمنة: skeleton #tree-loading قَبل fetch، رسالة خطأ ليّنة بَعد الفَشل
+// (لا alert)، تَمييز «لا بيانات» عن «خطأ شبكة». scroll محفوظ عبر renderTree.
 async function loadMap() {
+  const container = document.getElementById('map-grid');
+  const loadingEl = document.getElementById('tree-loading');
+  const emptyEl = document.getElementById('tree-empty');
+
+  // قَبل fetch: أَظهر skeleton، أَخفِ empty.
+  if (loadingEl) loadingEl.hidden = false;
+  if (emptyEl) { emptyEl.style.display = 'none'; emptyEl.classList.remove('map-empty-error'); }
+
   const data = await fetchTree();
+
+  // مَنجَز fetch (نجاح أَو فَشل): أَخفِ skeleton.
+  if (loadingEl) loadingEl.hidden = true;
+
   if (!data) {
-    const container = document.getElementById('tree-container');
-    if (container) {
-      container.innerHTML = '';
-      const emptyEl = document.getElementById('tree-empty');
-      if (emptyEl) {
-        emptyEl.style.display = 'block';
-        emptyEl.textContent = '⚠️ تعذّر جلب شجرة المواقع.';
-      }
+    // فَشل الشبكة / API: رسالة ليّنة + toast قَصير. لا alert، لا مَسح container فجأَة.
+    if (emptyEl) {
+      emptyEl.style.display = 'block';
+      emptyEl.classList.add('map-empty-error');
+      emptyEl.textContent = '⚠️ تعذّر جلب شجرة المواقع. تَحقّق من الاتّصال و حاول مَرّةً أُخرى.';
     }
+    // إِزالة أَيّ بطاقة zone قَديمة (لو كان هناك عَرض سابق).
+    if (container) container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
+    showMapToast('⚠️ تعذّر جلب الشَجرة', 3000);
     return;
   }
   mapRootData = data;
@@ -291,6 +559,41 @@ async function loadMap() {
     mapHasInitialized = true;
   }
   renderTree(data);
+}
+
+// P0.3 — رِسالة قَصيرة على #map-summary (مؤقّتًا بدل الإِجمالي) لِـ 3 ثواني ثُمّ تَعود.
+// بَديل لطيف لِـ alert() (مَمنُوع اِستعماله في الخطة).
+function showMapToast(msg, ms = 3000) {
+  const summaryEl = document.getElementById('map-summary');
+  if (!summaryEl) return;
+  if (mapToastHandle) clearTimeout(mapToastHandle);
+  summaryEl.innerHTML = `<span class="map-summary-count" aria-live="polite">${esc(msg)}</span>`;
+  mapToastHandle = setTimeout(() => {
+    if (mapRootData && !hasActiveFilters()) renderMapSummary(summaryEl, mapRootData, mapRootData.device_count);
+    else if (mapRootData) {
+      const visibleCount = countVisibleDevices(mapRootData);
+      summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} جهاز</span>`;
+    }
+  }, ms);
+}
+
+// v2.5.5 — تَطبيق فلتر الحالة (من <select> أَو من chip) و إِعادة الرسم.
+function applyStatusFilter(status) {
+  mapStatusFilter = status || '';
+  const sel = document.getElementById('map-filter-status');
+  if (sel) sel.value = mapStatusFilter;
+  if (mapRootData) renderTree(mapRootData);
+}
+
+// v2.5.5 — مَسح البحث + فلتر الحالة و إِعادة الرسم الكامل.
+function clearMapFilters() {
+  mapSearchQuery = '';
+  mapStatusFilter = '';
+  const searchEl = document.getElementById('map-search');
+  if (searchEl) searchEl.value = '';
+  const sel = document.getElementById('map-filter-status');
+  if (sel) sel.value = '';
+  if (mapRootData) renderTree(mapRootData);
 }
 
 // تَوسيع الكل / طي الكل.
@@ -426,6 +729,41 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('map-refresh-btn')?.addEventListener('click', loadMap);
   document.getElementById('map-expand-btn')?.addEventListener('click', expandAll);
   document.getElementById('map-collapse-btn')?.addEventListener('click', collapseAll);
+
+  // v2.5.5 — بحث فوري بِـ debounce 200ms (نَمط مطابق لِـ resizeHandle).
+  const searchEl = document.getElementById('map-search');
+  if (searchEl) {
+    searchEl.addEventListener('input', (e) => {
+      if (mapSearchHandle) clearTimeout(mapSearchHandle);
+      mapSearchHandle = setTimeout(() => {
+        mapSearchQuery = (e.target.value || '').trim();
+        if (mapRootData) renderTree(mapRootData);
+      }, 200);
+    });
+    // مَسح مُباشِر عند ضغط Esc داخل البحث (Utility لَطيفة).
+    searchEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        clearMapFilters();
+        searchEl.blur();
+      }
+    });
+  }
+
+  // v2.5.5 — فلتر الحالة (select).
+  document.getElementById('map-filter-status')?.addEventListener('change', (e) => {
+    applyStatusFilter(e.target.value);
+  });
+
+  // v2.5.5 — نقر chip (summary) لِـ فلترة سَريعة (delegation على #map-summary).
+  document.getElementById('map-summary')?.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-filter-status]');
+    if (!chip) return;
+    applyStatusFilter(chip.dataset.filterStatus);
+  });
+
+  // v2.5.5 — زرّ مَسح الفِلترة.
+  document.getElementById('map-clear-filters')?.addEventListener('click', clearMapFilters);
 
   // modal تَفاصيل الجهاز: زر الإِغلاق + مفتاح ESC + نقر على الخلفية (overlay).
   document.getElementById('map-device-close')?.addEventListener('click', closeDeviceDetails);

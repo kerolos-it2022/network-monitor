@@ -197,22 +197,35 @@ function switchView(view) {
   currentView = view;
   var cardsWrap = document.getElementById('devices-grid');
   var tableWrap = document.getElementById('devices-table-view');
+  var mapWrap = document.getElementById('map-view');
   var cardsBtn = document.getElementById('view-cards-btn');
   var tableBtn = document.getElementById('view-table-btn');
+  var mapBtn = document.getElementById('view-map-btn');
+
+  // v2.6.0: إِخفاء كُلّ الأَنماط أَوّلًا، ثُمّ إِظهار المُحدَّد.
+  if (cardsWrap) cardsWrap.classList.add('hidden');
+  if (tableWrap) tableWrap.classList.add('hidden');
+  if (mapWrap) mapWrap.classList.add('hidden');
+  if (cardsBtn) cardsBtn.classList.remove('active');
+  if (tableBtn) tableBtn.classList.remove('active');
+  if (mapBtn) mapBtn.classList.remove('active');
 
   if (view === 'table') {
-    cardsWrap.classList.add('hidden');
-    tableWrap.classList.remove('hidden');
-    cardsBtn.classList.remove('active');
-    tableBtn.classList.add('active');
+    if (tableWrap) tableWrap.classList.remove('hidden');
+    if (tableBtn) tableBtn.classList.add('active');
+    applyFilters();
+    if (window.PublicMapView) window.PublicMapView.deactivate();
+  } else if (view === 'map') {
+    if (mapWrap) mapWrap.classList.remove('hidden');
+    if (mapBtn) mapBtn.classList.add('active');
+    if (window.PublicMapView) window.PublicMapView.activate();
   } else {
-    cardsWrap.classList.remove('hidden');
-    tableWrap.classList.add('hidden');
-    cardsBtn.classList.add('active');
-    tableBtn.classList.remove('active');
+    if (cardsWrap) cardsWrap.classList.remove('hidden');
+    if (cardsBtn) cardsBtn.classList.add('active');
+    applyFilters();
+    if (window.PublicMapView) window.PublicMapView.deactivate();
   }
   try { localStorage.setItem(VIEW_STORAGE_KEY, view); } catch (e) {}
-  applyFilters();
 }
 
 // ====== \u0627\u0644\u0641\u0644\u062a\u0631\u0629 \u0648\u0627\u0644\u062a\u0631\u062a\u064a\u0628 ======
@@ -311,7 +324,7 @@ async function init() {
 
   try {
     var savedView = localStorage.getItem(VIEW_STORAGE_KEY);
-    if (savedView === 'table' || savedView === 'cards') currentView = savedView;
+    if (savedView === 'table' || savedView === 'cards' || savedView === 'map') currentView = savedView;
     var savedSort = localStorage.getItem(SORT_STORAGE_KEY);
     if (savedSort) {
       currentSort = savedSort;
@@ -332,6 +345,8 @@ async function init() {
 
   document.getElementById('view-cards-btn').addEventListener('click', function () { switchView('cards'); });
   document.getElementById('view-table-btn').addEventListener('click', function () { switchView('table'); });
+  var viewMapBtnEl = document.getElementById('view-map-btn');
+  if (viewMapBtnEl) viewMapBtnEl.addEventListener('click', function () { switchView('map'); });
 
   document.getElementById('modal-close-btn').addEventListener('click', function () {
     document.getElementById('device-modal').classList.add('hidden');

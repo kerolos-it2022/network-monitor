@@ -147,24 +147,85 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadNotificationLogs();
     });
   }
-  // زر مسح السجلات
-  document.getElementById('logs-clear-btn').addEventListener('click', async () => {
-    if (!confirm('تأكيد مسح السجلات الأقدم من الفترة المحددة؟')) return;
-    const days = Number(document.getElementById('logs-clear-range').value);
+  // v2.7.0 (PF) — زرّ موحّد "مسح السجل" — يَفتح popup اختِيار (نوع + مُدّة).
+  // نوع: notifications (DELETE /api/notifications/logs) | downtime (POST /api/devices/cleanup-history).
+  const logsClearBtn = document.getElementById('logs-clear-btn');
+  const cleanupModal = document.getElementById('cleanup-select-modal');
+  const cleanupTypeSel = document.getElementById('cleanup-type-select');
+  const cleanupRangeSel = document.getElementById('cleanup-range-select');
+  const cleanupOkBtn = document.getElementById('cleanup-select-ok-btn');
+  const cleanupCancelBtn = document.getElementById('cleanup-select-cancel-btn');
+
+  function closeCleanupModal() {
+    if (!cleanupModal) return;
+    cleanupModal.classList.add('hidden');
+    cleanupModal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', cleanupOnKey);
+    if (cleanupModal) cleanupModal.removeEventListener('click', cleanupOnBackdrop);
+  }
+  function cleanupOnKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeCleanupModal(); }
+  }
+  function cleanupOnBackdrop(e) { if (e.target === cleanupModal) closeCleanupModal(); }
+
+  if (logsClearBtn) logsClearBtn.addEventListener('click', () => {
+    if (!cleanupModal) return;
+    cleanupModal.classList.remove('hidden');
+    cleanupModal.setAttribute('aria-hidden', 'false');
+    if (cleanupRangeSel) cleanupRangeSel.value = 'week';
+    if (cleanupTypeSel) cleanupTypeSel.value = 'notifications';
+    if (cleanupOkBtn) cleanupOkBtn.focus();
+    document.addEventListener('keydown', cleanupOnKey);
+    cleanupModal.addEventListener('click', cleanupOnBackdrop);
+  });
+  if (cleanupCancelBtn) cleanupCancelBtn.addEventListener('click', closeCleanupModal);
+
+  // تَنفيذ المَسح بعد الاختيار.
+  if (cleanupOkBtn) cleanupOkBtn.addEventListener('click', async () => {
+    const type = cleanupTypeSel ? cleanupTypeSel.value : 'notifications';
+    const range = cleanupRangeSel ? cleanupRangeSel.value : 'week';
+    // تَأكيد ثاني عبر confirmAction لِـ أَنّ المَسح لا يُمكن التَراجُع عنه.
+    const days = range === 'week' ? 7 : (range === 'month' ? 30 : 365);
+    const typeLabel = type === 'downtime' ? 'سجل الانقطاعات' : 'سجل الإِشعارات';
+    const ok = await confirmAction({
+      title: 'تَأكيد مَسح ' + typeLabel,
+      message: `سيتم مَسح ${typeLabel} الأَقدم من ${days} يوم.\nلا يمكن التَراجُع عن هذا الإِجراء. مُتابعة؟`,
+      confirmText: '🗑️ مَسح',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
-      const r = await fetch(`/api/notifications/logs?older_than_days=${days}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      const data = await r.json();
-      if (data.success) {
-        alert(`✅ تم مسح ${data.data.deleted} سجل (أقدم من ${data.data.older_than_days} يوم)`);
-        await loadNotificationLogs();
+      let data;
+      if (type === 'downtime') {
+        // downtime: POST /api/devices/cleanup-history { range }
+        const r = await api('/api/devices/cleanup-history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ range }),
+        });
+        data = r;
       } else {
-        alert('❌ ' + (data.error || 'فشل المسح'));
+        // notifications: DELETE /api/notifications/logs?older_than_days={days}
+        const r = await fetch(`/api/notifications/logs?older_than_days=${days}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        data = await r.json();
+      }
+      if (data && data.success) {
+        const deleted = data.data && data.data.deleted != null ? data.data.deleted : 0;
+        showToast(`✅ تَم مَسح ${deleted} سجل (${typeLabel} — أَقدم من ${days} يوم)`, { type: 'success' });
+        closeCleanupModal();
+        // تَحديث جدول السجل لو كان مُحمَّلاً (notifications).
+        if (type === 'notifications' && typeof loadNotificationLogs === 'function') {
+          await loadNotificationLogs();
+        }
+      } else {
+        showToast('❌ ' + ((data && data.error) || 'فشل المَسح'), { type: 'error' });
       }
     } catch (e) {
-      alert('❌ خطأ في الاتصال بالخادم');
+      showToast('❌ خطأ في الاتصال بالخادم', { type: 'error' });
     }
   });
 });

@@ -175,15 +175,18 @@ function editLocation(loc) {
 async function saveLocation() {
   const id = document.getElementById('location-form-id').value;
   const name = document.getElementById('loc-name').value.trim();
-  if (!name) { alert('الاسم مطلوب'); return; }
+  if (!name) { showToast('الاسم مطلوب', { type: 'warning' }); return; }
   const kindSel = document.getElementById('loc-kind');
   const parentSel = document.getElementById('loc-parent_id');
   const kind = kindSel ? kindSel.value : 'zone';
   // لو kind=internet فالأَب لا يَُهم (الخادم يَضبط parent_id=null بصمت). أَوَّلًا نُخبر المستخدم.
   if (kind === 'internet' && parentSel && parentSel.value) {
-    if (!confirm('نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'تَنبيه: نوع «internet»',
+      message: 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟',
+      confirmText: '✓ مُتابعة',
+    });
+    if (!ok) return;
   }
   const parentId = parentSel && parentSel.value ? Number(parentSel.value) : null;
   const url = id ? '/api/locations/' + id : '/api/locations';
@@ -198,19 +201,27 @@ async function saveLocation() {
     await loadLocations();
     // تحديث قائمة المواقع في نموذج الجهاز + فلتر devices إن كان مُحمَّلاً.
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
+    showToast('✅ تَم حِفظ الموقع', { type: 'success' });
   } else {
-    alert(r.error || 'فشل الحفظ');
+    showToast(r.error || 'فشل الحفظ', { type: 'error' });
   }
 }
 
 async function deleteLocation(id, name) {
-  if (!confirm('تأكيد حذف الموقع: ' + name + '؟\nملاحظة: الأَبناء يُصبحُون جذورًا، والأَجهزة المُرتبطة تُصبح غير مُعَيَّنة.')) return;
+  const ok = await confirmAction({
+    title: 'تَأكيد حذف الموقع',
+    message: 'تَأكيد حذف الموقع: ' + name + '؟\nملاحظة: الأَبناء يُصبحُون جذورًا، والأَجهزة المُرتبطة تُصبح غير مُعَيَّنة.',
+    confirmText: '🗑️ حذف',
+    danger: true,
+  });
+  if (!ok) return;
   const r = await api('/api/locations/' + id, { method: 'DELETE' });
   if (r.success) {
     await loadLocations();
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
+    showToast('✅ تَم حَذف الموقع', { type: 'success' });
   } else {
-    alert(r.error || 'فشل الحذف');
+    showToast(r.error || 'فشل الحذف', { type: 'error' });
   }
 }
 
@@ -277,7 +288,7 @@ async function saveType() {
   const id = document.getElementById('type-form-id').value;
   const name = document.getElementById('type-name').value.trim();
   const icon = document.getElementById('type-icon').value.trim();
-  if (!name) { alert('الاسم مطلوب'); return; }
+  if (!name) { showToast('الاسم مطلوب', { type: 'warning' }); return; }
   const url = id ? '/api/device-types/' + id : '/api/device-types';
   const method = id ? 'PUT' : 'POST';
   const r = await api(url, {
@@ -289,18 +300,26 @@ async function saveType() {
     resetTypeForm();
     await loadTypes();
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
+    showToast('✅ تَم حِفظ النوع', { type: 'success' });
   } else {
-    alert(r.error || 'فشل الحفظ');
+    showToast(r.error || 'فشل الحفظ', { type: 'error' });
   }
 }
 
 async function deleteType(id, name) {
-  if (!confirm('تأكيد حذف النوع: ' + name + '؟')) return;
+  const ok = await confirmAction({
+    title: 'تَأكيد حذف النوع',
+    message: 'تَأكيد حذف النوع: ' + name + '؟',
+    confirmText: '🗑️ حذف',
+    danger: true,
+  });
+  if (!ok) return;
   const r = await api('/api/device-types/' + id, { method: 'DELETE' });
   if (r.success) {
     await loadTypes();
+    showToast('✅ تَم حذف النوع', { type: 'success' });
   } else {
-    alert(r.error || 'فشل الحذف');
+    showToast(r.error || 'فشل الحذف', { type: 'error' });
   }
 }
 

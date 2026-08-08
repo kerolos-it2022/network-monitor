@@ -347,3 +347,58 @@ bash -n deploy.sh
 
 ---
 **آخر تحديث: 2026-08-04 — v2.5.4 (مسار رقمي + خلفية متتابعة + خطوط L + إِصلاح bug unassigned) مُنجَزة. التَحقق الكامل + التزام + tag + طلب تَأكيد للـ push في هذه الجلسة. v2.5.2 السابق تَاريخي (zoom/focus-device لَم يَعُدا صالِحَين).**
+
+---
+
+## ✅ اكتملت v2.7.0 (2026-08-08) — sidebar + map polish + uptime bar + history cleanup + confirm/toast popups
+
+> 🎉 **مُنجَزة في مجلد development** (`feat/v2.6.0-zones-grid-view`). 16 ملفًا مُعدَّل. `node --check` PASS على كُلّ ملف. الالتزام + tag `v2.7.0` جاهِز بَعد هذا التَحديث.
+
+### 🆕 ما الذي أَضافته v2.7.0 (7 طلبات)
+
+| # | الميزة | النَطاق | الملفات المُعدَّلة |
+|---|---|---|---|
+| PA | **sidebar جانبي عمودي** (يمين ثابت 240px + drawer 🍔 في <768px) بَدَل التَبويبات الأُفقية العلوية | admin | `dashboard.html`, `style.css`, `admin-tabs.js` |
+| PG | **`confirmAction()` modal موحّد** + **`showToast()`** موقّت بدَل كلّ `confirm()/alert()` الأَصلية | admin (cutting) | `admin-utils.js`, `dashboard.html`, `style.css` |
+| PG-1 | اِستبدال **9 `confirm()`** بِـ `await confirmAction()` | admin | `admin-locations-types.js`, `admin-devices.js`, `admin-discovered.js`, `admin-update.js`, `admin-backup.js`, `admin-notifications.js` |
+| PG-2 | اِستبدال **39 `alert()`** بِـ `showToast()` (success/error/warning) | admin | `admin-locations-types.js`, `admin-devices.js`, `admin-discovered.js`, `admin-discovery.js`, `admin-scheduler.js` |
+| PE | **`has-online` class** على zone-cards كُلّها online → إِطار أَخضر مُميَّز + glow على device-dot | admin+public | `admin-map.js`, `public-map.js`, `style.css` |
+| PB | **الثيم الليلي للخريطة**: متغيّرات ليلية + `box-shadow` glow للـ has-online/has-offline + device-dot glow في dark | admin+public | `style.css` |
+| PD | **تَرقيم zone-cards تَسلسليًّا** (01، 02...) عَبر `CSS counter` + `aria-posinset`/`aria-setsize` للـ a11y | admin+public | `style.css`, `admin-map.js`, `public-map.js` |
+| PC | **شريط نِسبة التَشغيل** (`#map-uptime-bar`) في الصَفحة العامة — يَتحدّث مَع polling 10s | public | `index.html`, `public-map.js`, `style.css` |
+| PF | **endpoint `POST /api/devices/cleanup-history`** (week/month/year) + **زرّ موحّد "مَسح السجل"** popup (نوع + مُدّة) | admin+backend | `devices.routes.js`, `dashboard.html`, `admin-notifications.js` |
+
+### 🐛 اِكتشافات أثناء التَنفيذ (تَصحيح الخطة المكتوبة)
+1. **`confirm()/alert()` = 48 استدعاءً** (9 confirm + 39 alert) عبر 6 ملفات — الخطة ذَكَرت confirm() فقط. اِستُبدِل الكُلّ بِـ `confirmAction()` + `showToast()` (قرار المُستخدم).
+2. **أَعمدة `downtime_events` الفعلية**: `started_at`/`ended_at` (لا `start_at`/`end_at` كما في الخطة). اِستُعملت الفعلية في الـ endpoint.
+3. **الـ DB wrapper**: `better-sqlite3` مُباشِر (`db.prepare(...).run()`) — لا `db.run()`. اِستُعملت `.prepare().run()`.
+4. **منطق toggle التَبويبات**: في `admin-tabs.js` مُنفصل (لا `admin-utils.js`). الـ sidebar يَستعمل نَفس الـ IDs + selector `.tab-btn` — **لا تَغيير** على `showSection()`.
+5. **زرّ `#logs-clear-btn`**: كان يَحذف **سجل الإِشعارات** في `admin-notifications.js` (لا downtime). بَدَل زرّين، صار **زرّ موحّد** يَفتح popup (نوع + مُدّة) (قرار المُستخدم).
+
+### 📦 ملف `cleanup-select-modal` جَديد
+- popup اختيار (نوع: notifications/downtime + مُدّة: week/month/year) مُضاف في `dashboard.html`. يَستعمل `confirmAction()` ثانيًا لِـ تَأكيد نهائي قبل المَسح.
+
+### 🔐 endpoint `POST /api/devices/cleanup-history` (القُيُود)
+- `requireAuth` (session).
+- `range`: `week`|`month`|`year` → days 7/30/365.
+- **لا يَمسح ongoing** (`ended_at IS NOT NULL` فقط) — past only.
+- يَعود `{success, data:{deleted, range, cutoff}}`.
+
+### ✅ التَحقق (كلّ PASS)
+- `node --check` on 14 ملفًا (admin + public + backend): **OK**.
+- `bash -n deploy.sh`: **OK**.
+- 12 `tab-btn` + 12 `section` IDs: مُتَطابِقة.
+- `confirm-modal` + `cleanup-select-modal` + `toast-container` + `sidebar-toggle` + `admin-sidebar` + `sidebar-backdrop` + `dashboard-main` + `map-uptime-bar`: كُلّها موجُودة.
+- CSS: `has-online`, `online-glow`, `zone-sequence`, `map-uptime-bar`, `uptime-fill` (9 أَماكن): مُتَوفّرة.
+- نَتيجة `confirm()/alert()` grep عبر admin-*.js: الوحيد المُتبقّي هو `window.confirm` في `admin-utils.js:50` — وهذا **fallback آمن** داخل `confirmAction()` (لو modal غَير مَوجُود بسبب خطأ تَحميل) — مُتَعَمَّد.
+
+### ⚠️ ملاحظة لِـ الجلسة التالية
+- **لم يُلتزم/لَم يُرفع بَعد**. الالتزام + tag `v2.7.0` جاهِز بَعد هذا التَحديث (يَنتظر مُوافَقَة بَصَرية GUI من المُستخدم).
+- اِختبار GUI مَطلوب: (1) sidebar يَفتح كُلّ تَبويب، (2) <768px 🍔 drawer، (3) حَذف جهاز → confirmAction modal، (4) رِسائل → toast، (5) خريطة admin تَرقيم 01/02 + إِطار أَخضر + glow dark، (6) public uptime bar يَتحدّث 10s، (7) مَسح السجل popup نوع+مُدّة → toast.
+- رَفع لِـ `origin/main` بَعد تَأكيد صَريح من المُستخدم.
+
+### 🔗 الخطة المرجِعية
+- `docs/PLAN-v2.7.0-dashboard-redesign.md` — الخطة الأَصلية (7 طلبات + تَنفيذ 6 خُطوات).
+
+---
+**آخر تحديث: 2026-08-08 — v2.7.0 (sidebar + confirmAction + has-online + uptime bar + cleanup-history + toast) مُنجَزة. 16 ملفًا مُعدَّل. `node --check` PASS. الالتزام + tag `v2.7.0` + اِختبار GUI يَنتظر تأكيد المُستخدم.**

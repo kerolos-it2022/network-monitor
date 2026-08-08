@@ -169,7 +169,7 @@ function openDeviceForm() {
 
 async function startEditDevice(id) {
   const r = await api('/api/devices/' + id);
-  if (!r.success) { alert(r.error || 'تعذر جلب الجهاز'); return; }
+  if (!r.success) { showToast(r.error || 'تعذر جلب الجهاز', { type: 'error' }); return; }
   const d = r.data;
   document.getElementById('device-form-id').value = d.id;
   document.getElementById('df-name').value = d.name;
@@ -214,27 +214,35 @@ async function submitDeviceForm(e) {
   if (r.success) {
     document.getElementById('device-form').classList.add('hidden');
     await loadDevices();
+    showToast('✅ تَم حِفظ الجهاز', { type: 'success' });
   } else {
-    // لو الخطأ يتعلق بتكرار IP، نظهر رسالة واضحة بدلاً من alert عام.
+    // لو الخطأ يتعلق بتكرار IP، نظهر رسالة واضحة بدلاً من toast عام.
     const errMsg = r.error || 'فشل الحفظ';
     if (errMsg.includes('IP') || errMsg.includes('مسجّل')) {
-      alert('⚠️ ' + errMsg);
+      showToast('⚠️ ' + errMsg, { type: 'warning', duration: 6000 });
       // تظليل حقل IP لflutterattention المستخدم.
       const ipField = document.getElementById('df-ip');
       if (ipField) { ipField.focus(); ipField.select(); }
     } else {
-      alert(errMsg);
+      showToast(errMsg, { type: 'error' });
     }
   }
 }
 
 async function deleteDevice(id, name) {
-  if (!confirm('تأكيد حذف الجهاز: ' + name + '؟')) return;
+  const ok = await confirmAction({
+    title: 'تَأكيد حذف الجهاز',
+    message: 'تَأكيد حذف الجهاز: ' + name + '؟',
+    confirmText: '🗑️ حذف',
+    danger: true,
+  });
+  if (!ok) return;
   const r = await api('/api/devices/' + id, { method: 'DELETE' });
   if (r.success) {
     await loadDevices();
+    showToast('✅ تَم حَذف الجهاز', { type: 'success' });
   } else {
-    alert(r.error || 'فشل الحذف');
+    showToast(r.error || 'فشل الحذف', { type: 'error' });
   }
 }
 
@@ -251,8 +259,9 @@ async function exportDevicesExcel() {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
+    showToast('✅ تَم تَصدير الملف', { type: 'success' });
   } catch (e) {
-    alert('خطأ في التصدير: ' + e.message);
+    showToast('خطأ في التصدير: ' + e.message, { type: 'error' });
   }
 }
 
@@ -271,13 +280,13 @@ async function importDevicesExcel(file) {
       const { imported, skipped, errors } = data.data;
       let msg = `تم الاستيراد: ${imported} جهاز، تم التخطي: ${skipped}`;
       if (errors.length) msg += '\nأخطاء:\n' + errors.join('\n');
-      alert(msg);
+      showToast(msg, { type: imported > 0 ? 'success' : 'warning', duration: 6000 });
       await loadDevices();
     } else {
-      alert('فشل الاستيراد: ' + (data.error || 'خطأ غير معروف'));
+      showToast('فشل الاستيراد: ' + (data.error || 'خطأ غير معروف'), { type: 'error' });
     }
   } catch (e) {
-    alert('خطأ في الاستيراد: ' + e.message);
+    showToast('خطأ في الاستيراد: ' + e.message, { type: 'error' });
   }
 }
 

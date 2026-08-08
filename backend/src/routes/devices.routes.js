@@ -105,6 +105,31 @@ router.get('/:id/history', (req, res) => {
   });
 });
 
+// POST /api/devices/cleanup-history  🔒 (v2.7.0 — PF)
+// يَمسح أَحداث الانقطاع (downtime_events) المنتهية الأَقدم من المُدّة المُختارة.
+// body: { range: 'week' | 'month' | 'year' }
+// لا يَمسح الانقطاعات الجارية (ended_at IS NULL) — قَط past only.
+router.post('/cleanup-history', requireAuth, (req, res) => {
+  const range = req.body && req.body.range;
+  const days = range === 'week' ? 7
+    : range === 'month' ? 30
+    : range === 'year' ? 365
+    : null;
+  if (days == null) {
+    return res.status(400).json({ success: false, error: 'range غير صالح (week|month|year)' });
+  }
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+  // أَعمدة الـ schema الفعلية: started_at/ended_at (لا start_at/end_at).
+  // نَمسح فقط الأَحداث المنتهية (ended_at IS NOT NULL) الأَقدم من cutoff.
+  const info = db.prepare(
+    'DELETE FROM downtime_events WHERE ended_at IS NOT NULL AND ended_at < ?'
+  ).run(cutoff);
+  return res.json({
+    success: true,
+    data: { deleted: info.changes, range, cutoff },
+  });
+});
+
 // POST /api/devices  🔒
 router.post('/', requireAuth, (req, res) => {
   const {

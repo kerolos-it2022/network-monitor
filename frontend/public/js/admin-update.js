@@ -123,7 +123,13 @@ function closeInlineChangelog() {
 }
 
 async function applyUpdate() {
-  if (!confirm('⚠️ سيتم تحديث النظام وإعادة تشغيل الخدمة. هل تريد المتابعة؟')) return;
+  const ok = await confirmAction({
+    title: 'تَأكيد تَحديث النظام',
+    message: '⚠️ سيتم تحديث النظام وإعادة تشغيل الخدمة. هل تريد المتابعة؟',
+    confirmText: '🔄 مُتابعة',
+    danger: true,
+  });
+  if (!ok) return;
 
   const applyBtn = document.getElementById('update-apply-btn');
   if (applyBtn) {

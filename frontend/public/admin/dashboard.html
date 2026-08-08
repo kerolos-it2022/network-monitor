@@ -8,31 +8,39 @@
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>لوحة التحكم</h1>
+  <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
+  <header class="admin-topbar">
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="فتح/إغلاق القائمة الجانبية" aria-label="فتح/إغلاق القائمة الجانبية" aria-expanded="false" aria-controls="admin-sidebar">☰</button>
+    <h1>📋 لوحة التحكم</h1>
     <a href="../index.html" class="admin-link">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
     <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع">🌙 وضع ليلي</button>
     <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج">🚪 تسجيل الخروج</button>
   </header>
 
-  <!-- تبويبات -->
-  <nav class="filters-bar" style="gap:0;">
-    <button class="tab-btn active" id="tab-devices" type="button" title="إدارة الأجهزة">📱 الأجهزة</button>
-    <button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع">📍 المواقع</button>
-    <button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة">🏷️ الأنواع</button>
-    <button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً">🔍 اكتشاف الأجهزة</button>
-    <button class="tab-btn" id="tab-discovered" type="button" title="الأجهزة الجديدة المُكتشَفة من المسح الدوري">🆕 الأجهزة المُكتشَفة</button>
-    <button class="tab-btn" id="tab-scheduler" type="button" title="المسح الدوري التلقائي">⏱️ المسح الدوري</button>
-    <button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية">🗺️ خريطة المواقع</button>
-    <button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات">🔔 الإشعارات</button>
-    <button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث">📋 السجل</button>
-    <button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي">👤 الملف الشخصي</button>
-    <button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات">💾 النسخ الاحتياطي</button>
-    <button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub">🔄 التحديثات</button>
-  </nav>
+  <!-- ===== القائمة الجانبية العمودية (sidebar — v2.7.0) ===== -->
+  <!-- RTL: sidebar على اليمين (inset-inline-start: 0). drawer في < 768px عبر .open -->
+  <aside class="sidebar" id="admin-sidebar" role="navigation" aria-label="أَقسام لوحة الإِدارة">
+    <ul class="sidebar-list">
+      <li><button class="tab-btn active" id="tab-devices" type="button" title="إدارة الأجهزة"><span class="tab-btn-icon">📱</span><span class="tab-btn-label">الأَجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع"><span class="tab-btn-icon">📍</span><span class="tab-btn-label">المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة"><span class="tab-btn-icon">🏷️</span><span class="tab-btn-label">الأَنواع</span></button></li>
+      <li><button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً"><span class="tab-btn-icon">🔍</span><span class="tab-btn-label">اِكتشاف الأَجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-discovered" type="button" title="الأجهزة الجديدة المُكتشَفة من المسح الدوري"><span class="tab-btn-icon">🆕</span><span class="tab-btn-label">الأَجهزة المُكتشَفة</span></button></li>
+      <li><button class="tab-btn" id="tab-scheduler" type="button" title="المسح الدوري التلقائي"><span class="tab-btn-icon">⏱️</span><span class="tab-btn-label">المسح الدوري</span></button></li>
+      <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label">خريطة المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label">الإِشعارات</span></button></li>
+      <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label">السجل</span></button></li>
+      <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
+      <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
+      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span></button></li>
+    </ul>
+  </aside>
 
-  <main class="admin-wrap">
+  <!-- خلفية معتمة للـ drawer في الموبايل -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <main class="dashboard-main">
     <!-- ============ قسم الأجهزة ============ -->
     <section id="section-devices">
 <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
@@ -337,22 +345,42 @@
     <section id="section-map" class="hidden">
       <div class="form-card">
         <h3>🗺️ شجرة المواقع والأَجهزة</h3>
-        <p style="color:var(--muted); margin:0 0 0.75rem; font-size:0.9rem;">
-          عرض هرم للشبكة: قمة <b>🌐 internet</b> (مصدر الإنترنت/الراوتر) ← <b>📍 zones</b> وَسَطية
-          ← <b>الأَجهزة (IPs)</b> كأَوراق. إِطار العُقدة الأَبوية يُلخّص حالة أَجهزتها
-          (أَحمر لو وُجد offline، أَخضر لو كلها online). اِنقر على موقع لِـ طي/تَوسيع،
-          أَو على جهاز لِـ عرض تَفاصيله في اللوحة الجانبية. نَقر مزدوج على موقع يَذهب
-          لِـ تَبويب «الأَجهزة» مُصفّى بِـ الموقع.
+        <p class="map-help">
+          عرض «بطاقات مُربّعة» لِـ شبكة المواقع: كُلّ <b>📍 zone</b> بطاقة قابلة لِـ طي/تَوسيع،
+          تَحوي أَجهزتها (و sub-zones لو وُجدت: <b>🏢 building</b> / <b>📐 floor</b> / <b>🚪 room</b> /
+          <b>🗄️ rack</b>). الإِطار يُلخّص حالة الأَجهزة داخلها (أَحمر لو وُجد offline، أَخضر لو كلها
+          online). اِنقر تَرويسة لأَيّ بطاقة لِـ طيّها/تَوسيعها، أَو على جهاز لِـ عرض تَفاصيله في
+          اللوحة الجانبية. نَقر مزدوج على تَرويسة موقع يَذهب لِـ تَبويب «الأَجهزة» مُصفّى بِـ الموقع.
         </p>
-        <div class="form-actions" style="margin-bottom:0.75rem;">
-          <button type="button" class="btn" id="map-refresh-btn" title="تحديث الشجرة الآن">🔄 تحديث</button>
-          <button type="button" class="btn" id="map-expand-btn" title="تَوسيع كل المواقع">⤢ تَوسيع الكل</button>
-          <button type="button" class="btn" id="map-collapse-btn" title="طي كل المواقع">⤧ طي الكل</button>
-          <span style="flex:1;"></span>
-          <span id="map-summary" style="color:var(--muted); font-size:0.9rem;"></span>
+
+        <!-- صف 1: أَزرار التَحكم + ملخص تفاعلي (chips) -->
+        <div class="map-toolbar">
+          <div class="map-toolbar-group">
+            <button type="button" class="btn" id="map-refresh-btn" title="تحديث الشجرة الآن" aria-label="تحديث الشجرة الآن">🔄 تحديث</button>
+            <button type="button" class="btn" id="map-expand-btn" title="تَوسيع كل المواقع" aria-label="تَوسيع كل المواقع">⤢ تَوسيع الكل</button>
+            <button type="button" class="btn" id="map-collapse-btn" title="طي كل المواقع" aria-label="طي كل المواقع">⤧ طي الكل</button>
+          </div>
+          <div id="map-summary" class="map-summary" aria-live="polite" aria-atomic="true"></div>
         </div>
-        <div id="tree-container" class="d3-tree" style="width:100%; overflow:auto; min-height:300px; max-height:78vh;">
-          <p id="tree-empty" style="color:var(--muted); text-align:center; padding:2rem;">
+
+        <!-- صف 2: بحث فوري + فلتر الحالة + مَسح -->
+        <div class="map-toolbar">
+          <input type="search" id="map-search" class="map-search sort-select"
+                 placeholder="🔍 اِبحث: اسم موقع / اسم جهاز / IP…"
+                 autocomplete="off" aria-label="بحث في الشبكة" aria-controls="map-grid" />
+          <label class="map-filter-label" for="map-filter-status">فلتر الحالة:</label>
+          <select id="map-filter-status" class="sort-select" aria-label="فلترة بحالة الجهاز">
+            <option value="">📶 كل الحالات</option>
+            <option value="online">🟢 online فقط</option>
+            <option value="offline">🔴 offline فقط</option>
+            <option value="unknown">⚪ unknown</option>
+          </select>
+          <button type="button" class="btn map-clear-btn" id="map-clear-filters" title="مَسح البحث و الفلتر" aria-label="مَسح البحث و الفلتر">✖ مَسح</button>
+        </div>
+
+        <div id="map-grid" class="map-grid" role="list" aria-label="شبكة المواقع" style="width:100%; min-height:300px;">
+          <p id="tree-loading" class="map-loading" hidden>⏳ جَلب شجرة المواقع…</p>
+          <p id="tree-empty" class="map-empty">
             لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.
           </p>
         </div>
@@ -428,15 +456,12 @@
 
     <!-- ============ قسم السجل ============ -->
     <section id="section-logs" class="hidden">
+      <!-- v2.7.0 (PF) — زرّ موحّد "مسح السجل" يَفتح popup بِـ (نوع + مُدّة) -->
       <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; justify-content:space-between;">
         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-          <span>مسح السجلات الأقدم من:</span>
-          <select id="logs-clear-range">
-            <option value="1">يوم</option>
-            <option value="7">أسبوع</option>
-            <option value="30">شهر</option>
-          </select>
-          <button id="logs-clear-btn" class="btn btn-danger" title="مسح السجلات القديمة">🗑️ مسح السجلات</button>
+          <button id="logs-clear-btn" class="btn btn-danger" title="مسح السجلات القديمة (إشعارات أَو انقطاعات)">
+            🗑️ مَسح السجل
+          </button>
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
           <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
@@ -619,6 +644,48 @@
       <div id="changelog-content" style="background:var(--bg); padding:1rem; border-radius:6px; font-size:0.9rem; line-height:1.6; max-height:500px; overflow:auto;"></div>
     </div>
   </div>
+
+  <!-- ===== modal تأكيد موحّد (v2.7.0 — PG) — يُملأ ديناميكياً من confirmAction() ===== -->
+  <div id="confirm-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="confirm-modal-content">
+      <h3 class="confirm-modal-title" id="confirm-modal-title">—</h3>
+      <p class="confirm-modal-message" id="confirm-modal-message">—</p>
+      <div class="confirm-modal-actions">
+        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد">✓ تأكيد</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== modal اختيار مسح السجل (v2.7.0 — PF) — نوع + مُدّة ===== -->
+  <div id="cleanup-select-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="confirm-modal-content">
+      <h3 class="confirm-modal-title">🗑️ مَسح السجل</h3>
+      <p style="font-size:0.88rem; color:var(--muted); margin:0 0 0.9rem;">اِختَر نوع السجل و المُدّة، ثُمّ اِضغط «تَأكيد». لا يمكن التَراجُع.</p>
+      <div class="form-grid" style="margin-bottom:0.8rem;">
+        <label>نوع السجل
+          <select id="cleanup-type-select">
+            <option value="notifications">📢 سجل الإِشعارات</option>
+            <option value="downtime">🔌 سجل الانقطاعات</option>
+          </select>
+        </label>
+        <label>مَسح الأَقدم من
+          <select id="cleanup-range-select">
+            <option value="week">ٍ7 أَيام (أُسبوع)</option>
+            <option value="month">30 يوم (شهر)</option>
+            <option value="year">365 يوم (سنة)</option>
+          </select>
+        </label>
+      </div>
+      <div class="confirm-modal-actions">
+        <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" id="cleanup-select-ok-btn" class="btn btn-danger" title="تأكيد المسح">🗑️ تَأكيد المَسح</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== container رسائل toast الموقّتة (v2.7.0 — PG) ===== -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- سكريبتات (admin-utils.js يجب أن يُحمّل أولاً — يحوي esc/api المشتركة) -->
   <script src="../js/admin-utils.js"></script>

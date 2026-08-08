@@ -53,10 +53,10 @@ async function approveDiscovered(id) {
     headers: { 'Content-Type': 'application/json' },
   });
   if (r && r.success) {
-    alert(r.message || 'تم الاعتماد.');
+    showToast(r.message || 'تم الاعتماد.', { type: 'success' });
     await loadDiscovered();
   } else {
-    alert('فشل الاعتماد: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل الاعتماد: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
@@ -66,27 +66,34 @@ async function rejectDiscovered(id) {
     headers: { 'Content-Type': 'application/json' },
   });
   if (r && r.success) {
-    alert(r.message || 'تم الرفض.');
+    showToast(r.message || 'تم الرفض.', { type: 'success' });
     await loadDiscovered();
   } else {
-    alert('فشل الرفض: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل الرفض: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function deleteDiscovered(id) {
-  if (!confirm('هل أنت متأكد من حذف هذا السجل نهائيًّا؟')) return;
+  const ok = await confirmAction({
+    title: 'تَأكيد الحذف',
+    message: 'هل أَنت متأَكّد من حذف هذا السجل نهائيًّا؟',
+    confirmText: '🗑️ حذف',
+    danger: true,
+  });
+  if (!ok) return;
   const r = await api(`/api/discovered/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (r && r.success) {
+    showToast('✅ تَم الحذف', { type: 'success' });
     await loadDiscovered();
   } else {
-    alert('فشل الحذف: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل الحذف: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function bulkApproveDiscovered() {
   const boxes = Array.from(document.querySelectorAll('.discovered-row-check:checked'));
   if (boxes.length === 0) {
-    alert('حدّد جهازًا واحدًا على الأقل.');
+    showToast('حدّد جهازًا واحدًا على الأقل.', { type: 'warning' });
     return;
   }
   const ids = boxes.map((b) => parseInt(b.getAttribute('data-id'), 10)).filter(Boolean);
@@ -97,10 +104,10 @@ async function bulkApproveDiscovered() {
     body: JSON.stringify({ ids }),
   });
   if (r && r.success) {
-    alert(r.message || 'تم الاعتماد.');
+    showToast(r.message || 'تم الاعتماد.', { type: 'success' });
     await loadDiscovered();
   } else {
-    alert('فشل الاعتماد الجماعي: ' + (r?.error || 'خطأ غير معروف'));
+    showToast('فشل الاعتماد الجماعي: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 

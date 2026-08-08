@@ -172,7 +172,7 @@ async function startDiscovery() {
   const snmpCommunity = document.getElementById('discovery-snmp-community').value.trim() || 'public';
   
   if (!cidr) {
-    alert('الرجاء إدخال نطاق الشبكة (CIDR)');
+    showToast('الرجاء إدخال نطاق الشبكة (CIDR)', { type: 'warning' });
     return;
   }
   
@@ -328,7 +328,7 @@ function showError(message) {
 async function addSelectedDevices() {
   const checkboxes = document.querySelectorAll('.discovery-checkbox:checked:not(:disabled)');
   if (checkboxes.length === 0) {
-    alert('لم يتم تحديد أي أجهزة');
+    showToast('لم يتم تحديد أي أجهزة', { type: 'warning' });
     return;
   }
   
@@ -339,12 +339,12 @@ async function addSelectedDevices() {
     const typeSelect = tr.querySelector('.discovery-type-select');
     
     if (!nameInput.value.trim()) {
-      alert('الرجاء إدخال اسم للجهاز: ' + cb.dataset.ip);
+      showToast('الرجاء إدخال اسم للجهاز: ' + cb.dataset.ip, { type: 'warning' });
       nameInput.focus();
       return;
     }
     if (!typeSelect.value) {
-      alert('الرجاء اختيار نوع للجهاز: ' + cb.dataset.ip);
+      showToast('الرجاء اختيار نوع للجهاز: ' + cb.dataset.ip, { type: 'warning' });
       typeSelect.focus();
       return;
     }
@@ -378,7 +378,7 @@ async function addSelectedDevices() {
       let msg = '✅ تم إضافة ' + imported + ' جهاز بنجاح';
       if (skipped > 0) msg += '، تم تخطي ' + skipped;
       if (errors.length > 0) msg += '\n\nأخطاء:\n' + errors.join('\n');
-      alert(msg);
+      showToast(msg, { type: imported > 0 ? 'success' : 'warning', duration: 6000 });
       
       // تحديث الجدول - تعليم الأجهزة المضافة كموجودة
       for (const cb of checkboxes) {
@@ -398,10 +398,10 @@ async function addSelectedDevices() {
         await window.loadDevices();
       }
     } else {
-      alert('❌ فشل الإضافة: ' + (r.error || 'خطأ غير معروف'));
+      showToast('❌ فشل الإضافة: ' + (r.error || 'خطأ غير معروف'), { type: 'error' });
     }
   } catch (e) {
-    alert('❌ خطأ: ' + e.message);
+    showToast('❌ خطأ: ' + e.message, { type: 'error' });
   } finally {
     btn.disabled = false;
     btn.textContent = '✅ إضافة المحددة للمراقبة';
