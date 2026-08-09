@@ -402,3 +402,40 @@ bash -n deploy.sh
 
 ---
 **آخر تحديث: 2026-08-08 — v2.7.0 (sidebar + confirmAction + has-online + uptime bar + cleanup-history + toast) مُنجَزة. 16 ملفًا مُعدَّل. `node --check` PASS. الالتزام + tag `v2.7.0` + اِختبار GUI يَنتظر تأكيد المُستخدم.**
+
+---
+
+## 🆕 v2.7.1 — 5 طلبات واجهة (مُنجَزة 2026-08-09)
+
+> **السياق**: طلب المُستخدم 5 تَعديلات على لوحة التحكم + الصفحة العامة. كل الطلب مُنجَز بنجاح، `node --check` PASS على كل ملفات JS، و migration `sort_order` مُختبَر على الـ DB المباشر. **لم يُلتزم بَعد** — يَنتظر اِختبار GUI + تَأكيد المُستخدِم.
+
+### ✨ الطلبات الخمسة المُنجَزة
+
+| # | الطلب | الحَل | الملفات |
+|---|---|---|---|
+| 1 | زرّ إظهار/إخفاء القائمة الجانبية + أَيقونات فقط عند الإخفاء (rail mode) | زرّ ☌ يَظهر في كل الأَحجام. حاسوب: يَطوي/يَوسّع (class `sidebar-collapsed` على `<body>` = 60px + أَيقونات مُوسَّطة + labels مخفية). موبايل: drawer كامل فوق الشاشة (السلوك القَديم). الحالة محفوظة في `localStorage:nm.adminSidebarCollapsed`. | `dashboard.html`, `js/admin-tabs.js`, `css/style.css` |
+| 2 | تَحسين المظهر الليلي للـ grid في خريطة المواقع (لوحة التحكم + الصفحة العامة) | تَعويض `rgba` الثابت في `kindColor()` بِـ متغيّرات CSS (`--zone-internet-bg`/`--zone-bg`/`--zone-unassigned-bg`) مُعرَّفة في `:root` (نَهاري) و`body.dark` (ليلي). إضافة أَنماط ليلية إِضافية للـ borders/subzone/header/empty/counter. | `css/style.css`, `js/admin-map.js`, `js/public-map.js` |
+| 3 | إظهار نِسبة التَشغيل عند النقر على الجهاز في تبويب عرض الخريطة (الصفحة العامة) | تَحويل chip الجهاز من `<div>` إلى `<button>` + ربط النقر بِـ `window.openDeviceModal(id)` (الموجُود في `public-dashboard.js`): يَعرض `uptime_percentage` + رسم بياني 24h + انقطاعات. اِستخراج id الرقمي من `dev-${id}`. | `js/public-map.js` |
+| 4 | تَحكّم في تَرتيب أَطر العرض بحيث تَظهر متَّصلة على التَوالي (منطقة ← منطقة) | (أ) إضافة عمود `sort_order` لجدول `locations` عبر migration آمنة في `db.js` (نفس نمط `kind`) + تحديث `locations.routes.js` + `map.routes.js` لِـ `ORDER BY sort_order ASC, id ASC`. (ب) حقل «التَرتيب» في نموذج تبويب المواقع + عمود في الجدول + خيار في فلتر التَرتيب. (ج) سَهم مرئي `↣` CSS بين البطاقات في grid (يَختفي على الموبايل، أَوضح في الليلي). | `database/schema.sql`, `backend/src/db.js`, `backend/src/routes/locations.routes.js`, `backend/src/routes/map.routes.js`, `admin/dashboard.html`, `js/admin-locations-types.js`, `js/admin-map.js`, `js/public-map.js`, `css/style.css` |
+| 5 | popup تأكيد عند تعديل أَي عنصر في كل التبويبات (الأَجهزة/الأَنواع/المواقع/الإِشعارات/المسح/النسخ) | اِستَعمال `confirmAction()` الموجُود (admin-utils.js). تَأكيد عند **الضغط على زر «تعديل»** (devices/locations/types) + عند **«حفظ»** (devices/locations/types + notifications + scheduler). تبويبات backup المُؤمَّنة بالفعل (restore/delete تَستعمل confirmAction). | `js/admin-devices.js`, `js/admin-locations-types.js`, `js/admin-notifications.js`, `js/admin-scheduler.js` |
+
+### 📦 ملفات مُعدَّلة (16 ملف)
+**Backend (4):** `database/schema.sql`, `backend/src/db.js`, `backend/src/routes/locations.routes.js`, `backend/src/routes/map.routes.js`
+**Frontend HTML (1):** `frontend/public/admin/dashboard.html`
+**Frontend JS (8):** `admin-devices.js`, `admin-locations-types.js`, `admin-notifications.js`, `admin-scheduler.js`, `admin-tabs.js`, `admin-map.js`, `public-map.js` (و`admin-utils.js` غير مُعدَّل — مُعاد اِستِعماله)
+**Frontend CSS (1):** `frontend/public/css/style.css`
+**Docs (1):** `HANDOFF.md` (هذا القسم)
+
+### 🧪 التَحقق المُنجَز
+- ✅ `node --check` PASS على كل ملفات JS المُعدّلة (admin-*.js + public-map.js).
+- ✅ Migration `sort_order` مُختبَر: `PRAGMA table_info(locations)` → `id, name, parent_id, kind, sort_order` على الـ DB الإِنتاجي `database/monitoring.db`.
+- ✅ Routes مُختبَرة على server عابر (المنفذ 4111): `GET /api/locations` → `sort_order` موجُود في الـ keys.
+
+### ⚠️ ملاحظة لِـ الجلسة التالية
+- **لم يُلتزم/لَم يُرفع بَعد**. الالتزام + tag `v2.7.1` جاهِز بَعد اِختبار GUI من المُستخدِم.
+- **الـ server الإِنتاجي يَعمل بأَ كود قَديم** (PM2 على المنفذ 4001 لم يُعِد الإقلاع بعد تَعديلاتي). للتَحميل: `pm2 restart network-monitor` (أَو ما يُكافئه). migration `sort_order` دخل في الـ DB بالفعل (افتراضي 0 لكل الصفوف القائمة).
+- اِختبار GUI مَطلوب: (1) زر ☌ → rail mode على الحاسوب + drawer على الموبايل + الحالة محفوظة بَعد refresh. (2) خريطة المواقع في الوَضع الليلي (لوحة + عام) → خلفيات بطاقات متناسقة. (3) في الصفحة العامة تبويب 🗺️ → نقر جهاز → modal نِسبة التَشغيل + رسم بياني. (4) تبويب المواقع → حقل «التَرتيب» + عمود في الجدول + سَهم `↣` بين البطاقات في الخريطة. (5) نقر «تعديل» على جهاز/موقع/نوع → popup → نقر «حفظ» → popup ثاني (للتعديل فقط) → toast نَجاح.
+- رَفع لِـ `origin/main` بَعد تَأكيد صَريح من المُستخدم.
+
+---
+**آخر تحديث: 2026-08-09 — v2.7.1 (sidebar rail + night-mode grid + device uptime modal + sort_order arrows + edit/save popups) مُنجَزة. 16 ملفًا مُعدَّل. `node --check` PASS + migration مُختبَرة. الالتزام + tag `v2.7.1` + اِختبار GUI + `pm2 restart` يَنتظر تَأكيد المُستخدِم.**

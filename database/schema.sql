@@ -24,6 +24,10 @@ CREATE TABLE IF NOT EXISTS locations (
     -- | 'floor' | 'room' | 'rack'. الافتراضي 'zone' لِيَدخل الموقع الجديد في الهرم آليًّا.
     -- يُضاف أيضًا عبر migration آمنة في db.js على DB قائمة من v2.4.0.
     kind TEXT NOT NULL DEFAULT 'zone',
+    -- v2.7.1 — تَرتيب العرض في خريطة المواقع: يُتيح للمستخدم تَرتيب البطاقات بحيث تَظهر
+    -- المنطبيق/المواقع متَّصلة على التَوالي (منطقة ← منطقة). الافتراضي 0 (يُكمل ORDER BY id).
+    -- يُضاف آمنًا عبر migration في db.js على DB قائمة.
+    sort_order INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (parent_id) REFERENCES locations(id) ON DELETE SET NULL
 );
 

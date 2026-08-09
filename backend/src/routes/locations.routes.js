@@ -50,16 +50,17 @@ function validateParentId(id, parentId) {
 }
 
 // GET /api/locations  (عام)
+// v2.7.1: ترتيب بِـ sort_order أَوّلاً ثُمّ id (نفس ترتيب خريطة المواقع).
 router.get('/', (req, res) => {
   const rows = db
-    .prepare('SELECT id, name, parent_id, kind FROM locations ORDER BY id ASC')
+    .prepare('SELECT id, name, parent_id, kind, sort_order FROM locations ORDER BY sort_order ASC, id ASC')
     .all();
   return res.json({ success: true, data: rows });
 });
 
 // POST /api/locations  🔒
 router.post('/', requireAuth, (req, res) => {
-  const { name, parent_id, kind } = req.body || {};
+  const { name, parent_id, kind, sort_order } = req.body || {};
   if (!name) {
     return res.status(400).json({ success: false, error: 'الحقل name مطلوب' });
   }
@@ -75,9 +76,20 @@ router.post('/', requireAuth, (req, res) => {
   // لِـ المرونة (لو أَرسل الإِطار قيمةً) لأن internet هو الجذر دائمًا.
   const finalParentId = safeKind === 'internet' ? null : (parent_id ?? null);
 
+  // v2.7.1: لو sort_order لم يُحدّد (null/undefined)، نَضبطه آليًّا = (max+1) لِضمان
+  // أَنّ الموقع الجديد يَظهر في نهاية التَرتيب. لو صريح → نَستعمله (مع تَحقق عددية).
+  let finalSortOrder;
+  if (sort_order == null || sort_order === '') {
+    const maxRow = db.prepare('SELECT COALESCE(MAX(sort_order), -1) AS m FROM locations').get();
+    finalSortOrder = (maxRow.m ?? -1) + 1;
+  } else {
+    const n = Number(sort_order);
+    finalSortOrder = Number.isFinite(n) ? n : 0;
+  }
+
   const result = db
-    .prepare('INSERT INTO locations (name, parent_id, kind) VALUES (?, ?, ?)')
-    .run(name, finalParentId, safeKind);
+    .prepare('INSERT INTO locations (name, parent_id, kind, sort_order) VALUES (?, ?, ?, ?)')
+    .run(name, finalParentId, safeKind, finalSortOrder);
   return res.status(201).json({ success: true, data: { id: result.lastInsertRowid } });
 });
 
@@ -88,7 +100,7 @@ router.put('/:id', requireAuth, (req, res) => {
   if (!existing) {
     return res.status(404).json({ success: false, error: 'الموقع غير موجود' });
   }
-  const { name, parent_id, kind } = req.body || {};
+  const { name, parent_id, kind, sort_order } = req.body || {};
   if (!name) {
     return res.status(400).json({ success: false, error: 'الحقل name مطلوب' });
   }
@@ -102,10 +114,24 @@ router.put('/:id', requireAuth, (req, res) => {
 
   const finalParentId = safeKind === 'internet' ? null : (parent_id ?? null);
 
-  db.prepare('UPDATE locations SET name = ?, parent_id = ?, kind = ? WHERE id = ?').run(
+  // v2.7.1: sort_order اختياري في PUT. لو لم يُرسَل (undefined) نُبقي القيمة القَديمة
+  // (لا نَكتبها). لو أُرسَل null/'' → 0. لو رقم → نَستعمله. (نَتحقّق من type على width.)
+  const existingRow = db.prepare('SELECT sort_order FROM locations WHERE id = ?').get(id);
+  let finalSortOrder;
+  if (sort_order === undefined) {
+    finalSortOrder = existingRow ? existingRow.sort_order : 0;
+  } else if (sort_order == null || sort_order === '') {
+    finalSortOrder = 0;
+  } else {
+    const n = Number(sort_order);
+    finalSortOrder = Number.isFinite(n) ? n : 0;
+  }
+
+  db.prepare('UPDATE locations SET name = ?, parent_id = ?, kind = ?, sort_order = ? WHERE id = ?').run(
     name,
     finalParentId,
     safeKind,
+    finalSortOrder,
     id
   );
   return res.json({ success: true, data: null });

@@ -168,6 +168,22 @@ function openDeviceForm() {
 }
 
 async function startEditDevice(id) {
+  // v2.7.1 (مَطلب 5) — تَأكيد قبل فتح نموذج التعديل لِـ الحَماية من التعديل العرضي.
+  // نَجلب اسم الجهاز تَمهيدًا (لو فَشل جلب الاسم نَعرض «#id» بدَلًا منه).
+  let labelHint = '#' + id;
+  // نَكتفي بِـ confirmAction بِدون fetch إِضافي (الاسم موجود في الجدول الحالي لو لَزِم).
+  // نَبحث في الـ DOM عن row بِـ نفس data-edit لأَخذ الاسم (سَريع، بلا طلب شبكة).
+  const editBtn = document.querySelector(`#devices-table-body [data-edit="${id}"]`);
+  if (editBtn) {
+    const firstCell = editBtn.closest('tr')?.querySelector('td');
+    if (firstCell) labelHint = firstCell.textContent.trim();
+  }
+  const ok = await confirmAction({
+    title: 'تَأكيد التعديل',
+    message: 'هل تريد تعديل الجهاز: ' + labelHint + '؟',
+    confirmText: '✓ متابعة التعديل',
+  });
+  if (!ok) return;
   const r = await api('/api/devices/' + id);
   if (!r.success) { showToast(r.error || 'تعذر جلب الجهاز', { type: 'error' }); return; }
   const d = r.data;
@@ -203,6 +219,16 @@ async function submitDeviceForm(e) {
     failure_threshold: Number(document.getElementById('df-failure_threshold').value),
     is_active: document.getElementById('df-is_active').checked ? 1 : 0,
   };
+
+  // v2.7.1 (مَطلب 5) — تَأكيد الحفظ فقط في وضع التعديل (id موجود). للإِضافة لا يَلزم.
+  if (id) {
+    const ok = await confirmAction({
+      title: 'تَأكيد حفظ التعديل',
+      message: 'تَأكيد حفظ تعديل الجهاز: ' + (body.name || '#' + id) + '؟',
+      confirmText: '✓ تَأكيد الحفظ',
+    });
+    if (!ok) return;
+  }
 
   const url = id ? '/api/devices/' + id : '/api/devices';
   const method = id ? 'PUT' : 'POST';

@@ -120,6 +120,12 @@ async function loadLocations() {
         valA = a.id || 0;
         valB = b.id || 0;
         break;
+      case 'sort_order':
+        // v2.7.1 — تَرتيب حسب sort_order أَوّلاً (نفس ترتيب خريطة المواقع) ثُمّ id لِـ ثَبات.
+        valA = (a.sort_order ?? 0);
+        valB = (b.sort_order ?? 0);
+        if (valA !== valB) return valA - valB;
+        return (a.id || 0) - (b.id || 0);
       default:
         return 0;
     }
@@ -134,12 +140,14 @@ async function loadLocations() {
   for (const l of sortedData) {
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
     const parentName = l.parent_id != null ? nameById.get(l.parent_id) : null;
+    const sortOrderDisplay = (l.sort_order != null) ? esc(String(l.sort_order)) : '<span style="color:var(--muted);">—</span>';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${l.id}</td>
       <td>${esc(l.name)}</td>
       <td>${kl.icon} ${kl.label} <span style="color:var(--muted); font-size:0.85em;">(${l.kind || 'zone'})</span></td>
       <td>${parentName ? esc(parentName) : '<span style="color:var(--muted);">—</span>'}</td>
+      <td style="text-align:center;">${sortOrderDisplay}</td>
       <td>
         <button class="btn" data-edit="${l.id}" title="تعديل الموقع">✏️ تعديل</button>
         <button class="btn btn-danger" data-del="${l.id}" title="حذف الموقع">🗑️ حذف</button>
@@ -159,10 +167,20 @@ function resetLocationForm() {
   document.getElementById('loc-name').value = '';
   const kindSel = document.getElementById('loc-kind');
   if (kindSel) kindSel.value = 'zone';
+  // v2.7.1 — تصفير حقل التَرتيب (قيمة فارغة = تَرتيب تلقائي عند الإِضافة).
+  const sortEl = document.getElementById('loc-sort-order');
+  if (sortEl) sortEl.value = '';
   populateParentSelect(null); // لإِضافة جديد: لا تَستثني أَحدًا.
 }
 
-function editLocation(loc) {
+async function editLocation(loc) {
+  // v2.7.1 (مَطلب 5) — تَأكيد قبل فتح نموذج التعديل.
+  const ok = await confirmAction({
+    title: 'تَأكيد التعديل',
+    message: 'هل تريد تعديل الموقع: ' + (loc.name || ('#' + loc.id)) + '؟',
+    confirmText: '✓ متابعة التعديل',
+  });
+  if (!ok) return;
   document.getElementById('location-form-id').value = loc.id;
   document.getElementById('loc-name').value = loc.name || '';
   const kindSel = document.getElementById('loc-kind');
@@ -170,6 +188,9 @@ function editLocation(loc) {
   populateParentSelect(loc.id);
   const parentSel = document.getElementById('loc-parent_id');
   if (parentSel) parentSel.value = loc.parent_id != null ? String(loc.parent_id) : '';
+  // v2.7.1 — ملء حقل التَرتيب من بيانات الموقع.
+  const sortEl = document.getElementById('loc-sort-order');
+  if (sortEl) sortEl.value = (loc.sort_order != null) ? String(loc.sort_order) : '';
 }
 
 async function saveLocation() {
@@ -178,7 +199,17 @@ async function saveLocation() {
   if (!name) { showToast('الاسم مطلوب', { type: 'warning' }); return; }
   const kindSel = document.getElementById('loc-kind');
   const parentSel = document.getElementById('loc-parent_id');
+  const sortEl = document.getElementById('loc-sort-order');
   const kind = kindSel ? kindSel.value : 'zone';
+  // v2.7.1 — عند تعديل موقع موجود (PUT) نَطلب تَأكيد الحفظ (مَطلب 5).
+  if (id) {
+    const ok = await confirmAction({
+      title: 'تَأكيد حفظ التعديل',
+      message: 'تَأكيد حفظ تعديل الموقع: ' + name + '؟',
+      confirmText: '✓ تَأكيد الحفظ',
+    });
+    if (!ok) return;
+  }
   // لو kind=internet فالأَب لا يَُهم (الخادم يَضبط parent_id=null بصمت). أَوَّلًا نُخبر المستخدم.
   if (kind === 'internet' && parentSel && parentSel.value) {
     const ok = await confirmAction({
@@ -189,12 +220,16 @@ async function saveLocation() {
     if (!ok) return;
   }
   const parentId = parentSel && parentSel.value ? Number(parentSel.value) : null;
+  // v2.7.1 — قيمة sort_order: فارغة = نُرسِل '' (الخادم يَضبطها تلقائياً max+1 في POST
+  //، أَو يُبقيها في PUT). رقم = نُرسله number.
+  const sortOrderRaw = sortEl ? sortEl.value.trim() : '';
+  const sortOrderVal = sortOrderRaw === '' ? '' : Number(sortOrderRaw);
   const url = id ? '/api/locations/' + id : '/api/locations';
   const method = id ? 'PUT' : 'POST';
   const r = await api(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, kind, parent_id: parentId }),
+    body: JSON.stringify({ name, kind, parent_id: parentId, sort_order: sortOrderVal }),
   });
   if (r.success) {
     resetLocationForm();
@@ -278,7 +313,14 @@ function resetTypeForm() {
   document.getElementById('type-icon').value = '';
 }
 
-function editType(t) {
+async function editType(t) {
+  // v2.7.1 (مَطلب 5) — تَأكيد قبل فتح نموذج التعديل.
+  const ok = await confirmAction({
+    title: 'تَأكيد التعديل',
+    message: 'هل تريد تعديل النوع: ' + (t.name || ('#' + t.id)) + '؟',
+    confirmText: '✓ متابعة التعديل',
+  });
+  if (!ok) return;
   document.getElementById('type-form-id').value = t.id;
   document.getElementById('type-name').value = t.name;
   document.getElementById('type-icon').value = t.icon || '';
@@ -289,6 +331,15 @@ async function saveType() {
   const name = document.getElementById('type-name').value.trim();
   const icon = document.getElementById('type-icon').value.trim();
   if (!name) { showToast('الاسم مطلوب', { type: 'warning' }); return; }
+  // v2.7.1 (مَطلب 5) — تَأكيد الحفظ فقط في وضع التعديل.
+  if (id) {
+    const ok = await confirmAction({
+      title: 'تَأكيد حفظ التعديل',
+      message: 'تَأكيد حفظ تعديل النوع: ' + name + '؟',
+      confirmText: '✓ تَأكيد الحفظ',
+    });
+    if (!ok) return;
+  }
   const url = id ? '/api/device-types/' + id : '/api/device-types';
   const method = id ? 'PUT' : 'POST';
   const r = await api(url, {

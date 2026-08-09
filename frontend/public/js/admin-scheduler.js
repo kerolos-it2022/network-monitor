@@ -87,6 +87,13 @@ async function saveSchedulerSettings() {
     showToast('الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24', { type: 'warning' });
     return;
   }
+  // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ وتطبيق إعدادات المسح الدوري.
+  const ok = await confirmAction({
+    title: 'تَأكيد حفظ الإِعدادات',
+    message: 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟',
+    confirmText: '✓ تَأكيد الحفظ',
+  });
+  if (!ok) return;
   const r = await api('/api/scan-scheduler/settings', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

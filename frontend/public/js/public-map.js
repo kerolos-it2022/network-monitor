@@ -58,11 +58,13 @@
   }
 
   // لون خلفية بطاقة zone بحسب kind (نَفس منطق admin).
+  // v2.7.1: نَستَعمل متغيّرات CSS (تَتكيّف مع الثيم الليلي) بدَل rgba ثابت لِـ تَناسُق
+  // الوَضع الليلي في الـ grid. fallback لِـ قيم واضحة لو الـ var غَاب.
   function kindColor(kind) {
     switch (kind) {
-      case 'internet': return 'rgba(37, 99, 235, 0.18)';
-      case 'zone': return 'rgba(234, 179, 8, 0.18)';
-      case 'unassigned': return 'rgba(156, 163, 175, 0.18)';
+      case 'internet': return cssVar('--zone-internet-bg', 'rgba(37, 99, 235, 0.18)');
+      case 'zone':     return cssVar('--zone-bg', 'rgba(234, 179, 8, 0.18)');
+      case 'unassigned': return cssVar('--zone-unassigned-bg', 'rgba(156, 163, 175, 0.18)');
       default: return cssVar('--card-bg', '#ffffff');
     }
   }
@@ -215,23 +217,26 @@
     return html || '<p class="map-zone-empty">لا مُحتَوى.</p>';
   }
 
-  // device chip (public: لا name — نَعرض IP + status + type).
+  // device chip (public) — v2.7.1: مكشوف <button> بِـ type=button، يَفتح modal تَفاصيل الجهاز
+  // (window.openDeviceModal من public-dashboard.js) عند النقر → يَعرض نِسبة التَشغيل + الرسم
+  // البياني + الانقطاعات. data-id بِـ صيغة "dev-X" (نَستخرج الرقمي). public API يَحذف device name.
   function renderZoneDevice(node) {
     const status = node.status || 'unknown';
     const icon = deviceIcon(node.device_type) || DEVICE_TYPE_ICONS_FALLBACK;
     // public API يَحذف device name — نَعرض IP بدَلًا منه (لو وُجد name استَعمِله).
     const label = node.name ? esc(node.name) : esc(node.ip || 'جهاز');
     const meta = esc(node.device_type || 'جهاز');
+    const idAttr = node.id ? ` data-id="${esc(String(node.id))}"` : '';
     return `
-    <div class="map-zone-device" data-status="${esc(status)}" title="${esc(nodeTooltip(node))}">
+    <button type="button" class="map-zone-device" data-status="${esc(status)}"${idAttr} title="${esc(nodeTooltip(node))}\n— اِنقر لعرض نِسبة التَشغيل و التَفاصيل">
       <span class="map-device-dot" aria-hidden="true"></span>
       <span class="map-device-ic">${icon}</span>
       <span class="map-device-name">${label}</span>
       <span class="map-device-meta">${meta}</span>
-    </div>`;
+    </button>`;
   }
-  // ملاحظة: في الصَفحة العامة جعلنا `.map-zone-device` <div> (لا <button>) لِـ أَنّه لا يَملِك
-  // تَفاصيلي تفاعُل. الأَنماط في style.css لا تَتطلّب <button> — `.map-zone-device` تَتطَبَّق أيضًا.
+  // ملاحظة: في الصَفحة العامة جعلنا `.map-zone-device` <div> سابقاً (لا تَفاصيلي تفاعُل).
+  // v2.7.1: غَيّرناه إِلى <button> لِـ تَفعِيل openDeviceModal عند النقر (نِسبة التَشغيل).
 
 // ═══ تَحميل + رَسم ═══
 async function loadPublicMap() {
@@ -277,12 +282,25 @@ async function loadPublicMap() {
     bindEvents(grid);
   }
 
-  // ═══ delegation (نقر header → toggle) ═══
+  // ═══ delegation (نقر header → toggle, نقر device → openDeviceModal) ═══
   let eventsBound = false;
   function bindEvents(grid) {
     if (eventsBound) return;
     eventsBound = true;
     grid.addEventListener('click', (event) => {
+      // v2.7.1 — نقر device chip له الأَولوية: اِفتح modal التَفاصيل (نِسبة التَشغيل).
+      // نُعالِجه قَبل lookup بطاقة zone لِـ أَنّ chip الجهاز داخل جِسم البطاقة.
+      const deviceChip = event.target.closest('.map-zone-device');
+      if (deviceChip && deviceChip.dataset.id) {
+        // data-id بِـ صيغة "dev-X" (public API). نَستخرج الرقمي.
+        const rawId = String(deviceChip.dataset.id);
+        const m = /^dev-(\d+)$/.exec(rawId);
+        const deviceId = m ? m[1] : rawId;
+        if (typeof window.openDeviceModal === 'function') {
+          window.openDeviceModal(deviceId);
+        }
+        return;
+      }
       const card = event.target.closest('.map-zone-card');
       if (!card) return;
       const id = card.dataset.id;

@@ -52,12 +52,14 @@ function deviceColor(status) {
 }
 
 // لون خلفية عُقدة موقع بحسب kind.
+// v2.7.1: نَستَعمل متغيّرات CSS (تَتكيّف مع الثيم الليلي) بدَل rgba ثابت لِـ تَناسُق
+// الوَضع الليلي في الـ grid. fallback لِـ قيم واضحة لو الـ var غَاب.
 function kindColor(kind) {
   switch (kind) {
-    case 'internet': return 'rgba(37, 99, 235, 0.18)'; // أَزرق
-    case 'zone': return 'rgba(234, 179, 8, 0.18)';      // أَصفر/برتقالي
-    case 'unassigned': return 'rgba(156, 163, 175, 0.18)';
-    default: return cssVar('--bg', '#ffffff');          // site/building/... → خلفية عادية
+    case 'internet': return cssVar('--zone-internet-bg', 'rgba(37, 99, 235, 0.18)');
+    case 'zone':     return cssVar('--zone-bg', 'rgba(234, 179, 8, 0.18)');
+    case 'unassigned': return cssVar('--zone-unassigned-bg', 'rgba(156, 163, 175, 0.18)');
+    default: return cssVar('--card-bg', '#ffffff');          // site/building/... → خلفية عادية
   }
 }
 

@@ -38,6 +38,10 @@ try {
       // على 'zone'. لو أَردت ترقية القديمة نفّذ يدويًّا:
       //   UPDATE locations SET kind='zone' WHERE kind='site';
       "ALTER TABLE locations ADD COLUMN kind TEXT NOT NULL DEFAULT 'zone'",
+      // v2.7.1: تَرتيب العرض (sort_order) لِـ بطاقات المواقع في خريطة المواقع — يَتيح
+      // تَرتيبها «متَّصلة على التَوالي» (منطقة ← منطقة). الافتراضي 0 (يَكمل ORDER BY id ASC).
+      // آمن: SQLite يَرمي duplicate-column لو موجود فنَتجاهله (نَفس نمط migrations الأُخرى).
+      "ALTER TABLE locations ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

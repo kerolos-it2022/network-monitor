@@ -23,6 +23,13 @@ async function loadNotificationSettings() {
 }
 
 async function saveNotificationSettings() {
+  // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ إعدادات الإِشعارات (إِجراء حسّاس).
+  const ok = await confirmAction({
+    title: 'تَأكيد حفظ الإِعدادات',
+    message: 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟',
+    confirmText: '✓ تَأكيد الحفظ',
+  });
+  if (!ok) return;
   const statusEl = document.getElementById('ntf-status');
   statusEl.style.color = 'var(--online)';
   statusEl.textContent = 'جارٍ الحفظ…';

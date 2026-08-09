@@ -131,6 +131,10 @@
               <option value="">— جذر (لا أَب) —</option>
             </select>
           </label>
+          <!-- v2.7.1 — تَرتيب العرض في خريطة المواقع (متَّصلة على التَوالي) -->
+          <label>تَرتيب العرض
+            <input type="number" id="loc-sort-order" min="0" placeholder="0" title="الرقم الأَصغر يَظهر أَولاً. اتركه فارغاً لِـ التَرتيب التلقائي (نهاية القائمة)." />
+          </label>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
@@ -153,10 +157,11 @@
         <select id="filter-sort-locations" class="sort-select">
           <option value="name">📝 حسب الاسم</option>
           <option value="id">🆔 حسب المعرف</option>
+          <option value="sort_order">🔢 حسب تَرتيب العرض</option>
         </select>
       </div>
       <table class="data-table">
-        <thead><tr><th>المعرّف</th><th>الاسم</th><th>النوع</th><th>الأَب</th><th>إجراءات</th></tr></thead>
+        <thead><tr><th>المعرّف</th><th>الاسم</th><th>النوع</th><th>الأَب</th><th>التَرتيب</th><th>إجراءات</th></tr></thead>
         <tbody id="locations-table-body"></tbody>
       </table>
     </section>

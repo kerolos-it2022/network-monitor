@@ -38,37 +38,65 @@ document.addEventListener('DOMContentLoaded', () => {
   // افتراضياً: قسم الأجهزة ظاهر (أول تبويب).
   showSection('tab-devices');
 
-  // v2.7.0 — sidebar drawer في < 768px: زرّ 🍔 يَفتح/يُغلق القائمة الجانبية المعتمة.
+  // ═══ v2.7.1 — sidebar: زرّ ☰ يَعمل في كل الأَحجام ═══
+  // - حاسوب (>=768px): يَطوي/يَوسّع القائمة (rail mode = أَيقونات فقط عبر class
+  //   `sidebar-collapsed` على <body>). الحالة محفُوظة في localStorage.
+  // - موبايل (<768px): drawer كامل فوق الشاشة (السلوك القَديم يَبقى كما هو).
+  const SIDEBAR_COLLAPSED_KEY = 'nm.adminSidebarCollapsed';
   const sidebar = document.getElementById('admin-sidebar');
   const toggle = document.getElementById('sidebar-toggle');
   const backdrop = document.getElementById('sidebar-backdrop');
-  function openSidebar() {
+  const isMobile = () => window.innerWidth <= 768;
+
+  function openSidebarDrawer() {
     if (!sidebar) return;
     sidebar.classList.add('open');
     if (backdrop) backdrop.classList.add('open');
     if (toggle) toggle.setAttribute('aria-expanded', 'true');
   }
-  function closeSidebar() {
+  function closeSidebarDrawer() {
     if (!sidebar) return;
     sidebar.classList.remove('open');
     if (backdrop) backdrop.classList.remove('open');
     if (toggle) toggle.setAttribute('aria-expanded', 'false');
   }
+  function applyCollapsedDesktop(collapsed) {
+    if (collapsed) document.body.classList.add('sidebar-collapsed');
+    else document.body.classList.remove('sidebar-collapsed');
+    if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+  // اِسترجاع الحالة المحفوظة عند الإقلاع (حاسوب فقط).
+  try {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (saved === 'collapsed' && !isMobile()) applyCollapsedDesktop(true);
+  } catch (_) {}
+
   if (toggle) toggle.addEventListener('click', () => {
-    if (sidebar && sidebar.classList.contains('open')) closeSidebar();
-    else openSidebar();
+    if (isMobile()) {
+      if (sidebar && sidebar.classList.contains('open')) closeSidebarDrawer();
+      else openSidebarDrawer();
+    } else {
+      const collapsed = !document.body.classList.contains('sidebar-collapsed');
+      applyCollapsedDesktop(collapsed);
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? 'collapsed' : 'open'); } catch (_) {}
+    }
   });
-  // نقر الخلفية يُغلق الـ drawer.
-  if (backdrop) backdrop.addEventListener('click', closeSidebar);
+  // نقر الخلفية يُغلق الـ drawer (موبايل).
+  if (backdrop) backdrop.addEventListener('click', closeSidebarDrawer);
   // اِختيار قسم في الموبايل يُغلق الـ drawer تلقائياً (لِـ تَجَنُّب التَرك مفتوحًا).
   Object.keys(TAB_TO_SECTION).forEach((tabId) => {
     const el = document.getElementById(tabId);
     if (el) el.addEventListener('click', () => {
-      if (window.innerWidth <= 768) closeSidebar();
+      if (isMobile()) closeSidebarDrawer();
     });
   });
-  // مفتاح ESC يُغلق الـ drawer.
+  // مفتاح ESC يُغلق الـ drawer (موبايل) — لا تأثير له على وضع rail في الحاسوب.
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) closeSidebar();
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) closeSidebarDrawer();
+  });
+  // اِستجابة لِـ تَغيير حجم النافذة: لو اِنتقلنا من الموبايل للحاسوب و الـ drawer مفتوح
+  //، نُغلقه و نَترك rail-mode يَحكمه خادمه. لو العكس لا شَيء.
+  window.addEventListener('resize', () => {
+    if (!isMobile() && sidebar && sidebar.classList.contains('open')) closeSidebarDrawer();
   });
 });

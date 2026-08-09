@@ -12,6 +12,11 @@
   --unknown: #9ca3af;
   --warning: #eab308;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* v2.7.1 — خلفيات بطاقات zones في خريطة المواقع (نَهاري). تَستَعملها kindColor()
+     في admin-map.js + public-map.js بدَل rgba ثابت لِـ تَناسُق الوَضع الليلي. */
+  --zone-internet-bg: rgba(37, 99, 235, 0.10);     /* أَزرق خَفيف */
+  --zone-bg: rgba(234, 179, 8, 0.10);             /* أَصفر/برتقالي خَفيف */
+  --zone-unassigned-bg: rgba(156, 163, 175, 0.10); /* رمادي خَفيف */
 }
 
 body.dark {
@@ -29,6 +34,10 @@ body.dark {
   --online-glow: rgba(34, 197, 94, 0.40);
   --offline-glow: rgba(239, 68, 68, 0.40);
   --unknown-glow: rgba(156, 163, 175, 0.20);
+  /* v2.7.1 — خلفيات بطاقات zones ليلية: أَكثر تَباينًا على الخلفية الداكنة #1e293b */
+  --zone-internet-bg: rgba(59, 130, 246, 0.16);   /* أَزرق أَوضح */
+  --zone-bg: rgba(234, 179, 8, 0.14);            /* أَصفر خَفيف على داكن */
+  --zone-unassigned-bg: rgba(148, 163, 184, 0.14); /* رمادي على داكن */
 }
 
 * { box-sizing: border-box; }
@@ -290,9 +299,12 @@ button.tab-btn.active {
   flex-wrap: wrap;
 }
 .admin-topbar h1 { font-size: 1.25rem; margin: 0; }
-/* زرّ 🍔 يَختفي على سطح المكتب، يَظهر في < 768px (drawer toggle) */
+/* زرّ 🍔 يَظهر في كل الأَحجام الآن (v2.7.1) — في الحاسوب يَطوي/يَوسّع القائمة الجانبية
+   (rail mode: أَيقونات فقط)، في الموبايل يَفتح/يُغلق الـ drawer كما سابقاً. */
 .sidebar-toggle {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.4rem;
   line-height: 1;
   background: transparent;
@@ -301,8 +313,10 @@ button.tab-btn.active {
   padding: 0.2rem 0.55rem;
   cursor: pointer;
   color: var(--text);
+  transition: background 0.12s ease;
 }
 .sidebar-toggle:hover { background: var(--bg); }
+.sidebar-toggle:active { transform: scale(0.95); }
 
 /* sidebar عمودي ثابت (RTL: على اليمين عبر inset-inline-start: 0) */
 .sidebar {
@@ -314,8 +328,10 @@ button.tab-btn.active {
   border-inline-end: 1px solid var(--border);
   box-shadow: -1px 0 4px rgba(0,0,0,0.04);
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 110;
   padding-block: 0.5rem;
+  transition: width 0.22s ease;
   /* RTL: الـ sidebar ثابت على اليمين (dir=rtl يجعل inset-inline-start = right) */
 }
 .sidebar-list {
@@ -357,7 +373,23 @@ button.tab-btn.active {
 .tab-btn-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* منطقة المحتوى الرئيسية — margin لِتَجنّب التَداخل مع الـ sidebar الثابت */
-.dashboard-main { margin-inline-start: 242px; padding: 1rem 1.5rem; }
+.dashboard-main { margin-inline-start: 242px; padding: 1rem 1.5rem; transition: margin-inline-start 0.22s ease; }
+
+/* ═══ v2.7.1 — وضع rail: القائمة الجانبية مَطويةّ لأيقونات فقط (60px) ═══ */
+/* يُفعّل بِـ class على <body> «sidebar-collapsed». يَخفي labels، يُوسّط الأَيقونات،
+   ويُصغّر عرض الـ sidebar + margin المحتوى. */
+body.sidebar-collapsed .sidebar { width: 60px; }
+body.sidebar-collapsed .dashboard-main { margin-inline-start: 60px; }
+body.sidebar-collapsed .sidebar .tab-btn {
+  justify-content: center;
+  padding-inline: 0;
+  gap: 0;
+}
+body.sidebar-collapsed .sidebar .tab-btn-label { display: none; }
+body.sidebar-collapsed .sidebar .tab-btn-icon { font-size: 1.25rem; }
+/* title attribute على الأَزرار يَعرض tooltip أَصلي عند الطيّ بِـ hover. */
+/* في الوَضع المَطوي على الحاسوب لا نُريد overflow-x في الـ sidebar (overflow-y auto فقط). */
+body.sidebar-collapsed .sidebar { overflow-x: hidden; }
 
 /* خلفية معتمة للـ drawer في الموبايل */
 .sidebar-backdrop {
@@ -925,6 +957,36 @@ table.data-table td .open-device-btn {
   counter-reset: zone-sequence;   /* v2.7.0 — تَرقيم البطاقات تَسلسليًّا */
 }
 
+/* v2.7.1 — سهم مرئي بين البطاقات يَدُل على التَتابع (منطقة ← منطقة).
+   يَظهر على حافة البطاقة الـ inline-end (يسار في RTL) باستثناء الأَخيرة و بطاقة
+   «أَجهزة غير مُعَيَّن» (التي ليست جزءاً من السَلسلة). نَستعمِل position:absolute
+   لا يَلتصق بالبطاقة المجاورة (grid gap يَتَرُك فراغاً كافياً). */
+.map-zone-card {
+  position: relative;   /* مَرسا للسَهم المُطلق تَحت */
+}
+.map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after {
+  content: '↣';
+  position: absolute;
+  inset-block-end: 0.35rem;
+  inset-inline-end: -0.65rem;   /* يَتحرك خارج البطاقة باتجاه التالية (يسار في RTL) */
+  z-index: 5;
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+/* السَهم أَوضح في الوَضع الليلي */
+body.dark .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after {
+  opacity: 0.75;
+}
+/* إخفاء السَهم على الموبايل (لتَجنّب الاِزدِحام — التَرقيم التَسلسلي يَكفي) */
+@media (max-width: 768px) {
+  .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after { display: none; }
+}
+
 /* v2.7.0 (PD) — رَقم تَسلسلي على رأْس كُلّ zone-card (01، 02...) يدُلّ على التَتابُع */
 .map-zone-card .map-zone-header::before {
   content: counter(zone-sequence, decimal-leading-zero);
@@ -983,6 +1045,31 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover, rgba(255,
 body.dark .map-subzone-title { border-inline-start-color: var(--map-subzone-border); }
 /* dot unknown أَكثر وضُوحاً في الليلي */
 body.dark .map-zone-device[data-status="unknown"] .map-device-dot { box-shadow: 0 0 3px var(--unknown-glow); }
+
+/* ═══ v2.7.1 — تَحسينات إِضافية للوَضع الليلي في الـ grid (PB) ═══ */
+/* خلفيات البطاقات في الليلي تَكون أَوضح تَباينًا بِـ شَفافية أَكثَر على خلفية #1e293b
+   (نَعتمد عَلى متغيّرات --zone-* الـ التي تَعتمد عليها kindColor() في JS). */
+body.dark .map-zone-card { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+body.dark .map-zone-card:hover { box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45); }
+/* header البطاقة في الليلي يَبقى مُميَّزاً بِـ tint خَفيف */
+body.dark .map-zone-header { background: var(--map-zone-bg-offset); border-bottom-color: var(--border); }
+/* sub-zone title border أَوضح في الليلي */
+body.dark .map-subzone-title { color: var(--muted); border-inline-start-color: var(--accent); opacity: 1; }
+body.dark .map-subzone-title .map-subzone-stats { color: var(--muted); opacity: 0.85; }
+/* device chip meta/dot في الليلي */
+body.dark .map-device-meta { color: var(--muted); opacity: 0.85; }
+body.dark .map-zone-name { color: var(--text); }
+/* empty/loading states في الليلي */
+body.dark .map-empty, body.dark .map-loading { color: var(--muted); }
+body.dark .map-zone-empty { color: var(--muted); opacity: 0.8; }
+/* map-grid خلفية خَفيفة لِـ تَمييز الـ container في الليلي */
+body.dark .map-grid { background: transparent; }
+/* الرَّقم التَسلسلي (counter) أَوضح في الليلي */
+body.dark .map-zone-card .map-zone-header::before { color: var(--muted); opacity: 0.85; }
+/* summary chips أَوضح border في الليلي */
+body.dark .map-summary-chip { background: transparent; }
+/* tools/menu sub-zone hover في الليلي */
+body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 
 /* تَرويسة البطاقة: زرّ toggle + أَيَقونة + اسم + إِحصائيات */
 .map-zone-header {
