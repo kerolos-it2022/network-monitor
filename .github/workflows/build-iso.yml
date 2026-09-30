@@ -16,21 +16,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # التاريخ مطلوب لِـ git describe (اسم الإصدار في اسم الـ ISO).
+          fetch-depth: 0
 
-      - name: Install live-build toolchain
+      # live-build على أوبونتو مكسور مع دبيان bookworm (روابط security قديمة،
+      # مسارات firmware 404) — لذا نبني داخل حاوية debian:bookworm الحقيقية،
+      # وبـ --privileged لِـ أن live-build يحتاج chroot/mount.
+      - name: Build ISO (inside debian:bookworm)
+        env:
+          NM_VERSION: ${{ github.sha }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            live-build debootstrap debian-archive-keyring \
-            squashfs-tools xorriso \
-            grub-pc-bin grub-efi-amd64-bin grub2-common \
-            mtools dosfstools e2fsprogs parted rsync
-
-      - name: Build ISO
-        working-directory: appliance
-        run: |
-          sudo -E bash build.sh
-          ls -lh *.iso
+          docker run --rm --privileged \
+            -v "$GITHUB_WORKSPACE":/workspace \
+            -w /workspace/appliance \
+            -e NM_VERSION \
+            debian:bookworm bash build.sh
+          ls -lh appliance/*.iso
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

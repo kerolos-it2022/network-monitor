@@ -13,10 +13,21 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# ── 0) تثبيت الأدوات إن لم تكن موجودة (نُشغَّل داخل حاوية debian:bookworm في CI
+#      أو WSL2 مباشرةً — live-build من مستودعات دبيان نفسها، لا نسخة أوبونتو المكسورة) ──
+if ! command -v lb >/dev/null 2>&1; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    live-build debootstrap debian-archive-keyring \
+    squashfs-tools xorriso wget \
+    grub-pc-bin grub-efi-amd64-bin grub2-common \
+    mtools dosfstools e2fsprogs parted rsync
+fi
+
 REPO_ROOT="$(cd .. && pwd)"
-VERSION="$(cd "$REPO_ROOT" && git describe --tags --always 2>/dev/null \
+VERSION="${NM_VERSION:-$(cd "$REPO_ROOT" && git describe --tags --always 2>/dev/null \
   || grep -oP '(?<="version":\s")[^"]+' "$REPO_ROOT/backend/package.json" | head -1 \
-  || echo dev)"
+  || echo dev)}"
 
 echo "═══ Network Monitor Appliance — VERSION: $VERSION ═══"
 
