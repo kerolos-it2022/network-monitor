@@ -13,6 +13,8 @@
     .login-card label { display: flex; flex-direction: column; margin-bottom: 0.75rem; font-size: 0.9rem; }
     .login-card input { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.95rem; }
     .login-back { display: block; margin-top: 0.75rem; text-align: center; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+    .login-remember { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--muted); cursor: pointer; user-select: none; }
+    .login-remember input { width: auto; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -27,6 +29,10 @@
         <label>
           كلمة المرور
           <input id="password" type="password" autocomplete="current-password" required />
+        </label>
+        <label class="login-remember">
+          <input id="remember" type="checkbox" />
+          🔒 تذكّرني
         </label>
         <button type="submit" class="btn btn-primary">🔑 دخول</button>
         <div id="login-error" class="error-msg" style="margin-top:0.75rem;"></div>

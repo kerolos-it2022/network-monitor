@@ -19,6 +19,13 @@
   let publicMapLoaded = false;       // lazy: هل حَمَلنا الشجرة مَرّةً واحدة على الأَقّل؟
   let publicMapPollHandle = null;    // setInterval id لِـ polling 10s.
   const publicCollapsed = new Set(); // ids zone المَطوية (نَفس منطق admin).
+  // v2.7.4 — حالة السَحب والإِفلات لإعادة تَرتيب البطاقات (نَفس منطق admin-map.js).
+  // في الصَفحة العامة قد لا يكون الزائر مُسجّل دخول → POST /reorder قد يُرفض بـ 401/403؛
+  // عندئذٍ نَترك DOM بالتَرتيب الجَديد لِـ هذه الجلسة فقط (يُلغى عند polling 10s).
+  let publicMapDragging = false;
+  let publicMapDraggedId = null;
+  let publicMapDragOverId = null;
+  // هل السَحب متاح فعلياً (لو HB أَو LoggedIn)? نَحدّده عند نجاح reorder فقط، لا هنا.
 
   // أَيَقونات zones — نَفس KIND_ICON admin.
   const KIND_ICON = {
@@ -51,29 +58,36 @@
       .replace(/'/g, String.fromCharCode(38)+'#39;');
   }
 
-  // اِستِخراج زب متغيّر CSS (متوافِق مَع الثيم اللَيلي) مَع fallback.
+  // اِستِخراج قيم متغيّر CSS (متوافِق مَع الثيم اللَيلي) مَع fallback.
+  // ملاحظة: cssVar() تُرجِع القيمة المَحلولة لحظياً (مَلائمة لِـ canvas/svg أَو قِراءة
+  // عابرة)، لكن لا تَصلح لِـ تَخزينها inline على عُقدة ما زالت في الـ DOM — لو تَغيّر
+  // الثيم لاحقاً تَبقى القيمة القديمة. لِذلك تَستعمل renderZoneCard() مراجع var()
+  // الثابتة من kindColor()/locationBorderColor() بالأسفل لِـ inline styles.
   function cssVar(name, fallback) {
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return v || fallback;
   }
 
   // لون خلفية بطاقة zone بحسب kind (نَفس منطق admin).
-  // v2.7.1: نَستَعمل متغيّرات CSS (تَتكيّف مع الثيم الليلي) بدَل rgba ثابت لِـ تَناسُق
-  // الوَضع الليلي في الـ grid. fallback لِـ قيم واضحة لو الـ var غَاب.
+  // v2.7.3: تُعيد مَرجع var() النصّي (لا القيمة المَحلولة) حتى لو تَغيّر الثيم
+  // لاحقاً (نهاري↔ليلي) تَتَكيّف البطاقة آلياً. fallback يُمرَّر داخل var() لِـ ثيم بلا
+  // المتغيّر. (سابقاً cssVar() كان يَحل القيمة عند الرَسم فتَثبت خلفية #ffffff على
+  // بطاقات site/building حتى في الوَضع الليلي — كان سَبب تَناقُق الأَلوان في الـ grid.)
   function kindColor(kind) {
     switch (kind) {
-      case 'internet': return cssVar('--zone-internet-bg', 'rgba(37, 99, 235, 0.18)');
-      case 'zone':     return cssVar('--zone-bg', 'rgba(234, 179, 8, 0.18)');
-      case 'unassigned': return cssVar('--zone-unassigned-bg', 'rgba(156, 163, 175, 0.18)');
-      default: return cssVar('--card-bg', '#ffffff');
+      case 'internet':   return 'var(--zone-internet-bg, rgba(37, 99, 235, 0.18))';
+      case 'zone':       return 'var(--zone-bg, rgba(234, 179, 8, 0.18))';
+      case 'unassigned': return 'var(--zone-unassigned-bg, rgba(156, 163, 175, 0.18))';
+      default:           return 'var(--card-bg, #ffffff)';   // site/building/floor/room/rack
     }
   }
   // لون إِطار بطاقة zone بِحسب تَلخيص أَجهزتها (نَفس منطق admin locationBorderColor).
+  // v2.7.3: مراجع var() لِـ تَكيّف الثيم.
   function locationBorderColor(node) {
-    if (!node) return '#ccc';
-    if (node.offline > 0) return cssVar('--offline', '#ef4444');
-    if (node.device_count > 0 && node.online === node.device_count) return cssVar('--online', '#22c55e');
-    return '#9e9e9e';
+    if (!node) return 'var(--border, #ccc)';
+    if (node.offline > 0) return 'var(--offline, #ef4444)';
+    if (node.device_count > 0 && node.online === node.device_count) return 'var(--online, #22c55e)';
+    return 'var(--border, #9e9e9e)';
   }
   // tooltip مُختَصَر لِـ zone/جهاز (نَفس شَكل admin، لكن لاحِظ أَنّ public API يَحذف device name).
   function nodeTooltip(node) {
@@ -116,9 +130,8 @@
     // v2.7.0 (PD) — aria-posinset/aria-setsize للـ a11y.
     const orphanCardCount = orphanDevices.length > 0 ? 1 : 0;
     const setSize = zoneKids.length + orphanCardCount;
-    let cards = zoneKids
-      .map((c, i) => renderZoneCard(c, { posinset: i + 1, setsize: setSize }))
-      .join('');
+    // v2.7.5 — بطاقة «أَجهزة مَدخل الإنترنت» ثابتة في الأَول دائماً (نَفس منطق admin-map).
+    let orphanHtml = '';
     if (orphanDevices.length > 0) {
       const orphanNode = {
         id: 'orphan-internet-devices',
@@ -131,8 +144,13 @@
         children: orphanDevices,
         _orphan: true,
       };
-      cards += renderZoneCard(orphanNode, { posinset: setSize, setsize: setSize });
+      orphanHtml = renderZoneCard(orphanNode, { posinset: 1, setsize: setSize });
     }
+    // zones بَعْد البطاقة الصِناعيّة (posinset يَبدأ من 2 لو وُجدت).
+    const start = orphanHtml ? 2 : 1;
+    const cards = orphanHtml + zoneKids
+      .map((c, i) => renderZoneCard(c, { posinset: start + i, setsize: setSize }))
+      .join('');
     return cards;
   }
 
@@ -145,8 +163,10 @@
     const bg = kindColor(kind);
     let border = locationBorderColor(node);
     let borderW = (node.offline > 0) ? '2px' : '1px';
-    if (kind === 'internet') border = '#2563eb';
-    if (kind === 'zone') border = '#eab308';
+    // v2.7.3: مراجع var() على الأَلوان الثيم (تَتكيّف مع نهاري/ليلي) بدَل أَلوان
+    // ثابتة #2563eb/#eab308 التي لا تَتَكيّف في الوَضع الليلي.
+    if (kind === 'internet') border = 'var(--accent, #2563eb)';
+    if (kind === 'zone')     border = 'var(--warning, #eab308)';
 
     const dc = node.device_count || 0;
     const on = node.online || 0;
@@ -165,8 +185,14 @@
       ? ` aria-posinset="${opts.posinset}" aria-setsize="${opts.setsize}"`
       : '';
 
+    // v2.7.4 — السَحب والإِفلات: البطاقات الحقيقية قابِلة للسَحب (draggable="true")؛
+    // البطاقات الصِناعيّة (kind-unassigned مثل «أَجهزة مَدخل الإِترنت» أَو id رقمي مَفقود)
+    // لا تُسحَب — لا row تَحدّثه في DB. (نَفس منطق admin-map.js.)
+    const isUnassignedPub = kind === 'unassigned';
+    const draggablePub = !isUnassignedPub && node.id != null && typeof node.id === 'number' ? 'true' : 'false';
+
     return `
-    <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"${ariaSet}
+    <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"${ariaSet} draggable="${draggablePub}"
              style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
       <div class="map-zone-header" title="${esc(nodeTooltip(node))}">
         <span class="map-zone-icon">${icon}</span>
@@ -321,6 +347,164 @@ async function loadPublicMap() {
         if (toggleEl) toggleEl.setAttribute('aria-expanded', !card.classList.contains('collapsed'));
       }
     });
+
+    // ═══ v2.7.4 — السَحب والإِفلات لإعادة تَرتيب بطاقات zones (public) ═══
+    // نَفس منطق admin-map.js لكن public لا تَملِك toolbar فِلترة (لا hasActiveFilters()).
+    // public لا تَملِك api() مَع auth → نَستدعِي fetch مُباشِرة و نَتعامَل مَع 401/403:
+    // عند فَشل auth نَترك DOM بالتَرتيب الجَديد لِـ هذه الجلسة فقط + toast تَنبيه.
+    grid.addEventListener('dragstart', (event) => {
+      const card = event.target.closest('.map-zone-card');
+      if (!card) { event.preventDefault(); return; }
+      const kind = card.dataset.kind;
+      const id = String(card.dataset.id);
+      // البطاقات غير القابِلة للسَحب: الصِناعيّة (لا id رقمي ولا row تَحدّثه في DB).
+      if (kind === 'unassigned' || id === 'orphan-internet-devices' || !/^\d+$/.test(id)) {
+        event.preventDefault();
+        return;
+      }
+      publicMapDragging = true;
+      publicMapDraggedId = id;
+      card.classList.add('dragging');
+      grid.classList.add('reordering');
+      event.dataTransfer.effectAllowed = 'move';
+      try { event.dataTransfer.setData('text/plain', id); } catch (_) {}
+      // إِيقاف polling 10s مؤقّتًا أَثناء السَحب (إِلى حين dragend).
+      stopPolling();
+    });
+
+    grid.addEventListener('dragover', (event) => {
+      if (!publicMapDragging) return;
+      const card = event.target.closest('.map-zone-card');
+      if (!card) return;
+      const kind = card.dataset.kind;
+      const id = String(card.dataset.id);
+      if (id === publicMapDraggedId || kind === 'unassigned' || id === 'orphan-internet-devices' || !/^\d+$/.test(id)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      if (publicMapDragOverId && publicMapDragOverId !== id) {
+        const prev = grid.querySelector(`:scope > .map-zone-card[data-id="${publicMapDragOverId}"]`);
+        if (prev) prev.classList.remove('drag-over');
+      }
+      card.classList.add('drag-over');
+      publicMapDragOverId = id;
+    });
+
+    grid.addEventListener('dragleave', (event) => {
+      const card = event.target.closest('.map-zone-card');
+      if (!card) return;
+      if (publicMapDragOverId && card.dataset.id === publicMapDragOverId && !card.contains(event.relatedTarget)) {
+        card.classList.remove('drag-over');
+        if (publicMapDragOverId === card.dataset.id) publicMapDragOverId = null;
+      }
+    });
+
+    grid.addEventListener('drop', async (event) => {
+      if (!publicMapDragging) return;
+      event.preventDefault();
+      const dropCard = event.target.closest('.map-zone-card');
+      if (!dropCard) return;
+      const dropId = String(dropCard.dataset.id);
+      if (dropId === publicMapDraggedId) return;
+      // v2.7.5 — البطاقة الصِناعيّة (أَجهزة مَدخل الإنترنت) ثابتة في الأَول؛ لا إِفلات
+      // عَلَيها ولا إِدخال أَمامها (insertBefore قَبلها = إِزاحتها من المركز الأول).
+      if (dropId === 'orphan-internet-devices' || !/^\d+$/.test(dropId)) return;
+      const dragCard = grid.querySelector(`:scope > .map-zone-card[data-id="${publicMapDraggedId}"]`);
+      if (!dragCard) return;
+      grid.insertBefore(dragCard, dropCard);
+      await savePublicReorder(grid);
+    });
+
+    grid.addEventListener('dragend', () => {
+      grid.querySelectorAll(':scope > .map-zone-card').forEach((c) => {
+        c.classList.remove('dragging');
+        c.classList.remove('drag-over');
+      });
+      grid.classList.remove('reordering');
+      publicMapDragging = false;
+      publicMapDraggedId = null;
+      publicMapDragOverId = null;
+      // إِعادة polling 10s بَعد انتهاء السَحب (نَفس activate).
+      startPolling();
+    });
+  }
+
+  // ═══ v2.7.4 — toast بَسيط لِـ الصَفحة العامة (بَديل لطيف لِـ alert) ═══
+  // يَعرض رسالة قَصيرة في #public-map-empty (مُؤقّتًا) ثُمّ يُعيد حالته. لو وُجد عنصر
+  // مَخصَّص #public-map-toast نَستعمله (أَفضل لكنّه اِختياري). لا يتَدخّل في polling.
+  let publicToastHandle = null;
+  let publicEmptyWasHidden = true;   // هل emptyEl كان مَخفياً قَبل الـ toast (نُعيده).
+  function showPublicToast(msg, ms) {
+    const emptyEl = document.getElementById('public-map-empty');
+    if (!emptyEl) return;
+    if (publicToastHandle) clearTimeout(publicToastHandle);
+    publicEmptyWasHidden = emptyEl.classList.contains('hidden');
+    emptyEl.textContent = msg;
+    emptyEl.classList.remove('hidden');
+    publicToastHandle = setTimeout(() => {
+      // نُعيد emptyEl إِلى مَخفياً (لِـ لا يَ阻碍 preview). polling سيُحدّثه لاحقاً.
+      emptyEl.classList.add('hidden');
+      emptyEl.textContent = '';
+    }, ms || 2500);
+  }
+
+  // ═══ v2.7.4 — حفظ التَرتيب الجَديد بَعد السَحب (public) ═══
+  // public لا تَملِك api() مَع auth → نَستدعِي fetch بِـ credentials include. عند 401/403:
+  // نَترك DOM بالتَرتيب الجَديد (ترتيب جَلسة)، و نُنبيه بأَنّ الحفظ يَتطلّب صلاحية المشرف.
+  // عند النجاح: نُعيد جَلب الشَجِرة (لِـ تَحديث التَرقيم 01/02… و السَهم ↣ آلياً).
+  async function savePublicReorder(grid) {
+    const cards = grid.querySelectorAll(
+      ':scope > .map-zone-card:not([data-kind="unassigned"]):not([data-id="orphan-internet-devices"])'
+    );
+    const updates = [...cards]
+      .map((card, i) => {
+        const id = Number(card.dataset.id);
+        if (!Number.isFinite(id)) return null;
+        return { id, sort_order: i };
+      })
+      .filter(Boolean);
+    if (updates.length === 0) return;
+
+    showPublicToast('⏳ جاري حفظ التَرتيب الجَديد…', 2000);
+
+    let ok = false;
+    let status = 0;
+    try {
+      const r = await fetch('/api/locations/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ updates }),
+      });
+      status = r.status;
+      if (r.ok) {
+        const j = await r.json();
+        ok = !!(j && j.success);
+      } else if (status === 401 || status === 403) {
+        // غير مسجّل/لا صلاحية: نَترك DOM بالتَرتيب الجَديد لِـ هذه الجلسة فقط.
+        ok = false;
+      }
+    } catch (e) {
+      ok = false;
+      status = 0;
+    }
+
+    if (ok) {
+      const fresh = await fetchPublicTree();
+      if (fresh) {
+        publicMapRootData = fresh;
+        loadPublicMap();   // يُعيد الرَسم بِـ助攻 التَرقيم و السَهم الجَديد عبر renderZonesGridPublic.
+        showPublicToast('✅ تم حفظ التَرتيب الجَديد', 2000);
+      } else {
+        showPublicToast('✅ تم حفظ التَرتيب', 2000);
+      }
+    } else if (status === 401 || status === 403) {
+      // التَرتيب البَصري للجلسة فقط — سيُلغى عند polling 10s التالي.
+      showPublicToast('⚠️ التَرتيب يَتطلّب صلاحية المُشرف — حُفِظ مؤقّتًا لهذه الجلسة فقط', 4000);
+    } else {
+      // فَشل غَير auth (شبكة/خادم): نُعيد جَلب الشَجِرة لِـ rollback بَصري.
+      showPublicToast('❌ فَشل حفظ التَرتيب', 3000);
+      await loadPublicMap();
+    }
   }
 
   // ═══ polling 10s ═══

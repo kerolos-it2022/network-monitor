@@ -6,10 +6,14 @@ const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
 
+// v2.7.5 — عمر الجلسة الافتراضي (12 ساعة) المُعرّف في server.js. عند تَفعيل «تذكّرني»
+// نُمدّد عمرها إلى 30 يومًا لِـ إبقاء تسجيل الدخول بين الزيارات.
+const REMEMBER_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 يومًا
+
 // POST /api/auth/login
-// Body: { username, password }
+// Body: { username, password, remember? }
 router.post('/login', (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, remember } = req.body;
   if (!username || !password) {
     return res
       .status(400)
@@ -31,6 +35,13 @@ router.post('/login', (req, res) => {
   }
 
   req.session.user = { username: user.username, role: user.role };
+
+  // v2.7.5 — تَفعيل «تذكّرني»: نُعيد ضبط عمر الـ cookie لهذه الجلسة لِـ 30 يومًا.
+  // (نُفعّلها فقط عند تَحقّق remember من النموذج، وإلا تَبقى 12 ساعة كالسابق.)
+  if (remember && req.session.cookie && typeof req.session.cookie.maxAge === 'number') {
+    req.session.cookie.maxAge = REMEMBER_MAX_AGE;
+  }
+
   return res
     .status(200)
     .json({ success: true, data: { username: user.username, role: user.role } });

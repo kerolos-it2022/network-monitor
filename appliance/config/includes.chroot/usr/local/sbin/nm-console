@@ -1,0 +1,54 @@
+#!/bin/bash
+# nm-console — قائمة الكونسول عند الإقلاع (tty1).
+# نظام حي:  عرض خيار التثبيت على القرص.
+# نظام مثبَّت: عرض حالة الخدمة وعنوان الوصول.
+bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
+warn()  { printf '\033[33m%s\033[0m\n' "$*"; }
+
+IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+
+if [ -f /etc/nm-installed ]; then
+    # ═══ نظام مثبَّت ═══
+    while true; do
+        clear
+        bold "═══ نظام مراقبة الشبكة — appliance ═══"
+        echo
+        echo "  عنوان الوصول:  http://${IP:-غير متصل}/"
+        echo
+        systemctl is-active --quiet network-monitor.service \
+            && echo "  حالة الخدمة:   🟢 تعمل" \
+            || echo "  حالة الخدمة:   🔴 متوقفة — journalctl -u network-monitor"
+        echo
+        echo "  [1] إعادة تشغيل الخدمة"
+        echo "  [2] سجل الخدمة (آخر 50 سطرًا)"
+        echo "  [s] موجه أوامر (shell)"
+        echo "  [q] خروج من القائمة"
+        echo
+        read -r -p "اختيار: " CH
+        case "$CH" in
+            1) systemctl restart network-monitor.service; echo "تم."; sleep 2 ;;
+            2) journalctl -u network-monitor.service -n 50 --no-pager; read -r -p "↵ للعودة…" _ ;;
+            s) exit 0 ;;
+            q) exit 0 ;;
+        esac
+    done
+else
+    # ═══ نظام حي (لم يُثبَّت بعد) ═══
+    clear
+    bold "═══ نظام مراقبة الشبكة — صورة حيّة (Live) ═══"
+    echo
+    echo "  هذه صورة حيّة تعمل من الـ USB — لا تُحفظ أي بيانات."
+    echo "  للتثبيت الدائم على القرص الصلب:"
+    echo
+    echo "  [1] 🖥️  تثبيت النظام على القرص الصلب (سيمسح القرص)"
+    echo "  [2] تجربة النظام حيًّا (بدون تثبيت)"
+    echo "  [s] موجه أوامر"
+    echo
+    read -r -p "اختيار: " CH
+    case "$CH" in
+        1) /usr/local/sbin/nm-install-to-disk ;;
+        2) echo "النظام يعمل حيًّا — العنوان: http://${IP:-غير متصل}/ (admin — راجع وثائق الصورة)"; exit 0 ;;
+        s) exit 0 ;;
+        *) exit 0 ;;
+    esac
+fi

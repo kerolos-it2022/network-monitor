@@ -128,11 +128,13 @@ router.get('/logs', requireAuth, (req, res) => {
   return res.json({ success: true, data: rows });
 });
 
-// DELETE /api/notifications/logs?older_than_days=1|7|30  🔒
+// DELETE /api/notifications/logs?older_than_days=1|7|30|365  🔒
 router.delete('/logs', requireAuth, (req, res) => {
   const days = Number(req.query.older_than_days);
-  if (![1, 7, 30].includes(days)) {
-    return res.status(400).json({ success: false, error: 'قيمة older_than_days غير صالحة (1/7/30)' });
+  // v2.7.x — تَمديد القَبُول لِـ 365 (سنة) تَماثُلاً مَع cleanup-history وcleanup-status-logs
+  // الَّتان يَقبَلان range='year'. كان هَذا يُسَبِّب فَشَل «مَسح الإِشعارات» عند اختِيار «سنة».
+  if (![1, 7, 30, 365].includes(days)) {
+    return res.status(400).json({ success: false, error: 'قيمة older_than_days غير صالحة (1/7/30/365)' });
   }
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const result = db.prepare('DELETE FROM notification_logs WHERE sent_at < ?').run(cutoff);

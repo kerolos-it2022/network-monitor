@@ -10,7 +10,7 @@
 <body>
   <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
   <header class="admin-topbar">
-    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="فتح/إغلاق القائمة الجانبية" aria-label="فتح/إغلاق القائمة الجانبية" aria-expanded="false" aria-controls="admin-sidebar">☰</button>
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
     <h1>📋 لوحة التحكم</h1>
     <a href="../index.html" class="admin-link">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
@@ -67,40 +67,6 @@
         </select>
       </div>
 
-      <!-- نموذج إضافة/تعديل جهاز -->
-      <form id="device-form" class="form-card hidden">
-        <input type="hidden" id="device-form-id" />
-        <h3 id="device-form-title">إضافة جهاز</h3>
-        <div class="form-grid">
-          <label>الاسم <input type="text" id="df-name" required /></label>
-          <label>IP <input type="text" id="df-ip" required placeholder="192.168.1.10" /></label>
-          <label>النوع
-            <select id="df-device_type_id" required></select>
-          </label>
-          <label>الموقع
-            <select id="df-location_id"><option value="">— بدون —</option></select>
-          </label>
-          <label>طريقة الفحص
-            <select id="df-check_protocol">
-              <option value="ping">Ping</option>
-              <option value="port">Port (TCP)</option>
-              <option value="http">HTTP</option>
-              <option value="https">HTTPS</option>
-            </select>
-          </label>
-          <label>المنفذ (افتراضي: HTTP=80, HTTPS=443, Port=مطلوب) <input type="number" id="df-port" min="1" max="65535" placeholder="80/443" /></label>
-          <label>فترة الفحص (ثانية) <input type="number" id="df-check_interval_seconds" value="30" min="5" /></label>
-          <label>حد التنبيه <input type="number" id="df-failure_threshold" value="3" min="1" /></label>
-          <label>مفعّل للمراقبة
-            <input type="checkbox" id="df-is_active" checked />
-          </label>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary" title="حفظ الجهاز">💾 حفظ</button>
-          <button type="button" class="btn" id="device-form-cancel" title="إلغاء العملية">✖️ إلغاء</button>
-        </div>
-      </form>
-
       <table class="data-table">
         <thead>
           <tr><th>الاسم</th><th>IP</th><th>النوع</th><th>الموقع</th><th>الحالة</th><th>إجراءات</th></tr>
@@ -111,37 +77,9 @@
 
     <!-- ============ قسم المواقع ============ -->
     <section id="section-locations" class="hidden">
-      <div class="form-card">
-        <input type="hidden" id="location-form-id" />
-        <div class="form-grid">
-          <label>اسم الموقع <input type="text" id="loc-name" placeholder="مصدر الإنترنت / المنطقة الرئيسية…" /></label>
-          <label>النوع
-            <select id="loc-kind" title="نوع الموقع في هرم الشبكة">
-              <option value="internet">🌐 الإنترنت/الراوتر (قمة الهرم)</option>
-              <option value="zone" selected>📍 منطقة (وَسَطية)</option>
-              <option value="site">🏛️ موقع (site)</option>
-              <option value="building">🏢 مبنى (building)</option>
-              <option value="floor">📐 طابق (floor)</option>
-              <option value="room">🚪 غرفة (room)</option>
-              <option value="rack">🗄️ خزانة (rack)</option>
-            </select>
-          </label>
-          <label>الموقع الأَب
-            <select id="loc-parent_id" title="الموقع الأَب في الهرم (internet يَكون جذرًا دائمًا)">
-              <option value="">— جذر (لا أَب) —</option>
-            </select>
-          </label>
-          <!-- v2.7.1 — تَرتيب العرض في خريطة المواقع (متَّصلة على التَوالي) -->
-          <label>تَرتيب العرض
-            <input type="number" id="loc-sort-order" min="0" placeholder="0" title="الرقم الأَصغر يَظهر أَولاً. اتركه فارغاً لِـ التَرتيب التلقائي (نهاية القائمة)." />
-          </label>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
-          <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء">✖️ إلغاء</button>
-        </div>
-      </div>
-      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <button id="add-location-btn" type="button" class="btn btn-primary" title="إضافة موقع جديد">➕ إضافة موقع</button>
+        <div style="flex:1;"></div>
         <label style="font-size:0.9rem; color:var(--muted);">فلتر النوع:</label>
         <select id="filter-kind-locations" class="sort-select" title="تصفية المواقع حسب النوع">
           <option value="">🏝️ كل الأَنواع</option>
@@ -153,7 +91,7 @@
           <option value="room">🚪 room</option>
           <option value="rack">🗄️ rack</option>
         </select>
-        <label style="font-size:0.9rem; color:var(--muted); margin-right:0.75rem;">ترتيب:</label>
+        <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
         <select id="filter-sort-locations" class="sort-select">
           <option value="name">📝 حسب الاسم</option>
           <option value="id">🆔 حسب المعرف</option>
@@ -168,18 +106,9 @@
 
     <!-- ============ قسم الأنواع ============ -->
     <section id="section-types" class="hidden">
-      <div class="form-card">
-        <input type="hidden" id="type-form-id" />
-        <div class="form-grid">
-          <label>الاسم <input type="text" id="type-name" /></label>
-          <label>الأيقونة <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع">💾 حفظ النوع</button>
-          <button type="button" class="btn" id="type-cancel-btn" title="إلغاء">✖️ إلغاء</button>
-        </div>
-      </div>
-      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <button id="add-type-btn" type="button" class="btn btn-primary" title="إضافة نوع جهاز جديد">➕ إضافة نوع</button>
+        <div style="flex:1;"></div>
         <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
         <select id="filter-sort-types" class="sort-select">
           <option value="name">📝 حسب الاسم</option>
@@ -461,11 +390,14 @@
 
     <!-- ============ قسم السجل ============ -->
     <section id="section-logs" class="hidden">
-      <!-- v2.7.0 (PF) — زرّ موحّد "مسح السجل" يَفتح popup بِـ (نوع + مُدّة) -->
+      <!-- v2.7.x — زرّ مَسح سجل الإِشعارات وحده هنا (يُفَرِّغ الجدول المَعْرُوض).
+           زِرّا «مسح الانقطاعات» و«مسح نَقاط الفحص» نُقِلا إِلى تَبويب النسخ الاحتياطي
+           (section-backup) لِأَنّهما يُفَرِّغان جَداول status_logs/downtime_events لا علاقة
+           لها بِـ notification_logs المَعْرُوض هنا. -->
       <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; justify-content:space-between;">
         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-          <button id="logs-clear-btn" class="btn btn-danger" title="مسح السجلات القديمة (إشعارات أَو انقطاعات)">
-            🗑️ مَسح السجل
+          <button id="logs-clear-btn" class="btn btn-danger" title="مسح سجل الإِشعارات القديمة">
+            🗑️ مسح الإِشعارات
           </button>
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
@@ -540,6 +472,25 @@
         <div class="form-card" style="margin-bottom:1.5rem; padding:1rem;">
           <div style="font-weight:600; margin-bottom:0.6rem;">📋 تفاصيل الجداول (عدد الصفوف)</div>
           <ul id="backup-table-list" style="list-style:none; margin:0; padding:0; max-height:200px; overflow:auto;"></ul>
+        </div>
+
+        <!-- ===== أزرار تَنظيف الجداول الكبيرة (نَقْل من تبويب السجل — v2.7.x) ===== -->
+        <!-- status_logs يَكبُر بِسُرعة (نُقطة لكل دورة فحص لكل جهاز)؛ downtime_events يَكبُرُ مع الانقطاعات.
+             نُقِلا هُنا لِأَنّ هذا التَبويب هُوَ مَكان الصِّيانة الَّذِي يُعْرِض حجم القاعدة وعدد صُفوف كُلّ جَدول،
+             ولِأَنّ مَسحهما لا يَمَسّ notification_logs المَعْرُوض في تبويب السجل. تَعتمِد المُعالِجات (admin-notifications.js)
+             على getElementById — الأَسماء ثابتة فلا تَعديل في JS. -->
+        <div class="form-card" style="margin-bottom:1.5rem; padding:1rem; border:1px dashed var(--border);">
+          <div style="font-weight:600; margin-bottom:0.6rem;">🧹 تَنظيف جداول السِّجلّات الكبيرة</div>
+          <p style="font-size:0.85rem; color:var(--muted); margin-bottom:0.8rem;">
+            تَحْرير مَساحة عبر حذف نُقاط/أَحداث قَدِيمة. يُؤثّر في الرسوم البيانية ونِسَب Uptime الظاهرة في الصفحة العامة (تُحدَّث عند إِعادَة تَحميلها).
+          </p>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button id="logs-clear-downtime-btn" class="btn btn-danger" title="مسح سجل الانقطاعات القديمة">🗑️ مسح الانقطاعات</button>
+            <button id="logs-clear-status-btn" class="btn btn-danger" title="مسح نَقاط فحص الحالة القديمة (status_logs — يُحرّر مساحة كبيرة)">🗑️ مسح نَقاط الفحص</button>
+            <!-- v2.7.x — زِرّ «تَفْرِيغ الكُلّ»: DELETE FROM status_logs ثم VACUUM لِـ تَقليص حجم DB فعليًّا.
+                 إِجراء هَدّام بِالكامل — سيُفقِد تاريخ Uptime/الرسوم البيانية. كن حَذِراً. -->
+            <button id="logs-truncate-status-btn" class="btn btn-danger" title="تفريغ جدول نَقاط الفحص بالكامل + VACUUM (إجراء هدّام — سيفقد تاريخ Uptime والرسوم البيانية)">⚠️ تَفْرِيغ الكُلّ</button>
+          </div>
         </div>
 
         <!-- زر التصدير -->
@@ -641,6 +592,100 @@
     </section>
   </main>
 
+  <!-- ===== popup modal إِضافة/تعديل جهاز (v2.7.4 — نَقل inline form إلى popup) ===== -->
+  <div id="device-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
+      <h3 id="device-form-title">إضافة جهاز</h3>
+      <form id="device-form">
+        <input type="hidden" id="device-form-id" />
+        <div class="form-grid">
+          <label>الاسم <input type="text" id="df-name" required /></label>
+          <label>IP <input type="text" id="df-ip" required placeholder="192.168.1.10" /></label>
+          <label>النوع
+            <select id="df-device_type_id" required></select>
+          </label>
+          <label>الموقع
+            <select id="df-location_id"><option value="">— بدون —</option></select>
+          </label>
+          <label>طريقة الفحص
+            <select id="df-check_protocol">
+              <option value="ping">Ping</option>
+              <option value="port">Port (TCP)</option>
+              <option value="http">HTTP</option>
+              <option value="https">HTTPS</option>
+            </select>
+          </label>
+          <label>المنفذ (افتراضي: HTTP=80, HTTPS=443, Port=مطلوب) <input type="number" id="df-port" min="1" max="65535" placeholder="80/443" /></label>
+          <label>بورت واجهة الويب (اختياري — لزر «فتح»، مثل 4444) <input type="number" id="df-web_port" min="1" max="65535" placeholder="مثلاً 4444" title="بورت مخصص لواجهة الجهاز على الويب — يُكشف البروتوكول (HTTP/HTTPS) تلقائياً" /></label>
+          <label>فترة الفحص (ثانية) <input type="number" id="df-check_interval_seconds" value="30" min="5" /></label>
+          <label>حد التنبيه <input type="number" id="df-failure_threshold" value="3" min="1" /></label>
+          <label class="checkbox-label">مفعّل للمراقبة
+            <input type="checkbox" id="df-is_active" checked />
+            <span>نعم، المراقبة مفعّلة</span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" title="حفظ الجهاز">💾 حفظ</button>
+          <button type="button" class="btn" id="device-form-cancel" title="إلغاء العملية">✖️ إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== popup modal إِضافة/تعديل موقع (v2.7.4) ===== -->
+  <div id="location-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
+      <h3 id="location-form-title">إضافة موقع</h3>
+      <input type="hidden" id="location-form-id" />
+      <div class="form-grid">
+        <label>اسم الموقع <input type="text" id="loc-name" placeholder="مصدر الإنترنت / المنطقة الرئيسية…" /></label>
+        <label>النوع
+          <select id="loc-kind" title="نوع الموقع في هرم الشبكة">
+            <option value="internet">🌐 الإنترنت/الراوتر (قمة الهرم)</option>
+            <option value="zone" selected>📍 منطقة (وَسَطية)</option>
+            <option value="site">🏛️ موقع (site)</option>
+            <option value="building">🏢 مبنى (building)</option>
+            <option value="floor">📐 طابق (floor)</option>
+            <option value="room">🚪 غرفة (room)</option>
+            <option value="rack">🗄️ خزانة (rack)</option>
+          </select>
+        </label>
+        <label>الموقع الأَب
+          <select id="loc-parent_id" title="الموقع الأَب في الهرم (internet يَكون جذرًا دائمًا)">
+            <option value="">— جذر (لا أَب) —</option>
+          </select>
+        </label>
+        <!-- v2.7.1 — تَرتيب العرض في خريطة المواقع (متَّصلة على التَوالي) -->
+        <label>تَرتيب العرض
+          <input type="number" id="loc-sort-order" min="0" placeholder="0" title="الرقم الأَصغر يَظهر أَولاً. اتركه فارغاً لِـ التَرتيب التلقائي (نهاية القائمة)." />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
+        <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء">✖️ إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== popup modal إِضافة/تعديل نوع جهاز (v2.7.4) ===== -->
+  <div id="type-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content" style="max-width:480px;">
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
+      <h3 id="type-form-title">إضافة نوع</h3>
+      <input type="hidden" id="type-form-id" />
+      <div class="form-grid">
+        <label>الاسم <input type="text" id="type-name" required /></label>
+        <label>الأيقونة <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع">💾 حفظ النوع</button>
+        <button type="button" class="btn" id="type-cancel-btn" title="إلغاء">✖️ إلغاء</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Changelog Modal -->
   <div id="changelog-modal" class="modal hidden">
     <div class="modal-content" style="max-width:800px;">
@@ -650,32 +695,18 @@
     </div>
   </div>
 
-  <!-- ===== modal تأكيد موحّد (v2.7.0 — PG) — يُملأ ديناميكياً من confirmAction() ===== -->
-  <div id="confirm-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="confirm-modal-content">
-      <h3 class="confirm-modal-title" id="confirm-modal-title">—</h3>
-      <p class="confirm-modal-message" id="confirm-modal-message">—</p>
-      <div class="confirm-modal-actions">
-        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
-        <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد">✓ تأكيد</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== modal اختيار مسح السجل (v2.7.0 — PF) — نوع + مُدّة ===== -->
+  <!-- ===== modal اختيار مسح السجل (v2.7.3 — مُدّة فقط، الإِشعارات فقط) ===== -->
   <div id="cleanup-select-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="confirm-modal-content">
-      <h3 class="confirm-modal-title">🗑️ مَسح السجل</h3>
-      <p style="font-size:0.88rem; color:var(--muted); margin:0 0 0.9rem;">اِختَر نوع السجل و المُدّة، ثُمّ اِضغط «تَأكيد». لا يمكن التَراجُع.</p>
+      <h3 class="confirm-modal-title">🗑️ مَسح سجل الإِشعارات</h3>
+      <p style="font-size:0.88rem; color:var(--muted); margin:0 0 0.9rem;">اِختَر المُدّة، ثُمّ اِضغط «تَأكيد». لا يمكن التَراجُع.</p>
       <div class="form-grid" style="margin-bottom:0.8rem;">
-        <label>نوع السجل
-          <select id="cleanup-type-select">
-            <option value="notifications">📢 سجل الإِشعارات</option>
-            <option value="downtime">🔌 سجل الانقطاعات</option>
-          </select>
-        </label>
         <label>مَسح الأَقدم من
           <select id="cleanup-range-select">
+            <!-- v2.7.x — أَضِيفَت خِيَارات أَصْغَر (2h, day) لِـ status_logs الَّذِي تَحوي بيانات
+                 أَحدث من أُسبوع غالباً؛ خِيَار «سنة» يُمكن أَن يُرجِع 0 لِأَنّ الجَدول صَغير عُمْراً. -->
+            <option value="2h">ساعتان</option>
+            <option value="day">24 ساعة (يَوم)</option>
             <option value="week">ٍ7 أَيام (أُسبوع)</option>
             <option value="month">30 يوم (شهر)</option>
             <option value="year">365 يوم (سنة)</option>
@@ -685,6 +716,20 @@
       <div class="confirm-modal-actions">
         <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
         <button type="button" id="cleanup-select-ok-btn" class="btn btn-danger" title="تأكيد المسح">🗑️ تَأكيد المَسح</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== modal تأكيد موحّد (v2.7.0 — PG) — يُملأ ديناميكياً من confirmAction() ===== -->
+  <!-- مُلاحظة: يَجب أن يَأتي بَعد باقي modals في DOM لِيَظهر فوقها عند تَراكمها
+       (نفس .confirm-modal / z-index 2000 — آخر عنصر في DOM يَفوز في التَرتيب الطبقي). -->
+  <div id="confirm-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="confirm-modal-content">
+      <h3 class="confirm-modal-title" id="confirm-modal-title">—</h3>
+      <p class="confirm-modal-message" id="confirm-modal-message">—</p>
+      <div class="confirm-modal-actions">
+        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد">✓ تأكيد</button>
       </div>
     </div>
   </div>

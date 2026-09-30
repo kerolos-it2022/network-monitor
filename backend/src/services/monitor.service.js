@@ -137,6 +137,22 @@ function startMonitoring() {
     }
   });
   console.log('Monitoring engine started (every 10s tick).');
+
+  // v2.7.x — مَسح آلِي يَوْمِي لِـ status_logs (الجَدول الَّذِي يَنمو بِـ ~354 أَلْف صَف/يَوم).
+  // الاحتفاظ بِـ آخر STATUS_LOGS_RETENTION_DAYS أَيام (افتراضِيّاً 7) لِـ الرسوم البيانية/Uptime.
+  // يَعمل عِند 03:00 مَحلِيّاً يَوْمياً. busy_timeout=5000 (db.js) يَتَكَفَّل تَزاحُم كِتاَبٍ وَراء كَوال
+  // مَع cron الـ 10 ثَوانٍ. لَا يُشَغِّل VACUUM (ضَرُورِي بِشَكْل يَوْمِي فَقَط عِند تَفْرِيغ الكُلّ).
+  cron.schedule('0 3 * * *', () => {
+    try {
+      const retentionDays = parseInt(process.env.STATUS_LOGS_RETENTION_DAYS, 10) || 7;
+      const cutoff = new Date(Date.now() - retentionDays * 86400000).toISOString();
+      const info = db.prepare('DELETE FROM status_logs WHERE checked_at < ?').run(cutoff);
+      console.log(`[auto-cleanup] status_logs: deleted ${info.changes} rows older than ${retentionDays} day(s) (cutoff ${cutoff}).`);
+    } catch (e) {
+      console.error('[auto-cleanup] status_logs cleanup error:', e);
+    }
+  });
+  console.log('Daily status_logs auto-cleanup scheduled (03:00 local, retention = ' + (parseInt(process.env.STATUS_LOGS_RETENTION_DAYS, 10) || 7) + ' days).');
 }
 
 module.exports = { startMonitoring };

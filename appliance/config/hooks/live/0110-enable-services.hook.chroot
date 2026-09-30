@@ -1,0 +1,14 @@
+#!/bin/sh
+# 0110-enable-services.hook.chroot — تفعيل الخدمات داخل النظام المبني.
+set -e
+
+# خدمة المشروع + nginx + جدار nftables
+systemctl enable network-monitor.service 2>/dev/null || true
+systemctl enable nginx 2>/dev/null || true
+systemctl enable nftables 2>/dev/null || true
+
+# تفعيل موقع nginx الخاص بالمشروع وتعطيل الافتراضي.
+if [ -d /etc/nginx/sites-enabled ]; then
+  ln -sf /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/network-monitor
+  rm -f /etc/nginx/sites-enabled/default
+fi

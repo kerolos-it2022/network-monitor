@@ -98,13 +98,15 @@ function renderDevices(devicesList) {
     const badgeClass = 'badge-' + sc;
 
     // بناء رابط الواجهة إذا كان الجهاز يدعم HTTP/HTTPS (فحص تلقائي)
+    // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444).
+    var portSuffix = d.web_port ? ':' + d.web_port : '';
     var openBtnHtml = '';
     if (d.https_accessible == 1) {
-      var url = 'https://' + d.ip + '/';
-      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTPS)" type="button">🔒 فتح HTTPS</button>';
+      var url = 'https://' + d.ip + portSuffix + '/';
+      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTPS' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')" type="button">🔒 فتح HTTPS</button>';
     } else if (d.http_accessible == 1) {
-      var url = 'http://' + d.ip + '/';
-      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTP)" type="button">🌐 فتح HTTP</button>';
+      var url = 'http://' + d.ip + portSuffix + '/';
+      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTP' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')" type="button">🌐 فتح HTTP</button>';
     }
 
     const card = document.createElement('div');
@@ -145,13 +147,15 @@ function renderTable(devicesList) {
   for (const d of devicesList) {
     const dot = statusDotClass(d);
     // بناء رابط الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
+    // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444).
+    const tPortSuffix = d.web_port ? ':' + d.web_port : '';
     let openBtnHtml = '';
     if (d.https_accessible == 1) {
-      const url = 'https://' + d.ip + '/';
-      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS)">🔒 فتح HTTPS</button>';
+      const url = 'https://' + d.ip + tPortSuffix + '/';
+      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
     } else if (d.http_accessible == 1) {
-      const url = 'http://' + d.ip + '/';
-      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP)">🌐 فتح HTTP</button>';
+      const url = 'http://' + d.ip + tPortSuffix + '/';
+      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
     }
     const tr = document.createElement('tr');
     tr.className = 'public-row';
@@ -183,19 +187,45 @@ function renderTable(devicesList) {
   }
 }
 
-// ====== \u0645\u0644\u062e\u0635 \u0634\u0631\u064a\u0637 \u0639\u0644\u0648\u064a ======
+// ====== \u0645\u0644\u062e\u0635 \u0634\u0631\u064a\u0637 \u0639\u0644\u0648\u064a + \u0634\u0631\u064a\u0637 \u0646\u0650\u0633\u0628\u0629 \u0627\u0644\u062a\u064e\u0634\u063a\u064a\u0644 ======
 function updateSummaryBar(devicesList) {
   const total = devicesList.length;
   const online = devicesList.filter(function (d) { return d.current_status === 'online'; }).length;
   const offline = devicesList.filter(function (d) { return d.current_status === 'offline'; }).length;
   document.getElementById('summary-bar').textContent =
     '\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: ' + total + '  \u2022  \u0645\u062a\u0635\u0644: ' + online + '  \u2022  \u0645\u062a\u0648\u0642\u0641: ' + offline;
+
+  // v2.7.5 — تحديث شريط نِسبة التَشغيل في عرض البطاقات والجدول (نفس أسلوب map-uptime-bar).
+  updateUptimeBars(total, online, offline);
+}
+
+function updateUptimeBars(total, online, offline) {
+  var unknown = total - online - offline;
+  var ids = ['cards-uptime-bar', 'table-uptime-bar'];
+  for (var i = 0; i < ids.length; i++) {
+    var bar = document.getElementById(ids[i]);
+    if (!bar) continue;
+    if (total <= 0) {
+      bar.innerHTML = '<span class="uptime-text">\u0644\u0627 \u0623\u062c\u0647\u0632\u0629 \u0644\u0650\u0640 \u062d\u0650\u0633\u0627\u0628 \u0627\u0644\u0646\u0650\u0633\u0628\u0629.</span>';
+      continue;
+    }
+    var pct = Math.round((online / total) * 1000) / 10;
+    var pctClass = pct >= 90 ? '' : (pct >= 50 ? 'mid' : 'low');
+    bar.innerHTML =
+      '<div class="uptime-bar"><div class="uptime-fill" style="width:' + pct + '%"></div></div>' +
+      '<span class="uptime-text">\u0646\u0650\u0633\u0628\u0629 \u0627\u0644\u062a\u064e\u0634\u063a\u064a\u0644: \ud83d\udfe2 <span class="uptime-pct ' + pctClass + '">' + pct + '%</span> ' +
+      '(' + online + '/' + total + ' \u0645\u062a\u0635\u0644' +
+      (offline > 0 ? ' \u2014 \ud83d\udd34 ' + offline + ' \u0645\u062a\u0648\u0642\u0641' : '') +
+      (unknown > 0 ? ' \u2014 \u26aa ' + unknown + ' \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641' : '') +
+      ')</span>';
+  }
 }
 
 // ====== \u0627\u0644\u062a\u0628\u062f\u064a\u0644 \u0628\u064a\u0646 \u0627\u0644\u0646\u0645\u0637\u064a\u0646 ======
 function switchView(view) {
   currentView = view;
   var cardsWrap = document.getElementById('devices-grid');
+  var cardsBar = document.getElementById('cards-uptime-bar');
   var tableWrap = document.getElementById('devices-table-view');
   var mapWrap = document.getElementById('map-view');
   var cardsBtn = document.getElementById('view-cards-btn');
@@ -204,6 +234,7 @@ function switchView(view) {
 
   // v2.6.0: إِخفاء كُلّ الأَنماط أَوّلًا، ثُمّ إِظهار المُحدَّد.
   if (cardsWrap) cardsWrap.classList.add('hidden');
+  if (cardsBar) cardsBar.classList.add('hidden');
   if (tableWrap) tableWrap.classList.add('hidden');
   if (mapWrap) mapWrap.classList.add('hidden');
   if (cardsBtn) cardsBtn.classList.remove('active');
@@ -221,6 +252,7 @@ function switchView(view) {
     if (window.PublicMapView) window.PublicMapView.activate();
   } else {
     if (cardsWrap) cardsWrap.classList.remove('hidden');
+    if (cardsBar) cardsBar.classList.remove('hidden');
     if (cardsBtn) cardsBtn.classList.add('active');
     applyFilters();
     if (window.PublicMapView) window.PublicMapView.deactivate();

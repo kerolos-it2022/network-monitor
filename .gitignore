@@ -45,3 +45,12 @@ database/corrupt_*/
 # Root-level package-lock (npm files belong to backend/)
 /package-lock.json
 
+
+# Appliance build artifacts (live-build output)
+appliance/.build/
+appliance/build.log
+appliance/live-image-*
+appliance/*.iso
+
+# GUI test screenshots (local testing artifacts)
+gui-test-screenshots/

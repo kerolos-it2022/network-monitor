@@ -173,14 +173,19 @@ function resetLocationForm() {
   populateParentSelect(null); // لإِضافة جديد: لا تَستثني أَحدًا.
 }
 
-async function editLocation(loc) {
-  // v2.7.1 (مَطلب 5) — تَأكيد قبل فتح نموذج التعديل.
-  const ok = await confirmAction({
-    title: 'تَأكيد التعديل',
-    message: 'هل تريد تعديل الموقع: ' + (loc.name || ('#' + loc.id)) + '؟',
-    confirmText: '✓ متابعة التعديل',
+// v2.7.4 — فتح popup modal لإِضافة موقع جديد (بَدل form-card المضمّن).
+function openLocationForm() {
+  resetLocationForm();
+  document.getElementById('location-form-title').textContent = 'إضافة موقع';
+  openEditModal(document.getElementById('location-modal'), {
+    focusSelector: '#loc-name',
+    onClose: () => resetLocationForm(),
   });
-  if (!ok) return;
+}
+
+async function editLocation(loc) {
+  // v2.7.4 — نَقل النموذج من inline إلى popup modal: لا حاجة لتَأكيد قبل الفتح
+  // (الـ popup بِأَصلِه نيّة تَعديل). نَعبّئ الحقول ثُمّ نَفتح modal.
   document.getElementById('location-form-id').value = loc.id;
   document.getElementById('loc-name').value = loc.name || '';
   const kindSel = document.getElementById('loc-kind');
@@ -191,6 +196,11 @@ async function editLocation(loc) {
   // v2.7.1 — ملء حقل التَرتيب من بيانات الموقع.
   const sortEl = document.getElementById('loc-sort-order');
   if (sortEl) sortEl.value = (loc.sort_order != null) ? String(loc.sort_order) : '';
+  document.getElementById('location-form-title').textContent = 'تعديل موقع #' + loc.id;
+  openEditModal(document.getElementById('location-modal'), {
+    focusSelector: '#loc-name',
+    onClose: () => resetLocationForm(),
+  });
 }
 
 async function saveLocation() {
@@ -233,6 +243,7 @@ async function saveLocation() {
   });
   if (r.success) {
     resetLocationForm();
+    closeEditModal(document.getElementById('location-modal'));
     await loadLocations();
     // تحديث قائمة المواقع في نموذج الجهاز + فلتر devices إن كان مُحمَّلاً.
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
@@ -313,17 +324,26 @@ function resetTypeForm() {
   document.getElementById('type-icon').value = '';
 }
 
-async function editType(t) {
-  // v2.7.1 (مَطلب 5) — تَأكيد قبل فتح نموذج التعديل.
-  const ok = await confirmAction({
-    title: 'تَأكيد التعديل',
-    message: 'هل تريد تعديل النوع: ' + (t.name || ('#' + t.id)) + '؟',
-    confirmText: '✓ متابعة التعديل',
+// v2.7.4 — فتح popup modal لإِضافة نوع جديد (بَدل form-card المضمّن).
+function openTypeForm() {
+  resetTypeForm();
+  document.getElementById('type-form-title').textContent = 'إضافة نوع';
+  openEditModal(document.getElementById('type-modal'), {
+    focusSelector: '#type-name',
+    onClose: () => resetTypeForm(),
   });
-  if (!ok) return;
+}
+
+async function editType(t) {
+  // v2.7.4 — نَقل النموذج من inline إلى popup modal: لا حاجة لتَأكيد قبل الفتح.
   document.getElementById('type-form-id').value = t.id;
   document.getElementById('type-name').value = t.name;
   document.getElementById('type-icon').value = t.icon || '';
+  document.getElementById('type-form-title').textContent = 'تعديل نوع #' + t.id;
+  openEditModal(document.getElementById('type-modal'), {
+    focusSelector: '#type-name',
+    onClose: () => resetTypeForm(),
+  });
 }
 
 async function saveType() {
@@ -349,6 +369,7 @@ async function saveType() {
   });
   if (r.success) {
     resetTypeForm();
+    closeEditModal(document.getElementById('type-modal'));
     await loadTypes();
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
     showToast('✅ تَم حِفظ النوع', { type: 'success' });
@@ -380,9 +401,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadTypes();
 
   document.getElementById('loc-save-btn').addEventListener('click', saveLocation);
-  document.getElementById('loc-cancel-btn').addEventListener('click', resetLocationForm);
+  document.getElementById('loc-cancel-btn').addEventListener('click', () => closeEditModal(document.getElementById('location-modal')));
   document.getElementById('type-save-btn').addEventListener('click', saveType);
-  document.getElementById('type-cancel-btn').addEventListener('click', resetTypeForm);
+  document.getElementById('type-cancel-btn').addEventListener('click', () => closeEditModal(document.getElementById('type-modal')));
+
+  // v2.7.4 — أَزرار الإِضافة الجديدة تَفتح popup modal فارغ.
+  const addLocationBtn = document.getElementById('add-location-btn');
+  if (addLocationBtn) addLocationBtn.addEventListener('click', openLocationForm);
+  const addTypeBtn = document.getElementById('add-type-btn');
+  if (addTypeBtn) addTypeBtn.addEventListener('click', openTypeForm);
 
   // مستمع تغيير الترتيب للمواقع
   const sortLocationsEl = document.getElementById('filter-sort-locations');

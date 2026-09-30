@@ -1,0 +1,25 @@
+[Unit]
+Description=Network Monitor — خدمة المراقبة (appliance)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=netmon
+Group=netmon
+WorkingDirectory=/opt/network-monitor/backend
+ExecStart=/usr/bin/node src/server.js
+Environment=NODE_ENV=production
+Environment=PORT=4001
+# ملف بيئة يُولَّد في التثبيت: DB_PATH + SESSION_SECRET
+EnvironmentFile=-/var/lib/network-monitor/env
+Restart=always
+RestartSec=3
+# تأمين بسيط للخدمة.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/network-monitor
+
+[Install]
+WantedBy=multi-user.target

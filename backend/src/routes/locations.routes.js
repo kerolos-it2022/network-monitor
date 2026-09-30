@@ -58,6 +58,40 @@ router.get('/', (req, res) => {
   return res.json({ success: true, data: rows });
 });
 
+// POST /api/locations/reorder  🔒 (v2.7.3)
+// إِعادة تَرتيب المواقع دَفعةً واحدة (لِـ تَحريكها أَعلى/أَسفل في واجهة المواقع + خريطة
+// المواقع تَظهر «مَتّصلة على التَوالي» بِـ تَرتيب المُستخدم).
+// body: { updates: [{ id, sort_order }, ...] }
+// يُحدِّث column sort_order فقط (لا يَمسّ name/parent_id/kind) داخل معاملة واحدة
+// (transaction) لِضمان اتّساق التَرتيب. يَتجاوز قيد name المُعتاد في PUT /:id.
+router.post('/reorder', requireAuth, (req, res) => {
+  const updates = req.body && Array.isArray(req.body.updates) ? req.body.updates : null;
+  if (!updates || updates.length === 0) {
+    return res.status(400).json({ success: false, error: 'updates قائمة غير صالحة' });
+  }
+  // تَحقق سريع من صِحة كلّ عنصر (id رقم موجب + sort_order رقم نسبي).
+  for (const u of updates) {
+    const idOk = u && Number.isFinite(Number(u.id)) && Number(u.id) > 0;
+    const soOk = u && Number.isFinite(Number(u.sort_order));
+    if (!idOk || !soOk) {
+      return res.status(400).json({ success: false, error: 'عنصر غير صالح في updates (id/sort_order)' });
+    }
+  }
+  // معاملة واحدة لِـ تَطبيق كّل التَحديثات أَو لا شيء.
+  const stmt = db.prepare('UPDATE locations SET sort_order = ? WHERE id = ?');
+  try {
+    db.transaction(() => {
+      for (const u of updates) {
+        stmt.run(Number(u.sort_order), Number(u.id));
+      }
+    })();
+    return res.json({ success: true, data: { updated: updates.length } });
+  } catch (e) {
+    console.error('[LOCATIONS] /reorder error:', e.message);
+    return res.status(500).json({ success: false, error: 'فشل إِعادة التَرتيب', detail: e.message });
+  }
+});
+
 // POST /api/locations  🔒
 router.post('/', requireAuth, (req, res) => {
   const { name, parent_id, kind, sort_order } = req.body || {};

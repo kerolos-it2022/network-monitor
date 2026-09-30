@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS devices (
     location_id INTEGER,
     check_protocol TEXT NOT NULL DEFAULT 'ping', -- 'ping' | 'port' | 'http' | 'https'
     port INTEGER,                                 -- مطلوب فقط إذا check_protocol = 'port'
+    web_port INTEGER,                             -- بورت واجهة الويب المخصص (اختياري — مثل 4444) لزر «فتح»
     check_interval_seconds INTEGER NOT NULL DEFAULT 30,
     failure_threshold INTEGER NOT NULL DEFAULT 3,
     is_active INTEGER NOT NULL DEFAULT 1,          -- 1 = مفعّل للمراقبة، 0 = موقوف مؤقتاً

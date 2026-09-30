@@ -33,6 +33,12 @@ let mapStatusFilter = '';
 // مُؤقّتات debounce: search + toast.
 let mapSearchHandle = null;
 let mapToastHandle = null;
+// v2.7.4 — حالة السَحب والإِفلات لإعادة تَرتيب بطاقات zones.
+// mapDragging: true أَثناء جلسة سَحب جارية (يَتعطّل auto-refresh فيها).
+// mapDraggedId: id البطاقة المَسحُوبة. mapDragOverId: id البطاقة المستهدفة (لِـ feedback).
+let mapDragging = false;
+let mapDraggedId = null;
+let mapDragOverId = null;
 
 // أيقونات أنواع المواقع (هرم الشبكة المُدمَج).
 const KIND_ICON = {
@@ -41,6 +47,10 @@ const KIND_ICON = {
 };
 
 // أَلوان عُقد الجهاز من متغيرات CSS (تَتلاءم مع الثيم الليلي) مع fallback.
+// ملاحظة: cssVar() تُرجِع القيمة المَحلولة لحظياً (مَلائمة لِـ canvas/svg أَو قِراءة
+// عابرة)، لكن لا تَصلح لِـ تَخزينها inline على عُقدة ما زالت في الـ DOM — لو تَغيّر
+// الثيم لاحقاً تَبقى القيمة القديمة. لِذلك تَستعمل renderZoneCard() مراجع var()
+// الثابتة من kindColorRef()/locationBorderColorRef() بالأسفل لِـ inline styles.
 function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
@@ -52,23 +62,25 @@ function deviceColor(status) {
 }
 
 // لون خلفية عُقدة موقع بحسب kind.
-// v2.7.1: نَستَعمل متغيّرات CSS (تَتكيّف مع الثيم الليلي) بدَل rgba ثابت لِـ تَناسُق
-// الوَضع الليلي في الـ grid. fallback لِـ قيم واضحة لو الـ var غَاب.
+// v2.7.3: تُعيد مَرجع var() النصّي (لا القيمة المَحلولة) حتى لو تَغيّر الثيم
+// لاحقاً (نهاري↔ليلي) تَتَكيّف البطاقة آلياً. fallback يُمرَّر داخل var() لِـ ثيم بلا
+// المتغيّر. (سابقاً cssVar() كان يَحل القيمة عند الرَسم فتَثبت خلفية #ffffff على
+// بطاقات site/building حتى في الوَضع الليلي — كان سَبب تَناقُق الأَلوان في الـ grid.)
 function kindColor(kind) {
   switch (kind) {
-    case 'internet': return cssVar('--zone-internet-bg', 'rgba(37, 99, 235, 0.18)');
-    case 'zone':     return cssVar('--zone-bg', 'rgba(234, 179, 8, 0.18)');
-    case 'unassigned': return cssVar('--zone-unassigned-bg', 'rgba(156, 163, 175, 0.18)');
-    default: return cssVar('--card-bg', '#ffffff');          // site/building/... → خلفية عادية
+    case 'internet':   return 'var(--zone-internet-bg, rgba(37, 99, 235, 0.18))';
+    case 'zone':       return 'var(--zone-bg, rgba(234, 179, 8, 0.18))';
+    case 'unassigned': return 'var(--zone-unassigned-bg, rgba(156, 163, 175, 0.18))';
+    default:           return 'var(--card-bg, #ffffff)';   // site/building/floor/room/rack
   }
 }
 
-// لون إطار عُقدة موقع بحسب تَلخيص أَجهزته.
+// لون إطار عُقدة موقع بحسب تَلخيص أَجهزته (مَرجع var() لِـ تَكيّف الثيم).
 function locationBorderColor(node) {
-  if (!node) return '#ccc';
-  if (node.offline > 0) return cssVar('--offline', '#ef4444');
-  if (node.device_count > 0 && node.online === node.device_count) return cssVar('--online', '#22c55e');
-  return '#9e9e9e';
+  if (!node) return 'var(--border, #ccc)';
+  if (node.offline > 0) return 'var(--offline, #ef4444)';
+  if (node.device_count > 0 && node.online === node.device_count) return 'var(--online, #22c55e)';
+  return 'var(--border, #9e9e9e)';
 }
 
 // جَلب الشجرة من الـ API.
@@ -202,10 +214,11 @@ function renderZonesGrid(rootData) {
     if (kept.length > 0) orphanCardCount = 1;
   }
   const setSize = keptZoneKids.length + orphanCardCount;
-  let cards = keptZoneKids
-    .map((c, i) => renderZoneCard(c, { posinset: i + 1, setsize: setSize }))
-    .join('');
-  // إِضافة بطاقة مَخصَّصة لِـ الأَجهزة المُيَتِّمَة (devices في جذر internet بِلا zone).
+  // v2.7.5 — بطاقة «أَجهزة مَدخل الإنترنت» ثابتة في الأَول دائماً (لا تُحرَّك).
+  // نَبنيها قَبل zones لِـ تُدرَج في أَول cards، ونُحدّث posinset للـ zones لِـ تَبقى
+  // مُتسلسلة بَعدَها (start=2) أَمام a11y.
+  let orphanHtml = '';
+  let orphanCount = 0;
   if (orphanDevices.length > 0) {
     const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
     if (kept.length > 0) {
@@ -220,10 +233,17 @@ function renderZonesGrid(rootData) {
         children: kept,
         _orphan: true,
       };
-      // نُدرِجها في الأَخير لِـ تَظهَر بَعد zones في الأَسفل.
-      cards += renderZoneCard(orphanNode, { posinset: setSize, setsize: setSize });
+      orphanHtml = renderZoneCard(orphanNode, { posinset: 1, setsize: setSize });
+      orphanCount = 1;
     }
   }
+  // zones تُعرَض بَعْد البطاقة الصِناعيّة (posinset يَبدأ من 2 لو وُجدت).
+  const start = orphanCount > 0 ? 2 : 1;
+  let cards = keptZoneKids
+    .map((c, i) => renderZoneCard(c, { posinset: start + i, setsize: setSize }))
+    .join('');
+  // نُدرِج البطاقة الصِناعيّة في الأَول (قَبل zones).
+  cards = orphanHtml + cards;
   return cards;
 }
 
@@ -238,11 +258,15 @@ function renderZoneCard(node, opts) {
   const collapsedNow = !hasActiveFilters() && isCollapsed(node);
 
   // لون الخلفية/الإِطار (نَفس منطق v2.5.5 عَلى عُقد الشَجِرة).
+  // v2.7.3: تُعَيد now مراجع var() تَتَكيّف عِند تَبديل الثيم (نهاري/ليلي) دون
+  // إِعادة رَسم — كان السَبب الجذري لتَناقُق خلفية #ffffff الثابتة في الوَضع الليلي.
   const bg = kindColor(kind);
   let border = locationBorderColor(node);
   let borderW = (node.offline > 0) ? '2px' : '1px';
-  if (kind === 'internet') border = '#2563eb';
-  if (kind === 'zone') border = '#eab308';
+  // الأَنواع ذات الإِطار المُميَّز: نَستَعمل مراجع var() على الأَلوان الثيم (تَتَكيّف
+  // مع نهاري/ليلي) بدَل أَلوان ثابتة #2563eb/#eab308 التي لا تُقِلّ في الوَضع الليلي.
+  if (kind === 'internet') border = 'var(--accent, #2563eb)';
+  if (kind === 'zone')     border = 'var(--warning, #eab308)';
 
   // الإِحصائيات في التَرويسة.
   const dc = node.device_count || 0;
@@ -262,8 +286,13 @@ function renderZoneCard(node, opts) {
     ? ` aria-posinset="${opts.posinset}" aria-setsize="${opts.setsize}"`
     : '';
 
+  // v2.7.4 — السَحب والإِفلات: البطاقات الحقيقية قابِلة للسَحب (draggable="true")؛
+  // البطاقات الصِناعيّة (kind-unassigned مثل «أَجهزة مَدخل الإنترنت» أَو id رقمي مَفقود)
+  // لا تُسحَب — لا row تَحدّثه في DB (لا id رقمي). draggable="false" يَمنع الـ DnD.
+  const draggable = !isUnassigned && node.id != null && typeof node.id === 'number' ? 'true' : 'false';
+
   return `
-    <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"${ariaSet}
+    <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"${ariaSet} draggable="${draggable}"
              style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
       <div class="map-zone-header" title="${esc(nodeTooltip(node))}">
         <span class="map-zone-icon">${icon}</span>
@@ -519,6 +548,156 @@ function bindNodeEvents(container) {
     if (tabBtn) tabBtn.click();
     window.dispatchEvent(new CustomEvent('map:filter-location', { detail: { location_id: id } }));
   });
+
+  // ═══ v2.7.4 — السَحب والإِفلات لإعادة تَرتيب بطاقات zones ═══
+  // تَعطيل السَحب عند وجود فلتر بحث/حالة فعّال (إِبقاء DOM متّسقاً مَع nodeKeptByFilters).
+  // البطاقات الصِناعيّة (kind-unassigned / orphan-internet-devices) غير قابِلة للسَحب.
+  container.addEventListener('dragstart', (event) => {
+    const card = event.target.closest('.map-zone-card');
+    if (!card) { event.preventDefault(); return; }
+    // فلتر فعّال → لا سَحب (إِبقاء DOM متّسقاً مع الفلترة).
+    if (hasActiveFilters()) {
+      event.preventDefault();
+      showMapToast('⚠️ اِمسح الفلترة أَولاً لإِعادة التَرتيب', 3000);
+      return;
+    }
+    // البطاقات غير القابِلة للسَحب: الصِناعيّة (لا id رقمي).
+    const kind = card.dataset.kind;
+    const id = String(card.dataset.id);
+    if (kind === 'unassigned' || id === 'orphan-internet-devices' || !/^\d+$/.test(id)) {
+      event.preventDefault();
+      return;
+    }
+    mapDragging = true;
+    mapDraggedId = id;
+    card.classList.add('dragging');
+    container.classList.add('reordering');
+    event.dataTransfer.effectAllowed = 'move';
+    try { event.dataTransfer.setData('text/plain', id); } catch (_) { /* بعض المتصفّحات لا تَسمَح */ }
+    // إِيقاف auto-refresh مؤقّتًا أَثناء السَحب.
+    if (mapAutoRefreshHandle) { clearInterval(mapAutoRefreshHandle); mapAutoRefreshHandle = null; }
+  });
+
+  container.addEventListener('dragover', (event) => {
+    if (!mapDragging) return;
+    const card = event.target.closest('.map-zone-card');
+    if (!card) return;
+    const kind = card.dataset.kind;
+    const id = String(card.dataset.id);
+    // لا يُسمَح بالإِفلات على البطاقة نفسها أَو الصِناعيّة.
+    if (id === mapDraggedId || kind === 'unassigned' || id === 'orphan-internet-devices' || !/^\d+$/.test(id)) return;
+    event.preventDefault();   // سَماح بالإِفلات.
+    event.dataTransfer.dropEffect = 'move';
+    // رَفع drag-over القَديم قبل وَضع الجَديد (بَطاقة وَاحِدة فقط highlight).
+    if (mapDragOverId && mapDragOverId !== id) {
+      const prev = container.querySelector(`:scope > .map-zone-card[data-id="${mapDragOverId}"]`);
+      if (prev) prev.classList.remove('drag-over');
+    }
+    card.classList.add('drag-over');
+    mapDragOverId = id;
+  });
+
+  container.addEventListener('dragleave', (event) => {
+    const card = event.target.closest('.map-zone-card');
+    if (!card) return;
+    // نَرفع drag-over فقط لو غادَرنا البطاقة المُسجّلة (تَجنّب الوميض بَين أَبناء البطاقة).
+    if (mapDragOverId && card.dataset.id === mapDragOverId && !card.contains(event.relatedTarget)) {
+      card.classList.remove('drag-over');
+      if (mapDragOverId === card.dataset.id) mapDragOverId = null;
+    }
+  });
+
+  container.addEventListener('drop', async (event) => {
+    if (!mapDragging) return;
+    event.preventDefault();
+    const dropCard = event.target.closest('.map-zone-card');
+    if (!dropCard) return;
+    const dropId = String(dropCard.dataset.id);
+    if (dropId === mapDraggedId) return;   // لا تَغيير.
+    // v2.7.5 — البطاقة الصِناعيّة (أَجهزة مَدخل الإنترنت) ثابتة في الأَول؛ لا إِفلات عَلَيها
+    // ولا إِدخال أَمامها (dropCard المرجع = البطاقة الصِناعيّة يَعني إِدراج dragCard قَبلها).
+    if (dropId === 'orphan-internet-devices' || !/^\d+$/.test(dropId)) return;
+    const dragCard = container.querySelector(`:scope > .map-zone-card[data-id="${mapDraggedId}"]`);
+    if (!dragCard) return;
+    // إِعادة تَرتيب DOM: إِدراج dragCard قَبل dropCard (أَو appendChild لو هي الأَخيرة
+    // إِلّا أَنّ insertBefore(null) يُكافئ appendChild — نُمرِّر dropCard كـ reference).
+    container.insertBefore(dragCard, dropCard);
+    await saveMapReorder(container);
+  });
+
+  container.addEventListener('dragend', () => {
+    // تَنظيف بَطاقيّ (dragging/drag-over) من كُلّ البطاقات.
+    container.querySelectorAll(':scope > .map-zone-card').forEach((c) => {
+      c.classList.remove('dragging');
+      c.classList.remove('drag-over');
+    });
+    container.classList.remove('reordering');
+    mapDragging = false;
+    mapDraggedId = null;
+    mapDragOverId = null;
+    // إِعادة تَفعيل auto-refresh (نُعيد جَدوَلته كَما في MutationObserver).
+    const section = document.getElementById('section-map');
+    if (section && !section.classList.contains('hidden') && !mapAutoRefreshHandle) {
+      // loadMap مَرّةً واحدة الآن (لِـ جَلب أَحدث شَجِرة بَعد التَرتيب الجَديد) ثُمّ polling.
+      loadMap().catch(() => {});
+      mapAutoRefreshHandle = setInterval(() => loadMap().catch(() => {}), 30000);
+    }
+  });
+}
+
+// ═══ v2.7.4 — حفظ التَرتيب الجَديد بَعد السَحب والإِفلات ═══
+// يَستَخرج التَرتيب الحالي من DOM (cards عالية المستوى، باستثناء الصِناعيّة)، يُرسله
+// إِلى POST /api/locations/reorder، ثُمّ يُعيد جَلب الشَجِرة و رَسمها (لِـ تَحديث التَرقيم
+// 01/02… و السَهم ↣ آلياً). عند الفَشل يَعمل rollback بَصري عبر renderTree(mapRootData).
+async function saveMapReorder(container) {
+  const cards = container.querySelectorAll(
+    ':scope > .map-zone-card:not(.kind-unassigned):not([data-id="orphan-internet-devices"])'
+  );
+  const updates = [...cards]
+    .map((card, i) => {
+      const id = Number(card.dataset.id);
+      if (!Number.isFinite(id)) return null;   // تَخطّي غَير الرقميّة (أَمان).
+      return { id, sort_order: i };
+    })
+    .filter(Boolean);
+
+  if (updates.length === 0) return;   // لا شيء لِـ حفظه.
+
+  showMapToast('⏳ جاري حفظ التَرتيب الجَديد…', 2000);
+
+  let ok = false;
+  let errCode = null;
+  try {
+    const r = await api('/api/locations/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates }),
+    });
+    ok = !!(r && r.success);
+    if (!ok) errCode = r && r.code;
+  } catch (e) {
+    ok = false;
+  }
+
+  if (ok) {
+    // نجاح: إِعادة جَلب الشَجِرة + رَسم (يُحدِّث التَرقيم و السَهم آلياً).
+    const fresh = await fetchTree();
+    if (fresh) {
+      mapRootData = fresh;
+      renderTree(mapRootData);
+      showMapToast('✅ تم حفظ التَرتيب الجَديد', 2000);
+    } else {
+      // جَلب الأَحدث فَشل، لكن الحفظ نجح — نَكتفي بالأَمر الحاليّ.
+      showMapToast('✅ تم حفظ التَرتيب', 2000);
+    }
+  } else {
+    // فَشل الحفظ: rollback بَصري إِلى التَرتيب المَخزُون server-side.
+    showMapToast('❌ فَشل حفظ التَرتيب', 3000);
+    const fresh = await fetchTree();
+    if (fresh) { mapRootData = fresh; renderTree(mapRootData); }
+    else if (mapRootData) renderTree(mapRootData);   // rollback لِـ ما في الذاكرة.
+    if (errCode) console.warn('[MAP] reorder failed:', errCode);
+  }
 }
 
 // تَحميل + رَسم.

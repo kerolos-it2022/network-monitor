@@ -19,7 +19,7 @@ const DEVICE_SELECT = `
     dt.name AS device_type_name,
     d.location_id,
     l.name AS location_name,
-    d.check_protocol, d.port,
+    d.check_protocol, d.port, d.web_port,
     d.check_interval_seconds, d.failure_threshold, d.is_active,
     d.current_status, d.http_accessible, d.https_accessible,
     d.last_response_time_ms, d.last_checked_at
@@ -107,18 +107,22 @@ router.get('/:id/history', (req, res) => {
 
 // POST /api/devices/cleanup-history  🔒 (v2.7.0 — PF)
 // يَمسح أَحداث الانقطاع (downtime_events) المنتهية الأَقدم من المُدّة المُختارة.
-// body: { range: 'week' | 'month' | 'year' }
+// body: { range: '2h' | 'day' | 'week' | 'month' | 'year' | 'all' }
 // لا يَمسح الانقطاعات الجارية (ended_at IS NULL) — قَط past only.
+// v2.7.x — أَضِيفَت خِيَارات أَصْغَر (2h, day) و «all» لِالتَقْليص الفَورِي لِلجَداول الكَبِيرة.
 router.post('/cleanup-history', requireAuth, (req, res) => {
   const range = req.body && req.body.range;
-  const days = range === 'week' ? 7
-    : range === 'month' ? 30
-    : range === 'year' ? 365
+  const hours = range === '2h' ? 2
+    : range === 'day' ? 24
+    : range === 'week' ? 168
+    : range === 'month' ? 720
+    : range === 'year' ? 8760
+    : range === 'all' ? 0           // 0 ← cutoff = الآن ← DELETE كُلّ مَا هُو أَقدم من الآن
     : null;
-  if (days == null) {
-    return res.status(400).json({ success: false, error: 'range غير صالح (week|month|year)' });
+  if (hours == null) {
+    return res.status(400).json({ success: false, error: 'range غير صالح (2h|day|week|month|year|all)' });
   }
-  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+  const cutoff = new Date(Date.now() - hours * 3600000).toISOString();
   // أَعمدة الـ schema الفعلية: started_at/ended_at (لا start_at/end_at).
   // نَمسح فقط الأَحداث المنتهية (ended_at IS NOT NULL) الأَقدم من cutoff.
   const info = db.prepare(
@@ -130,11 +134,58 @@ router.post('/cleanup-history', requireAuth, (req, res) => {
   });
 });
 
+// POST /api/devices/cleanup-status-logs  🔒 (v2.7.3)
+// يَمسح نَقاط فحص الحالة (status_logs) الأَقدم من المُدّة المُختارة.
+// جدول status_logs يَكبر بِسرعة (نُقطة لكل دورة فحص لكل جهاز)، لذا يُهمّ تَقليصه دورياً.
+// body: { range: '2h' | 'day' | 'week' | 'month' | 'year' | 'all' }
+// ملاحظة: status_logs.checked_at مَخزَّن كـ TEXT ISO datetime — نُقارِنه بالـ cutoff ISO.
+//         invaded downtime_events (نَفس الـ schema يؤرّخ الانقطاعات على حدة).
+// v2.7.x — أَضِيفَت خِيَارات أَصْغَر (2h, day) + «all» (تَفْرِيغ كامل + VACUUM) لِـ
+//         الجَداول الكَبِيرة (status_logs يَنمو بِـ ~354 أَلْف صَف/يَوم). «all» يَستَعمل
+//         cutoff = now (DELETE كُلّ مَا هُو < الآن → يُفَرِّغ الجَدول بِالكامِل) ثُمّ VACUUM.
+router.post('/cleanup-status-logs', requireAuth, (req, res) => {
+  const range = req.body && req.body.range;
+  const hours = range === '2h' ? 2
+    : range === 'day' ? 24
+    : range === 'week' ? 168
+    : range === 'month' ? 720
+    : range === 'year' ? 8760
+    : range === 'all' ? 0           // 0 ← cutoff = الآن ← DELETE مَا هُو < الآن = كُلّ شَيء (يُفَرِّغ الجَدول)
+    : null;
+  if (hours == null) {
+    return res.status(400).json({ success: false, error: 'range غير صالح (2h|day|week|month|year|all)' });
+  }
+  const cutoff = new Date(Date.now() - hours * 3600000).toISOString();
+  // نَمسح نَقاط الفحص الأَقدم من cutoff (checked_at TEXT ISO).
+  const info = db.prepare(
+    'DELETE FROM status_logs WHERE checked_at < ?'
+  ).run(cutoff);
+  // ل «all» (تَفْرِيغ كامل): نُضِيف wal_checkpoint + VACUUM لِـ تَقليص حجم ملف DB فعلياً.
+  // VACUUM لا يَعمَل داخِل تَراكْشن (better-sqlite3 يَرْمِي)؛ نُنفِّذه خارِجه بِـ db.exec مُباشِرة.
+  // busy_timeout=5000 (db.js) يَتَكَفَّل تَزاحُم كِتاَبٍ وَراء كَوال النَّشِط مَع cron 10 ثَوانٍ.
+  let vacuumed = false;
+  if (range === 'all' && info.changes > 0) {
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+      db.exec('VACUUM');
+      vacuumed = true;
+    } catch (e) {
+      // VACUUM失败了 (ربما busy) ← لا نَكْسِر الـ request: الجَدول فُرِّغ بِالفِعل،
+      // نُبلِّغ أَنّ VACUUM فَشِل في JSON لِـ شَفافِيّة العَمَل و نَسْتَطِيع إِعادَته لاحِقاً.
+      console.warn('[cleanup-status-logs] VACUUM failed:', e.message);
+    }
+  }
+  return res.json({
+    success: true,
+    data: { deleted: info.changes, range, cutoff, vacuumed },
+  });
+});
+
 // POST /api/devices  🔒
 router.post('/', requireAuth, (req, res) => {
   const {
     name, ip, device_type_id, location_id,
-    check_protocol, port, check_interval_seconds, failure_threshold, is_active,
+    check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
   } = req.body || {};
 
   if (!name || !ip || !device_type_id) {
@@ -153,9 +204,9 @@ router.post('/', requireAuth, (req, res) => {
 
   const result = db.prepare(
     `INSERT INTO devices
-      (name, ip, device_type_id, location_id, check_protocol, port,
+      (name, ip, device_type_id, location_id, check_protocol, port, web_port,
        check_interval_seconds, failure_threshold, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     name,
     ip,
@@ -163,6 +214,7 @@ router.post('/', requireAuth, (req, res) => {
     location_id ?? null,
     check_protocol || 'ping',
     port ?? null,
+    web_port ?? null,
     check_interval_seconds ?? 30,
     failure_threshold ?? 3,
     is_active == null ? 1 : is_active
@@ -172,12 +224,19 @@ router.post('/', requireAuth, (req, res) => {
 
   // فحص تلقائي لبروتوكولات HTTP و HTTPS عند إضافة جهاز جديد
   // تنفيذ بشكل غير متزامن حتى لا يؤخر إرجاع الرد
+  // v2.7.5 — لو حُدِّد web_port نَفحص HTTP و HTTPS على هذا البورت فقط (واجهة على
+  // بورت مخصص مثل 4444)؛ وإلا البورتات الافتراضية 80/443 كما كان.
   (async () => {
     try {
-      const [httpRes, httpsRes] = await Promise.all([
-        checkHttp(ip, 80, 5000),
-        checkHttps(ip, 443, 5000),
-      ]);
+      const [httpRes, httpsRes] = Number(web_port) > 0
+        ? await Promise.all([
+            checkHttp(ip, Number(web_port), 5000),
+            checkHttps(ip, Number(web_port), 5000),
+          ])
+        : await Promise.all([
+            checkHttp(ip, 80, 5000),
+            checkHttps(ip, 443, 5000),
+          ]);
       db.prepare(
         'UPDATE devices SET http_accessible = ?, https_accessible = ? WHERE id = ?'
       ).run(httpRes.isOnline ? 1 : 0, httpsRes.isOnline ? 1 : 0, newDeviceId);
@@ -193,14 +252,14 @@ router.post('/', requireAuth, (req, res) => {
 // PUT /api/devices/:id  🔒
 router.put('/:id', requireAuth, (req, res) => {
   const { id } = req.params;
-  const existing = db.prepare('SELECT id FROM devices WHERE id = ?').get(id);
+  const existing = db.prepare('SELECT id, web_port FROM devices WHERE id = ?').get(id);
   if (!existing) {
     return res.status(404).json({ success: false, error: 'الجهاز غير موجود' });
   }
 
   const {
     name, ip, device_type_id, location_id,
-    check_protocol, port, check_interval_seconds, failure_threshold, is_active,
+    check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
   } = req.body || {};
 
   if (!name || !ip || !device_type_id) {
@@ -220,7 +279,7 @@ router.put('/:id', requireAuth, (req, res) => {
   db.prepare(
     `UPDATE devices SET
       name = ?, ip = ?, device_type_id = ?, location_id = ?,
-      check_protocol = ?, port = ?,
+      check_protocol = ?, port = ?, web_port = ?,
       check_interval_seconds = ?, failure_threshold = ?, is_active = ?
      WHERE id = ?`
   ).run(
@@ -230,11 +289,40 @@ router.put('/:id', requireAuth, (req, res) => {
     location_id ?? null,
     check_protocol || 'ping',
     port ?? null,
+    web_port ?? null,
     check_interval_seconds ?? 30,
     failure_threshold ?? 3,
     is_active == null ? 1 : is_active,
     id
   );
+
+  // v2.7.5 — لو تغيّر web_port (أُدخل/حُذِف/عُدِّل) نُعيد الفحص التلقائي لِـ HTTP/HTTPS
+  // على البورت الجديد (أو الافتراضي 80/443 لو حُذِف) — نفس نمط الفحص عند الإِضافة.
+  const oldWebPort = existing.web_port == null ? null : Number(existing.web_port);
+  const newWebPort = web_port == null || web_port === '' ? null : Number(web_port);
+  if (oldWebPort !== newWebPort) {
+    const deviceIp = ip;
+    const scanPort = newWebPort;
+    (async () => {
+      try {
+        const [httpRes, httpsRes] = scanPort > 0
+          ? await Promise.all([
+              checkHttp(deviceIp, scanPort, 5000),
+              checkHttps(deviceIp, scanPort, 5000),
+            ])
+          : await Promise.all([
+              checkHttp(deviceIp, 80, 5000),
+              checkHttps(deviceIp, 443, 5000),
+            ]);
+        db.prepare(
+          'UPDATE devices SET http_accessible = ?, https_accessible = ? WHERE id = ?'
+        ).run(httpRes.isOnline ? 1 : 0, httpsRes.isOnline ? 1 : 0, id);
+        console.log(`[AUTO-SCAN] Updated device ${id} (${deviceIp}): HTTP=${httpRes.isOnline}, HTTPS=${httpsRes.isOnline}`);
+      } catch (e) {
+        console.error(`[AUTO-SCAN] Error scanning updated device ${id} (${deviceIp}):`, e);
+      }
+    })();
+  }
 
   return res.json({ success: true, data: null });
 });

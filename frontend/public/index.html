@@ -22,7 +22,7 @@
   <header class="topbar">
     <div class="topbar-title">
       <h1>مراقبة أجهزة الشبكة</h1>
-      <a href="admin/login.html" class="admin-link">لوحة التحكم</a>
+      <a href="admin/login.html" class="admin-link" id="admin-link">لوحة التحكم</a>
     </div>
     <div id="summary-bar" class="summary-bar">جارٍ التحميل…</div>
     <button id="theme-toggle" class="theme-toggle" type="button">🌙 وضع ليلي</button>
@@ -62,6 +62,7 @@
         <input id="tools-ip-input" type="text" placeholder="أدخل IP أو اسم المضيف..." />
         <button id="tools-ping-btn" class="btn btn-primary" type="button" title="تنفيذ Ping">📡 Ping</button>
         <button id="tools-tracert-btn" class="btn btn-primary" type="button" title="تنفيذ Tracert">🌐 Tracert</button>
+        <button id="speedtest-btn" class="btn btn-primary" type="button" title="قياس سرعة الانترنت">⚡ قياس السرعة</button>
         <button id="tools-stop-btn" class="btn btn-danger hidden" type="button" title="إيقاف العملية">⏹ إيقاف</button>
         <button id="tools-clear-btn" class="btn hidden" type="button" title="مسح المخرجات">🗑️ مسح</button>
       </div>
@@ -74,10 +75,12 @@
 
     <!-- شبكة بطاقات الأجهزة (نمط البطاقات) -->
   <main>
+    <div id="cards-uptime-bar" class="map-uptime-bar" aria-live="polite" aria-atomic="true"></div>
     <div id="devices-grid" class="devices-grid"></div>
 
     <!-- نمط الجدول (مخفي افتراضياً) -->
     <div id="devices-table-view" class="hidden">
+      <div id="table-uptime-bar" class="map-uptime-bar" aria-live="polite" aria-atomic="true"></div>
       <table class="data-table">
         <thead>
           <tr>
@@ -117,6 +120,30 @@
     </div>
   </div>
 
+  <!-- ===== popup قياس سرعة الانترنت (v2.7.5) — القياس من المتصفح عبر Cloudflare ===== -->
+  <div id="speedtest-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button type="button" class="modal-close speedtest-close" aria-label="إغلاق" title="إغلاق">✕</button>
+      <h3>⚡ قياس سرعة الانترنت</h3>
+      <div class="st-server-row">
+        <label for="st-server">الخادم:</label>
+        <select id="st-server">
+          <option value="cloudflare">🟠 Cloudflare — قياس كامل (تنزيل + رفع)</option>
+          <option value="jsdelivr">🟣 jsDelivr CDN — تنزيل فقط</option>
+          <option value="unpkg">🟢 unpkg CDN — تنزيل فقط</option>
+        </select>
+      </div>
+      <div class="speedtest-results">
+        <div class="st-item"><span class="st-value" id="st-ping">—</span><span class="st-label">زمن الاستجابة</span></div>
+        <div class="st-item"><span class="st-value" id="st-download">—</span><span class="st-label">تنزيل ↓</span></div>
+        <div class="st-item"><span class="st-value" id="st-upload">—</span><span class="st-label">رفع ↑</span></div>
+      </div>
+      <div class="st-progress"><div id="st-progress-fill" class="st-progress-fill"></div></div>
+      <div id="st-status" class="st-status">اضغط «ابدأ القياس» — يتم القياس من متصفحك مباشرة.</div>
+      <button type="button" id="st-start-btn" class="btn btn-primary">▶ ابدأ القياس</button>
+    </div>
+  </div>
+
   <!-- ذيل الصفحة -->
   <footer class="site-footer">
     &copy; 2026 <a href="https://github.com/kerolos-it2022/network-monitor" target="_blank" rel="noopener">KeRo-IT</a> — جميع الحقوق محفوظة
@@ -127,6 +154,7 @@
   <script src="js/charts.js"></script>
   <script src="js/public-dashboard.js"></script>
   <script src="js/public-map.js"></script>
+  <script src="js/public-speedtest.js"></script>
 
   <!-- ===== تسجيل Service Worker (PWA + Push Notifications) ===== -->
   <script>
@@ -141,6 +169,29 @@
           });
       });
     }
+  </script>
+
+  <!-- v2.7.5 — زرّ «لوحة التحكم»: فحص الجلسة قبل التوجيه.
+       لو في جلسة صالحة (مِثلاً بَعْد «تذكّرني») نَتوجّه لِـ dashboard مباشرة،
+       وإلا نَفتح صفحة تسجيل الدخول كما كان. -->
+  <script>
+    (function () {
+      var link = document.getElementById('admin-link');
+      if (!link) return;
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        fetch('/api/auth/me', { credentials: 'include' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            window.location.href = (data && data.success)
+              ? 'admin/dashboard.html'
+              : 'admin/login.html';
+          })
+          .catch(function () {
+            window.location.href = 'admin/login.html';
+          });
+      });
+    })();
   </script>
 </body>
 </html>

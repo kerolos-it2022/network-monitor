@@ -1,0 +1,5 @@
+#!/bin/sh
+# 0120-fix-perms.hook.chroot — ضبط صلاحيات التنفيذ لسكريبتات appliance
+# (git على ويندوز قد لا يحمل exec bit، فنضبطها هنا احتياطًا).
+set -e
+chmod +x /usr/local/sbin/nm-console /usr/local/sbin/nm-install-to-disk

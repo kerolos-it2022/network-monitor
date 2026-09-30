@@ -1,0 +1,36 @@
+# appliance.list.chroot — حزم نظام appliance (دبيان 12).
+linux-image-amd64
+live-boot
+
+# أساس النظام
+systemd
+systemd-sysv
+locales
+console-setup
+kbd
+
+# خادم الويب العكسي + تشغيل المشروع
+nginx
+nodejs
+npm
+
+# أدوات شبكة يستعملها المشروع (فحص ping/traceroute/DNS)
+iputils-ping
+traceroute
+dnsutils
+
+# مثبّت القرص (nm-install-to-disk)
+rsync
+e2fsprogs
+dosfstools
+parted
+grub2-common
+grub-pc-bin
+grub-efi-amd64-bin
+mtools
+
+# تأمين وشهادات
+nftables
+openssl
+ca-certificates
+curl

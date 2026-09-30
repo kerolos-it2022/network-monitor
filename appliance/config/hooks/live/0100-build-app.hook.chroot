@@ -1,0 +1,10 @@
+#!/bin/sh
+# 0100-build-app.hook.chroot — تثبيت اعتماديات المشروع داخل النظام المبني.
+# npm ci يُحمّل prebuilt binary لِـ better-sqlite3 متوافق مع node18/glibc/x64 —
+# ولو فشل (lockfile قديم) نرجع لـ npm install الذي يبني من المصدر.
+set -e
+
+cd /opt/network-monitor/backend
+npm ci --omit=dev --no-audit --no-fund || npm install --omit=dev --no-audit --no-fund
+
+chown -R netmon:netmon /opt/network-monitor

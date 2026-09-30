@@ -1,0 +1,48 @@
+# build-iso.yml — بناء صورة appliance ISO تلقائيًّا.
+# التشغيل: يدويًّا (workflow_dispatch) أو تلقائيًّا مع كل tag يبدأ بـ v.
+# الناتج: artifact اسمه appliance-iso + مرفق بـ Release لو كان الTrigger tag.
+name: Build Appliance ISO
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install live-build toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            live-build debootstrap debian-archive-keyring \
+            squashfs-tools xorriso \
+            grub-pc-bin grub-efi-amd64-bin grub2-common \
+            mtools dosfstools e2fsprogs parted rsync
+
+      - name: Build ISO
+        working-directory: appliance
+        run: |
+          sudo -E bash build.sh
+          ls -lh *.iso
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appliance-iso
+          path: appliance/*.iso
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: appliance/*.iso
+          generate_release_notes: true

@@ -295,28 +295,42 @@ button.tab-btn.active {
   box-shadow: var(--shadow);
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* z-index أعلى من الـ sidebar (110) حتى لا يَتغطّى الهيدر بِـ القائمة الجانبية الثابتة. */
+  z-index: 120;
   flex-wrap: wrap;
+  /* إِزاحة جانبية تُباعد عرض الـ sidebar الثابت (242px — RTL: اليمين) لِتَجنّب التَداخل.
+     تَتغيّر مع حالات الـ sidebar (rail/hidden) عبر الأَصناف على <body> بالأسفل. */
+  margin-inline-start: 242px;
+  /* انتقال سلس مُتوافق مع .dashboard-main و .sidebar. */
+  transition: margin-inline-start 0.22s ease;
 }
 .admin-topbar h1 { font-size: 1.25rem; margin: 0; }
 /* زرّ 🍔 يَظهر في كل الأَحجام الآن (v2.7.1) — في الحاسوب يَطوي/يَوسّع القائمة الجانبية
-   (rail mode: أَيقونات فقط)، في الموبايل يَفتح/يُغلق الـ drawer كما سابقاً. */
+   (rail mode: أَيقونات فقط)، في الموبايل يَفتح/يُغلق الـ drawer كما سابقاً.
+   v2.7.2: زرّ بثلاث حالات (open/rail/hidden) + تناسق بصريّ مع باقي أَزرار الهيدر. */
 .sidebar-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   line-height: 1;
-  background: transparent;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 0.2rem 0.55rem;
+  /* تَطابق padding زرّ .btn في الهيدر لِتناسق الارتفاع (0.4rem 0.75rem). */
+  padding: 0.4rem 0.75rem;
   cursor: pointer;
   color: var(--text);
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .sidebar-toggle:hover { background: var(--bg); }
 .sidebar-toggle:active { transform: scale(0.95); }
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* مؤشّر بصريّ خفيف عند كَون القائمة مَخفيةّ (aria-pressed=true) */
+.sidebar-toggle[aria-pressed="true"] { border-color: var(--accent); }
 
 /* sidebar عمودي ثابت (RTL: على اليمين عبر inset-inline-start: 0) */
 .sidebar {
@@ -331,8 +345,9 @@ button.tab-btn.active {
   overflow-x: hidden;
   z-index: 110;
   padding-block: 0.5rem;
-  transition: width 0.22s ease;
+  transition: width 0.22s ease, transform 0.22s ease;
   /* RTL: الـ sidebar ثابت على اليمين (dir=rtl يجعل inset-inline-start = right) */
+  /* v2.7.2: transform transition لِحالة hidden (translateX) بِجانب width لِحالة rail. */
 }
 .sidebar-list {
   list-style: none;
@@ -380,6 +395,8 @@ button.tab-btn.active {
    ويُصغّر عرض الـ sidebar + margin المحتوى. */
 body.sidebar-collapsed .sidebar { width: 60px; }
 body.sidebar-collapsed .dashboard-main { margin-inline-start: 60px; }
+/* الهيدر يَتبع نفس التَغيير (إِزاحة 60px بدَل 242) لِيَبقى متناسقاً مع الـ sidebar المَطوي. */
+body.sidebar-collapsed .admin-topbar { margin-inline-start: 60px; }
 body.sidebar-collapsed .sidebar .tab-btn {
   justify-content: center;
   padding-inline: 0;
@@ -390,6 +407,15 @@ body.sidebar-collapsed .sidebar .tab-btn-icon { font-size: 1.25rem; }
 /* title attribute على الأَزرار يَعرض tooltip أَصلي عند الطيّ بِـ hover. */
 /* في الوَضع المَطوي على الحاسوب لا نُريد overflow-x في الـ sidebar (overflow-y auto فقط). */
 body.sidebar-collapsed .sidebar { overflow-x: hidden; }
+
+/* ═══ حالة hidden — للتوافق الرجعي فقط (تمّ إلغاء الإِخفاء من دورة الزرّ) ═══ */
+/* الجافا سكريبت لم يَعُد يَصل إِلى حالة hidden في الدورة (open → rail → open)،
+   لكننا نُبقي هذه القواعد لِـ أي مستخدم عنده قيمة 'hidden' قديمة في localStorage:
+   عند الإقلاع تُربَط آمناً على 'open'، و class `sidebar-hidden` يُزال دائماً في
+   applyDesktopState. هذه القواعد احتياط فقط. */
+body.sidebar-hidden .sidebar { transform: translateX(100%); }
+body.sidebar-hidden .dashboard-main { margin-inline-start: 0; }
+body.sidebar-hidden .admin-topbar { margin-inline-start: 0; }
 
 /* خلفية معتمة للـ drawer في الموبايل */
 .sidebar-backdrop {
@@ -411,7 +437,8 @@ body.sidebar-collapsed .sidebar { overflow-x: hidden; }
   .sidebar.open { transform: translateX(0); }
   .sidebar-backdrop.open { display: block; }
   .dashboard-main { margin-inline-start: 0; }
-  .admin-topbar { padding: 0.6rem 0.9rem; gap: 0.6rem; }
+  /* في الموبايل الـ sidebar drawer يَطفو فوق الهيدر، فالهيدر يَأخذ كامل العرض. */
+  .admin-topbar { margin-inline-start: 0; padding: 0.6rem 0.9rem; gap: 0.6rem; }
   .admin-topbar h1 { font-size: 1.05rem; }
 }
 
@@ -1019,6 +1046,26 @@ body.dark .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::aft
   border-width: 2px;
 }
 
+/* v2.7.4 — السَحب والإِفلات لإعادة تَرتيب بطاقات zones (feedback بَصري) */
+.map-zone-card[draggable="true"] { cursor: grab; }
+.map-zone-card.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  /* نَرفع قَليلاً لِـ إِبراز البطاقة المَسحُوبة */
+  transform: scale(1.01);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.map-zone-card.drag-over {
+  outline: 2px dashed var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+/* انتقال لَطيف للبطاقات أَثناء reorder (يُخفّف القَفزات البَصرية) */
+.map-grid.reordering > .map-zone-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .map-grid.reordering > .map-zone-card { transition: none; }
+  .map-zone-card.dragging { transform: none; }
+}
+
 /* v2.7.0 — إِطار أَخضر مُميَّز لو كُلّ الأَجهزة online (offline=0, online>0) */
 .map-zone-card.has-online {
   border-color: var(--online);
@@ -1221,6 +1268,67 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 .uptime-text .uptime-pct { color: var(--online); font-weight: 700; }
 .uptime-text .uptime-pct.low { color: var(--offline); }
 .uptime-text .uptime-pct.mid { color: var(--warning); }
+
+/* ===== v2.7.5 — قياس سرعة الانترنت (الصفحة العامة) ===== */
+.st-server-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.st-server-row select {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.speedtest-results {
+  display: flex;
+  justify-content: space-around;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.st-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+}
+.st-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  direction: ltr;
+}
+.st-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+.st-progress {
+  height: 10px;
+  background: rgba(127, 127, 127, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.5rem 0 0.75rem;
+}
+.st-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--offline), var(--warning), var(--online));
+  transition: width 0.3s ease;
+}
+.st-status {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
 
 /* ===== /v2.6.0 — Zones-Grid ===== */
 

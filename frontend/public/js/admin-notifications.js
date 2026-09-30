@@ -154,14 +154,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadNotificationLogs();
     });
   }
-  // v2.7.0 (PF) — زرّ موحّد "مسح السجل" — يَفتح popup اختِيار (نوع + مُدّة).
-  // نوع: notifications (DELETE /api/notifications/logs) | downtime (POST /api/devices/cleanup-history).
+  // v2.7.3 — ثلاثة أَزرار منفصلة لِـ مَسح كل نوع من السجلّات:
+  //   الإِشعارات:       DELETE /api/notifications/logs?older_than_days={days}
+  //   الانقطاعات:      POST   /api/devices/cleanup-history        { range }
+  //   نَقاط الفحص:     POST   /api/devices/cleanup-status-logs    { range }   (status_logs — الأَكبر)
+  // كّلها تَفتح modal اختِيار المُدّة نفسه (#cleanup-select-modal) ثم تأكيد via confirmAction.
   const logsClearBtn = document.getElementById('logs-clear-btn');
+  const logsClearDowntimeBtn = document.getElementById('logs-clear-downtime-btn');
+  const logsClearStatusBtn = document.getElementById('logs-clear-status-btn');
+  const logsTruncateStatusBtn = document.getElementById('logs-truncate-status-btn'); // v2.7.x — تَفْرِيغ كامل
   const cleanupModal = document.getElementById('cleanup-select-modal');
-  const cleanupTypeSel = document.getElementById('cleanup-type-select');
   const cleanupRangeSel = document.getElementById('cleanup-range-select');
   const cleanupOkBtn = document.getElementById('cleanup-select-ok-btn');
   const cleanupCancelBtn = document.getElementById('cleanup-select-cancel-btn');
+  // نوع المسح الحالي للـ modal (يُحدَّد حسب الزرّ المَضغوط: notifications | downtime | status-logs | status-logs-all).
+  let cleanupMode = 'notifications';
+  // عنوان modal الاختيار حسب النوع (لِـ تأكيد واضح للمستخدم قبل الفتح).
+  const cleanupTitles = {
+    notifications: '🗑️ مَسح سجل الإِشعارات',
+    downtime:      '🗑️ مَسح سجل الانقطاعات',
+    'status-logs': '🗑️ مَسح نَقاط فحص الحالة',
+  };
+  const cleanupLabels = {
+    notifications:    'سجل الإِشعارات',
+    downtime:         'سجل الانقطاعات',
+    'status-logs':    'نَقاط فحص الحالة',
+    'status-logs-all':'نَقاط فحص الحالة (تَفْرِيغ كامل)',
+  };
+
+  // v2.7.x — تَحوِيل range(الواجهة) إِلى (days, label) لِـ الرسالة. status-logs-all يُعالَج زِرّاً مُنفَصِلاً (لَا مُدّة).
+  // أَضِيفَت خِيَارات أَصْغَر (2h, day) لِأَنّ status_logs يَحتوي بيانات أَحدث من أُسبوع غالباً.
+  function rangeInfo(range) {
+    switch (range) {
+      case '2h':    return { days: 2/24,    text: 'ساعتين' };
+      case 'day':   return { days: 1,      text: '24 ساعة' };
+      case 'week':  return { days: 7,      text: '7 أَيام' };
+      case 'month': return { days: 30,     text: '30 يوم' };
+      case 'year':  return { days: 365,    text: '365 يوم' };
+      default:      return { days: 7,      text: '7 أَيام' };
+    }
+  }
 
   function closeCleanupModal() {
     if (!cleanupModal) return;
@@ -175,32 +207,84 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   function cleanupOnBackdrop(e) { if (e.target === cleanupModal) closeCleanupModal(); }
 
-  if (logsClearBtn) logsClearBtn.addEventListener('click', () => {
+  // فتح modal اختيار المُدّة حسب نوع المسح.
+  function openCleanupModal(mode) {
     if (!cleanupModal) return;
+    cleanupMode = mode;
+    const titleEl = cleanupModal.querySelector('.confirm-modal-title');
+    if (titleEl) titleEl.textContent = cleanupTitles[mode] || cleanupTitles.notifications;
+    // v2.7.x — notifications endpoint يَدْعَم فَقَط 1/7/30/365 أَيام (لا 2h)؛ فَلِـ notifications
+    // نُخْفي خِيَار «ساعتين» (لا مَعْنَى لِمَسح إِشعارات كل ساعتين). status-logs و downtime يَدْعَمان 2h.
+    if (cleanupRangeSel) {
+      const opt2h = cleanupRangeSel.querySelector('option[value="2h"]');
+      if (opt2h) opt2h.hidden = (mode === 'notifications');
+      // يَعِيد ضَبْط الافتراضِيّ: day لِـ notifications (لا 2h) لِأَنّ 2h مَخْفِيّ، أَو week لِلآخَرين.
+      cleanupRangeSel.value = (mode === 'notifications') ? 'day' : 'week';
+    }
     cleanupModal.classList.remove('hidden');
     cleanupModal.setAttribute('aria-hidden', 'false');
-    if (cleanupRangeSel) cleanupRangeSel.value = 'week';
-    if (cleanupTypeSel) cleanupTypeSel.value = 'notifications';
     if (cleanupOkBtn) cleanupOkBtn.focus();
     document.addEventListener('keydown', cleanupOnKey);
     cleanupModal.addEventListener('click', cleanupOnBackdrop);
-  });
+  }
+
+  if (logsClearBtn) logsClearBtn.addEventListener('click', () => openCleanupModal('notifications'));
+  if (logsClearDowntimeBtn) logsClearDowntimeBtn.addEventListener('click', () => openCleanupModal('downtime'));
+  if (logsClearStatusBtn) logsClearStatusBtn.addEventListener('click', () => openCleanupModal('status-logs'));
   if (cleanupCancelBtn) cleanupCancelBtn.addEventListener('click', closeCleanupModal);
 
-  // تَنفيذ المَسح بعد الاختيار.
+  // v2.7.x — زِرّ «تَفْرِيغ الكُلّ» (status_logs): يَستعمِل range='all' (DELETE WHERE checked_at < now
+  //         ← يُفَرِّغ الجَدول بِالكامِل) + VACUUM. لا يَفْتَح modal اخْتِيار المُدّة لِأَنّ لا مُدّة لَه؛
+  //         يَذهَب مُباشِرةً إِلى confirmAction (تَأكِيد خَطِر بِنَصّ تَحْذِيرِي واضِح).
+  if (logsTruncateStatusBtn) logsTruncateStatusBtn.addEventListener('click', async () => {
+    const typeLabel = cleanupLabels['status-logs-all'] || 'نَقاط فحص الحالة';
+    const ok = await confirmAction({
+      title: '⚠️ تَفْرِيغ كامل لِـ نَقاط فحص الحالة',
+      message: 'سيتم حذف كُلّ صُفوف status_logs بِالكامِل ثُمّ VACUUM لِتَقْليص حجم القاعدة.\n⚠️ سيُفقِد ذلك تاريخ Uptime والرسوم البيانية في الصفحة العامة (لِنّ الجَدول هُو مصْدَرها). لا يمكن التَراجُع. مُتابعة؟',
+      confirmText: '⚠️ تَفْرِيغ كامل',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const data = await api('/api/devices/cleanup-status-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ range: 'all' }),
+      });
+      if (data && data.success) {
+        const d = data.data || {};
+        const deleted = d.deleted != null ? d.deleted : 0;
+        const vacuumed = d.vacuumed === true;
+        showToast(`✅ تَم تَفْرِيغ ${deleted} صَف من status_logs${vacuumed ? ' + VACUUM ناجح' : ' (VACUUM فَشِل — حَجْم القاعدة لَم يَتقلَّص)'}`, { type: 'success' });
+        showToast('ℹ️ الجَدول فُرِّغ بِالكامِل — الرسوم البيانية/Uptime في الصفحة العامة سَتَبْدأ التَجَمُّع من جديد', { type: 'info', duration: 5000 });
+      } else {
+        showToast('❌ ' + ((data && data.error) || 'فشل التَفْرِيغ'), { type: 'error' });
+      }
+    } catch (e) {
+      showToast('❌ خطأ في الاتصال بالخادم', { type: 'error' });
+    }
+  });
+
+  // تَنفيذ المَسح بعد اختِيار المُدّة و تأكيد المستخدم.
   if (cleanupOkBtn) cleanupOkBtn.addEventListener('click', async () => {
-    const type = cleanupTypeSel ? cleanupTypeSel.value : 'notifications';
+    const type = cleanupMode;
     const range = cleanupRangeSel ? cleanupRangeSel.value : 'week';
     // تَأكيد ثاني عبر confirmAction لِـ أَنّ المَسح لا يُمكن التَراجُع عنه.
-    const days = range === 'week' ? 7 : (range === 'month' ? 30 : 365);
-    const typeLabel = type === 'downtime' ? 'سجل الانقطاعات' : 'سجل الإِشعارات';
+    // v2.7.x — rangeInfo تَدْعَم 2h/day/week/month/year لِـ تَوْضِيح رِسالة التَأكِيد (ساعة/أَيام).
+    const { days } = rangeInfo(range);
+    const ri = rangeInfo(range);
+    const typeLabel = cleanupLabels[type] || 'السجل';
     const ok = await confirmAction({
       title: 'تَأكيد مَسح ' + typeLabel,
-      message: `سيتم مَسح ${typeLabel} الأَقدم من ${days} يوم.\nلا يمكن التَراجُع عن هذا الإِجراء. مُتابعة؟`,
+      message: `سيتم مَسح ${typeLabel} الأَقدم من ${ri.text}.\nلا يمكن التَراجُع عن هذا الإِجراء. مُتابعة؟`,
       confirmText: '🗑️ مَسح',
       danger: true,
     });
     if (!ok) return;
+
+    // نُغلق modal الاختيار فوراً بعد تأكيد المستخدم في confirmAction الثانية
+    // (سواء نجح المَسح أَو فشل) — حلاً لمشكلة بَقاء الـ modal ظاهراً عند الفشل.
+    closeCleanupModal();
 
     try {
       let data;
@@ -212,9 +296,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify({ range }),
         });
         data = r;
+      } else if (type === 'status-logs') {
+        // status_logs: POST /api/devices/cleanup-status-logs { range }
+        // هذا الجدول يَكبر بِسرعة (نُقطة لكل دورة فحص لكل جهاز) لذا يُهمّ تَقليصه دورياً.
+        const r = await api('/api/devices/cleanup-status-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ range }),
+        });
+        data = r;
       } else {
         // notifications: DELETE /api/notifications/logs?older_than_days={days}
-        const r = await fetch(`/api/notifications/logs?older_than_days=${days}`, {
+        // v2.7.x — older_than_days يَجِب أَن يَكون صَحِيحاً (backend يَقْبُل [1,7,30,365]).
+        // لِـ day=1, week=7, month=30, year=365 ← كُلّها صَحِيحة بِالفِعل (2h مَخْفِيّ فِي notifications).
+        const r = await fetch(`/api/notifications/logs?older_than_days=${Math.round(days)}`, {
           method: 'DELETE',
           credentials: 'include',
         });
@@ -222,11 +317,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (data && data.success) {
         const deleted = data.data && data.data.deleted != null ? data.data.deleted : 0;
-        showToast(`✅ تَم مَسح ${deleted} سجل (${typeLabel} — أَقدم من ${days} يوم)`, { type: 'success' });
-        closeCleanupModal();
+        // v2.7.x — تَفادِي «وَهْم لا يَمْسَح شَيئاً»: لَو deleted===0 فلا توجَد بيانات أَقدم من المُدّة،
+        // نُخبِر بِشَفافِيَّة بدل عبارة «تَم مَسح 0 سجل» الغامضة الَّتي بَدَت لِلمُستخدم فشلاً.
+        if (deleted === 0) {
+          showToast('✅ لا توجَد بيانات في ' + typeLabel + ' أَقدم من ' + ri.text + ' — لا حاجة لِلمَسح', {
+            type: 'info', duration: 5000,
+          });
+        } else {
+          showToast(`✅ تَم مَسح ${deleted} سجل (${typeLabel} — أَقدم من ${ri.text})`, { type: 'success' });
+        }
         // تَحديث جدول السجل لو كان مُحمَّلاً (notifications).
         if (type === 'notifications' && typeof loadNotificationLogs === 'function') {
           await loadNotificationLogs();
+        } else if (deleted > 0) {
+          // downtime/status-logs: لا علاقة لَها بِـ notification_logs المَعْرُوض في تَبويب السجل،
+          // لِذا لا يُعاد تَحميل الجدول. نُنبّه المُستَخدِم بِأَنّ الأَثر يَنْعَكِس على الصفحة العامة
+          // فقط عِندما حَدَث مَسح فعْلِيّ (deleted>0) — إِذا لم يُحْذَف شَيء لا داعي لِلتَنْبِيه.
+          showToast('ℹ️ يَنْعَكِس الأَثر على الرسوم البيانية ونِسَب Uptime في الصفحة العامة عند إِعادَة تَحميلها', {
+            type: 'info', duration: 4000,
+          });
         }
       } else {
         showToast('❌ ' + ((data && data.error) || 'فشل المَسح'), { type: 'error' });

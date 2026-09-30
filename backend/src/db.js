@@ -42,6 +42,9 @@ try {
       // تَرتيبها «متَّصلة على التَوالي» (منطقة ← منطقة). الافتراضي 0 (يَكمل ORDER BY id ASC).
       // آمن: SQLite يَرمي duplicate-column لو موجود فنَتجاهله (نَفس نمط migrations الأُخرى).
       "ALTER TABLE locations ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0",
+      // v2.7.5: بورت واجهة الويب المخصص (web_port) لِـ زر «فتح HTTP/HTTPS» — أَجهزة
+      // واجهتُها على بورت غير 80/443 (مثل 4444). NULL = السلوك الافتراضي (80/443).
+      "ALTER TABLE devices ADD COLUMN web_port INTEGER",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }
@@ -49,6 +52,9 @@ try {
 
     // WAL mode لِأَداء أَفضل + تَزامن آمن لِـ concurrent reads في الـ background scheduler.
     db.pragma('journal_mode = WAL');
+    // v2.7.x — busy_timeout لِـ تَفادي SQLITE_BUSY عِند تَزاحُم كِتاَبٍ وَرَاء كَوال (WAL)
+    // مَع cron الـ 10 ثَوانٍ (monitor) و VACUUM/DELETE الكَبير على status_logs.
+    db.pragma('busy_timeout = 5000');
   }
 } catch (e) {
   // لا نَكسر التَشغيل لو فشلت الـ migration — سَجِّل تحذيرًا ودَع server يَكمل (deploy.sh install يَتولى الـ schema كذلك).

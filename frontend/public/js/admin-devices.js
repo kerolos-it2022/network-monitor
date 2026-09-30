@@ -1,7 +1,22 @@
 // admin-devices.js: إدارة الأجهزة في لوحة التحكم (جلب، إضافة، تعديل، حذف، تسجيل خروج، حماية الجلسة).
 // ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
-let currentDevicesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأجهزة
-let currentLocationFilter = ''; // فلتر location_id الحالي (فارغ = كل المواقع).
+
+// v2.7.5 — حفظ ترتيب وفلتر الأجهزة في localStorage ليَبقيا بعد refresh/تبديل التبويبات.
+const DEVICES_SORT_KEY = 'nm.adminDevicesSort';
+const DEVICES_FILTER_KEY = 'nm.adminDevicesFilter';
+const VALID_DEVICES_SORTS = ['name', 'ip', 'status', 'type', 'location', 'last_checked'];
+
+let currentDevicesSort = (() => {
+  try {
+    const saved = localStorage.getItem(DEVICES_SORT_KEY);
+    return VALID_DEVICES_SORTS.includes(saved) ? saved : 'name';
+  } catch (_) { return 'name'; }
+})();
+let currentLocationFilter = (() => {
+  try {
+    return localStorage.getItem(DEVICES_FILTER_KEY) || '';
+  } catch (_) { return ''; }
+})();
 
 const ad = {}; // مساحة أسماء صغيرة لتفادي التضارب.
 
@@ -62,13 +77,15 @@ async function loadDevices() {
 
   for (const d of sortedData) {
     // زر الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
+    // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444)، وإلا الافتراضي.
+    const portSuffix = d.web_port ? ':' + d.web_port : '';
     let openBtn = '';
     if (d.https_accessible == 1) {
-      const url = 'https://' + d.ip + '/';
-      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTPS)">🔒 فتح HTTPS</button>';
+      const url = 'https://' + d.ip + portSuffix + '/';
+      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTPS' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
     } else if (d.http_accessible == 1) {
-      const url = 'http://' + d.ip + '/';
-      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTP)">🌐 فتح HTTP</button>';
+      const url = 'http://' + d.ip + portSuffix + '/';
+      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTP' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
     }
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -143,8 +160,10 @@ async function loadFormOptions() {
     if ([...filterLocSel.options].some((o) => o.value === currentLocationFilter)) {
       filterLocSel.value = currentLocationFilter;
     } else {
+      // الموقع غير موجُود بعد (حُذِف) ← نَنظّف الذاكرة و localStorage لِـ تَجَنُّب بقاء قيمة غير صالحة.
       currentLocationFilter = '';
       filterLocSel.value = '';
+      try { localStorage.removeItem(DEVICES_FILTER_KEY); } catch (_) {}
     }
   }
 }
@@ -164,26 +183,16 @@ function resetDeviceForm() {
 
 function openDeviceForm() {
   resetDeviceForm();
-  document.getElementById('device-form').classList.remove('hidden');
+  document.getElementById('device-form-title').textContent = 'إضافة جهاز';
+  openEditModal(document.getElementById('device-modal'), {
+    // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات قديمة.
+    onClose: () => resetDeviceForm(),
+  });
 }
 
 async function startEditDevice(id) {
-  // v2.7.1 (مَطلب 5) — تَأكيد قبل فتح نموذج التعديل لِـ الحَماية من التعديل العرضي.
-  // نَجلب اسم الجهاز تَمهيدًا (لو فَشل جلب الاسم نَعرض «#id» بدَلًا منه).
-  let labelHint = '#' + id;
-  // نَكتفي بِـ confirmAction بِدون fetch إِضافي (الاسم موجود في الجدول الحالي لو لَزِم).
-  // نَبحث في الـ DOM عن row بِـ نفس data-edit لأَخذ الاسم (سَريع، بلا طلب شبكة).
-  const editBtn = document.querySelector(`#devices-table-body [data-edit="${id}"]`);
-  if (editBtn) {
-    const firstCell = editBtn.closest('tr')?.querySelector('td');
-    if (firstCell) labelHint = firstCell.textContent.trim();
-  }
-  const ok = await confirmAction({
-    title: 'تَأكيد التعديل',
-    message: 'هل تريد تعديل الجهاز: ' + labelHint + '؟',
-    confirmText: '✓ متابعة التعديل',
-  });
-  if (!ok) return;
+  // v2.7.4 — نَقل النموذج من inline إلى popup modal: لا حاجة لتَأكيد قبل الفتح
+  // (الـ popup بِأَصلِه نيّة تَعديل). نَكتفي بِـ جلب البيانات + تَعبئة + تَأكيد الحفظ لاحقًا.
   const r = await api('/api/devices/' + id);
   if (!r.success) { showToast(r.error || 'تعذر جلب الجهاز', { type: 'error' }); return; }
   const d = r.data;
@@ -194,11 +203,16 @@ async function startEditDevice(id) {
   document.getElementById('df-location_id').value = d.location_id || '';
   document.getElementById('df-check_protocol').value = d.check_protocol;
   document.getElementById('df-port').value = d.port || '';
+  document.getElementById('df-web_port').value = d.web_port || '';
   document.getElementById('df-check_interval_seconds').value = d.check_interval_seconds;
   document.getElementById('df-failure_threshold').value = d.failure_threshold;
   document.getElementById('df-is_active').checked = !!d.is_active;
   document.getElementById('device-form-title').textContent = 'تعديل جهاز #' + d.id;
-  document.getElementById('device-form').classList.remove('hidden');
+  openEditModal(document.getElementById('device-modal'), {
+    focusSelector: '#df-name',
+    // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات التعديل.
+    onClose: () => resetDeviceForm(),
+  });
 }
 
 async function submitDeviceForm(e) {
@@ -214,6 +228,9 @@ async function submitDeviceForm(e) {
     check_protocol: document.getElementById('df-check_protocol').value,
     port: document.getElementById('df-port').value
       ? Number(document.getElementById('df-port').value)
+      : null,
+    web_port: document.getElementById('df-web_port').value
+      ? Number(document.getElementById('df-web_port').value)
       : null,
     check_interval_seconds: Number(document.getElementById('df-check_interval_seconds').value),
     failure_threshold: Number(document.getElementById('df-failure_threshold').value),
@@ -238,7 +255,7 @@ async function submitDeviceForm(e) {
     body: JSON.stringify(body),
   });
   if (r.success) {
-    document.getElementById('device-form').classList.add('hidden');
+    closeEditModal(document.getElementById('device-modal'));
     await loadDevices();
     showToast('✅ تَم حِفظ الجهاز', { type: 'success' });
   } else {
@@ -342,6 +359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const locId = ev?.detail?.location_id;
     if (filterLocSel && locId != null) {
       currentLocationFilter = String(locId);
+      try { localStorage.setItem(DEVICES_FILTER_KEY, currentLocationFilter); } catch (_) {}
       if ([...filterLocSel.options].some((o) => o.value === currentLocationFilter)) {
         filterLocSel.value = currentLocationFilter;
       } else {
@@ -362,24 +380,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('add-device-btn').addEventListener('click', openDeviceForm);
   document.getElementById('device-form').addEventListener('submit', submitDeviceForm);
   document.getElementById('device-form-cancel').addEventListener('click', () => {
-    document.getElementById('device-form').classList.add('hidden');
+    closeEditModal(document.getElementById('device-modal'));
   });
   document.getElementById('logout-btn').addEventListener('click', logoutNow);
 
-  // مستمع تغيير الترتيب للأجهزة
+  // مستمع تغيير الترتيب للأجهزة — نَحفظ القيمة في localStorage ليَبقى بعد refresh.
   const sortDevicesEl = document.getElementById('filter-sort-devices');
   if (sortDevicesEl) {
+    // تطبيق القيمة المحفوظة على القائمة عند الإقلاع (الخيارات ثابتة في HTML).
+    if (VALID_DEVICES_SORTS.includes(currentDevicesSort)) {
+      sortDevicesEl.value = currentDevicesSort;
+    }
     sortDevicesEl.addEventListener('change', (e) => {
       currentDevicesSort = e.target.value;
+      try { localStorage.setItem(DEVICES_SORT_KEY, currentDevicesSort); } catch (_) {}
       loadDevices();
     });
   }
 
-  // مستمع فلتر الموقع للجدول (client-side filter على location_id).
+  // مستمع فلتر الموقع للجدول (client-side filter على location_id) — نَحفظ القيمة أيضاً.
   const filterLocDeviceEl = document.getElementById('filter-location-devices');
   if (filterLocDeviceEl) {
     filterLocDeviceEl.addEventListener('change', (e) => {
       currentLocationFilter = e.target.value || '';
+      try { localStorage.setItem(DEVICES_FILTER_KEY, currentLocationFilter); } catch (_) {}
       loadDevices();
     });
   }

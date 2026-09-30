@@ -99,6 +99,86 @@ function confirmAction(opts) {
   });
 }
 
+// ═══ v2.7.4 — popup modal موحّد لِـ نماذج التَعديل/الإِضافة (نَقل inline form-cards) ═══
+//
+// openEditModal(modalEl, opts): يَفتح modal (class="modal hidden") و يَضبط إِغلاقه آليًّا
+//   عبر: زرّ .modal-close، مفتاح ESC، النقر على backdrop فقط (ليس داخل .modal-content).
+//   opts (اختياري): {
+//     onOpen:  function() { ... }  — يُستَدعى بعد الفتح (مثلاً focus على أَول حقل).
+//     onClose: function() { ... }  — يُستَدعى بعد الإِغلاق (مثلاً reset form).
+//     focusSelector: 'input,select' — عنصر لِـ focus عليه بعد الفتح (افتراضي: أَول input).
+//   }
+// مُلاحظة: مُتوافقة مع confirmAction() — z-index الـ modal (100) أَقل من confirm-modal (2000)،
+// فَيُمكن فتح تَأكيد الحفظ فوق popup التَعديل بِلا تَعارض.
+let __editModalState = null;
+function openEditModal(modalEl, opts) {
+  if (!modalEl) return;
+  opts = opts || {};
+  // نَنظّف handlers سابِقة (لِـ تَفادي تَسرّب listeners نشطة من فتح سابق لِـ الـ modal نَفسه).
+  if (__editModalState && __editModalState._cleanup) __editModalState._cleanup();
+
+  const contentEl = modalEl.querySelector('.modal-content');
+  const closeBtn = modalEl.querySelector('.modal-close');
+
+  let closed = false;
+  function doClose() {
+    if (closed) return;
+    closed = true;
+    modalEl.classList.add('hidden');
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', onKey);
+    modalEl.removeEventListener('click', onBackdropClick);
+    __editModalState = null;
+    if (typeof opts.onClose === 'function') {
+      try { opts.onClose(); } catch (e) { console.warn('[editModal] onClose', e); }
+    }
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); doClose(); }
+  }
+  function onBackdropClick(e) {
+    // فقط لو نُقر الإِطار الخارجي (modal) لا الإِطار الداخلي (modal-content).
+    if (e.target === modalEl) doClose();
+  }
+  function _cleanup() {
+    document.removeEventListener('keydown', onKey);
+    modalEl.removeEventListener('click', onBackdropClick);
+    if (closeBtn) closeBtn.removeEventListener('click', doClose);
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', doClose);
+  modalEl.addEventListener('click', onBackdropClick);
+  document.addEventListener('keydown', onKey);
+  __editModalState = { _cleanup, _close: doClose, _modalEl: modalEl };
+
+  modalEl.classList.remove('hidden');
+  modalEl.setAttribute('aria-hidden', 'false');
+
+  // a11y: focus على العنصر المُحدّد أَو أَول input/select قابل للتركيز داخل modal.
+  let focusEl = null;
+  if (opts.focusSelector) focusEl = modalEl.querySelector(opts.focusSelector);
+  if (!focusEl && contentEl) focusEl = contentEl.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])');
+  if (focusEl) { try { focusEl.focus(); } catch (e) {} }
+
+  if (typeof opts.onOpen === 'function') {
+    try { opts.onOpen(); } catch (e) { console.warn('[editModal] onOpen', e); }
+  }
+}
+
+// closeEditModal(modalEl): إِغلاق صريح لِـ الـ modal المفتوح (يٌستَعمل من زرّ cancel
+// والمعالجات البرمجية بَعد الحفظ الناجح). آمنة بِلا throw لو الـ modal لم يَكن مفتوحًا.
+function closeEditModal(modalEl) {
+  if (!modalEl) return;
+  // لو الـ modal المفتوح حاليًّا هو نَفسه المطلوب إِغلاقه، نَستعمل doClose المشتركة
+  // (تَنظّف handlers + تٌطلق onClose). وإِلا نُخفي modalEl مباشرة.
+  if (__editModalState && __editModalState._modalEl === modalEl && typeof __editModalState._close === 'function') {
+    __editModalState._close();
+  } else {
+    modalEl.classList.add('hidden');
+    modalEl.setAttribute('aria-hidden', 'true');
+  }
+}
+
 // showToast(message, opts): رسالة موقّتة تَظهر في #toast-container و تَختفي آليًّا.
 //   opts: { type: 'success'|'error'|'warning'|'info', duration: 4000 (ms), title: '...' }
 const __toastIcon = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
