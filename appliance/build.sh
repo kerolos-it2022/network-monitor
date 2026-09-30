@@ -39,7 +39,12 @@ cp "$REPO_ROOT/database/schema.sql" "$APP_INCLUDES/database/schema.sql"
 echo "── مصدر المشروع منسوخ إلى includes.chroot ──"
 
 # ── 2) بناء الصورة ──
-lb clean >/dev/null 2>&1 || true
+# lb clean --purge: يمسح cache أي بناء سابق (لو فشل بناء قديم بإعدادات خاطئة
+# بقي bootstrap تالف في cache — --purge يضمن بداية نظيفة).
+lb clean --purge >/dev/null 2>&1 || true
+# مهم: lb build لا ينفّذ auto/config تلقائيًّا — lb config هو الذي يستدعيها
+# (auto/config يستدعي lb config noauto بالخيارات الفعلية: bookworm/debian).
+lb config
 lb build 2>&1 | tee build.log
 
 ISO_OUT="network-monitor-appliance-${VERSION}-amd64.iso"
