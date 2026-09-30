@@ -28,8 +28,8 @@ if [ -f /etc/nm-installed ]; then
         case "$CH" in
             1) systemctl restart network-monitor.service; echo "تم."; sleep 2 ;;
             2) journalctl -u network-monitor.service -n 50 --no-pager; read -r -p "↵ للعودة…" _ ;;
-            s) exit 0 ;;
-            q) exit 0 ;;
+            s) exec /bin/bash -i ;;
+            q) systemctl start getty@tty1.service; systemctl stop nm-console.service 2>/dev/null; sleep 60; exit 0 ;;
         esac
     done
 else

@@ -1,0 +1,22 @@
+[Unit]
+Description=Network Monitor Appliance — قائمة الكونسول (tty1)
+After=systemd-user-sessions.service network-online.target
+Wants=network-online.target
+# توقف getty@tty1 ما دامت القائمة تعمل (تُرجع تلقائيًّا لو توقفت الخدمة).
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+
+[Service]
+ExecStart=/usr/local/sbin/nm-console
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVTDisallocate=no
+Restart=always
+RestartSec=2
+User=root
+
+[Install]
+WantedBy=multi-user.target

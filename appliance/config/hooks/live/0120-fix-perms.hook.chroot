@@ -1,5 +1,7 @@
 #!/bin/sh
-# 0120-fix-perms.hook.chroot — ضبط صلاحيات التنفيذ لسكريبتات appliance
-# (git على ويندوز قد لا يحمل exec bit، فنضبطها هنا احتياطًا).
+# 0120-fix-perms.hook.chroot — ضبط صلاحيات سكريبتات appliance
+# (git على ويندوز قد لا يحمل exec bit، ووحدات systemd لا تحتمل exec bits).
 set -e
 chmod +x /usr/local/sbin/nm-console /usr/local/sbin/nm-install-to-disk
+chmod 644 /etc/systemd/system/nm-console.service /etc/systemd/system/network-monitor.service 2>/dev/null || true
+chmod 644 /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null || true

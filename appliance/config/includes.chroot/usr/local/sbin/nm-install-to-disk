@@ -115,7 +115,7 @@ fi
 chroot "$MOUNT" update-grub >/dev/null 2>&1 || chroot "$MOUNT" update-grub
 
 # ── تفعيل الخدمات على النظام المثبَّت ──
-chroot "$MOUNT" systemctl enable network-monitor.service nginx nftables 2>/dev/null || true
+chroot "$MOUNT" systemctl enable network-monitor.service nm-console.service nginx nftables 2>/dev/null || true
 
 # ── حساب الأدمن: توليد كلمة مرور عشوائية وإنشاؤها في قاعدة البيانات ──
 echo "── إنشاء حساب المدير…"
