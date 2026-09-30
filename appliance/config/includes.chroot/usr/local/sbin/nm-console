@@ -33,22 +33,32 @@ if [ -f /etc/nm-installed ]; then
         esac
     done
 else
-    # ═══ نظام حي (لم يُثبَّت بعد) ═══
+    # ═══ نظام حي (لم يُثبَّت بعد) — تنصيب تلقائي سلس بعد عدّاد (نمط appliances) ═══
     clear
-    bold "═══ نظام مراقبة الشبكة — صورة حيّة (Live) ═══"
+    bold "═══ Network Monitor Appliance ═══"
     echo
-    echo "  هذه صورة حيّة تعمل من الـ USB — لا تُحفظ أي بيانات."
-    echo "  للتثبيت الدائم على القرص الصلب:"
+    echo "  هذا الـ USB يحمل صورة النظام — للتثبيت الدائم على القرص الصلب:"
+    echo "  سيبدأ التثبيت تلقائيًّا خلال 10 ثوانٍ (التثبيت يمسح القرص — سيُطلب تأكيد)."
     echo
-    echo "  [1] 🖥️  تثبيت النظام على القرص الصلب (سيمسح القرص)"
-    echo "  [2] تجربة النظام حيًّا (بدون تثبيت)"
-    echo "  [s] موجه أوامر"
+    echo "  [أي مفتاح] قائمة الاختيار اليدوية"
     echo
-    read -r -p "اختيار: " CH
-    case "$CH" in
-        1) /usr/local/sbin/nm-install-to-disk ;;
-        2) echo "النظام يعمل حيًّا — العنوان: http://${IP:-غير متصل}/ (admin — راجع وثائق الصورة)"; exit 0 ;;
-        s) exit 0 ;;
-        *) exit 0 ;;
-    esac
+    CH=""
+    read -r -n 1 -s -t 10 CH || CH=""
+    if [ -z "$CH" ]; then
+        # انتهى العدّاد دون ضغط → تثبيت تلقائي.
+        /usr/local/sbin/nm-install-to-disk
+    else
+        echo
+        echo "  [1] 🖥️  تثبيت النظام على القرص الصلب (سيمسح القرص)"
+        echo "  [2] تجربة النظام حيًّا (بدون تثبيت)"
+        echo "  [s] موجه أوامر"
+        echo
+        read -r -p "اختيار: " CH2
+        case "$CH2" in
+            1) /usr/local/sbin/nm-install-to-disk ;;
+            2) echo "النظام يعمل حيًّا — العنوان: http://${IP:-غير متصل}/"; exit 0 ;;
+            s) exit 0 ;;
+            *) exit 0 ;;
+        esac
+    fi
 fi

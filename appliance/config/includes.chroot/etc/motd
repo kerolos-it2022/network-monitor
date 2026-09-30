@@ -1,0 +1,5 @@
+Network Monitor Appliance — نظام مراقبة الشبكة
+────────────────────────────────────────────────
+الواجهة:  http://<IP-الجهاز>/
+الخدمة:   systemctl status network-monitor
+

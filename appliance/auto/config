@@ -15,7 +15,7 @@ lb config noauto \
     --system live \
     --iso-volume "NetworkMonitor" \
     --iso-application "Network Monitor Appliance" \
-    --bootappend-live "boot=live components quiet" \
+    --bootappend-live "boot=live components nomodeset" \
     --apt-recommends false \
     --security false \
     --firmware-chroot false \
