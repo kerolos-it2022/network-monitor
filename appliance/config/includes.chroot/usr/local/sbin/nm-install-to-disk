@@ -126,20 +126,47 @@ chroot "$MOUNT" /usr/bin/env \
   DB_PATH=/var/lib/network-monitor/monitoring.db \
   /usr/bin/node /opt/network-monitor/backend/src/seedAdmin.js
 
-# ── تنظيف ──
+# ── ملخص نهائي (إشعار نهاية التنصيب) ──
+IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+PORT=80
+
+# حفظ نسخة من بيانات الدخول على النظام المثبَّت (قابلة للاسترجاع من الكونسول):
+#   cat /var/lib/network-monitor/FIRST-LOGIN.txt
+cat > "$MOUNT/var/lib/network-monitor/FIRST-LOGIN.txt" << EOF
+Network Monitor Appliance — بيانات الدخول الأولى
+=================================================
+العنوان:       http://${IP:-<IP-الجهاز>}:${PORT}/
+اسم المستخدم:  admin
+كلمة المرور:   ${ADMIN_PASS}
+=================================================
+⚠️ غيّر كلمة المرور فورًا من: الملف الشخصي ← تغيير كلمة المرور
+   وبعد التغيير احذف هذا الملف:  rm /var/lib/network-monitor/FIRST-LOGIN.txt
+EOF
+chroot "$MOUNT" chown netmon:netmon /var/lib/network-monitor/FIRST-LOGIN.txt
+
 umount -R "$MOUNT/dev" "$MOUNT/proc" "$MOUNT/sys" "$MOUNT/run" 2>/dev/null || true
 [ "$IS_UEFI" = yes ] && umount "$MOUNT/boot/efi" 2>/dev/null || true
 umount -R "$MOUNT"
 touch "$MARKER"
 
-# ── ملخص ──
-IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+# شاشة الإشعار النهائية — بارزة بكل بيانات الدخول (بلا حدود يمينية لِثبات العرض مع العربية).
+printf '\a'
 echo
-bold "═══ اكتمل التثبيت بنجاح ═══"
+echo "  ═════════════════════════════════════════════════════════"
+echo "     ✅  اكتمل تثبيت Network Monitor Appliance بنجاح"
+echo "  ═════════════════════════════════════════════════════════"
 echo
-echo "  العنوان:      http://$IP/   (بعد إعادة التشغيل)"
-echo "  اسم المستخدم: admin"
-echo "  كلمة المرور:  $ADMIN_PASS   ← ⚠️ سجّلها الآن — لا تُعرض مرة أخرى"
+echo "     🌐  عنوان الوصول :  http://${IP:-<IP-الجهاز>}:${PORT}"
+echo "     🔌  البورت       :  ${PORT} (HTTP)"
+echo "     👤  اسم المستخدم :  admin"
+echo "     🔑  كلمة المرور  :  ${ADMIN_PASS}"
+echo
+echo "  ─────────────────────────────────────────────────────────"
+echo "     ⚠️  سجّل كلمة المرور الآن — لن تُعرض مرة أخرى"
+echo "     📄  نسخة محفوظة: /var/lib/network-monitor/FIRST-LOGIN.txt"
+echo "  ─────────────────────────────────────────────────────────"
+echo
+echo "  ملاحظة: لو تغيّر IP بعد إعادة التشغيل، اعرضه من الكونسول مباشرة."
 echo
 read -r -p "إعادة التشغيل الآن؟ (y/n): " REBOOT
 [ "$REBOOT" = "y" ] && reboot
