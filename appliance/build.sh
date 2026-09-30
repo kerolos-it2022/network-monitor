@@ -42,9 +42,10 @@ echo "── مصدر المشروع منسوخ إلى includes.chroot ──"
 # lb clean --purge: يمسح cache أي بناء سابق (لو فشل بناء قديم بإعدادات خاطئة
 # بقي bootstrap تالف في cache — --purge يضمن بداية نظيفة).
 lb clean --purge >/dev/null 2>&1 || true
-# مهم: lb build لا ينفّذ auto/config تلقائيًّا — lb config هو الذي يستدعيها
-# (auto/config يستدعي lb config noauto بالخيارات الفعلية: bookworm/debian).
-lb config
+# مهم: lb build لا ينفّذ auto/config تلقائيًّا — و lb config ينفّذها فقط لو كانت
+# قابلة للتنفيذ (exec bit مفقود في checkouts من ويندوز!). لذا نستدعيها صراحةً
+# بـ sh — السكريبت يستدعي lb config noauto بالخيارات الفعلية (bookworm/debian).
+sh auto/config
 lb build 2>&1 | tee build.log
 
 ISO_OUT="network-monitor-appliance-${VERSION}-amd64.iso"
