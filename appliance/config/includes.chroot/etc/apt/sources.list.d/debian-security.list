@@ -1,0 +1,5 @@
+# مستودع الأمن الرسمي لدبيان 12 (bookworm) — بنية 2021+ الصحيحة.
+# live-build على runners أوبونتو يركّب النمط القديم (bookworm/updates) فيفشل
+# بـ 404، لذا عطّلناه (--security false) وأضفناه هنا بالصيغة الصحيحة —
+# فيبقى في النظام الحي والمثبَّت ويغطي تحديثات الأمن.
+deb http://security.debian.org/debian-security bookworm-security main
