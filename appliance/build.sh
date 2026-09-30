@@ -46,6 +46,14 @@ lb clean --purge >/dev/null 2>&1 || true
 # قابلة للتنفيذ (exec bit مفقود في checkouts من ويندوز!). لذا نستدعيها صراحةً
 # بـ sh — السكريبت يستدعي lb config noauto بالخيارات الفعلية (bookworm/debian).
 sh auto/config
+
+# حزام أمان: بعض إصدارات live-build على runners أوبونتو لا تلتزم --security false
+# عند توليد sources.list (تركّب رابط أمن بنمط قديم يفشل بـ 404) — نفرض
+# LB_SECURITY=false مباشرةً في ملف التكوين المولَّد. (المستودع الصحيح مضاف
+# يدويًّا عبر includes.chroot/etc/apt/sources.list.d/debian-security.list).
+sed -i 's/^LB_SECURITY=.*/LB_SECURITY="false"/' config/common 2>/dev/null || true
+grep -q '^LB_SECURITY=' config/common 2>/dev/null || echo 'LB_SECURITY="false"' >> config/common
+
 lb build 2>&1 | tee build.log
 
 ISO_OUT="network-monitor-appliance-${VERSION}-amd64.iso"
