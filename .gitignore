@@ -54,3 +54,6 @@ appliance/*.iso
 
 # GUI test screenshots (local testing artifacts)
 gui-test-screenshots/
+
+# QEMU boot-test screenshots (local artifacts)
+appliance/boot-test/

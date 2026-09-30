@@ -1,0 +1,30 @@
+#!/bin/sh
+# 0990-fix-grub-paths.hook.binary — v2.7.5
+# ملاحظة: live-build (bookworm) يشغّل الـ .hook.binary من config/hooks/normal/
+# و config/hooks/live/ فقط — لا يقرأ مجلد hooks/binary/. الـ cwd عند التنفيذ
+# هو مجلد binary/ نفسه.
+# المشكلة: في وضع grub-pc BIOS لا تُنشَأ روابط /live/vmlinuz و /live/initrd.img
+# غير المُسَنَّسَنة (كان عمل binary_syslinux) — وقائمتنا الموسومة تشير إليها
+# → GRUB يفشل "file not found" → شاشة سوداء. هذا الـ hook يعمل بعد نسخ
+# النواة وتوليد grub.cfg وقبل xorriso:
+#   1) يكتشف أحدث نواة (vmlinuz-*)
+#   2) يُحدّث grub.cfg للمسارات المُسَنَّسَنة الصحيحة
+#   3) ينشئ الروابط غير المُسَنَّسَنة احتياطًا
+set -e
+
+cd live 2>/dev/null || exit 0
+KVER=$(ls -1 vmlinuz-* 2>/dev/null | sed 's/^vmlinuz-//' | sort -V | tail -1)
+[ -n "$KVER" ] || exit 0
+cd ..
+
+# تحديث grub.cfg للمسارات المُسَنَّسَنة (idempotent).
+sed -i \
+  -e "s|/live/vmlinuz |/live/vmlinuz-${KVER} |" \
+  -e "s|/live/initrd.img$|/live/initrd.img-${KVER}|" \
+  boot/grub/grub.cfg
+
+# روابط احتياطية للتوافق.
+ln -sf "vmlinuz-${KVER}" live/vmlinuz
+ln -sf "initrd.img-${KVER}" live/initrd.img
+
+echo "[nm-hook] grub.cfg -> kernel ${KVER}"
