@@ -65,6 +65,10 @@ sh auto/config
 sed -i 's/^LB_SECURITY=.*/LB_SECURITY="false"/' config/common 2>/dev/null || true
 grep -q '^LB_SECURITY=' config/common 2>/dev/null || echo 'LB_SECURITY="false"' >> config/common
 
+# BIOS bootloader: GRUB (قائمتنا الموسومة المخفية) بدل syslinux الافتراضي
+# (قائمة دبيان vesamenu بشعارها و timeout=0 — مصدر "اختيارات الدبيان" الظاهرة).
+sed -i 's/^LB_BOOTLOADER_BIOS=.*/LB_BOOTLOADER_BIOS="grub-pc"/' config/common config/binary 2>/dev/null || true
+
 lb build 2>&1 | tee build.log
 
 ISO_OUT="network-monitor-appliance-${VERSION}-amd64.iso"
