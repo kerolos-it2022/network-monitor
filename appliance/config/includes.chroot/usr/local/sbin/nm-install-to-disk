@@ -29,21 +29,25 @@ echo
 bold "═══ Network Monitor Appliance — Installer ═══"
 echo
 echo "Available disks:"
-lsblk -dno NAME,SIZE,MODEL,TYPE | awk '$NF=="disk" {printf "  /dev/%-8s %8s  %s\n", $1, $2, $3}'
+lsblk -e 2,7,11 -dno NAME,SIZE,MODEL,TYPE | awk '$NF=="disk" {printf "  /dev/%-8s %8s  %s\n", $1, $2, $3}'
 echo
 
 read -r -p "Type the target disk name (e.g. sda): " DISK_NAME
 DISK="/dev/$DISK_NAME"
 [ -b "$DISK" ] || die "disk $DISK not found."
-lsblk -dno TYPE "/dev/$DISK_NAME" | grep -qx "disk" || die "$DISK is not a whole disk."
+lsblk -e 2,7,11 -dno TYPE "/dev/$DISK_NAME" | grep -qx "disk" || die "$DISK is not a whole disk."
 
 SIZE=$(lsblk -dno SIZE "/dev/$DISK_NAME" | head -1)
 MODEL=$(lsblk -dno MODEL "/dev/$DISK_NAME" | head -1)
 echo
 warn "═══ FINAL WARNING ═══"
 warn "ALL DATA on $DISK ($SIZE — $MODEL) will be ERASED."
-read -r -p "Type YES (uppercase) to confirm: " CONFIRM
-[ "$CONFIRM" = "YES" ] || die "installation cancelled."
+read -r -p "Type YES to confirm: " CONFIRM
+# قبول YES بأي حالة مع تجاهل الفراغات — يظل تأكيدًا صريحًا كتابيًا.
+CONFIRM_UP=$(printf '%s' "$CONFIRM" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
+if [ "$CONFIRM_UP" != "YES" ]; then
+  die "installation cancelled (received: '$CONFIRM')"
+fi
 
 # ── partition (GPT — supports BIOS and UEFI) ──
 echo "── Partitioning…"
