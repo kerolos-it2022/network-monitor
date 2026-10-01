@@ -1,30 +1,33 @@
 #!/bin/sh
 # 0990-fix-grub-paths.hook.binary — v2.7.5
 # ملاحظة: live-build (bookworm) يشغّل الـ .hook.binary من config/hooks/normal/
-# و config/hooks/live/ فقط — لا يقرأ مجلد hooks/binary/. الـ cwd عند التنفيذ
-# هو مجلد binary/ نفسه.
-# المشكلة: في وضع grub-pc BIOS لا تُنشَأ روابط /live/vmlinuz و /live/initrd.img
-# غير المُسَنَّسَنة (كان عمل binary_syslinux) — وقائمتنا الموسومة تشير إليها
-# → GRUB يفشل "file not found" → شاشة سوداء. هذا الـ hook يعمل بعد نسخ
-# النواة وتوليد grub.cfg وقبل xorriso:
-#   1) يكتشف أحدث نواة (vmlinuz-*)
+# و config/hooks/live/ فقط، والـ cwd عند التنفيذ هو مجلد binary/ نفسه.
+# المشكلة: في وضع grub-pc BIOS لا تُنشَأ روابط /live/vmlinuz غير المُسَنَّسَنة،
+# وقد تحتوي الصورة نواتين إحداهما بلا وحدات — قائمتنا يجب أن تقبل نواة
+# لديها /lib/modules في chroot وإلا فشل modprobe (مثل ext4) داخل النظام الحي.
+# الـ hook يعمل بعد binary_linux-images و binary_grub_cfg وقبل binary_iso:
+#   1) يختار أحدث نواة موجودة لها وحدات في chroot/lib/modules
 #   2) يُحدّث grub.cfg للمسارات المُسَنَّسَنة الصحيحة
 #   3) ينشئ الروابط غير المُسَنَّسَنة احتياطًا
 set -e
 
-cd live 2>/dev/null || exit 0
-KVER=$(ls -1 vmlinuz-* 2>/dev/null | sed 's/^vmlinuz-//' | sort -V | tail -1)
+KVER=""
+for VK in $(ls -1 binary/live/vmlinuz-* 2>/dev/null | sed 's|.*/vmlinuz-||' | sort -Vr); do
+  if [ -d "chroot/lib/modules/$VK" ]; then
+    KVER="$VK"
+    break
+  fi
+done
+# fallback: أحدث نواة لو لم نجد تطابقًا (لن يحدث مع 0130-prune-kernels).
+[ -n "$KVER" ] || KVER=$(ls -1 binary/live/vmlinuz-* 2>/dev/null | sed 's|.*/vmlinuz-||' | sort -V | tail -1)
 [ -n "$KVER" ] || exit 0
-cd ..
 
-# تحديث grub.cfg للمسارات المُسَنَّسَنة (idempotent).
 sed -i \
   -e "s|/live/vmlinuz |/live/vmlinuz-${KVER} |" \
   -e "s|/live/initrd.img$|/live/initrd.img-${KVER}|" \
-  boot/grub/grub.cfg
+  binary/boot/grub/grub.cfg
 
-# روابط احتياطية للتوافق.
-ln -sf "vmlinuz-${KVER}" live/vmlinuz
-ln -sf "initrd.img-${KVER}" live/initrd.img
+ln -sf "vmlinuz-${KVER}" binary/live/vmlinuz
+ln -sf "initrd.img-${KVER}" binary/live/initrd.img
 
-echo "[nm-hook] grub.cfg -> kernel ${KVER}"
+echo "[nm-hook] grub.cfg -> kernel ${KVER} (modules verified)"

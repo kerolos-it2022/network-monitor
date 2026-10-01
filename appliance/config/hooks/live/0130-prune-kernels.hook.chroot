@@ -1,0 +1,16 @@
+#!/bin/sh
+# 0130-prune-kernels.hook.chroot — v2.7.5
+# bookworm أحيانًا يُثبّت نواتين بينما /lib/modules لن واحدة فقط — النواة
+# اليتيمة تقلع لكن modprobe ext4 يفشل ("unknown filesystem type") فيموت
+# المثبّت عند mount. نُزيل أي نواة في /boot بلا مجلد وحدات.
+set -e
+
+for VK in $(ls /boot 2>/dev/null | sed -n 's/^vmlinuz-//p'); do
+  if [ ! -d "/lib/modules/$VK" ]; then
+    echo "[nm-prune] removing kernel without modules: $VK"
+    apt-get purge -y "linux-image-$VK" >/dev/null 2>&1 || dpkg --purge "linux-image-$VK" || true
+  fi
+done
+
+# إعادة توليد initramfs لِما تبقى احتياطًا (صامت — تعتمد القائمة على البقاء).
+update-initramfs -u -k all >/dev/null 2>&1 || true
