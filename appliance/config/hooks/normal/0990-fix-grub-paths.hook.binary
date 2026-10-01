@@ -1,25 +1,25 @@
 #!/bin/sh
 # 0990-fix-grub-paths.hook.binary — v2.7.5
 # التنفيذ: live-build يشغّل الـ hook بـ `cd binary && ../config/hooks/...`
-# أي أن cwd عند الدخول = مجلد binary/ نفسه.
+# أي أن cwd عند الدخول = مجلد binary/ نفسه، وثم `cd live` → binary/live.
 # المهام (بعد binary_linux-images و binary_grub_cfg وقبل binary_iso):
-#   1) اختيار أحدث نواة في binary/live لديها /lib/modules في chroot
-#      (bookworm قد يترك نواة بلا وحدات — modprobe ext4 يفشل معها داخل النظام الحي)
-#   2) تَرقيع grub.cfg للمسارات المُسَنَّسَنة الصحيحة
-#   3) إنشاء روابط /live/vmlinuz و /live/initrd.img احتياطًا
+#   1) اختيار أحدث نواة في binary/live شجرتها موجودة داخل squashfs المصدري
+#      (chroot) عبر ملف modules.dep الفيزيائي (merged-usr: usr/lib/modules).
+#   2) تَرقيع grub.cfg للمسارات المُسَنَّسَنة الصحيحة.
+#   3) إنشاء روابط /live/vmlinuz و /live/initrd.img احتياطًا.
 set -e
 
 cd live 2>/dev/null || exit 0
 
-# 1) اختيار النواة: الأحدث أولاً، بشرط وجود وحداتها في chroot.
+# 1) اختيار النواة: الأحدث أولاً، بشرط وجود modules.dep لشجرتها في chroot.
 KVER=""
 for VK in $(ls -1 vmlinuz-* 2>/dev/null | sed 's/^vmlinuz-//' | sort -Vr); do
-  if [ -d "../../chroot/lib/modules/$VK" ]; then
+  if [ -e "../../chroot/usr/lib/modules/$VK/modules.dep" ]; then
     KVER="$VK"
     break
   fi
 done
-# fallback: أحدث نواة متاحة (لن يحدث مع 0130-prune-kernels).
+# fallback: أحدث نواة متاحة (لا يُفترض الوصول هنا بعد 0130-prune-kernels).
 [ -n "$KVER" ] || KVER=$(ls -1 vmlinuz-* 2>/dev/null | sed 's/^vmlinuz-//' | sort -V | tail -1)
 [ -n "$KVER" ] || exit 0
 
@@ -31,8 +31,8 @@ sed -i \
   -e "s|/live/initrd.img$|/live/initrd.img-${KVER}|" \
   boot/grub/grub.cfg
 
-# 3) روابط احتياطية داخل binary/live (cwd الحالي بعد cd .. هو binary/).
+# 3) روابط احتياطية داخل binary/live.
 ln -sf "vmlinuz-${KVER}" live/vmlinuz
 ln -sf "initrd.img-${KVER}" live/initrd.img
 
-echo "[nm-hook] grub.cfg -> kernel ${KVER} (modules verified)"
+echo "[nm-hook] grub.cfg -> kernel ${KVER} (modules.dep verified)"
