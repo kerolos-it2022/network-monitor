@@ -1,25 +1,28 @@
 #!/bin/sh
 # 0990-fix-grub-paths.hook.binary — v2.7.5
-# التنفيذ: live-build يشغّل الـ hook بـ `cd binary && ../config/hooks/...`
-# أي أن cwd عند الدخول = مجلد binary/ نفسه، وثم `cd live` → binary/live.
-# المهام (بعد binary_linux-images و binary_grub_cfg وقبل binary_iso):
-#   1) اختيار أحدث نواة في binary/live شجرتها موجودة داخل squashfs المصدري
-#      (chroot) عبر ملف modules.dep الفيزيائي (merged-usr: usr/lib/modules).
-#   2) تَرقيع grub.cfg للمسارات المُسَنَّسَنة الصحيحة.
-#   3) إنشاء روابط /live/vmlinuz و /live/initrd.img احتياطًا.
+# cwd عند التنفيذ = مجلد binary/ (live-build: cd binary && ../hook) ثم `cd live`.
+# القرار النهائي: نقرأ شجرة الموديولات من filesystem.squashfs نفسه (المصدر
+# النهائي الفعلي للنظام) ونختار نواة موجودة فيها موديولاتها — لا افتراضات
+# عن chroot أو merged-usr. ثم نرقّع grub.cfg وننشئ الروابط الاحتياطية.
 set -e
 
 cd live 2>/dev/null || exit 0
+SQ=filesystem.squashfs
+[ -f "$SQ" ] || exit 0
 
-# 1) اختيار النواة: الأحدث أولاً، بشرط وجود modules.dep لشجرتها في chroot.
+# 1) قوائم موديولات كل نواة من داخل الـ squashfs (مرة واحدة).
+SQ_LIST=/tmp/nm-sq-list.txt
+unsquashfs -ls "$SQ" > "$SQ_LIST" 2>/dev/null || exit 0
+
 KVER=""
 for VK in $(ls -1 vmlinuz-* 2>/dev/null | sed 's/^vmlinuz-//' | sort -Vr); do
-  if [ -e "../../chroot/usr/lib/modules/$VK/modules.dep" ]; then
+  if grep -q "usr/lib/modules/$VK/modules.dep" "$SQ_LIST"; then
     KVER="$VK"
     break
   fi
 done
-# fallback: أحدث نواة متاحة (لا يُفترض الوصول هنا بعد 0130-prune-kernels).
+
+# fallback: أحدث نواة متاحة (يُفترض ألا نصل هنا — 0130 يقلّم النوى اليتيمة).
 [ -n "$KVER" ] || KVER=$(ls -1 vmlinuz-* 2>/dev/null | sed 's/^vmlinuz-//' | sort -V | tail -1)
 [ -n "$KVER" ] || exit 0
 
@@ -35,4 +38,4 @@ sed -i \
 ln -sf "vmlinuz-${KVER}" live/vmlinuz
 ln -sf "initrd.img-${KVER}" live/initrd.img
 
-echo "[nm-hook] grub.cfg -> kernel ${KVER} (modules.dep verified)"
+echo "[nm-hook] grub.cfg -> kernel ${KVER} (modules verified in squashfs)"
