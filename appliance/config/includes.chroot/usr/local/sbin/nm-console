@@ -1,64 +1,67 @@
 #!/bin/bash
-# nm-console — قائمة الكونسول عند الإقلاع (tty1).
-# نظام حي:  عرض خيار التثبيت على القرص.
-# نظام مثبَّت: عرض حالة الخدمة وعنوان الوصول.
+# nm-console — boot console (tty1). English UI: the Linux console cannot
+# render Arabic (no font/RTL) — it shows as garbage glyphs.
+# live system : offers install (auto-starts after countdown).
+# installed   : service status + management menu.
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
 warn()  { printf '\033[33m%s\033[0m\n' "$*"; }
 
 IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
 
 if [ -f /etc/nm-installed ]; then
-    # ═══ نظام مثبَّت ═══
+    # ═══ installed system ═══
     while true; do
         clear
-        bold "═══ نظام مراقبة الشبكة — appliance ═══"
+        bold "── Network Monitor Appliance ──"
         echo
-        echo "  عنوان الوصول:  http://${IP:-غير متصل}/"
+        echo "  Web UI     : http://${IP:-no-network}/"
         echo
-        systemctl is-active --quiet network-monitor.service \
-            && echo "  حالة الخدمة:   🟢 تعمل" \
-            || echo "  حالة الخدمة:   🔴 متوقفة — journalctl -u network-monitor"
+        if systemctl is-active --quiet network-monitor.service; then
+            echo "  Service    : RUNNING"
+        else
+            echo "  Service    : STOPPED (journalctl -u network-monitor)"
+        fi
         echo
-        echo "  [1] إعادة تشغيل الخدمة"
-        echo "  [2] سجل الخدمة (آخر 50 سطرًا)"
-        echo "  [s] موجه أوامر (shell)"
-        echo "  [q] خروج من القائمة"
+        echo "  [1] Restart service"
+        echo "  [2] Service log (last 50 lines)"
+        echo "  [s] shell"
+        echo "  [q] quit menu"
         echo
-        read -r -p "اختيار: " CH
+        read -r -p "Select: " CH
         case "$CH" in
-            1) systemctl restart network-monitor.service; echo "تم."; sleep 2 ;;
-            2) journalctl -u network-monitor.service -n 50 --no-pager; read -r -p "↵ للعودة…" _ ;;
+            1) systemctl restart network-monitor.service; echo "Done."; sleep 2 ;;
+            2) journalctl -u network-monitor.service -n 50 --no-pager; read -r -p "Press ENTER…" _ ;;
             s) exec /bin/bash -i ;;
-            q) systemctl start getty@tty1.service; systemctl stop nm-console.service 2>/dev/null; sleep 60; exit 0 ;;
+            q) systemctl start getty@tty1.service 2>/dev/null; systemctl stop nm-console.service 2>/dev/null; sleep 60; exit 0 ;;
         esac
     done
 else
-    # ═══ نظام حي (لم يُثبَّت بعد) — تنصيب تلقائي سلس بعد عدّاد (نمط appliances) ═══
+    # ═══ live system — Sophos-style smooth install ═══
     clear
     bold "═══ Network Monitor Appliance ═══"
     echo
-    echo "  هذا الـ USB يحمل صورة النظام — للتثبيت الدائم على القرص الصلب:"
-    echo "  سيبدأ التثبيت تلقائيًّا خلال 10 ثوانٍ (التثبيت يمسح القرص — سيُطلب تأكيد)."
+    echo "  This USB is a live image — data is not saved."
+    echo "  Installing to hard disk starts automatically in 10 seconds"
+    warn "  (the target disk will be ERASED — a confirmation is required)."
     echo
-    echo "  [أي مفتاح] قائمة الاختيار اليدوية"
+    echo "  [any key] manual menu"
     echo
     CH=""
     read -r -n 1 -s -t 10 CH || CH=""
     if [ -z "$CH" ]; then
-        # انتهى العدّاد دون ضغط → تثبيت تلقائي.
         /usr/local/sbin/nm-install-to-disk
     else
         echo
-        echo "  [1] 🖥️  تثبيت النظام على القرص الصلب (سيمسح القرص)"
-        echo "  [2] تجربة النظام حيًّا (بدون تثبيت)"
-        echo "  [s] موجه أوامر"
+        echo "  [1] Install to hard disk (ERASES the disk)"
+        echo "  [2] Run live system (no install)"
+        echo "  [s] shell"
         echo
-        read -r -p "اختيار: " CH2
+        read -r -p "Select: " CH2
         case "$CH2" in
             1) /usr/local/sbin/nm-install-to-disk ;;
-            2) echo "النظام يعمل حيًّا — العنوان: http://${IP:-غير متصل}/"; exit 0 ;;
-            s) exit 0 ;;
-            *) exit 0 ;;
+            2) echo "Live system running — Web UI: http://${IP:-no-network}/"; exec /bin/bash -i ;;
+            s) exec /bin/bash -i ;;
+            *) exec /bin/bash -i ;;
         esac
     fi
 fi
