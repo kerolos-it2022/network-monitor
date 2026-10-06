@@ -1,8 +1,8 @@
 
 ╔════════════════════════════════════════════════════════════╗
-║          Network Monitor Appliance — نظام مراقبة الشبكة          ║
+║        Network Monitor Appliance — Network Monitoring       ║
 ╚════════════════════════════════════════════════════════════╝
 
- الواجهة:  http://<IP-الجهاز>/
- الكونسول: قائمة الإدارة تظهر تلقائيًّا
+ Web UI:    http://<device-IP>/
+ Console:   admin menu starts automatically
 

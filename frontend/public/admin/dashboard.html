@@ -29,6 +29,7 @@
       <li><button class="tab-btn" id="tab-discovered" type="button" title="الأجهزة الجديدة المُكتشَفة من المسح الدوري"><span class="tab-btn-icon">🆕</span><span class="tab-btn-label">الأَجهزة المُكتشَفة</span></button></li>
       <li><button class="tab-btn" id="tab-scheduler" type="button" title="المسح الدوري التلقائي"><span class="tab-btn-icon">⏱️</span><span class="tab-btn-label">المسح الدوري</span></button></li>
       <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label">خريطة المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-topology" type="button" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label">سلسلة الشبكة</span></button></li>
       <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label">الإِشعارات</span></button></li>
       <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label">السجل</span></button></li>
       <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
@@ -339,6 +340,12 @@
       </div>
     </div>
 
+    <section id="section-topology" class="hidden">
+      <h2>🔗 سلسلة الشبكة (Topology)</h2>
+      <p class="muted">الأجهزة بترتيب مسار الشبكة — حدد لكل جهاز «متصل عبر» من نموذج الجهاز ليبنى المسار. الجهاز المنقطع وأبوه متصل = العيب فيه؛ الأب منقطع = الفرع كله مسدود عبره.</p>
+      <div id="topology-tree"><p class="muted">افتح التبويب لتحميل السلسلة…</p></div>
+    </section>
+
     <section id="section-notifications" class="hidden">
       <div class="form-card">
         <h3>إعدادات الإشعارات</h3>
@@ -608,6 +615,9 @@
           <label>الموقع
             <select id="df-location_id"><option value="">— بدون —</option></select>
           </label>
+          <label>متصل عبر (سلسلة الشبكة — الجهاز الأب، فارغ = مدخل إنترنت)
+            <select id="df-parent_id"><option value="">— مدخل إنترنت (جذر السلسلة) —</option></select>
+          </label>
           <label>طريقة الفحص
             <select id="df-check_protocol">
               <option value="ping">Ping</option>
@@ -740,6 +750,7 @@
   <!-- سكريبتات (admin-utils.js يجب أن يُحمّل أولاً — يحوي esc/api المشتركة) -->
   <script src="../js/admin-utils.js"></script>
   <script src="../js/admin-devices.js"></script>
+  <script src="../js/admin-topology.js"></script>
   <script src="../js/admin-locations-types.js"></script>
   <script src="../js/admin-notifications.js"></script>
   <script src="../js/admin-tabs.js"></script>

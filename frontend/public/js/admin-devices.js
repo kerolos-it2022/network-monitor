@@ -181,9 +181,24 @@ function resetDeviceForm() {
   document.getElementById('df-failure_threshold').value = 3;
 }
 
+// Topology chain: تعبئة قائمة «متصل عبر» بكل الأجهزة (مع استثناء الجهاز المعدَّل نفسه).
+async function populateParentSelect(selectedId, excludeId) {
+  const sel = document.getElementById('df-parent_id');
+  if (!sel) return;
+  const r = await api('/api/devices');
+  const list = (r.success && Array.isArray(r.data)) ? r.data : [];
+  sel.innerHTML = '<option value="">— مدخل إنترنت (جذر السلسلة) —</option>'
+    + list
+      .filter((d) => !excludeId || Number(d.id) !== Number(excludeId))
+      .map((d) => '<option value="' + d.id + '">' + esc(d.name) + ' (' + esc(d.ip) + ')</option>')
+      .join('');
+  sel.value = selectedId || '';
+}
+
 function openDeviceForm() {
   resetDeviceForm();
   document.getElementById('device-form-title').textContent = 'إضافة جهاز';
+  populateParentSelect('', null);
   openEditModal(document.getElementById('device-modal'), {
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات قديمة.
     onClose: () => resetDeviceForm(),
@@ -208,6 +223,7 @@ async function startEditDevice(id) {
   document.getElementById('df-failure_threshold').value = d.failure_threshold;
   document.getElementById('df-is_active').checked = !!d.is_active;
   document.getElementById('device-form-title').textContent = 'تعديل جهاز #' + d.id;
+  await populateParentSelect(d.parent_id || '', d.id);
   openEditModal(document.getElementById('device-modal'), {
     focusSelector: '#df-name',
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات التعديل.
@@ -224,6 +240,9 @@ async function submitDeviceForm(e) {
     device_type_id: Number(document.getElementById('df-device_type_id').value),
     location_id: document.getElementById('df-location_id').value
       ? Number(document.getElementById('df-location_id').value)
+      : null,
+    parent_id: document.getElementById('df-parent_id').value
+      ? Number(document.getElementById('df-parent_id').value)
       : null,
     check_protocol: document.getElementById('df-check_protocol').value,
     port: document.getElementById('df-port').value

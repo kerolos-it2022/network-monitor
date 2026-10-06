@@ -11,6 +11,7 @@ const scanScheduler = require('./services/scan-scheduler.service');
 
 const authRoutes = require('./routes/auth.routes');
 const devicesRoutes = require('./routes/devices.routes');
+const topologyRoutes = require('./routes/topology.routes');
 const locationsRoutes = require('./routes/locations.routes');
 const deviceTypesRoutes = require('./routes/deviceTypes.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
@@ -67,6 +68,7 @@ app.get('/api/health', (req, res) => {
 // API routes.
 app.use('/api/auth', authRoutes);
 app.use('/api/devices', devicesRoutes);
+app.use('/api/topology', topologyRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/device-types', deviceTypesRoutes);
 app.use('/api/notifications', notificationsRoutes);

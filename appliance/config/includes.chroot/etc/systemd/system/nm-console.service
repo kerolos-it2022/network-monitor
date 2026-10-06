@@ -1,8 +1,8 @@
 [Unit]
-Description=Network Monitor Appliance — قائمة الكونسول (tty1)
+Description=Network Monitor Appliance — console menu (tty1)
 After=systemd-user-sessions.service network-online.target
 Wants=network-online.target
-# توقف getty@tty1 ما دامت القائمة تعمل (تُرجع تلقائيًّا لو توقفت الخدمة).
+# Stop getty@tty1 while the menu runs (auto-restarts if the service dies).
 Conflicts=getty@tty1.service
 After=getty@tty1.service
 

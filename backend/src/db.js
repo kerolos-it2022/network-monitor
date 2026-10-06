@@ -45,6 +45,9 @@ try {
       // v2.7.5: بورت واجهة الويب المخصص (web_port) لِـ زر «فتح HTTP/HTTPS» — أَجهزة
       // واجهتُها على بورت غير 80/443 (مثل 4444). NULL = السلوك الافتراضي (80/443).
       "ALTER TABLE devices ADD COLUMN web_port INTEGER",
+      // v2.8.0: Topology chain — الأب في سلسلة الشبكة (parent_id): الجهاز المتصل عبر
+      // جهاز آخر. NULL = مدخل إنترنت (جذر السلسلة). الحلقات تُمنع في devices.routes.
+      "ALTER TABLE devices ADD COLUMN parent_id INTEGER",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

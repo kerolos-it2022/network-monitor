@@ -46,6 +46,71 @@ function getArchiveUrl(tag) {
   return `https://github.com/${owner}/${repo}/archive/refs/tags/${tag}.zip`;
 }
 
+// ── وضع الـ appliance: فحص وتحديث عبر GitHub API + أرشيف الإصدار (بدون git/PM2) ──
+// مقارنة semver حقيقية (وليس نصية) — العلة الميدانية: 2.4.0 قدم كـ"تحديث" لـ2.5.3
+function semverParts(v) {
+  const m = String(v).replace(/^v/i, '').trim().match(/^(\d+)\.(\d+)\.(\d+)/);
+  return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0];
+}
+function isNewerVersion(a, b) {
+  const pa = semverParts(a), pb = semverParts(b);
+  for (let i = 0; i < 3; i++) { if (pa[i] !== pb[i]) return pa[i] > pb[i]; }
+  return false;
+}
+async function getLatestTagFromApi() {
+  try {
+    const { owner, repo } = getRepoConfig();
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/tags?per_page=30`,
+      { headers: githubApiHeaders(), signal: AbortSignal.timeout(20000) }
+    );
+    if (!res.ok) return [];
+    const tags = await res.json();
+    const vTags = Array.isArray(tags) ? tags.map((t) => t.name).filter((n) => /^v/i.test(n)) : [];
+    // GitHub لا يرتب semver — نرتب تنازليًا بأنفسنا
+    return vTags.sort((a, b) => (isNewerVersion(b, a) ? 1 : isNewerVersion(a, b) ? -1 : 0));
+  } catch {
+    return [];
+  }
+}
+
+function performUpdateArchive(tag) {
+  return new Promise((resolve) => {
+    const TMP_ZIP = `/tmp/nm-update-${tag}.zip`;
+    const TMP_SRC = '/tmp/nm-update-src';
+    const archiveUrl = GITHUB_TOKEN
+      ? `https://api.github.com/repos/${getRepoConfig().owner}/${getRepoConfig().repo}/zipball/${tag}`
+      : getArchiveUrl(tag);
+    const authHdr = GITHUB_TOKEN ? `-H "Authorization: Bearer ${GITHUB_TOKEN}" ` : '';
+    const steps = [
+      { name: `تحميل أرشيف الإصدار ${tag}`, cmd: `curl -fL --retry 2 -m 300 ${authHdr}-o ${TMP_ZIP} "${archiveUrl}"` },
+      { name: 'فك الأرشيف', cmd: `rm -rf ${TMP_SRC} && mkdir -p ${TMP_SRC} && unzip -q -o ${TMP_ZIP} -d ${TMP_SRC}` },
+      { name: 'تحديث ملفات التطبيق', cmd: `cd ${TMP_SRC} && SRC=$(ls -d */ | head -n1) && cp -a "$SRC/backend" ${REPO_DIR}/ && cp -a "$SRC/frontend" ${REPO_DIR}/ && mkdir -p ${REPO_DIR}/database && cp -a "$SRC"/database/. ${REPO_DIR}/database/` },
+      { name: 'تحديث التبعيات', cmd: `cd ${REPO_DIR}/backend && npm ci --omit=dev` },
+      { name: 'إعادة تشغيل الخدمة', cmd: `if systemctl is-active --quiet network-monitor 2>/dev/null; then systemctl restart network-monitor; else pm2 restart network-monitor --update-env 2>/dev/null || true; fi` }
+    ];
+    let i = 0;
+    const results = [];
+    function next() {
+      if (i >= steps.length) {
+        resolve({ success: true, message: 'تم التحديث عبر أرشيف الإصدار وإعادة التشغيل بنجاح', steps: results, viaArchive: true });
+        return;
+      }
+      const st = steps[i];
+      exec(st.cmd, { cwd: REPO_DIR, timeout: 600000 }, (err, stdout, stderr) => {
+        if (err) {
+          resolve({ success: false, error: `فشل في خطوة "${st.name}": ${err.message}\n${stderr}`, steps: results });
+          return;
+        }
+        results.push({ step: st.name, output: (stdout || '').trim().slice(0, 500) });
+        i++;
+        next();
+      });
+    }
+    next();
+  });
+}
+
 // قراءة الإصدار من package.json (في مجلد backend)
 function getCurrentVersion() {
   try {
@@ -180,6 +245,26 @@ function classifyGitError(error) {
 // التحقق من وجود تحديثات متاحة
 async function checkForUpdates(branch = 'main') {
   try {
+    // وضع الـ appliance: لا .git ولا git — الفحص عبر GitHub API (الأرشيف يُستخدم في performUpdate)
+    if (!(await isGitRepo())) {
+      const currentVersion = getCurrentVersion();
+      const sorted = await getLatestTagFromApi();
+      const latestTag = sorted[0] || null;                       // الأحدث semver
+      const latestVersion = latestTag ? latestTag.replace(/^v/i, '') : currentVersion;
+      // تحديث فقط إذا كان الأحدث في الحقيقة (وليس مجرد "مختلف")
+      const hasUpdate = latestTag ? isNewerVersion(latestTag, currentVersion) : false;
+      return {
+        success: true,
+        isGitRepo: false,
+        viaArchive: true,
+        hasUpdate,
+        currentVersion,
+        latestVersion,
+        branch,
+        changelog: hasUpdate ? `تحديث متاح (${latestVersion}) — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)` : (latestTag ? 'أنت على أحدث إصدار أو أحدث من المتاح' : 'لا توجد تاجات إصدارات على GitHub'),
+        updateAvailable: hasUpdate
+      };
+    }
     // ملاحظة: checkBranchExists يَنفّذ `git ls-remote` (read-only عبر الشبكة، لا يَكتب .git/).
     // إن نجح وفشل `git fetch` فيما بَعد، فالجذر ليس "الفرع غير موجود" بل صلاحيات .git/ أو شبكة.
     // لذلك نُجَرّب `git fetch` الفِعلي أَوّلًا، ونَلتقط رسالة الخطأ الأَصلية بدل الإصمات على الرسالة المُضلِّلة.
@@ -276,7 +361,19 @@ async function checkForUpdates(branch = 'main') {
 
 // تنفيذ التحديث
 async function performUpdate(branch = 'main') {
-  return new Promise((resolve) => {
+    // وضع الـ appliance: تحديث عبر أرشيف الإصدار (بدون git/PM2)
+    if (!(await isGitRepo())) {
+      const sorted = await getLatestTagFromApi();
+      const tag = sorted[0] || null;
+      if (!tag) {
+        return { success: false, error: 'تعذر جلب الإصدارات من GitHub — تحقق من الإنترنت، أو أضف GITHUB_TOKEN في backend/.env للمستودعات الخاصة.' };
+      }
+      if (!isNewerVersion(tag, getCurrentVersion())) {
+        return { success: true, message: 'أنت بالفعل على أحدث إصدار (أو أحدث من المتاح)', alreadyUpdated: true };
+      }
+      return performUpdateArchive(tag);
+    }
+    return new Promise((resolve) => {
     const steps = [
       { name: 'جلب أحدث التغييرات', cmd: `git fetch --tags --force origin ${branch}` },
       { name: 'سحب التغييرات', cmd: `git pull origin ${branch}` },

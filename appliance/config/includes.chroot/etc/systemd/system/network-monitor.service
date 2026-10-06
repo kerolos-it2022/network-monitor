@@ -1,5 +1,5 @@
 [Unit]
-Description=Network Monitor — خدمة المراقبة (appliance)
+Description=Network Monitor — monitoring service (appliance)
 After=network-online.target
 Wants=network-online.target
 
@@ -11,11 +11,13 @@ WorkingDirectory=/opt/network-monitor/backend
 ExecStart=/usr/bin/node src/server.js
 Environment=NODE_ENV=production
 Environment=PORT=4001
-# ملف بيئة يُولَّد في التثبيت: DB_PATH + SESSION_SECRET
+# env file generated at install time: DB_PATH + SESSION_SECRET
 EnvironmentFile=-/var/lib/network-monitor/env
 Restart=always
 RestartSec=3
-# تأمين بسيط للخدمة.
+# ping/traceroute need raw sockets — grant to the service (works with NoNewPrivileges).
+AmbientCapabilities=CAP_NET_RAW
+# basic service hardening.
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true

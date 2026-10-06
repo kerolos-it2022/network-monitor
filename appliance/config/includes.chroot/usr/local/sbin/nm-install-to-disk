@@ -21,6 +21,28 @@ exec > >(tee -a "$LOG") 2>&1
 trap 'echo; echo "═══ INSTALL FAILED ═══"; echo "── last log lines:"; tail -15 "$LOG"; echo; read -r -p "Press ENTER to return to menu…" _; exit 1' ERR
 pause_fail() { read -r -p "Press ENTER…" _; }
 
+# Validate an IPv4 dotted quad (each octet 0-255).
+valid_ipv4() {
+  local ip="$1"
+  [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || return 1
+  local IFS=.
+  set -- $ip
+  local o
+  for o in "$@"; do [ "$((10#$o))" -le 255 ] || return 1; done
+  return 0
+}
+
+# Convert a CIDR prefix (8-32) to a dotted netmask.
+prefix2mask() {
+  local p="$1" m="" i o
+  for i in 1 2 3 4; do
+    if [ "$p" -ge 8 ]; then o=255; p=$((p - 8)); else o=$((256 - (1 << (8 - p)))); p=0; fi
+    m="$m$o"
+    [ "$i" -lt 4 ] && m="$m."
+  done
+  echo "$m"
+}
+
 [ "$(id -u)" -eq 0 ] || die "must run as root"
 [ -f "$MARKER" ] && die "system already installed on this machine."
 
@@ -43,10 +65,36 @@ echo
 warn "═══ FINAL WARNING ═══"
 warn "ALL DATA on $DISK ($SIZE — $MODEL) will be ERASED."
 read -r -p "Type YES to confirm: " CONFIRM
-# قبول YES بأي حالة مع تجاهل الفراغات — يظل تأكيدًا صريحًا كتابيًا.
+# Accept YES in any case, ignoring whitespace — still an explicit typed confirmation.
 CONFIRM_UP=$(printf '%s' "$CONFIRM" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')
 if [ "$CONFIRM_UP" != "YES" ]; then
   die "installation cancelled (received: '$CONFIRM')"
+fi
+
+# ── network configuration (DHCP default — Enter passes through) ──
+echo
+echo "── Network configuration ──"
+echo "  [1] DHCP — automatic (default)"
+echo "  [2] Static IP"
+NET_MODE=dhcp
+read -r -p "Select [1]: " NET_SEL
+NET_SEL=${NET_SEL:-1}
+if [ "$NET_SEL" = "2" ]; then
+  NET_MODE=static
+  read -r -p "  IP address (e.g. 192.168.1.50): " NET_IP
+  until valid_ipv4 "$NET_IP"; do read -r -p "  Invalid IP — try again: " NET_IP; done
+  read -r -p "  Subnet prefix (8-32, default 24): " NET_PREFIX
+  NET_PREFIX=${NET_PREFIX:-24}
+  case "$NET_PREFIX" in ''|*[!0-9]*) NET_PREFIX=24 ;; esac
+  [ "$NET_PREFIX" -ge 8 ] 2>/dev/null && [ "$NET_PREFIX" -le 32 ] 2>/dev/null || NET_PREFIX=24
+  read -r -p "  Default gateway: " NET_GW
+  until valid_ipv4 "$NET_GW"; do read -r -p "  Invalid gateway — try again: " NET_GW; done
+  read -r -p "  DNS server [$NET_GW]: " NET_DNS
+  NET_DNS=${NET_DNS:-$NET_GW}
+  until valid_ipv4 "$NET_DNS"; do read -r -p "  Invalid DNS — try again: " NET_DNS; done
+  echo "  Static: $NET_IP/$NET_PREFIX via $NET_GW (DNS $NET_DNS)"
+else
+  echo "  DHCP will configure the network automatically."
 fi
 
 # ── partition (GPT — supports BIOS and UEFI) ──
@@ -94,6 +142,9 @@ if [ "$RSC" -ne 0 ] && [ "$RSC" -ne 23 ] && [ "$RSC" -ne 24 ]; then
 elif [ "$RSC" -ne 0 ]; then
   echo "   (rsync finished with minor transfer notices, code $RSC — continuing)"
 fi
+# rsync excludes tmpfs/kernel-mounted dirs and /var/log — the installed root
+# still needs those mount-point directories to exist (systemd requires /run).
+mkdir -p "$MOUNT"/{dev,proc,sys,run,tmp,media,mnt,var/log,var/log/nginx}
 chmod 1777 "$MOUNT/tmp"
 
 # ── chroot prep ──
@@ -121,7 +172,7 @@ mkdir -p "$MOUNT/var/lib/network-monitor"
   echo "SESSION_SECRET=$SESSION_SECRET"
   echo "DB_PATH=/var/lib/network-monitor/monitoring.db"
 } > "$MOUNT/var/lib/network-monitor/env"
-chroot "$MOUNT" chown netmon:netmon /var/lib/network-monitor/env
+chroot "$MOUNT" chown -R netmon:netmon /var/lib/network-monitor
 
 # ── GRUB (BIOS + UEFI) ──
 echo "── Installing GRUB…"
@@ -137,51 +188,107 @@ chroot "$MOUNT" update-grub >/dev/null 2>&1 || chroot "$MOUNT" update-grub
 # ── enable services on the installed system ──
 chroot "$MOUNT" systemctl enable network-monitor.service nm-console.service nginx nftables 2>/dev/null || true
 
-# ── admin account: random password via seedAdmin ──
+# ── admin account: the admin chooses the password (empty = auto-generate) ──
+echo
+echo "── Admin account ──"
+PASS_CHOSEN=0
+read -rs -p "Choose admin password (empty = auto-generate): " ADMIN_PASS
+echo
+if [ -n "$ADMIN_PASS" ]; then
+  read -rs -p "Confirm password: " ADMIN_PASS2
+  echo
+  if [ "$ADMIN_PASS" != "$ADMIN_PASS2" ]; then
+    warn "  Passwords do not match — an auto-generated password will be used."
+    ADMIN_PASS=""
+  elif [ "${#ADMIN_PASS}" -lt 4 ]; then
+    warn "  Too short (minimum 4 characters) — an auto-generated password will be used."
+    ADMIN_PASS=""
+  else
+    PASS_CHOSEN=1
+  fi
+fi
+[ -z "$ADMIN_PASS" ] && ADMIN_PASS=$(openssl rand -base64 12 | tr -d '/+=' | cut -c1-12)
 echo "── Creating admin account…"
-ADMIN_PASS=$(openssl rand -base64 12 | tr -d '/+=' | cut -c1-12)
+
+# Console gate: store a SHA-512 hash of the SAME password (root-only file).
+# The console menu will require it at every boot — one credential, two doors.
+printf 'CONSOLE_HASH=%s\n' "$(printf '%s' "$ADMIN_PASS" | sha512sum | cut -d' ' -f1)" > "$MOUNT/etc/nm-console.conf"
+chmod 600 "$MOUNT/etc/nm-console.conf"
+
+# Linux admin user for SSH + sudo (same password as web/console).
+chroot "$MOUNT" useradd -m -s /bin/bash -G sudo sysadmin 2>/dev/null || true
+echo "sysadmin:$ADMIN_PASS" | chroot "$MOUNT" chpasswd >/dev/null 2>&1
 chroot "$MOUNT" /usr/bin/env \
   DEFAULT_ADMIN_USERNAME=admin \
   DEFAULT_ADMIN_PASSWORD="$ADMIN_PASS" \
   DB_PATH=/var/lib/network-monitor/monitoring.db \
   /usr/bin/node /opt/network-monitor/backend/src/seedAdmin.js
 
+# ── first-login credentials file (target still mounted!) ──
+IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+PORT=80
+if [ "$NET_MODE" = "static" ]; then DISPLAY_IP="$NET_IP"; else DISPLAY_IP="${IP:-<device-ip>}"; fi
+if [ "$PASS_CHOSEN" = 1 ]; then PASS_LINE="(the password you chose during installation)"; else PASS_LINE="$ADMIN_PASS"; fi
+
+cat > "$MOUNT/var/lib/network-monitor/FIRST-LOGIN.txt" << EOF
+Network Monitor Appliance — login credentials
+====================================================
+URL      : http://${DISPLAY_IP}:${PORT}/
+Username : admin
+Password : ${PASS_LINE}
+====================================================
+NOTE: change the password (Profile -> change password),
+  then delete this file: rm /var/lib/network-monitor/FIRST-LOGIN.txt
+EOF
+chroot "$MOUNT" chown -R netmon:netmon /var/lib/network-monitor
+
+# ── network config for the installed system — live-boot brings the network
+# up only in live mode; the installed system needs its own config.
+{
+  echo "auto lo"
+  echo "iface lo inet loopback"
+  for NIC in $(ls /sys/class/net 2>/dev/null | grep -v '^lo$'); do
+    echo ""
+    echo "auto $NIC"
+    if [ "$NET_MODE" = "static" ]; then
+      echo "iface $NIC inet static"
+      echo "    address $NET_IP"
+      echo "    netmask $(prefix2mask "$NET_PREFIX")"
+      echo "    gateway $NET_GW"
+    else
+      echo "iface $NIC inet dhcp"
+    fi
+  done
+} > "$MOUNT/etc/network/interfaces"
+if [ "$NET_MODE" = "static" ]; then
+  echo "nameserver $NET_DNS" > "$MOUNT/etc/resolv.conf"
+fi
+
 # ── cleanup ──
 umount -R "$MOUNT/dev" "$MOUNT/proc" "$MOUNT/sys" "$MOUNT/run" 2>/dev/null || true
 [ "$IS_UEFI" = yes ] && umount "$MOUNT/boot/efi" 2>/dev/null || true
+touch "$MOUNT/etc/nm-installed"
 umount -R "$MOUNT"
 touch "$MARKER"
-
-# ── final notice (beep) — IP / port / user / password ──
-IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
-PORT=80
-
-cat > "$MOUNT/var/lib/network-monitor/FIRST-LOGIN.txt" << EOF
-Network Monitor Appliance — first login credentials
-====================================================
-URL      : http://${IP:-<device-ip>}:${PORT}/
-Username : admin
-Password : ${ADMIN_PASS}
-====================================================
-⚠ Change the password immediately (Profile → change password),
-  then delete this file: rm /var/lib/network-monitor/FIRST-LOGIN.txt
-EOF
-chroot "$MOUNT" chown netmon:netmon /var/lib/network-monitor/FIRST-LOGIN.txt 2>/dev/null || true
 
 printf '\a'
 echo
 echo "  ═════════════════════════════════════════════════════════"
-echo "     ✅  Network Monitor Appliance installed successfully"
+echo "     [OK] Network Monitor Appliance installed successfully"
 echo "  ═════════════════════════════════════════════════════════"
 echo
-echo "     🌐  Web UI  :  http://${IP:-<device-ip>}:${PORT}"
-echo "     🔌  Port    :  ${PORT} (HTTP)"
-echo "     👤  Username:  admin"
-echo "     🔑  Password:  ${ADMIN_PASS}"
+echo "     Web UI  :  http://${DISPLAY_IP}"
+echo "     Port    :  ${PORT} (HTTP)"
+echo "     Username:  admin"
+if [ "$PASS_CHOSEN" = 1 ]; then
+  echo "     Password:  (the one you chose during installation)"
+else
+  echo "     Password:  ${ADMIN_PASS}"
+fi
 echo
 echo "  ─────────────────────────────────────────────────────────"
-echo "     ⚠  Write the password down — it is NOT shown again"
-echo "     📄  Also saved to: /var/lib/network-monitor/FIRST-LOGIN.txt"
+echo "     WARNING: write the password down — it is NOT shown again"
+echo "     Also saved to: /var/lib/network-monitor/FIRST-LOGIN.txt"
 echo "  ─────────────────────────────────────────────────────────"
 echo
 echo "  Note: if the IP changes after reboot, check the console menu."

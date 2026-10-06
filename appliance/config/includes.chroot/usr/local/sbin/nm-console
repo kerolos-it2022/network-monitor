@@ -2,19 +2,540 @@
 # nm-console — boot console (tty1). English UI: the Linux console cannot
 # render Arabic (no font/RTL) — it shows as garbage glyphs.
 # live system : offers install (auto-starts after countdown).
-# installed   : service status + management menu.
+# installed   : full operations console — service, network, ops (no shell needed).
+
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
 warn()  { printf '\033[33m%s\033[0m\n' "$*"; }
 
+APP_DIR=/opt/network-monitor/backend
+DATA_DIR=/var/lib/network-monitor
+
 IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+VERSION=$(node -p "require('$APP_DIR/package.json').version" 2>/dev/null || echo "?")
+
+# ── network helpers ──
+valid_ipv4() {
+  local ip="$1"
+  [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || return 1
+  local IFS=.
+  set -- $ip
+  local o
+  for o in "$@"; do [ "$((10#$o))" -le 255 ] || return 1; done
+  return 0
+}
+
+prefix2mask() {
+  local p="$1" m="" i o
+  for i in 1 2 3 4; do
+    if [ "$p" -ge 8 ]; then o=255; p=$((p - 8)); else o=$((256 - (1 << (8 - p)))); p=0; fi
+    m="$m$o"
+    [ "$i" -lt 4 ] && m="$m."
+  done
+  echo "$m"
+}
+
+first_nic() { ls /sys/class/net 2>/dev/null | grep -v '^lo$' | head -1; }
+
+db_path() {
+  local p
+  p=$(grep -m1 '^DB_PATH=' "$DATA_DIR/env" 2>/dev/null | cut -d= -f2-)
+  echo "${p:-$DATA_DIR/monitoring.db}"
+}
+
+# Write /etc/network/interfaces for $1 (nic) in dhcp|static mode (+ resolv.conf).
+apply_network_config() {
+  local nic="$1" mode="$2"
+  {
+    echo "auto lo"
+    echo "iface lo inet loopback"
+    echo ""
+    echo "auto $nic"
+    if [ "$mode" = "static" ]; then
+      echo "iface $nic inet static"
+      echo "    address $NET_IP"
+      echo "    netmask $(prefix2mask "$NET_PREFIX")"
+      echo "    gateway $NET_GW"
+    else
+      echo "iface $nic inet dhcp"
+    fi
+  } > /etc/network/interfaces
+  if [ "$mode" = "static" ]; then
+    echo "nameserver $NET_DNS" > /etc/resolv.conf
+  fi
+}
+
+prompt_static() {
+  read -r -p "  IP address (e.g. 192.168.1.50): " NET_IP
+  until valid_ipv4 "$NET_IP"; do read -r -p "  Invalid IP — try again: " NET_IP; done
+  read -r -p "  Subnet prefix (8-32, default 24): " NET_PREFIX
+  NET_PREFIX=${NET_PREFIX:-24}
+  case "$NET_PREFIX" in ''|*[!0-9]*) NET_PREFIX=24 ;; esac
+  [ "$NET_PREFIX" -ge 8 ] 2>/dev/null && [ "$NET_PREFIX" -le 32 ] 2>/dev/null || NET_PREFIX=24
+  read -r -p "  Default gateway: " NET_GW
+  until valid_ipv4 "$NET_GW"; do read -r -p "  Invalid gateway — try again: " NET_GW; done
+  read -r -p "  DNS server [$NET_GW]: " NET_DNS
+  NET_DNS=${NET_DNS:-$NET_GW}
+  until valid_ipv4 "$NET_DNS"; do read -r -p "  Invalid DNS — try again: " NET_DNS; done
+}
+
+# ── network settings & diagnostics submenu ──
+network_menu() {
+  local NIC
+  NIC=$(first_nic)
+  while true; do
+    clear
+    bold "── Network settings ──"
+    echo
+    if [ -n "$NIC" ]; then
+      echo "  Interface : $NIC ($(cat /sys/class/net/$NIC/operstate 2>/dev/null || echo unknown))"
+      echo "  IPv4      : $(ip -4 -o addr show dev "$NIC" scope global 2>/dev/null | awk '{print $4}' | head -1)$(ip -4 -o addr show dev "$NIC" scope global >/dev/null 2>&1 || echo none)"
+      echo "  Gateway   : $(ip route show default 2>/dev/null | awk '{print $3}' | head -1)$(ip route show default >/dev/null 2>&1 || echo none)"
+      echo "  DNS       : $(grep -m1 nameserver /etc/resolv.conf 2>/dev/null | awk '{print $2}' || echo none)"
+      echo "  Mode      : $(grep -A1 "^auto $NIC" /etc/network/interfaces 2>/dev/null | grep -oE 'inet (static|dhcp)' | awk '{print $2}' || echo unknown)"
+    else
+      echo "  No network interface detected (loopback only)."
+      echo "  Check the VM/BIOS network adapter is connected."
+    fi
+    echo
+    echo "  [1] Set DHCP (automatic)"
+    echo "  [2] Set static IP"
+    echo "  [3] Apply config now (restart networking)"
+    echo "  [4] Force DHCP now"
+    echo "  [5] Diagnose & auto-fix"
+    echo "  [6] Check internet access"
+    echo "  [b] Back"
+    echo
+    read -r -p "Select: " NCH
+    case "$NCH" in
+      1) if [ -z "$NIC" ]; then warn "  No interface."; sleep 2; continue; fi
+         apply_network_config "$NIC" dhcp
+         echo "  Config written (DHCP). Applying…"
+         systemctl restart networking 2>/dev/null || true
+         ifdown "$NIC" 2>/dev/null; ifup "$NIC" 2>/dev/null
+         sleep 2 ;;
+      2) if [ -z "$NIC" ]; then warn "  No interface."; sleep 2; continue; fi
+         prompt_static
+         apply_network_config "$NIC" static
+         echo "  Config written (static $NET_IP/$NET_PREFIX). Applying…"
+         systemctl restart networking 2>/dev/null || true
+         ifdown "$NIC" 2>/dev/null; ifup "$NIC" 2>/dev/null
+         sleep 2 ;;
+      3) systemctl restart networking 2>/dev/null || true
+         ifdown "$NIC" 2>/dev/null; ifup "$NIC" 2>/dev/null
+         echo "  Networking restarted."; sleep 2 ;;
+      4) if [ -z "$NIC" ]; then warn "  No interface."; sleep 2; continue; fi
+         ip link set "$NIC" up 2>/dev/null
+         dhclient -v "$NIC" 2>&1 | tail -3
+         read -r -p "Press ENTER…" _ ;;
+      5) echo "── Diagnosing network…"
+         NIC=$(first_nic)
+         if [ -z "$NIC" ]; then
+           warn "  [!] No NIC detected — check the VM network adapter is connected."
+         else
+           echo "  Interface $NIC: $(cat /sys/class/net/$NIC/operstate 2>/dev/null)"
+           if ! grep -q up /sys/class/net/$NIC/operstate 2>/dev/null; then
+             echo "  Bringing interface up…"
+             ip link set "$NIC" up
+           fi
+           if [ -z "$(ip -4 -o addr show dev "$NIC" scope global 2>/dev/null)" ]; then
+             echo "  No IPv4 — forcing DHCP (may take up to ~30s)…"
+             dhclient -1 -v "$NIC" 2>&1 | tail -4 || true
+           fi
+           if [ -n "$(ip -4 -o addr show dev "$NIC" scope global 2>/dev/null)" ]; then
+             echo "  [OK] IP: $(ip -4 -o addr show dev "$NIC" scope global | awk '{print $4}' | head -1)"
+             GW=$(ip route show default 2>/dev/null | awk '{print $3}' | head -1)
+             if [ -n "$GW" ] && ping -c1 -W2 "$GW" >/dev/null 2>&1; then
+               echo "  [OK] Gateway $GW reachable."
+             else
+               warn "  [!] Gateway not answering (may be blocked by policy)."
+             fi
+           else
+             warn "  [!] Still no IP — no DHCP server on this network?"
+             warn "      Use [2] Set static IP with your network details."
+           fi
+         fi
+         read -r -p "Press ENTER…" _ ;;
+      6) check_internet
+         read -r -p "Press ENTER…" _ ;;
+      b) break ;;
+    esac
+  done
+}
+
+# ── ops helpers ──
+all_services_status() {
+  clear
+  bold "── Services status ──"
+  echo
+  for s in network-monitor nginx nftables networking ssh; do
+    printf "  %-18s: %s\n" "$s" "$(systemctl is-active "$s" 2>/dev/null)"
+  done
+  echo
+  if ! systemctl is-active --quiet nginx; then
+    warn "  [!] nginx not running — the web UI will show 502."
+  fi
+  if ! systemctl is-active --quiet network-monitor; then
+    warn "  [!] Use [1] Restart service to recover the app."
+  fi
+  echo
+  read -r -p "Press ENTER…" _
+}
+
+system_info() {
+  clear
+  bold "── System info ──"
+  echo
+  echo "  Version : $VERSION"
+  echo "  Uptime  : $(uptime -p 2>/dev/null | sed 's/^up //')"
+  echo "  Load    :$(uptime | grep -oE 'load average:.*' | cut -d: -f2)"
+  echo "  Memory  : $(free -h 2>/dev/null | awk '/Mem:/ {print $3" used of "$2}')"
+  echo "  Disk /  : $(df -h / 2>/dev/null | awk 'NR==2 {print $3" used of "$2" ("$5")"}')"
+  echo "  Database: $(du -sh "$DATA_DIR" 2>/dev/null | cut -f1) ($DATA_DIR)"
+  echo
+  echo "  Services:"
+  for s in network-monitor nginx nftables networking ssh; do
+    printf "    %-18s: %s\n" "$s" "$(systemctl is-active "$s" 2>/dev/null)"
+  done
+  echo
+  read -r -p "Press ENTER…" _
+}
+
+change_admin_password() {
+  read -rs -p "New admin password (min 4 chars): " P1
+  echo
+  if [ "${#P1}" -lt 4 ]; then warn "  Too short (minimum 4 characters)."; sleep 2; return; fi
+  read -rs -p "Confirm password: " P2
+  echo
+  if [ "$P1" != "$P2" ]; then warn "  Passwords do not match."; sleep 2; return; fi
+  local DBP
+  DBP=$(db_path)
+  if (cd "$APP_DIR" && DEFAULT_ADMIN_USERNAME=admin DEFAULT_ADMIN_PASSWORD="$P1" DB_PATH="$DBP" /usr/bin/node src/seedAdmin.js); then
+    # Keep the console gate in sync — one credential, two doors.
+    printf 'CONSOLE_HASH=%s\n' "$(printf '%s' "$P1" | sha512sum | cut -d' ' -f1)" > /etc/nm-console.conf
+    chmod 600 /etc/nm-console.conf
+    echo "  [OK] Admin password updated (web UI + console) — use it on the next login."
+  else
+    warn "  Failed to update — see [2] service log."
+  fi
+  sleep 2
+}
+
+# ── network tools (ping / traceroute / internet check) ──
+check_internet() {
+  echo "── Internet access check ──"
+  echo
+  local ANYIP ANYIF GW CODE
+  ANYIP=$(ip -4 -o addr show scope global 2>/dev/null | head -1)
+  if [ -z "$ANYIP" ]; then
+    warn "  [FAIL] No IPv4 on any interface — start with [8] Network -> [5] Diagnose."
+    return 1
+  fi
+  ANYIF=$(echo "$ANYIP" | awk '{print $2}')
+  echo "  [OK] Interface $ANYIF has: $(echo "$ANYIP" | awk '{print $4}')"
+  GW=$(ip route show default 2>/dev/null | awk '{print $3}' | head -1)
+  if [ -n "$GW" ] && ping -c1 -W2 "$GW" >/dev/null 2>&1; then
+    echo "  [OK] Gateway $GW reachable."
+  else
+    warn "  [FAIL] Gateway not reachable — local network problem."
+    return 1
+  fi
+  if ping -c2 -W2 1.1.1.1 >/dev/null 2>&1; then
+    echo "  [OK] Internet reachable (1.1.1.1)."
+  else
+    warn "  [FAIL] No internet (ICMP blocked or downlink down)."
+    return 1
+  fi
+  if getent hosts google.com >/dev/null 2>&1; then
+    echo "  [OK] DNS resolution works."
+  else
+    warn "  [FAIL] DNS resolution fails — check DNS (network menu -> [2] static, or DHCP)."
+    return 1
+  fi
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' -m 8 http://connectivity-check.ubuntu.com/ 2>/dev/null)
+  if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then
+    echo "  [OK] HTTP works (status $CODE) — internet fully operational."
+  else
+    warn "  [FAIL] HTTP blocked (firewall/proxy?) — ICMP and DNS are fine."
+  fi
+  return 0
+}
+
+tools_menu() {
+  while true; do
+    clear
+    bold "── Network tools ──"
+    echo
+    echo "  [1] Ping a host"
+    echo "  [2] Traceroute a host"
+    echo "  [3] Check internet access"
+    echo "  [b] Back"
+    echo
+    read -r -p "Select: " TCH
+    case "$TCH" in
+      1) read -r -p "  Host or IP to ping: " TH
+         [ -z "$TH" ] && continue
+         echo
+         ping -c 4 -W 2 "$TH" 2>&1
+         echo
+         read -r -p "Press ENTER…" _ ;;
+      2) read -r -p "  Host or IP to trace: " TH
+         [ -z "$TH" ] && continue
+         echo
+         echo "  (may take up to a minute…)"
+         traceroute -m 15 -w 2 "$TH" 2>&1
+         echo
+         read -r -p "Press ENTER…" _ ;;
+      3) check_internet
+         read -r -p "Press ENTER…" _ ;;
+      b) break ;;
+    esac
+  done
+}
+
+# ── remote access (ngrok) submenu ──
+NGROK_BIN=/usr/local/bin/ngrok
+NGROK_DOMAIN_FILE=/etc/nm-ngrok-domain
+ngrok_domain() { head -1 "$NGROK_DOMAIN_FILE" 2>/dev/null; }
+ngrok_url() { curl -s -m 2 http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -oE 'https://[a-zA-Z0-9.-]+\.ngrok[^"]*' | head -1; }
+ngrok_running() { pgrep -f "$NGROK_BIN http" >/dev/null 2>&1; }
+write_ngrok_unit() {
+  local D
+  D=$(ngrok_domain)
+  cat > /etc/systemd/system/ngrok-tunnel.service <<EOF
+[Unit]
+Description=ngrok tunnel for Network Monitor web UI
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+ExecStart=$NGROK_BIN http 80${D:+ --domain=$D}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+}
+
+remote_access_menu() {
+  local D
+  while true; do
+    clear
+    bold "── Remote access (ngrok) ──"
+    echo
+    if [ -x "$NGROK_BIN" ]; then echo "  Binary    : installed"; else echo "  Binary    : not installed"; fi
+    D=$(ngrok_domain)
+    if [ -n "$D" ]; then echo "  Domain    : $D (STATIC — permanent URL)"; else echo "  Domain    : dynamic (URL changes on each start)"; fi
+    if ngrok_running; then
+      echo "  Tunnel    : RUNNING (pid $(pgrep -f "$NGROK_BIN http" | head -1), user root)"
+      echo "  URL       : ${D:-(starting… re-open to see it)}"
+    else
+      echo "  Tunnel    : stopped"
+    fi
+    [ -f /root/.config/ngrok/ngrok.yml ] && echo "  Authtoken : set" || echo "  Authtoken : not set"
+    echo "  Exposes   : web UI only (nginx :80 -> app :4001) — login-protected"
+    echo
+    echo "  [1] Install ngrok binary (needs internet)"
+    echo "  [2] Set authtoken (from dashboard.ngrok.com)"
+    echo "  [3] Set static domain (claim one FREE: dashboard → Universal Gateway → Domains)"
+    echo "  [4] Start tunnel"
+    echo "  [5] Stop tunnel"
+    echo "  [6] Enable autostart at boot"
+    echo "  [7] Disable autostart at boot"
+    echo "  [8] Full report (show everything — nothing hidden)"
+    echo "  [b] Back"
+    echo
+    warn "  Tip: claim your ONE free static domain — then the URL never changes again."
+    warn "  Free plan note: first visit per session shows a one-click warning page."
+    echo
+    read -r -p "Select: " GCH
+    case "$GCH" in
+      1) echo "  Downloading ngrok…"
+         curl -fL --retry 2 https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o /tmp/ngrok.tgz \
+           && tar xz -C /usr/local/bin -f /tmp/ngrok.tgz ngrok \
+           && chmod +x /usr/local/bin/ngrok \
+           && echo "  [OK] installed ($( "$NGROK_BIN" --version 2>/dev/null ))" \
+           || warn "  Install failed — see error above (check internet/DNS)."
+         rm -f /tmp/ngrok.tgz
+         sleep 2 ;;
+      2) [ -x "$NGROK_BIN" ] || { warn "  Install ngrok first [1]."; sleep 2; continue; }
+         read -r -p "  Paste authtoken (visible — this console is password-gated): " GTOK
+         echo
+         [ -n "$GTOK" ] && "$NGROK_BIN" config add-authtoken "$GTOK" >/dev/null 2>&1 && echo "  [OK] authtoken saved: $GTOK"
+         sleep 2 ;;
+      3) if [ ! -x "$NGROK_BIN" ]; then warn "  Install ngrok first [1]."; sleep 2; continue; fi
+         read -r -p "  Static domain (e.g. myapp-xxxx.ngrok-free.app): " GD
+         if [ -n "$GD" ]; then
+           until [[ "$GD" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$ ]]; do
+             read -r -p "  Invalid domain — try again (empty to use dynamic): " GD
+             [ -z "$GD" ] && break
+           done
+         fi
+         if [ -n "$GD" ]; then
+           echo "$GD" > "$NGROK_DOMAIN_FILE"
+           chmod 644 "$NGROK_DOMAIN_FILE"
+           echo "  [OK] Static domain saved: $GD"
+           write_ngrok_unit
+           if ngrok_running; then
+             pkill -f "$NGROK_BIN http" 2>/dev/null
+             sleep 2
+             nohup "$NGROK_BIN" http 80 --domain="$GD" --log stdout > /var/log/ngrok.log 2>&1 &
+             sleep 4
+             echo "  [OK] Running tunnel restarted with the static domain."
+           elif systemctl is-enabled ngrok-tunnel.service >/dev/null 2>&1; then
+             systemctl restart ngrok-tunnel.service 2>/dev/null
+             echo "  [OK] Autostart tunnel restarted with the static domain."
+           fi
+         else
+           rm -f "$NGROK_DOMAIN_FILE"
+           echo "  [OK] Reverted to dynamic URLs."
+         fi
+         sleep 2 ;;
+      4) if [ ! -x "$NGROK_BIN" ]; then warn "  Install ngrok first [1]."; sleep 2; continue; fi
+         [ ! -f /root/.config/ngrok/ngrok.yml ] && { warn "  Set authtoken first [2]."; sleep 2; continue; }
+         if ngrok_running; then echo "  Already running."; sleep 2; continue; fi
+         D=$(ngrok_domain)
+         if [ -n "$D" ]; then
+           nohup "$NGROK_BIN" http 80 --domain="$D" --log stdout > /var/log/ngrok.log 2>&1 &
+         else
+           nohup "$NGROK_BIN" http 80 --log stdout > /var/log/ngrok.log 2>&1 &
+         fi
+         sleep 4
+         echo "  Public URL: ${D:-$(ngrok_url || echo '(still starting — reopen to see it)')}"
+         echo "  (open it from any browser — it serves this appliance's web UI)"
+         read -r -p "Press ENTER…" _ ;;
+      5) pkill -f "$NGROK_BIN http" 2>/dev/null
+         systemctl stop ngrok-tunnel.service 2>/dev/null
+         echo "  Tunnel stopped."; sleep 2 ;;
+      6) [ -x "$NGROK_BIN" ] || { warn "  Install ngrok first [1]."; sleep 2; continue; }
+         write_ngrok_unit
+         systemctl enable ngrok-tunnel.service 2>/dev/null
+         systemctl restart ngrok-tunnel.service 2>/dev/null
+         echo "  [OK] ngrok autostart enabled (starts at every boot)."
+         sleep 2 ;;
+      7) systemctl disable ngrok-tunnel.service 2>/dev/null
+         systemctl stop ngrok-tunnel.service 2>/dev/null
+         pkill -f "$NGROK_BIN http" 2>/dev/null
+         echo "  [OK] ngrok autostart disabled and tunnel stopped."
+         sleep 2 ;;
+      8) clear
+         bold "── ngrok full report — nothing hidden ──"
+         echo
+         if [ -x "$NGROK_BIN" ]; then
+           echo "  Binary     : $NGROK_BIN"
+           echo "               $( "$NGROK_BIN" --version 2>/dev/null )"
+         else
+           echo "  Binary     : NOT installed"
+         fi
+         echo "  Authtoken  : $(grep -m1 '^authtoken:' /root/.config/ngrok/ngrok.yml 2>/dev/null | awk '{print $2}' || echo 'not set')"
+         echo "               (file: /root/.config/ngrok/ngrok.yml — root-only)"
+         echo "  Static dom : ${D:-(none — dynamic URLs)} (file: /etc/nm-ngrok-domain)"
+         echo "  Autostart  : $(systemctl is-enabled ngrok-tunnel.service 2>/dev/null || echo disabled) / $(systemctl is-active ngrok-tunnel.service 2>/dev/null)"
+         if ngrok_running; then
+           echo "  Process    : RUNNING (pid $(pgrep -f "$NGROK_BIN http" | head -1), user root)"
+         else
+           echo "  Process    : not running"
+         fi
+         echo
+         echo "  WHAT IS EXPOSED TO THE INTERNET:"
+         echo "    The public URL serves ONLY the web UI (nginx :80 -> app :4001)."
+         echo "    Visitors reach the login page — protected by the admin password."
+         echo "    NOT exposed: SSH (22), app port (4001), database, this console."
+         echo
+         echo "  FREE PLAN NOTES:"
+         echo "    - New visitors see a one-click warning page (per session)."
+         echo "    - Usage limits apply — see dashboard.ngrok.com -> Usage."
+         echo
+         echo "  FILES:"
+         echo "    /etc/nm-ngrok-domain               static domain"
+         echo "    /root/.config/ngrok/ngrok.yml      authtoken (root-only)"
+         echo "    /etc/systemd/system/ngrok-tunnel.service  autostart unit"
+         echo "    /var/log/ngrok.log                 tunnel log"
+         echo
+         echo "  Last tunnel log lines:"
+         tail -5 /var/log/ngrok.log 2>/dev/null | sed 's/^/    /'
+         echo
+         read -r -p "Press ENTER…" _ ;;
+      b) break ;;
+    esac
+  done
+}
+
+# ── console gate: SHA-512 check against /etc/nm-console.conf (3 tries, 30s lockout) ──
+console_auth() {
+  local TRIES=0 TRY TRY_HASH STORED
+  while true; do
+    STORED=$(grep -m1 '^CONSOLE_HASH=' /etc/nm-console.conf 2>/dev/null | cut -d= -f2-)
+    if [ -z "$STORED" ]; then
+      # First run (or upgraded install without a gate) — set it now.
+      bold "── First run: choose a console password ──"
+      echo "  (this also becomes the web admin password)"
+      read -rs -p "New password (min 4 chars): " P1
+      echo
+      if [ "${#P1}" -lt 4 ]; then warn "  Too short — try again."; sleep 2; continue; fi
+      read -rs -p "Confirm password: " P2
+      echo
+      if [ "$P1" != "$P2" ]; then warn "  Passwords do not match — try again."; sleep 2; continue; fi
+      printf 'CONSOLE_HASH=%s\n' "$(printf '%s' "$P1" | sha512sum | cut -d' ' -f1)" > /etc/nm-console.conf
+      chmod 600 /etc/nm-console.conf
+      (cd "$APP_DIR" && DEFAULT_ADMIN_USERNAME=admin DEFAULT_ADMIN_PASSWORD="$P1" DB_PATH="$(db_path)" /usr/bin/node src/seedAdmin.js) >/dev/null 2>&1 || true
+      echo "  [OK] Console protected."
+      return 0
+    fi
+    read -rs -p "Console password: " TRY
+    echo
+    TRY_HASH=$(printf '%s' "$TRY" | sha512sum | cut -d' ' -f1)
+    if [ "$TRY_HASH" = "$STORED" ]; then
+      return 0
+    fi
+    TRIES=$((TRIES + 1))
+    if [ "$TRIES" -ge 3 ]; then
+      warn "  Wrong password — locked for 30 seconds."
+      sleep 30
+      TRIES=0
+    else
+      warn "  Wrong password (attempt $TRIES/3)."
+    fi
+  done
+}
+
+backup_database() {
+  local DBP DEST
+  DBP=$(db_path)
+  DEST="$DATA_DIR/backups/db-$(date +%Y%m%d-%H%M%S).db"
+  mkdir -p "$DATA_DIR/backups"
+  echo "  Backing up:"
+  echo "    $DBP"
+  echo "    → $DEST"
+  if (cd "$APP_DIR" && DB_PATH="$DBP" /usr/bin/node -e 'const db=require("better-sqlite3")(process.env.DB_PATH); db.backup(process.argv[1]).then(()=>console.log("  backup: OK"),e=>{console.error("  backup error:",e.message);process.exit(1)})' "$DEST"); then
+    echo "  [OK] Backup completed ($(du -h "$DEST" 2>/dev/null | cut -f1))."
+  else
+    warn "  Backup FAILED — see message above."
+  fi
+  read -r -p "Press ENTER…" _
+}
 
 if [ -f /etc/nm-installed ]; then
-    # ═══ installed system ═══
-    while true; do
+    # ═══ installed system — protected operations console ═══
+    IDLE_TIMEOUT=300   # seconds without input → auto-lock (back to password gate)
+    while true; do     # session loop: exit/idle-timeout return to the password gate
+        console_auth
+        while true; do
         clear
+        # Re-detect the IP every loop — DHCP may arrive after first render.
+        IP=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
         bold "── Network Monitor Appliance ──"
         echo
+        echo "  Version    : $VERSION"
         echo "  Web UI     : http://${IP:-no-network}/"
+        NIC=$(first_nic)
+        if [ -n "$NIC" ]; then
+            NIP=$(ip -4 -o addr show dev "$NIC" scope global 2>/dev/null | awk '{print $4}' | head -1)
+            echo "  Network    : $NIC $(cat /sys/class/net/$NIC/operstate 2>/dev/null || echo '?') — ${NIP:-no IP}"
+        else
+            echo "  Network    : no interface"
+        fi
         echo
         if systemctl is-active --quiet network-monitor.service; then
             echo "  Service    : RUNNING"
@@ -24,17 +545,44 @@ if [ -f /etc/nm-installed ]; then
         echo
         echo "  [1] Restart service"
         echo "  [2] Service log (last 50 lines)"
+        echo "  [3] Follow service log (live — Ctrl+C to stop)"
+        echo "  [4] All services status"
+        echo "  [5] System info (disk / DB / version)"
+        echo "  [6] Change admin password"
+        echo "  [7] Backup database now"
+        echo "  [8] Network settings & diagnostics"
+        echo "  [9] Remote access (ngrok)"
+        echo "  [10] Network tools (ping / trace / internet)"
+        echo "  [r] Restart system"
+        echo "  [p] Power off"
         echo "  [s] shell"
-        echo "  [q] quit menu"
+        echo "  [q] Lock console (back to password)"
         echo
-        read -r -p "Select: " CH
+        CH=""
+        if ! read -r -t "$IDLE_TIMEOUT" -p "Select: " CH; then
+            clear
+            echo "  Idle ${IDLE_TIMEOUT}s — console locked."
+            sleep 2
+            break
+        fi
         case "$CH" in
             1) systemctl restart network-monitor.service; echo "Done."; sleep 2 ;;
-            2) journalctl -u network-monitor.service -n 50 --no-pager; read -r -p "Press ENTER…" _ ;;
+            2) clear; journalctl -u network-monitor.service -n 50 --no-pager; read -r -p "Press ENTER…" _ ;;
+            3) clear; echo "Following service log — press Ctrl+C to stop."; echo; journalctl -u network-monitor.service -f --no-pager ;;
+            4) all_services_status ;;
+            5) system_info ;;
+            6) change_admin_password ;;
+            7) backup_database ;;
+            8) network_menu ;;
+            9) remote_access_menu ;;
+            10) tools_menu ;;
+            r) read -r -p "Reboot the system? (y/n): " RC; [ "$RC" = "y" ] && systemctl reboot ;;
+            p) read -r -p "Power off the system? (y/n): " PC; [ "$PC" = "y" ] && systemctl poweroff ;;
             s) exec /bin/bash -i ;;
-            q) systemctl start getty@tty1.service 2>/dev/null; systemctl stop nm-console.service 2>/dev/null; sleep 60; exit 0 ;;
+            q) clear; echo "  Console locked — back to password gate."; sleep 1; break ;;
         esac
     done
+  done
 else
     # ═══ live system — Sophos-style smooth install ═══
     clear

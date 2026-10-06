@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOC — مراقبة الشبكة</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(ellipse at top, #0d1428 0%, #070b16 70%);
+    color: #e8ecf4; font-family: 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh; padding: 20px 28px;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  h1 { font-size: 1.8rem; color: #7dd3fc; text-shadow: 0 0 18px rgba(125,211,252,.35); }
+  #clock { font-size: 1.35rem; color: #94a3b8; font-variant-numeric: tabular-nums; }
+  .counters { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .counter { flex: 1; min-width: 160px; background: linear-gradient(180deg,#111a2e,#0d1526); border: 1px solid #1e2a44; border-radius: 14px; padding: 16px 18px; text-align: center; }
+  .counter .num { font-size: 2.8rem; font-weight: 800; line-height: 1.1; text-shadow: 0 0 14px currentColor; }
+  .counter .lbl { font-size: 1rem; color: #94a3b8; }
+  .num.ok { color: #22c55e; } .num.bad { color: #ef4444; } .num.warn { color: #f59e0b; } .num.info { color: #7dd3fc; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card {
+    background: linear-gradient(180deg,#111a2e,#0c1424); border: 1px solid #1e2a44;
+    border-inline-start: 5px solid #64748b; border-radius: 14px; padding: 14px 16px;
+    transition: box-shadow .3s;
+  }
+  .card.up { border-inline-start-color: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,.25), inset 0 0 24px rgba(34,197,94,.05); }
+  .card.down { border-inline-start-color: #ef4444; box-shadow: 0 0 16px rgba(239,68,68,.45); background: linear-gradient(180deg,#241019,#160b10); animation: pulse-red 1.6s ease-in-out infinite; }
+  .card.pathdown { border-inline-start-color: #f59e0b; box-shadow: 0 0 12px rgba(245,158,11,.3); }
+  .card.paused { opacity: .5; }
+  @keyframes pulse-red { 0%,100% { box-shadow: 0 0 10px rgba(239,68,68,.35); } 50% { box-shadow: 0 0 22px rgba(239,68,68,.65); } }
+  .card .nm { font-size: 1.3rem; font-weight: 800; margin-bottom: 2px; }
+  .card .ip { color: #94a3b8; font-size: .95rem; direction: ltr; text-align: right; }
+  .card .tp { color: #64748b; font-size: .85rem; }
+  .card .st { margin-top: 8px; font-size: 1.1rem; font-weight: 700; }
+  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.pathdown { color: #f59e0b; } .st.paused { color: #94a3b8; }
+  #updated { margin-top: 16px; color: #475569; font-size: .85rem; text-align: center; }
+  button.fs { background: #1e2a44; color: #e8ecf4; border: 1px solid #2c3a5c; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: .95rem; }
+  button.fs:hover { background: #2c3a5c; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🖥️ مراقبة الشبكة — NOC</h1>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <span id="clock">—</span>
+      <button class="fs" onclick="document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()">⛶ ملء الشاشة</button>
+    </div>
+  </header>
+
+  <div class="counters">
+    <div class="counter"><div class="num ok" id="c-up">—</div><div class="lbl">متصل</div></div>
+    <div class="counter"><div class="num bad" id="c-down">—</div><div class="lbl">منقطع</div></div>
+    <div class="counter"><div class="num warn" id="c-path">—</div><div class="lbl">مسدود عبر المسار</div></div>
+    <div class="counter"><div class="num info" id="c-total">—</div><div class="lbl">إجمالي الأجهزة</div></div>
+  </div>
+
+  <div id="grid"><p style="color:#475569">جاري التحميل…</p></div>
+  <div id="updated">—</div>
+
+<script>
+(function () {
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  // ترتيب رقمي طبيعي: الرقم في آخر الاسم (Device-104 → 104) وإلا آخر أوكتيت من الـ IP.
+  function natKey(n) {
+    const m = String(n.name || '').match(/(\d+)\s*$/);
+    if (m) return parseInt(m[1], 10);
+    const ipm = String(n.ip || '').match(/(\d+)\s*$/);
+    return ipm ? parseInt(ipm[1], 10) : 999999;
+  }
+  function statusWeight(n) {
+    if (n.status === 'offline') return 0;      // المنقطع أولًا
+    if (n.pathDown) return 1;                  // ثم المسدود عبر المسار
+    if (n.status === 'paused') return 3;       // الموقوف آخرًا
+    return 2;                                  // المتصل
+  }
+
+  function cardHtml(n) {
+    const paused = n.status === 'paused';
+    const down = n.status === 'offline';
+    const pathDown = !!n.pathDown;
+    const cls = paused ? 'card paused' : down ? 'card down' : pathDown ? 'card pathdown' : 'card up';
+    const st = paused ? '⏸ موقوف' : down ? '🔴 منقطع' : pathDown ? '⛔ مسدود عبر المسار' : '🟢 متصل';
+    const stCls = paused ? 'st paused' : down ? 'st down' : pathDown ? 'st pathdown' : 'st up';
+    return '<div class="' + cls + '">'
+      + '<div class="nm">' + esc(n.name) + '</div>'
+      + '<div class="ip">' + esc(n.ip) + (n.device_type_name ? ' — ' + esc(n.device_type_name) : '') + '</div>'
+      + '<div class="st ' + stCls + '">' + st + '</div>'
+      + '</div>';
+  }
+
+  function flatten(nodes, out, parentDown) {
+    for (const n of nodes) {
+      const pd = parentDown || n.status === 'offline';
+      if (n.status !== 'paused' && n.status !== 'offline' && pd) n.pathDown = true;
+      out.push(n);
+      flatten(n.children || [], out, pd || n.status === 'offline');
+    }
+  }
+
+  function render(data) {
+    const flat = [];
+    flatten(data, flat, false);
+    // الترتيب: الحالة (المنقطع أولًا) ثم الرقم الطبيعي تصاعديًا.
+    flat.sort((a, b) => {
+      const w = statusWeight(a) - statusWeight(b);
+      if (w !== 0) return w;
+      return natKey(a) - natKey(b);
+    });
+    const up = flat.filter((n) => n.status === 'online').length;
+    const down = flat.filter((n) => n.status === 'offline').length;
+    const path = flat.filter((n) => n.pathDown).length;
+    document.getElementById('c-up').textContent = up;
+    document.getElementById('c-down').textContent = down;
+    document.getElementById('c-path').textContent = path;
+    document.getElementById('c-total').textContent = flat.length;
+    document.getElementById('grid').innerHTML = flat.map(cardHtml).join('');
+    document.getElementById('updated').textContent =
+      'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG') + ' — يتحدث تلقائياً كل 10 ثوانٍ';
+  }
+
+  async function tick() {
+    try {
+      const r = await fetch('/api/topology', { credentials: 'same-origin' });
+      const j = await r.json();
+      if (j.success && Array.isArray(j.data)) render(j.data);
+    } catch (e) { /* الشاشة تعيد المحاولة في الدورة التالية */ }
+  }
+
+  function clock() {
+    const d = new Date();
+    document.getElementById('clock').textContent =
+      d.toLocaleDateString('ar-EG') + ' — ' + d.toLocaleTimeString('ar-EG');
+  }
+
+  clock();
+  setInterval(clock, 1000);
+  tick();
+  setInterval(tick, 10000);
+})();
+</script>
+</body>
+</html>

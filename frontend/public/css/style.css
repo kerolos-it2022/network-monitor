@@ -1550,3 +1550,11 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
   .map-summary { justify-content: flex-start; }   /* الـ chips تَلتفّ تَحت الأَزرار على الموبايل */
   .map-search  { flex: 1 1 100%; }
 }
+/* ── Topology chain (سلسلة الشبكة) ── */
+.t-node { border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; background: rgba(128,128,128,.05); }
+.t-node.up { border-inline-start: 4px solid #22c55e; }
+.t-node.down { border-inline-start: 4px solid #ef4444; background: rgba(239,68,68,.10); }
+.t-node.pathdown { border-inline-start: 4px solid #f59e0b; background: rgba(245,158,11,.10); }
+.t-node.paused { opacity: .55; }
+.t-children { margin-top: 8px; }
+.t-ip, .t-type { opacity: .65; font-size: .85em; }

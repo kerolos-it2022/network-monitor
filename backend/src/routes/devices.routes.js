@@ -19,6 +19,7 @@ const DEVICE_SELECT = `
     dt.name AS device_type_name,
     d.location_id,
     l.name AS location_name,
+    d.parent_id,
     d.check_protocol, d.port, d.web_port,
     d.check_interval_seconds, d.failure_threshold, d.is_active,
     d.current_status, d.http_accessible, d.https_accessible,
@@ -27,6 +28,31 @@ const DEVICE_SELECT = `
   LEFT JOIN device_types dt ON dt.id = d.device_type_id
   LEFT JOIN locations l ON l.id = d.location_id
 `;
+
+// Topology chain: التحقق من الأب (موجود، ليس هو نفسه، ولا يُحدث حلقة في السلسلة).
+function validateParent(parentId, deviceId) {
+  if (parentId == null || parentId === '') return { ok: true, value: null };
+  const pid = Number(parentId);
+  if (!Number.isInteger(pid) || pid <= 0) return { ok: false, error: 'parent_id غير صالح' };
+  if (deviceId != null && pid === Number(deviceId)) {
+    return { ok: false, error: 'الجهاز لا يمكن أن يكون أبًا لنفسه' };
+  }
+  const parent = db.prepare('SELECT id, parent_id FROM devices WHERE id = ?').get(pid);
+  if (!parent) return { ok: false, error: 'الجهاز الأب غير موجود (id=' + pid + ')' };
+  // منع الحلقات: نصعد من الأب — لو وصلنا للجهاز نفسه فسيتكوّن دورة.
+  let cur = parent.parent_id;
+  const seen = new Set();
+  while (cur != null) {
+    if (deviceId != null && Number(cur) === Number(deviceId)) {
+      return { ok: false, error: 'تعيين هذا الأب سيُحدث حلقة في سلسلة الشبكة' };
+    }
+    if (seen.has(cur)) break;
+    seen.add(cur);
+    const row = db.prepare('SELECT parent_id FROM devices WHERE id = ?').get(cur);
+    cur = row ? row.parent_id : null;
+  }
+  return { ok: true, value: pid };
+}
 
 // GET /api/devices  (عام)
 router.get('/', (req, res) => {
@@ -184,7 +210,7 @@ router.post('/cleanup-status-logs', requireAuth, (req, res) => {
 // POST /api/devices  🔒
 router.post('/', requireAuth, (req, res) => {
   const {
-    name, ip, device_type_id, location_id,
+    name, ip, device_type_id, location_id, parent_id,
     check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
   } = req.body || {};
 
@@ -202,16 +228,23 @@ router.post('/', requireAuth, (req, res) => {
       .json({ success: false, error: 'عنوان IP "' + ip + '" مسجّل بالفعل لجهاز آخر (رقم ' + existingIp.id + ')' });
   }
 
+  // Topology chain: التحقق من الأب.
+  const pv = validateParent(parent_id, null);
+  if (!pv.ok) {
+    return res.status(400).json({ success: false, error: pv.error });
+  }
+
   const result = db.prepare(
     `INSERT INTO devices
-      (name, ip, device_type_id, location_id, check_protocol, port, web_port,
+      (name, ip, device_type_id, location_id, parent_id, check_protocol, port, web_port,
        check_interval_seconds, failure_threshold, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     name,
     ip,
     device_type_id,
     location_id ?? null,
+    pv.value,
     check_protocol || 'ping',
     port ?? null,
     web_port ?? null,
@@ -258,7 +291,7 @@ router.put('/:id', requireAuth, (req, res) => {
   }
 
   const {
-    name, ip, device_type_id, location_id,
+    name, ip, device_type_id, location_id, parent_id,
     check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
   } = req.body || {};
 
@@ -276,9 +309,15 @@ router.put('/:id', requireAuth, (req, res) => {
       .json({ success: false, error: 'عنوان IP "' + ip + '" مسجّل بالفعل لجهاز آخر (رقم ' + ipConflict.id + ')' });
   }
 
+  // Topology chain: التحقق من الأب (ليس هو نفسه، موجود، بلا حلقة).
+  const pv = validateParent(parent_id, id);
+  if (!pv.ok) {
+    return res.status(400).json({ success: false, error: pv.error });
+  }
+
   db.prepare(
     `UPDATE devices SET
-      name = ?, ip = ?, device_type_id = ?, location_id = ?,
+      name = ?, ip = ?, device_type_id = ?, location_id = ?, parent_id = ?,
       check_protocol = ?, port = ?, web_port = ?,
       check_interval_seconds = ?, failure_threshold = ?, is_active = ?
      WHERE id = ?`
@@ -287,6 +326,7 @@ router.put('/:id', requireAuth, (req, res) => {
     ip,
     device_type_id,
     location_id ?? null,
+    pv.value,
     check_protocol || 'ping',
     port ?? null,
     web_port ?? null,

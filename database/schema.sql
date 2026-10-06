@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS devices (
     ip TEXT NOT NULL,
     device_type_id INTEGER NOT NULL,
     location_id INTEGER,
+    parent_id INTEGER,                             -- Topology chain: الأب في مسار الشبكة (NULL = مدخل إنترنت/جذر السلسلة)
     check_protocol TEXT NOT NULL DEFAULT 'ping', -- 'ping' | 'port' | 'http' | 'https'
     port INTEGER,                                 -- مطلوب فقط إذا check_protocol = 'port'
     web_port INTEGER,                             -- بورت واجهة الويب المخصص (اختياري — مثل 4444) لزر «فتح»
@@ -60,7 +61,8 @@ CREATE TABLE IF NOT EXISTS devices (
     last_checked_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (device_type_id) REFERENCES device_types(id),
-    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
+    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
+    FOREIGN KEY (parent_id) REFERENCES devices(id) ON DELETE SET NULL
 );
 
 -- سجل كل عملية فحص (يُستخدم للرسوم البيانية وحساب Uptime)
