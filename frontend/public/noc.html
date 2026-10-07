@@ -24,39 +24,39 @@
   .counter .lbl { font-size: .9rem; color: #94a3b8; }
   .num.ok { color: #22c55e; } .num.bad { color: #ef4444; } .num.warn { color: #f59e0b; } .num.info { color: #7dd3fc; }
 
-  /* ── السلسلة: أعمدة أجيال من اليمين لليسار بخطوط ربط ── */
-  #chain { flex: 1; display: flex; flex-direction: row; align-items: center; gap: 0; overflow: auto; padding: 6px 2px; }
-  .level { display: flex; flex-direction: column; gap: 12px; justify-content: center; position: relative; padding-inline-end: 52px; min-width: 230px; }
-  .level.spine::after {
-    content: ''; position: absolute; inset-inline-end: 24px; top: 10%; bottom: 10%;
-    width: 3px; border-radius: 2px;
-    background: linear-gradient(180deg, #2c3a5c, #1e2a44);
-  }
-  .node {
-    position: relative;
+  /* ── قسم السلسلة: بطاقات كبيرة موصولة بخطوط سميكة ملونة ── */
+  .section-title { color: #7dd3fc; font-size: 1.05rem; font-weight: 700; margin: 4px 0 10px; }
+  .chain-row { display: flex; flex-direction: row; align-items: stretch; gap: 0; overflow-x: auto; padding: 10px 6px 14px; }
+  .chain-card {
     background: linear-gradient(180deg,#111a2e,#0c1424); border: 1px solid #1e2a44;
-    border-inline-start: 4px solid #64748b; border-radius: 12px; padding: 9px 13px;
-    min-width: 205px;
+    border-top: 4px solid #64748b; border-radius: 14px; padding: 14px 18px;
+    min-width: 240px; display: flex; flex-direction: column; gap: 4px;
   }
-  .node.up { border-inline-start-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.22); }
-  .node.down { border-inline-start-color: #ef4444; box-shadow: 0 0 14px rgba(239,68,68,.4); animation: pulse-red 1.6s ease-in-out infinite; }
-  .node.pathdown { border-inline-start-color: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.25); }
-  .node.paused { opacity: .5; }
-  @keyframes pulse-red { 0%,100% { box-shadow: 0 0 8px rgba(239,68,68,.3); } 50% { box-shadow: 0 0 18px rgba(239,68,68,.55); } }
-  .node .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .node .nm { font-weight: 800; font-size: 1.02rem; }
-  .node .meta { color: #94a3b8; font-size: .82rem; direction: ltr; text-align: left; }
-  .node .st { font-weight: 800; font-size: .92rem; white-space: nowrap; }
-  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.pathdown { color: #f59e0b; } .st.paused { color: #94a3b8; }
-  /* خط الربط الأفقي من كل بطاقة نحو عمود الجيل التالي (يسارًا في RTL) — ملون بحالة الجهاز */
-  .level:not(:last-child) .node::before {
-    content: ''; position: absolute; inset-inline-end: -30px; top: 50%;
-    width: 30px; height: 3px; border-radius: 2px; background: #2c3a5c;
+  .chain-card.up { border-top-color: #22c55e; box-shadow: 0 0 16px rgba(34,197,94,.25); }
+  .chain-card.down { border-top-color: #ef4444; box-shadow: 0 0 18px rgba(239,68,68,.4); animation: pulse-red 1.6s ease-in-out infinite; }
+  .chain-card.pathdown { border-top-color: #f59e0b; box-shadow: 0 0 14px rgba(245,158,11,.3); }
+  @keyframes pulse-red { 0%,100% { box-shadow: 0 0 12px rgba(239,68,68,.35); } 50% { box-shadow: 0 0 24px rgba(239,68,68,.6); } }
+  .chain-card .nm { font-size: 1.25rem; font-weight: 800; }
+  .chain-card .meta { color: #94a3b8; font-size: .9rem; direction: ltr; text-align: left; }
+  .chain-card .st { margin-top: 4px; font-weight: 800; font-size: 1rem; }
+  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.pathdown { color: #f59e0b; }
+  /* الخط الواصل بين البطاقات — سميك ملون بحالة الوصل */
+  .chain-link { align-self: center; width: 56px; height: 6px; border-radius: 3px; background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.55); flex-shrink: 0; }
+  .chain-link.down { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,.55); }
+
+  /* ── قسم الأجهزة المستقلة (بلا أب) ── */
+  .standalone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 12px; }
+  .s-card {
+    background: linear-gradient(180deg,#111a2e,#0c1424); border: 1px solid #1e2a44;
+    border-inline-start: 4px solid #64748b; border-radius: 12px; padding: 10px 14px;
   }
-  .level:not(:last-child) .node.up::before { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.5); }
-  .level:not(:last-child) .node.down::before { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,.5); }
-  .level:not(:last-child) .node.pathdown::before { background: #f59e0b; }
-  .node.leaf::before { display: none; }
+  .s-card.up { border-inline-start-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.2); }
+  .s-card.down { border-inline-start-color: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,.35); }
+  .s-card.paused { opacity: .5; }
+  .s-card .nm { font-weight: 800; font-size: 1.05rem; }
+  .s-card .meta { color: #94a3b8; font-size: .85rem; direction: ltr; text-align: left; }
+  .s-card .st { font-weight: 700; font-size: .9rem; }
+  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.paused { color: #94a3b8; }
   #updated { margin-top: 8px; color: #475569; font-size: .8rem; text-align: center; }
 </style>
 </head>
@@ -76,7 +76,7 @@
     <div class="counter"><div class="num info" id="c-total">—</div><div class="lbl">إجمالي الأجهزة</div></div>
   </div>
 
-  <div id="chain"><p style="color:#475569">جاري التحميل…</p></div>
+  <div id="content"><p style="color:#475569">جاري التحميل…</p></div>
   <div id="updated">—</div>
 
 <script>
@@ -109,29 +109,6 @@
     nodes.forEach((n) => { if (n.children && n.children.length) sortLevel(n.children); });
   }
 
-  function nodeHtml(n, depth) {
-    const paused = n.status === 'paused';
-    const down = n.status === 'offline';
-    const pathDown = !!n.pathDown;
-    const cls = paused ? 'node paused' : down ? 'node down' : pathDown ? 'node pathdown' : 'node up';
-    const st = paused ? '⏸ موقوف' : down ? '🔴 منقطع' : pathDown ? '⛔ مسدود عبر المسار' : '🟢 متصل';
-    const stCls = paused ? 'st paused' : down ? 'st down' : pathDown ? 'st pathdown' : 'st up';
-    const leaf = !(n.children && n.children.length) ? ' leaf' : '';
-    const kids = (n.children && n.children.length)
-      ? '<div class="children">' + n.children.map((c) => nodeHtml(c, depth + 1)).join('') + '</div>'
-      : '';
-    return '<div class="' + cls + leaf + '">'
-      + '<div class="row">'
-      + '<span class="nm">' + esc(n.name) + '</span>'
-      + '<span class="st ' + stCls + '">' + st + '</span>'
-      + '</div>'
-      + '<div class="meta"><span class="ip">' + esc(n.ip) + '</span>'
-      + (n.device_type_name ? ' — <span class="tp">' + esc(n.device_type_name) + '</span>' : '')
-      + '</div>'
-      + '</div>'
-      + kids;
-  }
-
   function markPathDown(nodes, parentDown) {
     for (const n of nodes) {
       const pd = parentDown || n.status === 'offline';
@@ -140,22 +117,75 @@
     }
   }
 
+  function chainCardHtml(n) {
+    const down = n.status === 'offline';
+    const pathDown = !!n.pathDown;
+    const cls = down ? 'chain-card down' : pathDown ? 'chain-card pathdown' : 'chain-card up';
+    const st = down ? '🔴 منقطع' : pathDown ? '⛔ مسدود عبر المسار' : '🟢 متصل';
+    const stCls = down ? 'st down' : pathDown ? 'st pathdown' : 'st up';
+    return '<div class="' + cls + '">'
+      + '<div class="nm">' + esc(n.name) + '</div>'
+      + '<div class="meta">' + esc(n.ip) + (n.device_type_name ? ' — ' + esc(n.device_type_name) : '') + '</div>'
+      + '<div class="st ' + stCls + '">' + st + '</div>'
+      + '</div>';
+  }
+  function linkHtml(n) {
+    // لون الوصيلة = حالة الجهاز التالي في المسار.
+    return '<div class="chain-link' + (n.status === 'offline' ? ' down' : '') + '"></div>';
+  }
+
+  // مسار خطي: نمشي من الجذر تابعًا الطفل الوحيد (سلسلتك الحالية خطية).
+  function chainPathHtml(root) {
+    const path = [root];
+    let cur = root;
+    while (cur.children && cur.children.length === 1) { cur = cur.children[0]; path.push(cur); }
+    let html = '';
+    for (let i = 0; i < path.length; i++) {
+      html += chainCardHtml(path[i]);
+      if (i < path.length - 1) html += linkHtml(path[i + 1]);
+    }
+    // فروع إضافية (أكثر من طفل) تُعرض كسلاسلة فرعية تحت المسار الرئيسي.
+    if (cur.children && cur.children.length > 1) {
+      html += '<div class="chain-row" style="margin-top:12px">'
+        + cur.children.map((c) => chainSubHtml(c)).join('') + '</div>';
+    }
+    return html;
+  }
+  function chainSubHtml(n) {
+    let html = chainCardHtml(n);
+    if (n.children && n.children.length) {
+      html += '<div class="chain-link' + (n.children[0].status === 'offline' ? ' down' : '') + '" style="width:30px"></div>'
+        + chainSubHtml(n.children[0]);
+    }
+    return html;
+  }
+
   function render(data) {
     markPathDown(data, false);
     sortLevel(data);
-    // بناء أعمدة الأجيال من الشجرة (المستوى 0 = الجذور، ثم الأبناء...).
-    const levels = [];
-    (function collect(nodes, depth) {
-      if (!levels[depth]) levels[depth] = [];
-      for (const n of nodes) { levels[depth].push(n); collect(n.children || [], depth + 1); }
-    })(data, 0);
-    const chainEl = document.getElementById('chain');
-    chainEl.innerHTML = '<div class="chain">'
-      + levels.map((lvl, idx) => {
-          const spine = idx < levels.length - 1 ? ' spine' : '';
-          return '<div class="level' + spine + '">' + lvl.map((n) => nodeHtml(n, 0)).join('') + '</div>';
-        }).join('')
-      + '</div>';
+    const chains = data.filter((r) => r.children && r.children.length);
+    const standalone = data.filter((r) => !(r.children && r.children.length)).sort((a, b) => natKey(a) - natKey(b));
+    let html = '';
+    if (chains.length) {
+      html += '<div class="section-title">🔗 سلسلة الشبكة</div><div class="chain-row">'
+        + chains.map((r) => chainPathHtml(r)).join('') + '</div>';
+    }
+    if (standalone.length) {
+      html += '<div class="section-title">🖥️ أجهزة مستقلة</div><div class="standalone-grid">'
+        + standalone.map((r) => {
+            const down = r.status === 'offline';
+            const cls = down ? 's-card down' : r.status === 'paused' ? 's-card paused' : 's-card up';
+            const st = down ? '🔴 منقطع' : r.status === 'paused' ? '⏸ موقوف' : '🟢 متصل';
+            const stCls = down ? 'st down' : r.status === 'paused' ? 'st paused' : 'st up';
+            return '<div class="' + cls + '">'
+              + '<div class="nm">' + esc(r.name) + '</div>'
+              + '<div class="meta">' + esc(r.ip) + (r.device_type_name ? ' — ' + esc(r.device_type_name) : '') + '</div>'
+              + '<div class="st ' + stCls + '">' + st + '</div>'
+              + '</div>';
+          }).join('') + '</div>';
+    }
+    if (!html) html = '<p style="color:#475569">لا توجد أجهزة.</p>';
+    document.getElementById('content').innerHTML = html;
     const flat = [];
     (function count(nodes) { for (const n of nodes) { flat.push(n); count(n.children || []); } })(data);
     const up = flat.filter((n) => n.status === 'online').length;
