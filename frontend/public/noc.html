@@ -344,14 +344,16 @@
         + '</div>';
     }
     // خطوط الوصل: مبنى → مبنى الأب (parent_id) بلون بنفسجي.
+    // v2.8.4 — مرتكز وإحداثيات مطابقة تمامًا لخطوط «وضع الرسم» في لوحة التحكم
+    // (منتصف ترويسة البطاقة: عرض 320 / ارتفاع ترويسة 17) مع نفس سماكة/عتامة الخط.
     let lines = '';
     for (const l of locs) {
       if (!l.parent_id) continue;
       const parent = locs.find((o) => Number(o.location_id) === Number(l.parent_id));
       if (!parent) continue;
-      const ax = l.pos_x + 160, ay = l.pos_y + 20;
-      const bx = parent.pos_x + 160, by = parent.pos_y + 60;
-      lines += '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" stroke="#a78bfa" stroke-width="2.5" opacity="0.5" />';
+      const ax = l.pos_x + 160, ay = l.pos_y + 17;
+      const bx = parent.pos_x + 160, by = parent.pos_y + 17;
+      lines += '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" stroke="#a78bfa" stroke-width="3" opacity="0.75" />';
     }
     board.innerHTML = '<svg class="mv-links" width="1800" height="1200">' + lines + '</svg>' + cards;
   }

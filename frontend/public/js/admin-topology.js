@@ -103,11 +103,15 @@
   }
 
   // v2.8.2 — قيمة أب موحدة: 'D<id>' جهاز، 'L<id>' موقع، '' جذر.
+  // v2.8.4 — علاقة واحدة موحدة (parent_id) لكل الأنواع:
+  //   • موقع  → أبوه موقع (parent_id) — نفس العلاقة التي يبنيها /api/topology ويرسمها NOC.
+  //   • جهاز  → أبوه جهاز (parent_id)، وإن غاب فموقعه (location_id).
+  // (upstream_location_id عمود قديم غير مقروء من الخادم — أُزيل من المسار هنا.)
   function parentKeyOf(n) {
+    if (n.type === 'location') return n.parent_id ? 'L' + n.parent_id : '';
     if (n.parent_id) return 'D' + n.parent_id;
-    if (n.type === 'location' && n.upstream_location_id) return 'L' + n.upstream_location_id;
     // v2.8.3 — الجهاز يتعلق بمبنى location_id (نفس مصدر شجرة المواقع).
-    if (n.type === 'device' && n.location_id) return 'L' + n.location_id;
+    if (n.location_id) return 'L' + n.location_id;
     return '';
   }
 
@@ -135,7 +139,9 @@
     canvas.innerHTML = pl.map((n) => {
       const si = statusInfo(n);
       const isLoc = n.type === 'location';
-      const others = nodes.filter((o) => String(o.id) !== String(n.id));
+      // v2.8.4 — قائمة المباني تعرض مواقع فقط: أب الموقع لا يمكن أن يكون جهازًا
+      // (وإلا صار الخيار بلا أثر — /api/topology يبني المواقع من parent_id للمواقع فقط).
+      const others = nodes.filter((o) => String(o.id) !== String(n.id) && (!isLoc || o.type === 'location'));
       const cur = parentKeyOf(n);
       const opts = '<option value="">— مدخل إنترنت (جذر) —</option>'
         + others.map((o) => {
@@ -209,6 +215,12 @@
     return { x: (n.pos_x || 0) + CARD_W / 2, y: (n.pos_y || 0) + CARD_H / 2 };
   }
 
+  // v2.8.4 — ارتكاز بطاقة المبنى: عرض 320px + منتصف الترويسة (~17px). مشترك مع NOC.
+  const LOC_W = 320, LOC_HEAD_H = 17;
+  function locAnchor(n) {
+    return { x: (n.pos_x || 0) + LOC_W / 2, y: (n.pos_y || 0) + LOC_HEAD_H };
+  }
+
   function drawLinks() {
     const rect = canvas.getBoundingClientRect();
     svg.setAttribute('width', Math.max(rect.width, 1200));
@@ -226,7 +238,10 @@
       if (!key) continue;
       const p = placed().find((o) => (o.type === 'location' ? 'L' + o.location_id : 'D' + o.id) === key);
       if (!p) continue;
-      const a = center(n), b = center(p);
+      // v2.8.4 — خطوط المباني بمرتكز موحّد مع NOC (منتصف ترويسة بطاقة المبنى 320 عرضًا)
+      // حتى تكون نفس الوصلات بنفس الإحداثيات في الشاشتين.
+      const a = n.type === 'location' ? locAnchor(n) : center(n);
+      const b = p.type === 'location' ? locAnchor(p) : center(p);
       const color = n.type === 'location' ? '#a78bfa'
         : n.status === 'offline' ? '#ef4444' : n.pathDown ? '#f59e0b' : '#22c55e';
       h += '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" stroke="' + color + '" stroke-width="3" opacity="0.75" />';
@@ -292,15 +307,12 @@
     const id = sel.dataset.id;
     const val = sel.value || '';
     // v2.8.2 — الأب ممكن جهاز (D<id>) أو موقع (L<id>) أو لا شيء (جذر).
-    const patch = val[0] === 'L'
-      ? { parent_id: null, upstream_location_id: val[0] === 'L' && id[0] === 'L' ? Number(val.slice(1)) : undefined, parent_location_id: id[0] !== 'L' ? Number(val.slice(1)) : undefined }
-      : val[0] === 'D'
-        ? { parent_id: Number(val.slice(1)), parent_location_id: null, upstream_location_id: null }
-        : { parent_id: null, parent_location_id: null, upstream_location_id: null };
     if (id[0] === 'L') {
-      // موقع: الربط عبر upstream_location_id فقط.
-      const ok = await saveLocationOne(id, { upstream_location_id: val[0] === 'L' ? Number(val.slice(1)) : null });
-      if (ok) { Object.assign(byId(id), { upstream_location_id: val[0] === 'L' ? Number(val.slice(1)) : null }); renderCanvas(); }
+      // v2.8.4 — موقع: الربط عبر parent_id — نفس العلاقة التي يقرأها /api/topology و NOC.
+      // (كان يكتب upstream_location_id الذي لا يقبله الخادم، فكان الاختيار يضيع بصمت.)
+      const pid = val[0] === 'L' ? Number(val.slice(1)) : null;
+      const ok = await saveLocationOne(id, { parent_id: pid });
+      if (ok) { Object.assign(byId(id), { parent_id: pid }); renderCanvas(); }
       return;
     }
     // v2.8.3 — جهاز: اختيار مبنى يعدّل location_id (نفس حقل نموذج الجهاز/شجرة المواقع).
@@ -430,7 +442,10 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ pos_x: Number(it.pos_x), pos_y: Number(it.pos_y), _pos_only: true }),
+          // v2.8.4 — _clear يطلب NULL حقيقيًا من الخادم (بدل ما null يتحول (0,0)).
+          body: JSON.stringify(isClear
+            ? { _pos_only: true, _clear: true }
+            : { pos_x: Number(it.pos_x), pos_y: Number(it.pos_y), _pos_only: true }),
         });
         const j = await r.json();
         if (!j.success) throw new Error(j.error || 'فشل حفظ موضع المبنى');
@@ -450,9 +465,10 @@
       const gj = await g.json();
       const loc = (gj.success && Array.isArray(gj.data)) ? gj.data.find((x) => Number(x.id) === lid) : null;
       if (!loc) throw new Error('المبنى غير موجود');
+      // v2.8.4 — نرسل الحقول التي يقبلها PUT /api/locations/:id فعلًا (name/kind/parent_id/sort_order).
       const body = {
         name: loc.name, kind: loc.kind, parent_id: loc.parent_id,
-        sort_order: loc.sort_order, upstream_location_id: loc.upstream_location_id,
+        sort_order: loc.sort_order,
         ...patch,
       };
       const r = await fetch('/api/locations/' + lid, {

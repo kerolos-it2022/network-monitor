@@ -136,8 +136,19 @@ router.put('/:id', requireAuth, (req, res) => {
   }
   // v2.8.2 — وضع الرسم يرسل المواضع فقط (pos_x/pos_y) دون باقي بيانات الموقع.
   if (req.body && req.body._pos_only) {
+    // v2.8.4 — الإخراج الصريح من اللوحة (✕) يرسل _clear ⇒ NULL حقيقي.
+    // كان null يتحول إلى 0 فيصير الموضع (0,0) والبطاقة تعود عند إعادة التحميل —
+    // أي أن ✕ لم يكن يُخرج المبنى من اللوحة فعليًا.
+    if (req.body._clear) {
+      db.prepare('UPDATE locations SET pos_x = NULL, pos_y = NULL WHERE id = ?').run(id);
+      return res.json({ success: true, data: null });
+    }
     const px = (req.body.pos_x == null) ? null : (Number.isFinite(Number(req.body.pos_x)) ? Math.round(Number(req.body.pos_x)) : null);
     const py = (req.body.pos_y == null) ? null : (Number.isFinite(Number(req.body.pos_y)) ? Math.round(Number(req.body.pos_y)) : null);
+    // v2.8.4 — حارس متناظر مع /api/topology/layout: لا نكتب (0,0) (نتيجة تحميل ناقص).
+    if (px === 0 && py === 0) {
+      return res.json({ success: true, data: null, skipped: 'zero' });
+    }
     db.prepare('UPDATE locations SET pos_x = ?, pos_y = ? WHERE id = ?').run(px, py, id);
     return res.json({ success: true, data: null });
   }
