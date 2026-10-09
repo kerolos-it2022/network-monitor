@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS devices (
     device_type_id INTEGER NOT NULL,
     location_id INTEGER,
     parent_id INTEGER,                             -- Topology chain: الأب في مسار الشبكة (NULL = مدخل إنترنت/جذر السلسلة)
+    pos_x INTEGER,                                 -- Topology draw: موضع البطاقة الأفقي (وضع الرسم — يُحفظ ويُعرض في NOC كما رسمه الأدمن)
+    pos_y INTEGER,                                 -- Topology draw: موضع البطاقة الرأسي
     check_protocol TEXT NOT NULL DEFAULT 'ping', -- 'ping' | 'port' | 'http' | 'https'
     port INTEGER,                                 -- مطلوب فقط إذا check_protocol = 'port'
     web_port INTEGER,                             -- بورت واجهة الويب المخصص (اختياري — مثل 4444) لزر «فتح»

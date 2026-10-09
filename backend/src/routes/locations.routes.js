@@ -53,7 +53,7 @@ function validateParentId(id, parentId) {
 // v2.7.1: ترتيب بِـ sort_order أَوّلاً ثُمّ id (نفس ترتيب خريطة المواقع).
 router.get('/', (req, res) => {
   const rows = db
-    .prepare('SELECT id, name, parent_id, kind, sort_order FROM locations ORDER BY sort_order ASC, id ASC')
+    .prepare('SELECT id, name, parent_id, kind, sort_order, pos_x, pos_y FROM locations ORDER BY sort_order ASC, id ASC')
     .all();
   return res.json({ success: true, data: rows });
 });
@@ -133,6 +133,13 @@ router.put('/:id', requireAuth, (req, res) => {
   const existing = db.prepare('SELECT id FROM locations WHERE id = ?').get(id);
   if (!existing) {
     return res.status(404).json({ success: false, error: 'الموقع غير موجود' });
+  }
+  // v2.8.2 — وضع الرسم يرسل المواضع فقط (pos_x/pos_y) دون باقي بيانات الموقع.
+  if (req.body && req.body._pos_only) {
+    const px = (req.body.pos_x == null) ? null : (Number.isFinite(Number(req.body.pos_x)) ? Math.round(Number(req.body.pos_x)) : null);
+    const py = (req.body.pos_y == null) ? null : (Number.isFinite(Number(req.body.pos_y)) ? Math.round(Number(req.body.pos_y)) : null);
+    db.prepare('UPDATE locations SET pos_x = ?, pos_y = ? WHERE id = ?').run(px, py, id);
+    return res.json({ success: true, data: null });
   }
   const { name, parent_id, kind, sort_order } = req.body || {};
   if (!name) {

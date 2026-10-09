@@ -341,9 +341,24 @@
     </div>
 
     <section id="section-topology" class="hidden">
-      <h2>🔗 سلسلة الشبكة (Topology)</h2>
-      <p class="muted">الأجهزة بترتيب مسار الشبكة — حدد لكل جهاز «متصل عبر» من نموذج الجهاز ليبنى المسار. الجهاز المنقطع وأبوه متصل = العيب فيه؛ الأب منقطع = الفرع كله مسدود عبره.</p>
-      <div id="topology-tree"><p class="muted">افتح التبويب لتحميل السلسلة…</p></div>
+      <!-- وضع الرسم: اسحب البطاقات، حدد «متصل عبر»، ثم 💾 حفظ التخطيط — يُعرض كما رسمته في NOC -->
+      <div class="topo-draw-toolbar">
+        <h3>✏️ وضع الرسم — رتّب السلسلة كما تريد أن تظهر في NOC</h3>
+        <p class="muted">اسحب البطاقة بالمؤشر لتحريكها، وغيّر «متصل عبر» من القائمة داخل البطاقة، ثم اضغط 💾 حفظ. ✕ يُخرج الجهاز من اللوحة (يُضاف من القائمة بالأسفل).</p>
+        <div class="topo-draw-actions">
+          <!-- v2.8.2 — قائمتان منفصلتان: أجهزة / مباني (زي خريطة المواقع) -->
+          <select id="topo-add-loc-select" class="sort-select" aria-label="إضافة مبنى للوحة">
+            <option value="">🏢 أضف مبنى/موقع للوحة…</option>
+          </select>
+          <button type="button" class="btn" id="topo-reload-btn" title="إعادة التحميل والترتيب التلقائي">↻ إعادة تحميل</button>
+          <button type="button" class="btn btn-primary" id="topo-save-btn" title="حفظ مواضع البطاقات كما رسمتها">💾 حفظ التخطيط</button>
+          <span id="topo-dirty" class="hidden muted">● تعديلات غير محفوظة</span>
+        </div>
+      </div>
+      <div class="topo-canvas-wrap">
+        <svg id="topology-links" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="topology-canvas" aria-label="لوحة رسم السلسلة"></div>
+      </div>
     </section>
 
     <section id="section-notifications" class="hidden">
@@ -751,6 +766,7 @@
   <script src="../js/admin-utils.js"></script>
   <script src="../js/admin-devices.js"></script>
   <script src="../js/admin-topology.js"></script>
+  <script src="../js/admin-topology-view.js"></script>
   <script src="../js/admin-locations-types.js"></script>
   <script src="../js/admin-notifications.js"></script>
   <script src="../js/admin-tabs.js"></script>

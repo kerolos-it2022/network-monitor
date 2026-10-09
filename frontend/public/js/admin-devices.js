@@ -181,24 +181,42 @@ function resetDeviceForm() {
   document.getElementById('df-failure_threshold').value = 3;
 }
 
-// Topology chain: تعبئة قائمة «متصل عبر» بكل الأجهزة (مع استثناء الجهاز المعدَّل نفسه).
-async function populateParentSelect(selectedId, excludeId) {
+// Topology chain (v2.8.2): تعبئة قائمة «متصل عبر» — جهاز أو موقع/مبنى.
+// القيمة 'D<id>' = جهاز، 'L<id>' = موقع. القيمة الفارغة = جذر السلسلة.
+async function populateParentSelect(selDeviceId, selLocationId, excludeId) {
   const sel = document.getElementById('df-parent_id');
   if (!sel) return;
-  const r = await api('/api/devices');
-  const list = (r.success && Array.isArray(r.data)) ? r.data : [];
-  sel.innerHTML = '<option value="">— مدخل إنترنت (جذر السلسلة) —</option>'
-    + list
-      .filter((d) => !excludeId || Number(d.id) !== Number(excludeId))
-      .map((d) => '<option value="' + d.id + '">' + esc(d.name) + ' (' + esc(d.ip) + ')</option>')
-      .join('');
-  sel.value = selectedId || '';
+  const [rDev, rLoc] = await Promise.all([api('/api/devices'), api('/api/locations')]);
+  const devs = (rDev.success && Array.isArray(rDev.data)) ? rDev.data : [];
+  const locs = (rLoc.success && Array.isArray(rLoc.data)) ? rLoc.data : [];
+  const devOpts = devs
+    .filter((d) => !excludeId || Number(d.id) !== Number(excludeId))
+    .map((d) => '<option value="D' + d.id + '">' + esc(d.name) + ' (' + esc(d.ip) + ')</option>')
+    .join('');
+  const locOpts = locs
+    .map((l) => '<option value="L' + l.id + '">' + esc(l.name) + '</option>')
+    .join('');
+  sel.innerHTML = '<option value="">— مدخل إنترنت / جذر السلسلة —</option>'
+    + '<optgroup label="🖥️ جهاز">' + devOpts + '</optgroup>'
+    + '<optgroup label="🏢 موقع / مبنى">' + locOpts + '</optgroup>';
+  // الأولوية للموقع إن وُجد (الاثنين معًا غير مسموح — الجهاز الأب يعلو).
+  if (selLocationId) sel.value = 'L' + selLocationId;
+  else if (selDeviceId) sel.value = 'D' + selDeviceId;
+  else sel.value = '';
+}
+
+// تحويل اختيار القائمة إلى حقول body الصحيحة.
+function parseParentSelectValue(val) {
+  if (!val) return { parent_id: null, parent_location_id: null };
+  if (val[0] === 'D') return { parent_id: Number(val.slice(1)), parent_location_id: null };
+  if (val[0] === 'L') return { parent_id: null, parent_location_id: Number(val.slice(1)) };
+  return { parent_id: null, parent_location_id: null };
 }
 
 function openDeviceForm() {
   resetDeviceForm();
   document.getElementById('device-form-title').textContent = 'إضافة جهاز';
-  populateParentSelect('', null);
+  populateParentSelect('', '', null);
   openEditModal(document.getElementById('device-modal'), {
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات قديمة.
     onClose: () => resetDeviceForm(),
@@ -223,7 +241,7 @@ async function startEditDevice(id) {
   document.getElementById('df-failure_threshold').value = d.failure_threshold;
   document.getElementById('df-is_active').checked = !!d.is_active;
   document.getElementById('device-form-title').textContent = 'تعديل جهاز #' + d.id;
-  await populateParentSelect(d.parent_id || '', d.id);
+  await populateParentSelect(d.parent_id || '', d.parent_location_id || '', d.id);
   openEditModal(document.getElementById('device-modal'), {
     focusSelector: '#df-name',
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات التعديل.
@@ -241,9 +259,7 @@ async function submitDeviceForm(e) {
     location_id: document.getElementById('df-location_id').value
       ? Number(document.getElementById('df-location_id').value)
       : null,
-    parent_id: document.getElementById('df-parent_id').value
-      ? Number(document.getElementById('df-parent_id').value)
-      : null,
+    ...parseParentSelectValue(document.getElementById('df-parent_id').value),
     check_protocol: document.getElementById('df-check_protocol').value,
     port: document.getElementById('df-port').value
       ? Number(document.getElementById('df-port').value)

@@ -20,6 +20,8 @@ const DEVICE_SELECT = `
     d.location_id,
     l.name AS location_name,
     d.parent_id,
+    d.parent_location_id,
+    d.pos_x, d.pos_y,
     d.check_protocol, d.port, d.web_port,
     d.check_interval_seconds, d.failure_threshold, d.is_active,
     d.current_status, d.http_accessible, d.https_accessible,
@@ -54,6 +56,16 @@ function validateParent(parentId, deviceId) {
   return { ok: true, value: pid };
 }
 
+// v2.8.2 — التحقق من parent_location_id (جهاز يتصل بموقع/مبنى):
+// الموقع موجود + الموقع ليس نوع internet (الجذر لا يستقبل أبناء جهاز).
+function validateParentLocation(locationId) {
+  if (locationId == null || locationId === '') return { ok: true, value: null };
+  const lid = Number(locationId);
+  if (!Number.isInteger(lid) || lid <= 0) return { ok: false, error: 'parent_location_id غير صالح' };
+  const loc = db.prepare('SELECT id, kind FROM locations WHERE id = ?').get(lid);
+  if (!loc) return { ok: false, error: 'الموقع المتصل عبره غير موجود (id=' + lid + ')' };
+  return { ok: true, value: lid };
+}
 // GET /api/devices  (عام)
 router.get('/', (req, res) => {
   const devices = db.prepare(`${DEVICE_SELECT} ORDER BY d.id ASC`).all();
@@ -210,7 +222,7 @@ router.post('/cleanup-status-logs', requireAuth, (req, res) => {
 // POST /api/devices  🔒
 router.post('/', requireAuth, (req, res) => {
   const {
-    name, ip, device_type_id, location_id, parent_id,
+    name, ip, device_type_id, location_id, parent_id, parent_location_id, pos_x, pos_y,
     check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
   } = req.body || {};
 
@@ -234,17 +246,26 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ success: false, error: pv.error });
   }
 
+  // v2.8.2: التحقق من الموقع الأب (جهاز يتصل بمبنى/موقع).
+  const plc = validateParentLocation(parent_location_id);
+  if (!plc.ok) {
+    return res.status(400).json({ success: false, error: plc.error });
+  }
+
   const result = db.prepare(
     `INSERT INTO devices
-      (name, ip, device_type_id, location_id, parent_id, check_protocol, port, web_port,
+      (name, ip, device_type_id, location_id, parent_id, parent_location_id, pos_x, pos_y, check_protocol, port, web_port,
        check_interval_seconds, failure_threshold, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     name,
     ip,
     device_type_id,
     location_id ?? null,
     pv.value,
+    plc.value,
+    Number.isFinite(Number(pos_x)) ? Number(pos_x) : null,
+    Number.isFinite(Number(pos_y)) ? Number(pos_y) : null,
     check_protocol || 'ping',
     port ?? null,
     web_port ?? null,
@@ -291,7 +312,7 @@ router.put('/:id', requireAuth, (req, res) => {
   }
 
   const {
-    name, ip, device_type_id, location_id, parent_id,
+    name, ip, device_type_id, location_id, parent_id, parent_location_id, pos_x, pos_y,
     check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
   } = req.body || {};
 
@@ -315,9 +336,22 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(400).json({ success: false, error: pv.error });
   }
 
+  // v2.8.2: الموقع الأب — undefined = يُبقي القيمة القديمة، null/'' = فك، رقم = ربط.
+  let plcValue;
+  if (parent_location_id === undefined) {
+    const row = db.prepare('SELECT parent_location_id FROM devices WHERE id = ?').get(id);
+    plcValue = row ? row.parent_location_id : null;
+  } else {
+    const plc = validateParentLocation(parent_location_id);
+    if (!plc.ok) {
+      return res.status(400).json({ success: false, error: plc.error });
+    }
+    plcValue = plc.value;
+  }
+
   db.prepare(
     `UPDATE devices SET
-      name = ?, ip = ?, device_type_id = ?, location_id = ?, parent_id = ?,
+      name = ?, ip = ?, device_type_id = ?, location_id = ?, parent_id = ?, parent_location_id = ?, pos_x = ?, pos_y = ?,
       check_protocol = ?, port = ?, web_port = ?,
       check_interval_seconds = ?, failure_threshold = ?, is_active = ?
      WHERE id = ?`
@@ -327,6 +361,9 @@ router.put('/:id', requireAuth, (req, res) => {
     device_type_id,
     location_id ?? null,
     pv.value,
+    plcValue,
+    Number.isFinite(Number(pos_x)) ? Number(pos_x) : null,
+    Number.isFinite(Number(pos_y)) ? Number(pos_y) : null,
     check_protocol || 'ping',
     port ?? null,
     web_port ?? null,

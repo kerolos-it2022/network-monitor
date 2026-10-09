@@ -1558,3 +1558,84 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 .t-node.paused { opacity: .55; }
 .t-children { margin-top: 8px; }
 .t-ip, .t-type { opacity: .65; font-size: .85em; }
+
+
+/* ── Topology draw mode (وضع الرسم — سحب البطاقات وحفظ التخطيط) ── */
+.topo-draw-toolbar { margin-top: 18px; padding: 12px 14px; border: 1px dashed var(--border, #94a3b8); border-radius: 10px; background: rgba(148,163,184,.06); }
+.topo-draw-toolbar h3 { margin: 0 0 6px; font-size: 1rem; }
+.topo-draw-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.topo-draw-actions .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+#topo-save-btn.attention { animation: topo-pulse 1.2s ease-in-out infinite; box-shadow: 0 0 0 3px rgba(37,99,235,.35); }
+@keyframes topo-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.topo-canvas-wrap { position: relative; margin-top: 12px; border: 1px solid var(--border, #cbd5e1); border-radius: 10px; background:
+  repeating-conic-gradient(rgba(148,163,184,.08) 0% 25%, transparent 0% 50%) 50% / 24px 24px; overflow: auto; height: 560px; }
+#topology-canvas { position: relative; width: 1600px; height: 1200px; }
+#topology-links { position: absolute; inset: 0; pointer-events: none; }
+.t-card { position: absolute; width: 210px; min-height: 74px; box-sizing: border-box; border: 1px solid rgba(100,116,139,.45);
+  border-radius: 10px; padding: 8px 10px; background: var(--card, #fff); box-shadow: 0 2px 8px rgba(15,23,42,.12);
+  cursor: grab; user-select: none; touch-action: none; }
+.t-card:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(15,23,42,.22); }
+.t-card.up   { border-inline-start: 4px solid #22c55e; }
+.t-card.down { border-inline-start: 4px solid #ef4444; background: rgba(239,68,68,.07); }
+.t-card.pathdown { border-inline-start: 4px solid #f59e0b; }
+.t-card.paused { opacity: .6; }
+.t-card .t-row { display: flex; align-items: center; gap: 6px; }
+.t-card .t-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.t-card .t-nm { font-weight: 700; font-size: .92em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.t-card .t-remove { border: 0; background: transparent; color: #ef4444; cursor: pointer; font-size: .95em; padding: 0 2px; }
+.t-card .t-ip { opacity: .65; font-size: .78em; direction: ltr; text-align: left; margin-top: 2px; }
+.t-card .t-parent-row { font-size: .78em; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.t-card .t-parent { flex: 1; min-width: 0; font-size: .95em; padding: 2px 4px; }
+
+/* v2.8.2 — عقد المواقع في شجرة السلسلة: إطار بنفسجي مميز */
+.t-node.location { border-inline-start: 4px solid #a78bfa; background: rgba(167,139,250,.07); }
+
+/* v2.8.2 — أجهزة داخل بطاقة المبنى (وضع الرسم) */
+.t-card.location { border-inline-start: 4px solid #a78bfa; background: rgba(167,139,250,.06); cursor: grab; }
+.t-inner-list { margin-top: 8px; border-top: 1px dashed rgba(167,139,250,.5); padding-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.t-inner { display: flex; align-items: center; gap: 6px; font-size: .78em; padding: 3px 6px; border-radius: 6px; background: rgba(148,163,184,.08); cursor: default; }
+.t-inner .t-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.t-inner-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.t-inner-ip { direction: ltr; opacity: .6; font-size: .9em; }
+.t-inner-st { flex-shrink: 0; opacity: .85; }
+.t-inner-empty { margin-top: 6px; font-size: .75em; opacity: .5; font-style: italic; }
+
+/* ── v2.8.3 — بطاقة المبنى في وضع الرسم بنفس شكل كارت خريطة المواقع ── */
+.t-card.maploc {
+  width: 320px;
+  background: var(--card-bg, #fff);
+  border: 2px solid #94a3b8;
+  border-inline-start-width: 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.10);
+  cursor: grab;
+  padding: 0;
+  overflow: hidden;
+}
+.t-card.maploc.up   { border-color: #22c55e; }
+.t-card.maploc.down { border-color: #ef4444; box-shadow: 0 2px 12px rgba(239,68,68,.18); }
+.maploc-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: rgba(127,127,127,.05);
+  border-bottom: 1px solid rgba(127,127,127,.12);
+  cursor: grab;
+}
+.maploc-nm { flex: 1; font-weight: 700; font-size: .95em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maploc-kind { font-size: .78em; opacity: .65; padding: 4px 10px 0; }
+.maploc-head .t-remove { border: 0; background: transparent; color: #ef4444; cursor: pointer; font-size: .95em; }
+/* صفوف الأجهزة جوه البطاقة — نفس شكل صفوف خريطة المواقع */
+.t-card.maploc .t-inner-list { margin-top: 8px; border-top: 1px solid rgba(127,127,127,.12); padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; }
+.t-card.maploc .t-inner {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .8em; padding: 5px 8px; border-radius: 6px;
+  background: transparent; cursor: default;
+  border: 1px solid transparent;
+}
+.t-card.maploc .t-inner:hover { background: rgba(127,127,127,.06); }
+.t-card.maploc .t-inner .t-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.t-inner-type { flex-shrink: 0; opacity: .6; font-size: .92em; max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-card.maploc .t-inner-nm { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-card.maploc .t-inner-ip { direction: ltr; opacity: .55; font-size: .92em; flex-shrink: 0; }
+.t-card.maploc .t-inner-st { flex-shrink: 0; font-size: .92em; }
+.t-card.maploc .t-inner-empty { margin: 8px 10px; font-size: .78em; opacity: .5; font-style: italic; }

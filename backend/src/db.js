@@ -48,6 +48,18 @@ try {
       // v2.8.0: Topology chain — الأب في سلسلة الشبكة (parent_id): الجهاز المتصل عبر
       // جهاز آخر. NULL = مدخل إنترنت (جذر السلسلة). الحلقات تُمنع في devices.routes.
       "ALTER TABLE devices ADD COLUMN parent_id INTEGER",
+      // v2.8.0: Topology draw — موضع البطاقة (x/y) الذي رسمه الأدمن ويُعرض كما هو في NOC.
+      "ALTER TABLE devices ADD COLUMN pos_x INTEGER",
+      "ALTER TABLE devices ADD COLUMN pos_y INTEGER",
+      // v2.8.2: ربط مباني ← مباني (upstream_location_id في locations) — الموقع يتصل بموقع آخر
+      // (مثال: الورشة-1 تتصل بالمبنى الإداري). NULL = موقع مستقل. الحلقات تُمنع في locations.routes.
+      "ALTER TABLE locations ADD COLUMN upstream_location_id INTEGER",
+      // v2.8.2: جهاز يتصل بموقع/مبنى (parent_location_id في devices) — لو مش محدد جهاز أب،
+      // الجهاز يتعلق تحت المبنى مباشرة في السلسلة الموحدة (مثال: الكاميرا ← عنبر الكتاين).
+      "ALTER TABLE devices ADD COLUMN parent_location_id INTEGER",
+      // v2.8.2: مواضع بطاقات المواقع في وضع الرسم (تُعرض كما رسمها الأدمن في NOC).
+      "ALTER TABLE locations ADD COLUMN pos_x INTEGER",
+      "ALTER TABLE locations ADD COLUMN pos_y INTEGER",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

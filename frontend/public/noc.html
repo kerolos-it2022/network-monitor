@@ -10,8 +10,8 @@
   body {
     background: radial-gradient(ellipse at top, #0d1428 0%, #070b16 70%);
     color: #e8ecf4; font-family: 'Segoe UI', Tahoma, sans-serif;
-    height: 100vh; display: flex; flex-direction: column;
-    padding: 14px 22px; overflow: hidden;
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 14px 22px;
   }
   header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
   h1 { font-size: 1.5rem; color: #7dd3fc; text-shadow: 0 0 16px rgba(125,211,252,.3); }
@@ -24,7 +24,7 @@
   .counter .lbl { font-size: .9rem; color: #94a3b8; }
   .num.ok { color: #22c55e; } .num.bad { color: #ef4444; } .num.warn { color: #f59e0b; } .num.info { color: #7dd3fc; }
 
-  /* ── قسم السلسلة: بطاقات كبيرة موصولة بخطوط سميكة ملونة ── */
+  /* ── السلسلة الرئيسية: بطاقات كبيرة موصولة بخطوط سميكة ملونة (hero) ── */
   .section-title { color: #7dd3fc; font-size: 1.05rem; font-weight: 700; margin: 4px 0 10px; }
   .chain-row { display: flex; flex-direction: row; align-items: stretch; gap: 0; overflow-x: auto; padding: 10px 6px 14px; }
   .chain-card {
@@ -39,24 +39,63 @@
   .chain-card .nm { font-size: 1.25rem; font-weight: 800; }
   .chain-card .meta { color: #94a3b8; font-size: .9rem; direction: ltr; text-align: left; }
   .chain-card .st { margin-top: 4px; font-weight: 800; font-size: 1rem; }
-  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.pathdown { color: #f59e0b; }
-  /* الخط الواصل بين البطاقات — سميك ملون بحالة الوصل */
+  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.pathdown { color: #f59e0b; } .st.paused { color: #94a3b8; }
+  .chain-card.loc { border-top-color: #a78bfa; box-shadow: 0 0 14px rgba(167,139,250,.3); }
+  .chain-card.loc .nm { color: #c4b5fd; }
   .chain-link { align-self: center; width: 56px; height: 6px; border-radius: 3px; background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.55); flex-shrink: 0; }
   .chain-link.down { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,.55); }
 
-  /* ── قسم الأجهزة المستقلة (بلا أب) ── */
-  .standalone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 12px; }
+  /* ── مجموعات النوع: grid منظم بدل صف واحد ── */
+  .type-group { margin: 6px 0 18px; }
+  .type-head { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+  .type-head .nm { font-weight: 800; font-size: 1rem; color: #c7d4ea; }
+  .type-head .cnt { font-size: .85rem; color: #94a3b8; background: #16213a; border: 1px solid #1e2a44; border-radius: 999px; padding: 2px 10px; }
+  .type-head .bar { flex: 1; height: 3px; background: linear-gradient(90deg, #1e2a44, transparent); border-radius: 2px; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 10px; }
   .s-card {
     background: linear-gradient(180deg,#111a2e,#0c1424); border: 1px solid #1e2a44;
     border-inline-start: 4px solid #64748b; border-radius: 12px; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 2px;
   }
   .s-card.up { border-inline-start-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.2); }
   .s-card.down { border-inline-start-color: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,.35); }
+  .s-card.pathdown { border-inline-start-color: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.25); }
   .s-card.paused { opacity: .5; }
-  .s-card .nm { font-weight: 800; font-size: 1.05rem; }
+  .s-card .nm { font-weight: 800; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .s-card .meta { color: #94a3b8; font-size: .85rem; direction: ltr; text-align: left; }
-  .s-card .st { font-weight: 700; font-size: .9rem; }
+  .s-card .st { font-weight: 700; font-size: .85rem; }
+  .s-card .path-badge { font-size: .72rem; color: #f59e0b; }
+  /* ── v2.8.3 — قسم خريطة الشبكة (وضع الرسم للعرض فقط) ── */
+  #map-board { position: relative; width: 100%; height: 640px; border: 1px solid #1e2a44; border-radius: 12px;
+    background: repeating-conic-gradient(rgba(148,163,184,.05) 0% 25%, transparent 0% 50%) 50% / 24px 24px;
+    overflow: auto; margin-bottom: 18px; }
+  #map-board-inner { position: relative; width: 1800px; height: 1200px; }
+  #map-board svg.mv-links { position: absolute; inset: 0; pointer-events: none; }
+  .mv-card { position: absolute; box-sizing: border-box; pointer-events: none; }
+  .mv-card.loc { width: 320px; background: linear-gradient(180deg,#111a2e,#0c1424); border: 2px solid #94a3b8;
+    border-inline-start-width: 4px; border-radius: 10px; overflow: hidden; }
+  .mv-card.loc.up   { border-color: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,.2); }
+  .mv-card.loc.down { border-color: #ef4444; box-shadow: 0 0 14px rgba(239,68,68,.35); }
+  .mv-card.dev { width: 210px; border: 1px solid #1e2a44; border-inline-start: 4px solid #64748b; border-radius: 10px;
+    background: linear-gradient(180deg,#111a2e,#0c1424); padding: 8px 10px; }
+  .mv-card.dev.up   { border-inline-start-color: #22c55e; }
+  .mv-card.dev.down { border-inline-start-color: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,.3); }
+  .mv-card.dev.paused { opacity: .55; }
+  .mv-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(127,127,127,.06); border-bottom: 1px solid rgba(127,127,127,.12); }
+  .mv-nm { flex: 1; font-weight: 800; font-size: 1rem; color: #e8ecf4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mv-count { font-size: .78rem; color: #94a3b8; }
+  .mv-kind { font-size: .78rem; color: #94a3b8; padding: 4px 10px 0; }
+  .mv-meta { color: #94a3b8; font-size: .85rem; direction: ltr; text-align: left; }
+  .mv-st { font-weight: 700; font-size: .85rem; }
   .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.paused { color: #94a3b8; }
+  .mv-inner { margin-top: 8px; border-top: 1px solid rgba(127,127,127,.15); padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; }
+  .mv-inner-row { display: flex; align-items: center; gap: 6px; font-size: .8rem; padding: 5px 8px; border-radius: 6px; background: rgba(148,163,184,.06); }
+  .mv-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .mv-inner-type { flex-shrink: 0; opacity: .6; font-size: .92em; max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mv-inner-nm { flex: 1; font-weight: 600; color: #e8ecf4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mv-inner-ip { direction: ltr; opacity: .55; font-size: .92em; flex-shrink: 0; }
+  .mv-inner-st { flex-shrink: 0; font-size: .92em; font-weight: 700; }
+  .mv-empty { margin: 8px 10px; font-size: .78rem; color: #475569; font-style: italic; }
   #updated { margin-top: 8px; color: #475569; font-size: .8rem; text-align: center; }
 </style>
 </head>
@@ -76,65 +115,65 @@
     <div class="counter"><div class="num info" id="c-total">—</div><div class="lbl">إجمالي الأجهزة</div></div>
   </div>
 
+  <div id="map-section">
+    <div class="section-title">🗺️ خريطة الشبكة — كما رسمها الأدمن (عرض فقط)</div>
+    <div id="map-board"><div id="map-board-inner"><svg class="mv-links" xmlns="http://www.w3.org/2000/svg"></svg></div></div>
+  </div>
   <div id="content"><p style="color:#475569">جاري التحميل…</p></div>
   <div id="updated">—</div>
 
 <script>
 (function () {
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    }[c]));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+
+  function statusInfo(n) {
+    if (n.type === 'location') return { cls: 'up', st: '🏢 ' + (n.kind === 'building' ? 'مبنى' : n.kind === 'internet' ? 'بوابة إنترنت' : 'موقع') };
+    if (n.status === 'offline') return { cls: 'down', st: '🔴 منقطع' };
+    if (n.status === 'paused') return { cls: 'paused', st: '⏸ موقوف' };
+    if (n.status === 'unknown') return { cls: 'unknown', st: '❔ غير معروف' };
+    return { cls: 'up', st: '🟢 متصل' };
   }
 
-  // ترتيب رقمي طبيعي: الرقم في آخر الاسم (Device-104 → 104).
+  function markPathDown(nodes, parentDown) {
+    for (const n of nodes) {
+      const pd = parentDown || n.status === 'offline';
+      if (n.type === 'device') {
+        n.pathDown = !!(pd && n.status !== 'offline' && n.status !== 'paused');
+      }
+      if (n.children && n.children.length) markPathDown(n.children, pd);
+    }
+  }
   function natKey(n) {
     const m = String(n.name || '').match(/(\d+)\s*$/);
     if (m) return parseInt(m[1], 10);
     const ipm = String(n.ip || '').match(/(\d+)\s*$/);
     return ipm ? parseInt(ipm[1], 10) : 999999;
   }
-  function statusWeight(n) {
-    if (n.status === 'offline') return 0;
-    if (n.pathDown) return 1;
-    if (n.status === 'paused') return 3;
-    return 2;
-  }
-  function sortLevel(nodes) {
-    nodes.sort((a, b) => {
-      const w = statusWeight(a) - statusWeight(b);
-      if (w !== 0) return w;
-      return natKey(a) - natKey(b);
-    });
-    nodes.forEach((n) => { if (n.children && n.children.length) sortLevel(n.children); });
-  }
-
-  function markPathDown(nodes, parentDown) {
-    for (const n of nodes) {
-      const pd = parentDown || n.status === 'offline';
-      n.pathDown = !!(pd && n.status !== 'offline' && n.status !== 'paused');
-      if (n.children && n.children.length) markPathDown(n.children, pd);
-    }
-  }
+  function sortLevel(list) { list.sort((a, b) => natKey(a) - natKey(b)); }
 
   function chainCardHtml(n) {
-    const down = n.status === 'offline';
-    const pathDown = !!n.pathDown;
-    const cls = down ? 'chain-card down' : pathDown ? 'chain-card pathdown' : 'chain-card up';
-    const st = down ? '🔴 منقطع' : pathDown ? '⛔ مسدود عبر المسار' : '🟢 متصل';
-    const stCls = down ? 'st down' : pathDown ? 'st pathdown' : 'st up';
-    return '<div class="' + cls + '">'
+    const s = statusInfo(n);
+    if (n.type === 'location') {
+      return '<div class="chain-card loc">'
+        + '<div class="nm">' + esc(n.name) + '</div>'
+        + '<div class="meta">' + s.st + '</div>'
+        + '</div>';
+    }
+    const cls = n.status === 'offline' ? 'down' : n.pathDown ? 'pathdown' : 'up';
+    const stCls = n.status === 'offline' ? 'down' : n.pathDown ? 'pathdown' : 'up';
+    return '<div class="chain-card ' + cls + '">'
       + '<div class="nm">' + esc(n.name) + '</div>'
       + '<div class="meta">' + esc(n.ip) + (n.device_type_name ? ' — ' + esc(n.device_type_name) : '') + '</div>'
-      + '<div class="st ' + stCls + '">' + st + '</div>'
+      + '<div class="st ' + stCls + '">' + s.st + '</div>'
       + '</div>';
   }
   function linkHtml(n) {
-    // لون الوصيلة = حالة الجهاز التالي في المسار.
     return '<div class="chain-link' + (n.status === 'offline' ? ' down' : '') + '"></div>';
   }
 
-  // مسار خطي: نمشي من الجذر تابعًا الطفل الوحيد (سلسلتك الحالية خطية).
+  // السلسلة الرئيسية: نمشي من الجذر تابعًا الطفل الوحيد في كل مستوى.
   function chainPathHtml(root) {
     const path = [root];
     let cur = root;
@@ -144,47 +183,73 @@
       html += chainCardHtml(path[i]);
       if (i < path.length - 1) html += linkHtml(path[i + 1]);
     }
-    // فروع إضافية (أكثر من طفل) تُعرض كسلاسلة فرعية تحت المسار الرئيسي.
-    if (cur.children && cur.children.length > 1) {
-      html += '<div class="chain-row" style="margin-top:12px">'
-        + cur.children.map((c) => chainSubHtml(c)).join('') + '</div>';
+    return html;
+  }
+
+  // مجموعات حسب النوع — ترتيب ثابت منطقي.
+  const TYPE_ORDER = ['Firewall', 'Router', 'Switch', 'Server', 'Access Point', 'NVR/DVR', 'Printer'];
+  const TYPE_LABEL = { 'Firewall': '🛡️ Firewalls', 'Router': '🌐 Routers', 'Switch': '🔀 سويتشات', 'Server': '🖥️ سيرفرات', 'Access Point': '📶 نقاط واي فاي', 'NVR/DVR': '📹 كاميرات NVR/DVR', 'Printer': '🖨️ طابعات وماكينات تصوير' };
+
+  function groupCardsHtml(nodes) {
+    const groups = new Map();
+    for (const n of nodes) {
+      if (n.type === 'location') continue; // المواقع تعرض في قسم السلسلة، ليست أجهزة.
+      const t = n.device_type_name || 'أخرى';
+      if (!groups.has(t)) groups.set(t, []);
+      groups.get(t).push(n);
+    }
+    const keys = [...groups.keys()].sort((a, b) => {
+      const ia = TYPE_ORDER.indexOf(a), ib = TYPE_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b, 'ar');
+    });
+    let html = '';
+    for (const k of keys) {
+      const list = groups.get(k).sort((a, b) => natKey(a) - natKey(b));
+      html += '<div class="type-group">'
+        + '<div class="type-head"><span class="nm">' + esc(TYPE_LABEL[k] || '📌 ' + k) + '</span>'
+        + '<span class="cnt">' + list.length + ' جهاز</span><span class="bar"></span></div>'
+        + '<div class="cards-grid">'
+        + list.map((n) => {
+            const s = statusInfo(n);
+            const cls = n.status === 'offline' ? 'down' : n.pathDown ? 'pathdown' : s.cls;
+            const stCls = n.status === 'offline' ? 'down' : s.cls === 'unknown' ? 'paused' : s.cls;
+            const badge = n.pathDown ? '<span class="path-badge">⛔ مسدود عبر الأب</span>' : '';
+            return '<div class="s-card ' + cls + '">'
+              + '<div class="nm" title="' + esc(n.name) + '">' + esc(n.name) + '</div>'
+              + '<div class="meta">' + esc(n.ip) + '</div>'
+              + '<div class="st ' + stCls + '">' + s.st + ' ' + badge + '</div>'
+              + '</div>';
+          }).join('')
+        + '</div></div>';
     }
     return html;
   }
-  function chainSubHtml(n) {
-    let html = chainCardHtml(n);
-    if (n.children && n.children.length) {
-      html += '<div class="chain-link' + (n.children[0].status === 'offline' ? ' down' : '') + '" style="width:30px"></div>'
-        + chainSubHtml(n.children[0]);
-    }
-    return html;
+
+  // إيجاد آخر عقدة في المسار الخطي (أول عقدة عندها أكثر من ابن أو صفر أبناء).
+  function chainTail(root) {
+    let cur = root;
+    while (cur.children && cur.children.length === 1) cur = cur.children[0];
+    return cur;
   }
 
   function render(data) {
     markPathDown(data, false);
     sortLevel(data);
-    const chains = data.filter((r) => r.children && r.children.length);
-    const standalone = data.filter((r) => !(r.children && r.children.length)).sort((a, b) => natKey(a) - natKey(b));
+    const root = data[0];
     let html = '';
-    if (chains.length) {
-      html += '<div class="section-title">🔗 سلسلة الشبكة</div><div class="chain-row">'
-        + chains.map((r) => chainPathHtml(r)).join('') + '</div>';
+    if (root) {
+      // السلسلة الرئيسية: المسار من الجذر (الإنترنت) حتى بوابة الشبكة الداخلية.
+      html += '<div class="section-title">🔗 مسار الإنترنت</div><div class="chain-row">' + chainPathHtml(root) + '</div>';
+      // أجهزة الشبكة الداخلية = أبناء آخر عقدة في المسار (بوابة 88.x).
+      const tail = chainTail(root);
+      const inner = tail.children || [];
+      if (inner.length) {
+        html += '<div class="section-title">🖧 أجهزة الشبكة الداخلية — خلف ' + esc(tail.name) + ' (' + inner.length + ')</div>';
+        html += groupCardsHtml(inner);
+      }
+    } else {
+      html = '<p style="color:#475569">لا توجد أجهزة.</p>';
     }
-    if (standalone.length) {
-      html += '<div class="section-title">🖥️ أجهزة مستقلة</div><div class="standalone-grid">'
-        + standalone.map((r) => {
-            const down = r.status === 'offline';
-            const cls = down ? 's-card down' : r.status === 'paused' ? 's-card paused' : 's-card up';
-            const st = down ? '🔴 منقطع' : r.status === 'paused' ? '⏸ موقوف' : '🟢 متصل';
-            const stCls = down ? 'st down' : r.status === 'paused' ? 'st paused' : 'st up';
-            return '<div class="' + cls + '">'
-              + '<div class="nm">' + esc(r.name) + '</div>'
-              + '<div class="meta">' + esc(r.ip) + (r.device_type_name ? ' — ' + esc(r.device_type_name) : '') + '</div>'
-              + '<div class="st ' + stCls + '">' + st + '</div>'
-              + '</div>';
-          }).join('') + '</div>';
-    }
-    if (!html) html = '<p style="color:#475569">لا توجد أجهزة.</p>';
     document.getElementById('content').innerHTML = html;
     const flat = [];
     (function count(nodes) { for (const n of nodes) { flat.push(n); count(n.children || []); } })(data);
@@ -196,14 +261,106 @@
     document.getElementById('c-path').textContent = path;
     document.getElementById('c-total').textContent = flat.length;
     document.getElementById('updated').textContent =
-      'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG') + ' — يتحدث تلقائياً كل 10 ثوانٍ';
+      'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG') + ' — يتحدث تلقائيًا كل 10 ثوانٍ';
+  }
+
+  // ── v2.8.3 — خريطة الشبكة (وضع الرسم للعرض فقط) ──
+  // نفس بيانات /api/topology — المباني وأجهزتها على مواضعها المحفوظة (pos_x/pos_y).
+  function escMV(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+  function mvStatus(n) {
+    if (n.type === 'location') return { cls: '', st: '', color: '#a78bfa' };
+    if (n.status === 'offline') return { cls: 'down', st: '🔴 منقطع', color: '#ef4444' };
+    if (n.status === 'paused') return { cls: 'paused', st: '⏸ موقوف', color: '#94a3b8' };
+    return { cls: 'up', st: '🟢 متصل', color: '#22c55e' };
+  }
+  function mvKind(kind) {
+    if (kind === 'building') return '🏢 مبنى';
+    if (kind === 'internet') return '🌐 بوابة إنترنت';
+    if (kind === 'floor') return '📐 طابق';
+    if (kind === 'room') return '🚪 غرفة';
+    if (kind === 'rack') return '🗄️ خزانة';
+    if (kind === 'site') return '🏛️ موقع';
+    return '📍 منطقة';
+  }
+  // أبناء المبنى: أجهزة location_id = المبنى (نفس مصدر وضع الرسم).
+  function mvKids(data, locId) {
+    const kids = [];
+    (function walk(list) {
+      for (const n of list) {
+        if (n.type === 'device' && Number(n.location_id) === Number(locId)) kids.push(n);
+        if (n.children) walk(n.children);
+      }
+    })(data);
+    return kids;
+  }
+
+  function renderMap(data) {
+    const board = document.getElementById('map-board-inner');
+    if (!board) return;
+    // تجميع العقد المسطحة.
+    const flat = [];
+    (function walk(list) { for (const n of list) { flat.push(n); if (n.children) walk(n.children); } })(data);
+    const locs = flat.filter((n) => n.type === 'location' && n.pos_x != null && n.pos_y != null);
+    const locIds = new Set(locs.map((l) => Number(l.location_id)));
+    // أجهزة مستقلة على اللوحة: لها pos ولا location_id مرسوم (مثل DNS).
+    const solo = flat.filter((n) => n.type === 'device' && n.pos_x != null && n.pos_y != null
+      && !(n.location_id != null && locIds.has(Number(n.location_id))));
+
+    let cards = '';
+    // كروت المباني + أجهزتها.
+    for (const l of locs) {
+      const kids = mvKids(data, l.location_id);
+      const up = kids.filter((k) => k.status === 'online').length;
+      const down = kids.filter((k) => k.status === 'offline').length;
+      const borderCls = !kids.length ? '' : down > 0 ? 'down' : 'up';
+      const rows = kids.map((k, i) => {
+        const st = mvStatus(k);
+        return '<div class="mv-inner-row">'
+          + '<span class="mv-dot" style="background:' + st.color + '"></span>'
+          + '<span class="mv-inner-type">🖥️ ' + escMV(k.device_type_name || 'جهاز') + '</span>'
+          + '<span class="mv-inner-nm">' + escMV(k.name) + '</span>'
+          + '<span class="mv-inner-ip">' + escMV(k.ip) + '</span>'
+          + '<span class="mv-inner-st">' + st.st + '</span>'
+          + '</div>';
+      }).join('');
+      cards += '<div class="mv-card loc ' + borderCls + '" style="left:' + l.pos_x + 'px; top:' + l.pos_y + 'px">'
+        + '<div class="mv-head"><b class="mv-nm">' + escMV(l.name) + '</b>'
+        + '<span class="mv-count">🟢 ' + up + ' · 🔴 ' + down + '</span></div>'
+        + '<div class="mv-kind">' + escMV(mvKind(l.kind)) + '</div>'
+        + (kids.length ? '<div class="mv-inner">' + rows + '</div>' : '<div class="mv-empty">لا أجهزة داخل هذا المبنى</div>')
+        + '</div>';
+    }
+    // كروت الأجهزة المستقلة (DNS وأمثالها).
+    for (const d of solo) {
+      const st = mvStatus(d);
+      cards += '<div class="mv-card dev ' + st.cls + '" style="left:' + d.pos_x + 'px; top:' + d.pos_y + 'px">'
+        + '<div class="mv-nm">' + escMV(d.name) + '</div>'
+        + '<div class="mv-meta">' + escMV(d.ip) + (d.device_type_name ? ' — ' + escMV(d.device_type_name) : '') + '</div>'
+        + '<div class="mv-st ' + st.cls + '">' + st.st + '</div>'
+        + '</div>';
+    }
+    // خطوط الوصل: مبنى → مبنى الأب (parent_id) بلون بنفسجي.
+    let lines = '';
+    for (const l of locs) {
+      if (!l.parent_id) continue;
+      const parent = locs.find((o) => Number(o.location_id) === Number(l.parent_id));
+      if (!parent) continue;
+      const ax = l.pos_x + 160, ay = l.pos_y + 20;
+      const bx = parent.pos_x + 160, by = parent.pos_y + 60;
+      lines += '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" stroke="#a78bfa" stroke-width="2.5" opacity="0.5" />';
+    }
+    board.innerHTML = '<svg class="mv-links" width="1800" height="1200">' + lines + '</svg>' + cards;
   }
 
   async function tick() {
     try {
       const r = await fetch('/api/topology', { credentials: 'same-origin' });
       const j = await r.json();
-      if (j.success && Array.isArray(j.data)) render(j.data);
+      if (j.success && Array.isArray(j.data)) { render(j.data); renderMap(j.data); }
     } catch (e) { /* تعيد المحاولة في الدورة التالية */ }
   }
 
