@@ -13,7 +13,9 @@ const requireAuth = require('../middleware/requireAuth');
 // multer: رفع الملفات في الذاكرة (النمط المعتمد في devices.routes.js) مع حد حجمي.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB كحد أقصى
+  // v2.8.7 — رُفع الحد من 100MB إلى 300MB: حجم القاعدة ينمو (status_logs) وقد يتجاوز 100MB
+  // فكانت استعادة نسخة قديمة/كبيرة تفشل. الحدّ يجب أن يكون متطابقًا مع client_max_body_size في nginx.
+  limits: { fileSize: 300 * 1024 * 1024 },
 });
 
 // ===== مسار قاعدة البيانات الحالية (مطلق) =====
@@ -21,6 +23,21 @@ const upload = multer({
 const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || '../database/monitoring.db');
 const DB_DIR = path.dirname(DB_PATH);
 const BACKUPS_DIR = path.join(DB_DIR, 'backups');
+
+// v2.8.7 — مجلد مؤقّت **قابل للكتابة** بدل os.tmpdir():
+// خدمة الأبلاينس تعمل بـ ProtectSystem=strict مع ReadWritePaths=/var/lib/network-monitor فقط،
+// وحسب توثيق systemd فإن /tmp يبقى للقراءة فقط في هذه الحالة إن لم يُفعّل PrivateTmp ⇒
+// أي كتابة في os.tmpdir() تفشل بـ EROFS (وهو السبب الفعلي لفشل النسخ الاحتياطي على الأبلاينس).
+// الحل: نكتب داخل مجلد القاعدة نفسه (ضمن المسار المسموح)، مع os.tmpdir() كاحتياط أخير.
+const TMP_DIR = path.join(DB_DIR, '.tmp');
+function tempPath(name) {
+  try {
+    fs.mkdirSync(TMP_DIR, { recursive: true });
+    return path.join(TMP_DIR, name);
+  } catch (e) {
+    return path.join(os.tmpdir(), name);
+  }
+}
 
 // القائمة المتوقعة للجداول (للتحقق من سلامة ملفات الاستعادة).
 const EXPECTED_TABLES = [
@@ -58,8 +75,8 @@ function validateBackupBuffer(buffer) {
   let tmpFile = null;
   let tmpDb = null;
   try {
-    // نكتب الـ buffer في ملف مؤقت
-    tmpFile = path.join(os.tmpdir(), `nm-verify-${Date.now()}.db`);
+    // نكتب الـ buffer في ملف مؤقت (داخل مجلد القاعدة القابل للكتابة)
+    tmpFile = tempPath(`nm-verify-${Date.now()}.db`);
     fs.writeFileSync(tmpFile, buffer);
     tmpDb = new Database(tmpFile, { readonly: true });
     const tables = tmpDb.prepare(
@@ -69,7 +86,12 @@ function validateBackupBuffer(buffer) {
     return { ok: missing.length === 0, tables, missing };
   } finally {
     if (tmpDb) try { tmpDb.close(); } catch (e) {}
-    if (tmpFile) try { fs.unlinkSync(tmpFile); } catch (e) {}
+    if (tmpFile) {
+      // تنظيف الملف المؤقّت + ملفات WAL المرافقة (-shm/-wal) حتى لا تتراكم في مجلد القاعدة.
+      for (const f of [tmpFile, tmpFile + '-shm', tmpFile + '-wal']) {
+        try { fs.unlinkSync(f); } catch (e) {}
+      }
+    }
   }
 }
 
@@ -148,7 +170,7 @@ router.get('/info', requireAuth, (req, res) => {
 router.get('/download', requireAuth, async (req, res) => {
   const ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
   const filename = `network-monitor-backup-${ts}.db`;
-  const tmpPath = path.join(os.tmpdir(), filename);
+  const tmpPath = tempPath(filename);
 
   try {
     // better-sqlite3 online backup — آمن أثناء نشاط الكتابة
@@ -291,7 +313,7 @@ router.post('/restore-existing', requireAuth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'اسم ملف غير صالح' });
     }
     if (!filename.endsWith('.db')) {
-      return res.status(400).json({ success: false, error: 'الملف должен أنتهي بـ .db' });
+      return res.status(400).json({ success: false, error: 'الملف يجب أن ينتهي بـ .db' });
     }
 
     const srcPath = path.join(BACKUPS_DIR, filename);

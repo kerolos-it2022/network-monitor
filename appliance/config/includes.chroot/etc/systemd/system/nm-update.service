@@ -1,0 +1,23 @@
+[Unit]
+Description=Network Monitor — privileged update helper (appliance)
+Documentation=file:///opt/network-monitor/HANDOFF.md
+# يُشغَّل تلقائيًّا عبر nm-update.path عند ظهور ملف الطلب.
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/sbin/nm-update
+
+# الكتابة مسموحة فقط في مجلد التطبيق ومجلد البيانات (بقية النظام للقراءة فقط).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/network-monitor /var/lib/network-monitor
+
+# npm يحتاج HOME/كاش — نضعها داخل المسار المسموح (ProtectHome يمنع /root).
+Environment=HOME=/var/lib/network-monitor
+Environment=npm_config_cache=/var/lib/network-monitor/.npm-cache
+
+# التنزيل + npm ci قد يأخذان دقائق.
+TimeoutStartSec=1800

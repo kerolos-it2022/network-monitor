@@ -21,6 +21,10 @@ AmbientCapabilities=CAP_NET_RAW
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
+# v2.8.7 — مع ProtectSystem=strict يكون /tmp للقراءة فقط إن لم يُفعّل PrivateTmp،
+# وكانت كتابة الملفات المؤقّتة (النسخ الاحتياطي/التحديثات) تفشل بـ EROFS.
+# PrivateTmp يمنح الخدمة /tmp خاصًّا قابلاً للكتابة + عزلاً إضافيًا.
+PrivateTmp=true
 ReadWritePaths=/var/lib/network-monitor
 
 [Install]

@@ -188,7 +188,13 @@ async function restoreBackup() {
         countdown--;
       }, 1000);
     } else {
-      const err = (data && data.error) ? data.error : `HTTP ${response.status}`;
+      let err = (data && data.error) ? data.error : `HTTP ${response.status}`;
+      // v2.8.7 — رسالة واضحة لخطأ الحجم (nginx يرفض الطلب قبل أن يصل للخادم).
+      if (response.status === 413) {
+        err = 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.';
+      } else if (response.status === 404 || response.status === 502) {
+        err = 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.';
+      }
       throw new Error(err);
     }
   } catch (e) {

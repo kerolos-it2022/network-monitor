@@ -4,6 +4,8 @@ const db = require('../db');
 const { checkPing, checkPort, checkHttp, checkHttps, checkAllProtocols } = require('./checkers');
 const downtimeService = require('./downtime.service');
 const notifier = require('./notifier.service');
+// v2.8.7 — ناقل البثّ الحيّ (SSE): يُبثّ تغيّر حالة أي جهاز لحظيًا لشاشات العرض (NOC/العامة).
+const live = require('./live.service');
 
 // عدّاد فشل متتالٍ لكل جهاز (device_id → عدد).
 const consecutiveFailures = new Map();
@@ -84,6 +86,7 @@ async function checkDevice(device) {
       nowIso, 
       device.id
     );
+    live.scheduleRefresh();   // v2.8.7 — بثّ فوري لتغيّر الحالة (عاد / استقرّ).
   } else {
     const failCount = (consecutiveFailures.get(device.id) || 0) + 1;
     consecutiveFailures.set(device.id, failCount);
@@ -107,6 +110,7 @@ async function checkDevice(device) {
         nowIso, 
         device.id
       );
+      live.scheduleRefresh();   // v2.8.7 — بثّ فوري لتغيّر الحالة (انقطع).
     } else {
       // لم يصل الحد بعد — فقط تحديث وقت آخر فحص دون تغيير current_status.
       db.prepare('UPDATE devices SET last_checked_at=?, http_accessible=?, https_accessible=? WHERE id=?').run(
@@ -132,6 +136,8 @@ function startMonitoring() {
           checkDevice(device).catch((e) => console.error('checkDevice error', e));
         }
       }
+      // v2.8.7 — شبكة أمان: تحديث الحالة الحيّة مرة كل دورة (لو تغيّر شيء خارج مسار الفحص).
+      live.scheduleRefresh();
     } catch (e) {
       console.error('monitoring tick error', e);
     }

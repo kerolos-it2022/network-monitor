@@ -8,6 +8,8 @@ systemctl enable nm-console.service 2>/dev/null || true
 systemctl enable nginx 2>/dev/null || true
 systemctl enable nftables 2>/dev/null || true
 systemctl enable ssh 2>/dev/null || true
+# v2.8.7 — مُراقِب طلبات التحديث (ينطلق المساعد root عند ظهور ملف الطلب).
+systemctl enable nm-update.path 2>/dev/null || true
 
 # تفعيل موقع nginx الخاص بالمشروع وتعطيل الافتراضي.
 if [ -d /etc/nginx/sites-enabled ]; then

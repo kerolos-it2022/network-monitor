@@ -3,5 +3,7 @@
 # (git على ويندوز قد لا يحمل exec bit، ووحدات systemd لا تحتمل exec bits).
 set -e
 chmod +x /usr/local/sbin/nm-console /usr/local/sbin/nm-install-to-disk
+chmod +x /usr/local/sbin/nm-update 2>/dev/null || true
 chmod 644 /etc/systemd/system/nm-console.service /etc/systemd/system/network-monitor.service 2>/dev/null || true
+chmod 644 /etc/systemd/system/nm-update.service /etc/systemd/system/nm-update.path 2>/dev/null || true
 chmod 644 /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null || true

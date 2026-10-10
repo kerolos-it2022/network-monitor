@@ -5,6 +5,47 @@ let updateAbortController = null;
 // حالة عامة لحفظ نتيجة آخر فحص (تستخدمها الأزرار)
 let lastCheckResult = null;
 
+// v2.8.7 — وضع الأبلاينس: التحديث ينفّذه مساعد root منفصل عبر ملف طلب (واجهة الويب لا تنفّذ أوامر).
+let applianceMode = false;
+
+async function detectApplianceMode() {
+  try {
+    const r = await api('/api/appliance-update/mode');
+    applianceMode = !!(r && r.success && r.appliance);
+  } catch (e) {
+    applianceMode = false;
+  }
+  console.log('[UPDATE] appliance mode:', applianceMode);
+  return applianceMode;
+}
+
+// متابعة تقدّم تحديث الأبلاينس (حالة + آخر سطور السجل) حتى النهاية.
+function followApplianceUpdate(applyBtn) {
+  const started = Date.now();
+  const timer = setInterval(async () => {
+    try {
+      const p = await api('/api/appliance-update/progress');
+      const st = p && p.state;
+      const logEl = document.getElementById('update-log');
+      if (logEl && p && typeof p.log === 'string' && p.log) logEl.textContent = p.log;
+      if (st && st.message) {
+        showUpdateStatus((st.state === 'failed' ? '❌ ' : '⏳ ') + st.message, st.state === 'failed');
+      }
+      if (st && st.state === 'success') {
+        clearInterval(timer);
+        showUpdateStatus('✅ ' + st.message + ' — جاري إعادة تحميل الصفحة…', false);
+        setTimeout(() => location.reload(), 2500);
+      } else if (st && st.state === 'failed') {
+        clearInterval(timer);
+        if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = '🚀 تطبيق التحديث'; }
+      }
+    } catch (e) {
+      // الخدمة قد تكون في لحظة إعادة تشغيل — نواصل المحاولة حتى انتهاء المهلة.
+    }
+    if (Date.now() - started > 20 * 60 * 1000) clearInterval(timer);
+  }, 2500);
+}
+
 function showUpdateStatus(message, isError = false) {
   const statusEl = document.getElementById('update-status');
   if (statusEl) {
@@ -138,6 +179,25 @@ async function applyUpdate() {
   }
 
   showUpdateStatus('🔄 جاري تنفيذ التحديث...', false);
+
+  // v2.8.7 — الأبلاينس: نطلب من المساعد root التنفيذ ثم نتابع التقدّم من سجلّه.
+  if (applianceMode) {
+    try {
+      const r = await api('/api/appliance-update/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag: 'latest' }),
+      });
+      if (!r || !r.success) throw new Error((r && r.error) || 'تعذّر إرسال طلب التحديث');
+      showUpdateStatus('⏳ ' + (r.message || 'بدأ التحديث على الخادم…'), false);
+      followApplianceUpdate(applyBtn);
+      return;
+    } catch (e) {
+      showUpdateStatus('❌ خطأ: ' + e.message, true);
+      if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = '🚀 تطبيق التحديث'; }
+      return;
+    }
+  }
 
   try {
     // التحديث يُسحب دائمًا من فرع main
@@ -283,6 +343,9 @@ async function downloadUpdate() {
 
 function initUpdateTab() {
   // ملاحظة: تم إزالة اختيار الفرع — التحديث يُسحب دائمًا من main تلقائيًا.
+
+  // v2.8.7 — نكتشف وضع الأبلاينس مرة واحدة (يغيّر مسار التنفيذ إلى المساعد root).
+  detectApplianceMode();
 
   // ===== ربط الأزرار بشكل دائم وموثوق (بدلاً من التعيين الديناميكي) =====
   const checkBtn = document.getElementById('update-check-btn');

@@ -1,0 +1,11 @@
+[Unit]
+Description=Network Monitor — watch for update requests (appliance)
+Documentation=file:///opt/network-monitor/HANDOFF.md
+
+[Path]
+# خدمة الويب (netmon) تكتب هذا الملف فقط — والأداة المميّزة (root) هي التي تنفّذ.
+PathExists=/var/lib/network-monitor/update-request.json
+Unit=nm-update.service
+
+[Install]
+WantedBy=multi-user.target

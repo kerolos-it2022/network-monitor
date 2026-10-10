@@ -1,0 +1,118 @@
+#!/bin/bash
+# nm-update — أداة التحديث المميّزة للأبلاينس (تعمل بـ root عبر nm-update.path → nm-update.service).
+# ─────────────────────────────────────────────────────────────────────────────
+# حدود الأمان (مهم — الجهاز قد يكون مكشوفًا على الإنترنت عبر ngrok):
+#   • لا تستقبل الأداة أي وسيط أو أمر من خدمة الويب. تقرأ **ملف طلب واحد**
+#     (update-request.json) يحوي وسم إصدار فقط أو الكلمة latest.
+#   • المستودع مُثبَّت في هذا الملف نفسه (لا يُقرأ من الطلب أبدًا).
+#   • لا تقرأ الأداة أي ملف آخر من مجلد قابل للكتابة من netmon (لا sourcing إطلاقًا)
+#     => لا يستطيع netmon زرع ملف إعدادات ينفّذه root.
+#   • ملفات الحالة/السجل تُكتب داخل مجلد **مملوك لـ root** (/var/lib/network-monitor/update)
+#     والكتابة ذرّية (mv) حتى لا تُحوِّل روابط رمزية كتابات root إلى ملفات النظام.
+#   • خدمة الويب لا تكتب في كود التطبيق ولا تستخدم systemctl — كل الصلاحيات هنا فقط.
+# ملاحظة: المستودع عام (public) — لذا لا نستعمل أي توكن. لو أصبح خاصًّا لاحقًا تُضاف
+#         آلية توكن **root-only** بشكل منفصل (بدون sourcing).
+# ─────────────────────────────────────────────────────────────────────────────
+set -uo pipefail
+
+DATA_DIR="/var/lib/network-monitor"
+REQ_FILE="$DATA_DIR/update-request.json"          # يكتبه netmon (مدخل غير موثوق ⇒ تحقّق صارم)
+STATE_DIR="$DATA_DIR/update"                      # مملوك لـ root (ننشئه أدناه)
+STATUS_FILE="$STATE_DIR/status.json"
+LOG_FILE="$STATE_DIR/update.log"
+TMP_ROOT="$STATE_DIR/tmp"
+APP_DIR="/opt/network-monitor"
+SERVICE_NAME="network-monitor"
+REPO="kerolos-it2022/network-monitor"             # ← المستودع المُثبَّت (ثابت في الأداة)
+
+# مجلد الحالة: root فقط (0755 للقراءة من التطبيق، لا كتابة من netmon).
+install -d -o root -g root -m 0755 "$STATE_DIR"
+install -d -o root -g root -m 0700 "$TMP_ROOT"
+
+log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG_FILE"; }
+status() { # state message [tag] — كتابة ذرّية (mv) داخل مجلد root (لا يتبع روابط رمزية)
+  local t="$TMP_ROOT/.status.$$"
+  printf '{"state":"%s","message":"%s","tag":"%s","at":"%s"}\n' "$1" "$2" "${3:-}" "$(date -Iseconds)" > "$t"
+  chmod 644 "$t" 2>/dev/null || true
+  mv -f "$t" "$STATUS_FILE"
+}
+fail() { log "FAILED: $1"; status failed "$1" "${TAG:-}"; rm -f "$REQ_FILE"; exit 1; }
+
+[ -f "$REQ_FILE" ] || { log "لا يوجد ملف طلب — إنهاء."; exit 0; }
+
+# ── قراءة الطلب (tag فقط) ثم حذفه فورًا (منع التكرار مع أي فشل لاحق) ──
+TAG="$(sed -n 's/.*"tag"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REQ_FILE" | head -n1)"
+rm -f "$REQ_FILE"
+[ -n "$TAG" ] || fail "ملف الطلب لا يحوي وسمًا صالحًا"
+
+# ── حلّ «latest» عبر GitHub API (المستودع ثابت في الأداة؛ بلا توكن — المستودع عام) ──
+if [ "$TAG" = "latest" ]; then
+  log "حلّ «latest» عبر GitHub API…"
+  TAGS_JSON="$(curl -fsSL -m 60 -H 'User-Agent: nm-update' \
+      "https://api.github.com/repos/$REPO/tags?per_page=50" 2>>"$LOG_FILE" || true)"
+  TAG="$(printf '%s' "$TAGS_JSON" \
+      | grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' \
+      | sed 's/.*"\([^"]*\)"$/\1/' \
+      | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n1)"
+  [ -n "$TAG" ] || fail "تعذّر تحديد أحدث إصدار من GitHub (تحقّق من الإنترنت/المستودع)"
+  log "أحدث إصدار متاح: $TAG"
+fi
+
+# ── تحقّق صارم من الوسم (semver) قبل أي استخدام ──
+if [[ ! "$TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9.]+)?$ ]]; then
+  fail "وسم غير صالح (رفض أمني): $TAG"
+fi
+
+# ── هل يوجد إصدار أحدث فعلًا؟ (نقارن بإصدار package.json الحالي) ──
+CUR_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$APP_DIR/backend/package.json" 2>/dev/null | head -n1)"
+if [ -n "$CUR_VER" ]; then
+  NEWEST="$(printf '%s\n%s\n' "${CUR_VER#v}" "${TAG#v}" | sort -V | tail -n1)"
+  if [ "$NEWEST" = "${CUR_VER#v}" ]; then
+    log "لا يوجد تحديث أحدث (الحالي: $CUR_VER · المتاح: $TAG)"
+    status success "أنت على أحدث إصدار ($CUR_VER)" "$TAG"
+    exit 0
+  fi
+fi
+
+log "=== بدء التحديث إلى $TAG من $REPO (الحالي: ${CUR_VER:-?}) ==="
+status in_progress "بدأ التحديث إلى $TAG" "$TAG"
+
+# ── تنزيل الأرشيف ──
+rm -rf "$TMP_ROOT/work"; mkdir -p "$TMP_ROOT/work/src"
+ZIP="$TMP_ROOT/work/nm-update-$TAG.zip"
+URL="https://github.com/$REPO/archive/refs/tags/$TAG.zip"
+log "تنزيل: $URL"
+curl -fL --retry 3 -m 900 -o "$ZIP" "$URL" || fail "فشل تنزيل الأرشيف من GitHub (تحقق من الإنترنت/الوسم)"
+unzip -q -o "$ZIP" -d "$TMP_ROOT/work/src" || fail "فشل فك الأرشيف"
+SRC="$(find "$TMP_ROOT/work/src" -maxdepth 1 -mindepth 1 -type d | head -n1)"
+{ [ -n "$SRC" ] && [ -d "$SRC/backend" ] && [ -d "$SRC/frontend" ]; } || fail "محتوى الأرشيف غير متوقّع (لا يوجد backend/frontend)"
+
+# ── نسخ ملفات التطبيق (بدون أي قاعدة/نسخ احتياطية داخل الأرشيف) ──
+status in_progress "تحديث ملفات التطبيق" "$TAG"
+command -v rsync >/dev/null 2>&1 || fail "rsync غير مثبّت (مطلوب للتحديث الآمن)"
+for d in backend frontend database; do
+  [ -d "$SRC/$d" ] || continue
+  install -d "$APP_DIR/$d"
+  rsync -a --exclude '*.db' --exclude '*.db-*' --exclude 'backups/' --exclude '.tmp/' \
+        "$SRC/$d/" "$APP_DIR/$d/" || fail "فشل تحديث مجلد $d"
+done
+
+# ── التبعيات ──
+status in_progress "تحديث التبعيات (npm ci)" "$TAG"
+( cd "$APP_DIR/backend" && npm ci --omit=dev --no-audit --no-fund >>"$LOG_FILE" 2>&1 ) \
+  || fail "فشل تحديث التبعيات (npm ci) — راجع السجل"
+
+# ── إعادة التشغيل ──
+status in_progress "إعادة تشغيل الخدمة" "$TAG"
+systemctl restart "$SERVICE_NAME" || fail "فشل إعادة تشغيل الخدمة"
+sleep 3
+NEW_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$APP_DIR/backend/package.json" | head -n1)"
+if systemctl is-active --quiet "$SERVICE_NAME"; then
+  log "=== تم التحديث بنجاح إلى $TAG (الإصدار: ${NEW_VER:-?}) ==="
+  status success "تم التحديث إلى $TAG بنجاح" "$TAG"
+else
+  fail "الخدمة لم تعمل بعد إعادة التشغيل — راجع: journalctl -u $SERVICE_NAME -n 50"
+fi
+
+rm -rf "$TMP_ROOT/work"
+exit 0

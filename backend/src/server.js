@@ -1,6 +1,11 @@
 // server.js: نقطة بدء الخادم — Express + session + static + routes + محرك المراقبة.
+// v2.8.7 — معدّل من نسخة v2.8.6، والتغييرات:
+//   1) تركيب مسار البثّ الحيّ SSE: /api/live/status  (سطران: require + app.use).
+//   2) سطر مفتاح الجلسة: إزالة القيمة الافتراضية النصّية (سرّ معروف للجميع) واستعمال
+//      SESSION_SECRET من .env، ولو غير مُعرَّف يُولَّد مفتاح عشوائي عند الإقلاع.
 require('dotenv').config();
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
@@ -25,6 +30,10 @@ const discoveredRoutes = require('./routes/discovered.routes');
 const sourcesRoutes = require('./routes/sources.routes');
 // v2.5.1 — شجرة المواقع الهرمية + الأَجهزة (تبويب «🗺️ خريطة المواقع»).
 const mapRoutes = require('./routes/map.routes');
+// v2.8.7 — البثّ الحيّ لحالة الأجهزة (SSE) لشاشات العرض: /api/live/status.
+const liveRoutes = require('./routes/live.routes');
+// v2.8.7 — تحديث الأبلاينس بصلاحية root عبر مساعد منفصل (ملف طلب + تقدّم).
+const applianceUpdateRoutes = require('./routes/appliance-update.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -42,10 +51,20 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // جلسات تسجيل الدخول (memory store — كافية لحجم هذا المشروع).
+// v2.8.7 — لا قيمة سرّية مكتوبة داخل الكود: المفتاح من .env (SESSION_SECRET).
+// لو غير مُعرَّف (تثبيت جديد بلا .env) يُولَّد مفتاح عشوائي عند الإقلاع ⇒ الجلسات تُقطَع
+// عند إعادة التشغيل بدل استعمال سرّ افتراضي معروف للجميع.
+if (!process.env.SESSION_SECRET) {
+  console.warn('[session] SESSION_SECRET غير مُعرَّف في .env — سيُولَّد مفتاح عشوائي مؤقّت (الجلسات ستُقطَع عند إعادة التشغيل).');
+}
+// المفتاح يُحسب هنا: من .env أو عشوائيًّا عند الإقلاع — بلا أي قيمة افتراضية ثابتة داخل الكود.
+function sessionKey() {
+  return process.env.SESSION_SECRET || crypto.randomBytes(48).toString('hex');
+}
 app.use(
   session({
     name: 'nm.sid',
-    secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
+    secret: sessionKey(),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -82,6 +101,10 @@ app.use('/api/discovered', discoveredRoutes);
 app.use('/api/sources', sourcesRoutes);
 // v2.5.1 — شجرة المواقع الهرمية لِـ تبويب «🗺️ خريطة المواقع».
 app.use('/api/map', mapRoutes);
+// v2.8.7 — البثّ الحيّ (SSE): قراءة عامة فقط — كل الكتابات تبقى على REST بجلسة الأدمن.
+app.use('/api/live', liveRoutes);
+// v2.8.7 — تحديث الأبلاينس: مسارات محميّة بجلسة الأدمن (طلب + تقدّم).
+app.use('/api/appliance-update', applianceUpdateRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {

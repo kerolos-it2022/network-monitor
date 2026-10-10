@@ -23,6 +23,28 @@
     --color-purple: #a855f7;
     --color-indigo: #6366f1;
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    /* v2.8.6 — متغيّرات «خريطة المواقع» (نفس قيم لوحة التحكم في الوضع الليلي) —
+       تُستعمل في تبويب «خريطة المباني» ليكون الشكل مطابقًا 1:1 لتبويب «خريطة المواقع». */
+    --mv-card-bg: #1e293b;
+    --mv-border: #334155;
+    --mv-text: #e2e8f0;
+    --mv-muted: #94a3b8;
+    --mv-accent: #3b82f6;
+    --mv-online: #22c55e;
+    --mv-offline: #ef4444;
+    --mv-unknown: #9ca3af;
+    --mv-warning: #eab308;
+    --mv-zone-internet-bg: rgba(59, 130, 246, 0.16);
+    --mv-zone-bg: rgba(234, 179, 8, 0.14);
+    --mv-zone-unassigned-bg: rgba(148, 163, 184, 0.14);
+    --mv-header-bg: rgba(255, 255, 255, 0.03);
+    --mv-device-hover: rgba(255, 255, 255, 0.06);
+    --mv-online-glow: rgba(34, 197, 94, 0.40);
+    --mv-offline-glow: rgba(239, 68, 68, 0.40);
+    --mv-subzone-border: #3b82f6;
+    --mv-meta-opacity: 0.85;
+    --mv-empty-opacity: 0.8;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -195,7 +217,9 @@
   }
   #map-board-inner {
     position: relative; width: 2800px; height: 1450px;
-    transform-origin: 0 0; transition: transform 0.15s ease-out;
+    /* v2.8.6 — أصل التحويل على أعلى-يمين اللوحة (بداية RTL): كان 0 0 يسحب الرسم
+       لليسار عند التصغير فيظهر «في الوسط» مع فراغ كبير على اليمين. */
+    transform-origin: 100% 0; transition: transform 0.15s ease-out;
   }
   #map-board-inner svg.mv-links { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
   .map-controls {
@@ -371,6 +395,21 @@
     --color-info: #0369a1;
     --color-purple: #6d28d9;
     --color-indigo: #4f46e5;
+
+    /* v2.8.6 — قيم «خريطة المواقع» في الوضع النهاري (نفس قيم css/style.css :root) */
+    --mv-card-bg: #ffffff;
+    --mv-border: #e5e7eb;
+    --mv-text: #1f2937;
+    --mv-muted: #6b7280;
+    --mv-accent: #2563eb;
+    --mv-header-bg: rgba(127, 127, 127, 0.04);
+    --mv-device-hover: rgba(127, 127, 127, 0.08);
+    --mv-zone-internet-bg: rgba(37, 99, 235, 0.10);
+    --mv-zone-bg: rgba(234, 179, 8, 0.10);
+    --mv-zone-unassigned-bg: rgba(156, 163, 175, 0.10);
+    --mv-subzone-border: #e5e7eb;
+    --mv-meta-opacity: 1;
+    --mv-empty-opacity: 1;
   }
   html.noc-day body {
     background: radial-gradient(ellipse at 50% 0%, #ffffff 0%, #eef3fa 60%, #e6ecf5 100%) fixed no-repeat #e6ecf5;
@@ -454,6 +493,288 @@
   html.noc-day .dev-card .loc-tag { color: #6d28d9; background: rgba(109,40,217,0.08); border-color: rgba(109,40,217,0.20); }
   html.noc-day .dev-card .parent-info { color: #64748b; }
   html.noc-day footer { border-top-color: #dbe3ef; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     v2.8.6 — «خريطة المباني» = نسخة مطابقة لـ«خريطة المواقع» في لوحة التحكم.
+     هذه القواعد منقولة بنفس القيم من css/style.css (قسم Zones-Grid v2.6.0
+     وقواعد v2.7.0 → v2.7.4) مع ربطها بمتغيّرات --mv-* (ليلي افتراضي / نهاري)
+     حتى يتطابق شكل البطاقات والألوان والأبعاد تمامًا في الوضعين.
+     ═══════════════════════════════════════════════════════════════════ */
+  #noc-map-grid, #noc-map-grid * { font-family: "Segoe UI", Tahoma, system-ui, sans-serif; }
+  .map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    gap: 0.75rem;
+    padding: 0.25rem;
+    counter-reset: zone-sequence;   /* ترقيم البطاقات تسلسليًّا (01، 02…) */
+    background: transparent;
+  }
+  /* سهم مرئي بين البطاقات يدلّ على التتابع (نفس قاعدة لوحة التحكم) */
+  .map-zone-card { position: relative; }
+  .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after {
+    content: '↣';
+    position: absolute;
+    inset-block-end: 0.35rem;
+    inset-inline-end: -0.65rem;
+    z-index: 5;
+    color: var(--mv-accent);
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+    opacity: 0.75;
+    pointer-events: none;
+    user-select: none;
+  }
+  html.noc-day .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after { opacity: 0.55; }
+  @media (max-width: 768px) {
+    .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after { display: none; }
+  }
+  /* رقم تسلسلي على رأس كل بطاقة (01، 02…) */
+  .map-zone-card .map-zone-header::before {
+    content: counter(zone-sequence, decimal-leading-zero);
+    counter-increment: zone-sequence;
+    font-size: 0.72rem;
+    color: var(--mv-muted);
+    padding-inline-end: 0.35rem;
+    opacity: 0.85;
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  html.noc-day .map-zone-card .map-zone-header::before { opacity: 0.7; }
+  /* بطاقة zone: لونها يُضبط inline عبر --node-bg/--node-border/--node-border-w */
+  .map-zone-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--node-bg, var(--mv-card-bg));
+    border: var(--node-border-w, 1px) solid var(--node-border, var(--mv-border));
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  html.noc-day .map-zone-card { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+  .map-zone-card:hover { box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45); }
+  html.noc-day .map-zone-card:hover { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); }
+  /* إطار أحمر أبرز لو وُجد جهاز offline داخلها */
+  .map-zone-card.has-offline {
+    border-color: var(--mv-offline);
+    border-width: 2px;
+    box-shadow: 0 0 8px var(--mv-offline-glow);
+  }
+  html.noc-day .map-zone-card.has-offline { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+  /* إطار أخضر مميّز لو كل الأجهزة online (offline=0, online>0) */
+  .map-zone-card.has-online {
+    border-color: var(--mv-online);
+    border-width: 2px;
+    box-shadow: 0 0 8px var(--mv-online-glow);
+  }
+  html.noc-day .map-zone-card.has-online { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.20); }
+  /* ترويسة البطاقة: رقم + أيقونة + اسم + إحصائيات + زر الطي */
+  .map-zone-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.65rem;
+    cursor: pointer;
+    direction: rtl;
+    background: var(--mv-header-bg);
+    border-bottom: 1px solid var(--mv-border);
+    user-select: none;
+  }
+  .map-zone-card.collapsed > .map-zone-header { border-bottom-color: transparent; }
+  .map-zone-icon { font-size: 1.05rem; flex: 0 0 auto; line-height: 1; }
+  .map-zone-name {
+    font-weight: 600;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--mv-text);
+  }
+  .map-zone-name .map-path { color: var(--mv-muted); font-weight: 400; font-size: 0.78em; margin-inline-end: 0.25rem; }
+  .map-zone-stats {
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    color: var(--mv-muted);
+    white-space: nowrap;
+  }
+  .map-zone-stats .map-count { color: var(--mv-text); font-weight: 600; }
+  .map-zone-toggle {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: var(--mv-muted);
+    cursor: pointer;
+    padding: 0 0.2rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    transition: transform 0.2s ease, color 0.15s ease;
+  }
+  .map-zone-card.collapsed > .map-zone-header .map-zone-toggle { transform: rotate(-90deg); }
+  .map-zone-toggle:hover { color: var(--mv-accent); }
+  /* جسم البطاقة: قائمة أجهزة + sub-zones، ينطوي عبر max-height */
+  .map-zone-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 0.3rem 0.4rem 0.5rem;
+    transition: max-height 0.25s ease;
+  }
+  .map-zone-card.collapsed > .map-zone-body { max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+  /* sub-zone داخل البطاقة (building/floor/room/rack) */
+  .map-subzone { margin: 0.2rem 0 0.35rem; }
+  .map-subzone-title {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--mv-muted);
+    margin: 0.15rem 0 0.15rem;
+    padding-inline-start: 0.35rem;
+    border-inline-start: 2px solid var(--mv-subzone-border);
+  }
+  .map-subzone-title .map-subzone-stats { font-weight: 400; color: var(--mv-muted); font-size: 0.78em; }
+  /* صف الجهاز داخل zone أو sub-zone */
+  .map-zone-device {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    text-align: start;
+    direction: rtl;
+    border: none;
+    background: transparent;
+    color: var(--mv-text);
+    padding: 0.3rem 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    line-height: 1.3;
+    font-family: inherit;
+    transition: background 0.15s ease;
+  }
+  .map-zone-device:hover { background: var(--mv-device-hover); }
+  .map-zone-device .map-device-ic { flex: 0 0 auto; font-size: 0.9rem; }
+  .map-zone-device .map-device-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .map-zone-device .map-device-meta { flex: 0 0 auto; color: var(--mv-muted); font-size: 0.78em; opacity: var(--mv-meta-opacity); }
+  /* نقطة حالة الجهاز ملوّنة حسب data-status */
+  .map-device-dot {
+    flex: 0 0 auto;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--mv-unknown);
+    display: inline-block;
+  }
+  .map-zone-device[data-status="online"]  .map-device-dot { background: var(--mv-online); box-shadow: 0 0 6px var(--mv-online-glow); }
+  .map-zone-device[data-status="offline"] .map-device-dot { background: var(--mv-offline); box-shadow: 0 0 6px var(--mv-offline-glow); }
+  .map-zone-device[data-status="unknown"] .map-device-dot { background: var(--mv-unknown); }
+  html.noc-day .map-zone-device[data-status="online"]  .map-device-dot { box-shadow: 0 0 4px rgba(34, 197, 94, 0.40); }
+  html.noc-day .map-zone-device[data-status="offline"] .map-device-dot { box-shadow: none; }
+  /* حالة فراغ: لا أجهزة في البطاقة */
+  .map-zone-empty { color: var(--mv-muted); font-size: 0.8rem; padding: 0.3rem 0.4rem; font-style: italic; opacity: var(--mv-empty-opacity); }
+
+  /* ═══ v2.8.6 — نافذة تفاصيل الجهاز (نفس حقول نافذة «خريطة المواقع») ═══ */
+  .noc-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+  .noc-modal.hidden { display: none; }
+  .noc-modal-card {
+    position: relative;
+    background: var(--mv-card-bg);
+    color: var(--mv-text);
+    border: 1px solid var(--mv-border);
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    padding: 1.25rem 1.1rem 1.1rem;
+    width: min(560px, 95vw);
+    max-height: 88vh;
+    overflow: auto;
+    direction: rtl;
+    text-align: start;
+  }
+  .noc-modal-close {
+    position: absolute;
+    inset-inline-end: 0.6rem;
+    top: 0.6rem;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--mv-border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--mv-text);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: background 0.15s ease;
+  }
+  .noc-modal-close:hover { background: rgba(127, 127, 127, 0.15); }
+  .details-header {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.85rem;
+    padding-inline-end: 2.4rem;
+  }
+  .details-icon { font-size: 1.7rem; flex: 0 0 auto; }
+  .details-title-wrap { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .details-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 22rem;
+    color: var(--mv-text);
+  }
+  .details-status-badge {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.12rem 0.55rem;
+    border-radius: 999px;
+    align-self: flex-start;
+  }
+  .details-status-badge.online  { background: rgba(34, 197, 94, 0.18);  color: var(--mv-online); }
+  .details-status-badge.offline { background: rgba(239, 68, 68, 0.18);  color: var(--mv-offline); }
+  .details-status-badge.unknown { background: rgba(156, 163, 175, 0.22); color: var(--mv-unknown); }
+  .details-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 0.75rem;
+    direction: rtl;
+  }
+  .details-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.12);
+  }
+  .df-label { font-size: 0.74rem; color: var(--mv-muted); }
+  .df-value { font-size: 0.92rem; font-weight: 600; unicode-bidi: plaintext; word-break: break-word; }
+  .details-placeholder {
+    grid-column: 1 / -1;
+    color: var(--mv-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 1.5rem 0.5rem;
+  }
 </style>
 <script>
   // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
@@ -470,7 +791,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.8.5</span>
+        <span class="tag">Network Operations Center v2.8.7</span>
       </div>
     </div>
     <div class="header-actions">
@@ -518,6 +839,8 @@
       <button class="tab-btn" data-view="hero" onclick="setViewMode('hero')">🔗 مسار الإنترنت</button>
       <button class="tab-btn" data-view="map" onclick="setViewMode('map')">🗺️ خريطة المباني</button>
       <button class="tab-btn" data-view="grid" onclick="setViewMode('grid')">🖧 الأجهزة حسب النوع</button>
+      <!-- v2.8.6 — لوحة وضع الرسم انتقلت لتبويب مستقل (لا تزاحم «خريطة المباني») -->
+      <button class="tab-btn" data-view="draw" onclick="setViewMode('draw')">✏️ التخطيط المرسوم</button>
     </div>
     <div class="filter-controls">
       <input type="text" id="search-input" class="search-box" placeholder="🔍 بحث بالاسم أو الآي بي..." oninput="onSearchOrFilterChange()">
@@ -542,16 +865,43 @@
       </div>
     </section>
 
-    <!-- 2. SITES & BUILDINGS MAP -->
+    <!-- 2. SITES & BUILDINGS MAP — v2.8.6: نسخة مطابقة لـ«خريطة المواقع» في لوحة التحكم -->
     <section id="map-section">
       <div class="section-title">
-        <span>🗺️ خريطة الشبكة والمباني (Sites & Locations Topology)</span>
+        <span>🗺️ خريطة المباني (بنفس ترتيب «خريطة المواقع» في لوحة التحكم)</span>
         <span class="badge" id="map-locs-count">—</span>
         <div class="bar"></div>
       </div>
       <div class="map-container">
         <div id="map-empty-note" class="noc-board-note" hidden>
-          لا توجد مواقع مرسومة على الخريطة بعد — ارسمها من لوحة التحكم ← وضع الرسم (💾 حفظ التخطيط).
+          لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.
+        </div>
+        <div id="noc-map-grid" class="map-grid" role="list" aria-label="شبكة المباني"></div>
+      </div>
+    </section>
+
+    <!-- 3. DEVICES CATEGORIZED BY TYPE -->
+    <section id="categories-section">
+      <div class="section-title">
+        <span>🖧 أجهزة الشبكة مصنفة حسب النوع (Categorized Assets)</span>
+        <span class="badge" id="devices-count-badge">—</span>
+        <div class="bar"></div>
+      </div>
+      <div id="categories-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- 4. v2.8.6 — التخطيط المرسوم: لوحة «وضع الرسم» كما رسمها الأدمن (تبويب مستقل) -->
+    <section id="draw-section" style="display:none">
+      <div class="section-title">
+        <span>✏️ التخطيط المرسوم (لوحة «وضع الرسم» — كما رسمها الأدمن)</span>
+        <span class="badge" id="draw-locs-count">—</span>
+        <div class="bar"></div>
+      </div>
+      <div class="map-container">
+        <div id="draw-empty-note" class="noc-board-note" hidden>
+          لا توجد مواقع مرسومة على لوحة وضع الرسم بعد — ارسمها من لوحة التحكم ← وضع الرسم (💾 حفظ التخطيط).
         </div>
         <div class="map-wrapper" id="map-wrapper">
           <div id="map-board-inner">
@@ -568,18 +918,6 @@
       </div>
     </section>
 
-    <!-- 3. DEVICES CATEGORIZED BY TYPE -->
-    <section id="categories-section">
-      <div class="section-title">
-        <span>🖧 أجهزة الشبكة مصنفة حسب النوع (Categorized Assets)</span>
-        <span class="badge" id="devices-count-badge">—</span>
-        <div class="bar"></div>
-      </div>
-      <div id="categories-container">
-        <!-- Rendered dynamically -->
-      </div>
-    </section>
-
   </main>
 
   <!-- Footer -->
@@ -590,6 +928,23 @@
     </div>
     <div id="last-updated-time">آخر تحديث: —</div>
   </footer>
+
+  <!-- v2.8.6 — نافذة تفاصيل الجهاز: نفس حقول نافذة «خريطة المواقع» في لوحة التحكم -->
+  <div id="noc-device-modal" class="noc-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="noc-modal-card">
+      <button type="button" class="noc-modal-close" id="noc-modal-close" aria-label="إغلاق">✕</button>
+      <div class="details-header">
+        <span class="details-icon" id="noc-modal-icon">🖥️</span>
+        <div class="details-title-wrap">
+          <h4 class="details-title" id="noc-modal-name">—</h4>
+          <span class="details-status-badge" id="noc-modal-status">—</span>
+        </div>
+      </div>
+      <div class="details-fields" id="noc-modal-fields">
+        <p class="details-placeholder">انقر على جهاز داخل الخريطة لعرض تفاصيله هنا.</p>
+      </div>
+    </div>
+  </div>
 
 <script>
 (function() {
@@ -603,8 +958,20 @@
   let devById = new Map();
   let searchFilter = '';
   let statusFilter = 'all'; // 'all', 'down', 'up'
-  let currentView = 'all';   // 'all', 'hero', 'map', 'grid'
+  let currentView = 'all';   // 'all', 'hero', 'map', 'grid', 'draw'
   let mapZoomLevel = 1.0;
+  // v2.8.6 — مفاتيح حفظ حالة العرض (التبويب المختار + مقياس «التخطيط المرسوم»)
+  // حتى يبقيا كما هما بعد إعادة تحميل الصفحة (كانا في الذاكرة فقط ⇒ العودة لأوّل شاشة).
+  const VIEW_STORAGE_KEY = 'nm.nocView';
+  const ZOOM_STORAGE_KEY = 'nm.nocZoom';
+  // v2.8.7 — البثّ الحيّ (SSE) + polling تكيفي:
+  //   • SSE متصل  ⇒ polling كل 60 ثانية (تحديث البنية فقط) + تحديث لحظي عند أي تغيّر حالة.
+  //   • SSE مقطوع ⇒ polling كل 10 ثوانٍ (السلوك القديم) + إعادة اتصال تلقائية من المتصفح.
+  let liveES = null;
+  let liveConnected = false;
+  let pollHandle = null;
+  let pollIntervalMs = 10000;
+  let liveRenderTimer = null;
   let audioAlertEnabled = false;
   let previousDownIds = new Set();
   let audioCtx = null;
@@ -707,13 +1074,18 @@
     document.querySelectorAll('.views-tabs .tab-btn').forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-view') === mode);
     });
+    // v2.8.6 — نحفظ التبويب المختار حتى يبقى بعد إعادة التحميل.
+    try { localStorage.setItem(VIEW_STORAGE_KEY, mode); } catch (e) {}
     const heroSec = document.getElementById('hero-section');
     const mapSec = document.getElementById('map-section');
     const catSec = document.getElementById('categories-section');
+    const drawSec = document.getElementById('draw-section');
 
     heroSec.style.display = (mode === 'all' || mode === 'hero') ? 'block' : 'none';
     mapSec.style.display  = (mode === 'all' || mode === 'map')  ? 'block' : 'none';
     catSec.style.display  = (mode === 'all' || mode === 'grid') ? 'block' : 'none';
+    // v2.8.6 — «التخطيط المرسوم» يُعرض عند اختياره فقط (لا يزدحم به «عرض شامل»).
+    if (drawSec) drawSec.style.display = (mode === 'draw') ? 'block' : 'none';
   };
 
   // ── Filter Controls ──
@@ -734,25 +1106,55 @@
   window.zoomMap = function(delta) {
     mapZoomLevel = Math.max(0.4, Math.min(1.8, mapZoomLevel + delta));
     applyMapTransform();
+    anchorBoardToRight();   // v2.8.6 — الرسم يفضل على اليمين بعد أي تغيير للمقياس.
   };
 
   window.resetMapZoom = function() {
     mapZoomLevel = 1.0;
     applyMapTransform();
+    anchorBoardToRight();   // v2.8.6 — نعود لبداية اللوحة (أعلى-يمين) بدل بقاء التمرير حيث كان.
   };
 
+  // v2.8.6 — «ملاءمة الشاشة»: تقيس **الرسم المرسوم فعليًّا** (لا عرض اللوحة 2800) وتثبّته على
+  // يمين اللوحة (بداية RTL) — بدل أن يتقلّص الرسم لليسار ويظهر في الوسط مع فراغ يمين.
   window.fitMapToScreen = function() {
     const wrap = document.getElementById('map-wrapper');
     if (!wrap) return;
-    const availW = wrap.clientWidth;
-    const targetW = 2750;
-    mapZoomLevel = Math.max(0.4, Math.min(1.1, availW / targetW));
+    const cards = [...document.querySelectorAll('#map-cards-container .mv-card.loc')];
+    let zoom = 1.1;
+    if (cards.length) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const c of cards) {
+        const x = parseFloat(c.style.left) || 0;
+        const y = parseFloat(c.style.top) || 0;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x + c.offsetWidth);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y + c.offsetHeight);
+      }
+      const contentW = Math.max(400, (maxX - minX) + 60);
+      const contentH = Math.max(300, (maxY - minY) + 60);
+      zoom = Math.min(wrap.clientWidth / contentW, wrap.clientHeight / contentH);
+    }
+    mapZoomLevel = Math.max(0.4, Math.min(1.1, zoom));
     applyMapTransform();
+    anchorBoardToRight();
   };
 
   function applyMapTransform() {
     const inner = document.getElementById('map-board-inner');
     if (inner) inner.style.transform = `scale(${mapZoomLevel})`;
+    // v2.8.6 — نحفظ مقياس «التخطيط المرسوم» حتى يبقى بعد إعادة التحميل.
+    try { localStorage.setItem(ZOOM_STORAGE_KEY, String(mapZoomLevel)); } catch (e) {}
+  }
+
+  // v2.8.6 — تثبيت العرض على بداية اللوحة: أعلى-يمين (بداية RTL).
+  // ملاحظة: حسب CSSOM، قيمة scrollLeft = 0 تعني «بداية المحور المضمّن» = الحافة اليمنى في RTL.
+  function anchorBoardToRight() {
+    const wrap = document.getElementById('map-wrapper');
+    if (!wrap) return;
+    wrap.scrollLeft = 0;
+    wrap.scrollTop = 0;
   }
 
   // ── Flatten Topology Tree ──
@@ -824,21 +1226,39 @@
     // 1. Find Gateway (v2.8.5 — بلا كائن وهمي: لو غير مُعرَّف نعرض حالة محايدة صريحة)
     const gateway = allLocations.find(l => l.kind === 'internet') || null;
     
-    // 2. Find Primary Firewall (Sophos)
-    const firewall = allDevices.find(d => (d.name && d.name.toLowerCase().includes('sophos')) || d.device_type_name === 'Firewall')
-                  || allDevices.find(d => d.ip === '192.168.88.1');
+    // 2. DNS Resolver — بطاقة «🌍 فحص الاتصال الخارجي» (البطاقة الأولى في السلسلة — v2.8.6)
+    const dns = allDevices.find(d => d.name === 'DNS' || d.ip === '8.8.8.8');
 
-    // 3. Core Servers Pool
+    // 3. Find Primary Firewall (Sophos) — v2.8.6: أولوية للاسم/IP الحقيقيّين، ثم أي جهاز نوعه
+    //    Firewall بشرط ألّا يكون هو نفسه جهاز بطاقة «فحص الاتصال الخارجي» (جهاز اسمه DNS
+    //    ونوعه Firewall كان يُلتقط أولًا فيظهر الجهاز نفسه مرّتين في السلسلة).
+    const firewall = allDevices.find(d => d.name && d.name.toLowerCase().includes('sophos'))
+                  || allDevices.find(d => d.ip === '192.168.88.1')
+                  || allDevices.find(d => d.device_type_name === 'Firewall' && !(dns && Number(d.id) === Number(dns.id)));
+
+    // 4. Core Servers Pool
     const coreServers = allDevices.filter(d => d.device_type_name === 'Server');
     const serversDown = coreServers.filter(s => s.status === 'offline').length;
     const serversUp = coreServers.filter(s => s.status === 'online').length;
 
-    // 4. DNS Resolver
-    const dns = allDevices.find(d => d.name === 'DNS' || d.ip === '8.8.8.8');
-
     let html = '';
 
-    // Card 1: Internet Gateway
+    // Card 1 (v2.8.6) — 🌍 فحص الاتصال الخارجي: البطاقة **الأولى** في السلسلة (طلب المستخدم).
+    if (dns) {
+      const dnsDown = dns.status === 'offline';
+      html += `
+        <div class="hero-card ${dnsDown ? 'down' : 'up'}">
+          <span class="role">🌍 فحص الاتصال الخارجي</span>
+          <div class="nm">${esc(dns.name)}</div>
+          <div class="meta">${esc(dns.ip)} — Google Public DNS</div>
+          <div class="st-badge ${dnsDown ? 'down' : 'up'}">${dnsDown ? '🔴 انقطاع الاستجابة' : '🟢 اتصال إنترنت مستقر'}</div>
+        </div>
+      `;
+      // الرابط بعد بطاقة الفحص: أحمر لو فشل الفحص نفسه (نفس دلالة اللون القديمة حين كانت أخيرة).
+      html += `<div class="hero-link ${dnsDown ? 'down' : ''}"></div>`;
+    }
+
+    // Card 2: Internet Gateway
     html += `
       <div class="hero-card ${gateway ? 'up' : 'neutral'}">
         <span class="role">🌐 المدخل الرئيسي</span>
@@ -848,11 +1268,11 @@
       </div>
     `;
 
-    // Link 1 -> 2
+    // Link 2 -> 3
     const fwDown = firewall ? firewall.status === 'offline' : false;
     html += `<div class="hero-link ${fwDown ? 'down' : ''}"></div>`;
 
-    // Card 2: Core Firewall (Sophos)
+    // Card 3: Core Firewall (Sophos)
     if (firewall) {
       const isDown = firewall.status === 'offline';
       const isPath = !!firewall.pathDown;
@@ -868,11 +1288,11 @@
       `;
     }
 
-    // Link 2 -> 3
+    // Link 3 -> 4
     const srvClusterDown = serversDown > 0 && serversUp === 0;
     html += `<div class="hero-link ${srvClusterDown ? 'down' : ''}"></div>`;
 
-    // Card 3: Servers Core Infrastructure (v2.8.5 — لا «جميع الخوادم تعمل» بلا خوادم مُعرَّفة)
+    // Card 4: Servers Core Infrastructure (v2.8.5 — لا «جميع الخوادم تعمل» بلا خوادم مُعرَّفة)
     const noServers = coreServers.length === 0;
     const srvCls = noServers ? 'neutral' : (serversDown > 0 ? (serversUp === 0 ? 'down' : 'warn') : 'up');
     html += `
@@ -886,25 +1306,319 @@
       </div>
     `;
 
-    // Card 4: DNS (if present)
-    if (dns) {
-      html += `<div class="hero-link ${dns.status === 'offline' ? 'down' : ''}"></div>`;
-      const dnsDown = dns.status === 'offline';
-      html += `
-        <div class="hero-card ${dnsDown ? 'down' : 'up'}">
-          <span class="role">🌍 فحص الاتصال الخارجي</span>
-          <div class="nm">${esc(dns.name)}</div>
-          <div class="meta">${esc(dns.ip)} — Google Public DNS</div>
-          <div class="st-badge ${dnsDown ? 'down' : 'up'}">${dnsDown ? '🔴 انقطاع الاستجابة' : '🟢 اتصال إنترنت مستقر'}</div>
-        </div>
-      `;
-    }
-
     container.innerHTML = html;
   }
 
-  // ── 2. RENDER MAP BOARD ──
-  function renderMap() {
+  // ══ 2a. v2.8.6 — «خريطة المباني» = نسخة مطابقة لـ«خريطة المواقع» في لوحة التحكم ══
+  //   • نفس المصدر: GET /api/map/public/tree (نفس منطق شجرة لوحة التحكم: موقع internet
+  //     واحد = الجذر، وأجهزته المباشرة تُجمع في بطاقة «أجهزة مدخل الإنترنت» أولًا).
+  //   • نفس الترتيب: sort_order من الخادم (يتحكم به السحب والإفلات في «خريطة المواقع»)
+  //     ⇒ نفس التتابع 01/02/03… ونفس سهم ↣ ونفس أماكن البطاقات في الشبكة.
+  //   • نفس المحتوى: العدادات + صفوف الأجهزة (الاسم والنوع ونقطة الحالة) بنفس ترتيبها.
+  //   • قراءة فقط: لا سحب/إفلات — والنقر على جهاز يفتح نافذة التفاصيل.
+  const KIND_ICON = {
+    root: '🌐', internet: '🌐', zone: '📍', site: '🏛️', building: '🏢',
+    floor: '📐', room: '🚪', rack: '🗄️', unassigned: '📦', device: '🖥️',
+  };
+  let mapRootData = null;
+  let nocMapInitialized = false;    // أول تحميل فقط (نفس سلوك «خريطة المواقع»)
+  const nocCollapsed = new Set();   // البطاقات المطويّة (تبقى مطويّة بعد كل تحديث)
+
+  function deviceIconByType(deviceType) {
+    if (!deviceType) return '🖥️';
+    const t = String(deviceType).toLowerCase();
+    if (t.includes('router')) return '📶';
+    if (t.includes('switch')) return '🔗';
+    if (t.includes('firewall')) return '🧱';
+    if (t.includes('printer')) return '🖨️';
+    if (t.includes('server')) return '🖥️';
+    if (t.includes('camera') || t.includes('nvr') || t.includes('dvr')) return '📹';
+    if (t.includes('ap') || t.includes('wifi')) return '📡';
+    return '🖥️';
+  }
+
+  // رقم الجهاز من عقدة الشجرة العامة (id = 'dev-<رقم>').
+  function mapDevNum(node) {
+    const m = /^dev-(\d+)$/.exec(String(node && node.id != null ? node.id : ''));
+    return m ? Number(m[1]) : null;
+  }
+  // التسمية كما في «خريطة المواقع»: «الاسم (IP)» — الاسم يُدمج من /api/topology.
+  function mapDevLabel(node) {
+    const id = mapDevNum(node);
+    const dev = id != null ? devById.get(id) : null;
+    const name = (dev && dev.name) || '';
+    const ip = node.ip || (dev && dev.ip) || '';
+    if (name && ip) return `${name} (${ip})`;
+    return name || ip || 'جهاز';
+  }
+  // مفتاح ترتيب صفوف الأجهزة = الاسم (نفس ORDER BY d.name في مسار لوحة التحكم).
+  function mapDevSortKey(node) {
+    const id = mapDevNum(node);
+    const dev = id != null ? devById.get(id) : null;
+    return String((dev && dev.name) || node.ip || '');
+  }
+
+  function zoneCardColor(kind) {
+    switch (kind) {
+      case 'internet':   return 'var(--mv-zone-internet-bg)';
+      case 'zone':       return 'var(--mv-zone-bg)';
+      case 'unassigned': return 'var(--mv-zone-unassigned-bg)';
+      default:           return 'var(--mv-card-bg)';
+    }
+  }
+  function zoneBorderColor(node) {
+    if (!node) return 'var(--mv-border)';
+    if (node.offline > 0) return 'var(--mv-offline)';
+    if (node.device_count > 0 && node.online === node.device_count) return 'var(--mv-online)';
+    return 'var(--mv-border)';
+  }
+  function zoneTooltip(node) {
+    if (node.kind === 'device') {
+      return `${mapDevLabel(node)}\nIP: ${node.ip || '—'}\nالنوع: ${node.device_type || '—'}\nالحالة: ${node.status}`;
+    }
+    return `${node.name}\nأجهزة: ${node.device_count} (🟢${node.online} 🔴${node.offline} ⚪${node.unknown})`;
+  }
+
+  // صف جهاز داخل الكارت — نفس markup «خريطة المواقع» بالضبط.
+  function renderZoneDevice(node) {
+    const status = node.status || 'unknown';
+    const icon = deviceIconByType(node.device_type);
+    return `
+    <button type="button" class="map-zone-device" data-kind="device" data-status="${esc(status)}" data-id="${esc(String(node.id))}" title="${esc(zoneTooltip(node))}">
+      <span class="map-device-dot" aria-hidden="true"></span>
+      <span class="map-device-ic">${icon}</span>
+      <span class="map-device-name">${esc(mapDevLabel(node))}</span>
+      <span class="map-device-meta">${esc(node.device_type || 'جهاز')}</span>
+    </button>`;
+  }
+
+  // جسم الكارت: صفوف الأجهزة ثم الـ sub-zones المتداخلة (نفس منطق لوحة التحكم بلا فلترة).
+  function renderZoneBody(node) {
+    const kids = Array.isArray(node.children) ? node.children : [];
+    if (kids.length === 0) {
+      const dc = node.device_count || 0;
+      if (dc === 0) return '<p class="map-zone-empty">لا أجهزة في هذه الموقع.</p>';
+      return '';
+    }
+    const devices = [];
+    const subzones = [];
+    for (const c of kids) {
+      if (c.kind === 'device') devices.push(c);
+      else subzones.push(c);
+    }
+    devices.sort((a, b) => {
+      const A = mapDevSortKey(a);
+      const B = mapDevSortKey(b);
+      return A < B ? -1 : A > B ? 1 : 0;
+    });
+    let html = '';
+    if (devices.length > 0) html += devices.map((d) => renderZoneDevice(d)).join('');
+    for (const sz of subzones) {
+      const szIcon = KIND_ICON[sz.kind] || '📍';
+      const szDc = sz.device_count || 0;
+      const szOn = sz.online || 0;
+      const szOff = sz.offline || 0;
+      const szUnk = sz.unknown || 0;
+      html += `
+      <div class="map-subzone" data-id="${esc(String(sz.id))}" data-kind="${esc(sz.kind)}">
+        <div class="map-subzone-title">
+          <span>${szIcon}</span>
+          <span class="map-subzone-name">${esc(sz.name || '')}</span>
+          <span class="map-subzone-stats">🟢${szOn} · 🔴${szOff} · ⚪${szUnk} (${szDc})</span>
+        </div>
+        ${renderZoneBody(sz)}
+      </div>`;
+    }
+    return html || '<p class="map-zone-empty">لا مُحتَوى.</p>';
+  }
+
+  // بطاقة موقع واحدة — نفس markup وألوان وحالات «خريطة المواقع».
+  function renderZoneCard(node) {
+    const kind = node.kind || 'zone';
+    const icon = KIND_ICON[kind] || '📍';
+    const isUnassigned = kind === 'unassigned';
+    const collapsedNow = nocCollapsed.has(String(node.id));
+    const bg = zoneCardColor(kind);
+    let border = zoneBorderColor(node);
+    const borderW = (node.offline > 0) ? '2px' : '1px';
+    if (kind === 'internet') border = 'var(--mv-accent)';
+    if (kind === 'zone')     border = 'var(--mv-warning)';
+
+    const dc = node.device_count || 0;
+    const on = node.online || 0;
+    const off = node.offline || 0;
+    const unk = node.unknown || 0;
+    const stats = dc > 0
+      ? `🟢 ${on} · 🔴 ${off} · ⚪ ${unk} <span class="map-count">(${dc})</span>`
+      : '—';
+    const cls = `map-zone-card kind-${kind}${off > 0 ? ' has-offline' : ''}${(on > 0 && off === 0) ? ' has-online' : ''}${collapsedNow ? ' collapsed' : ''}${isUnassigned ? ' kind-unassigned' : ''}`;
+    const body = renderZoneBody(node);
+
+    return `
+    <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"
+             style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
+      <div class="map-zone-header" title="${esc(zoneTooltip(node))}">
+        <span class="map-zone-icon">${icon}</span>
+        <span class="map-zone-name">${esc(node.name || '')}</span>
+        <span class="map-zone-stats">${stats}</span>
+        <button type="button" class="map-zone-toggle" aria-label="توسيع/طي" aria-expanded="${!collapsedNow}">▼</button>
+      </div>
+      <div class="map-zone-body">${body}</div>
+    </article>`;
+  }
+
+  // الشبكة: بطاقة «أجهزة مدخل الإنترنت» أولًا (لو وُجدت أجهزة مباشرة في الجذر) ثم بطاقات المواقع.
+  function renderZonesGrid(rootData) {
+    if (!rootData) return { html: '', zones: 0, devices: 0 };
+    const kids = Array.isArray(rootData.children) ? rootData.children : [];
+    const zoneKids = [];
+    const orphanDevices = [];
+    for (const c of kids) {
+      if (c.kind === 'device') orphanDevices.push(c);
+      else zoneKids.push(c);
+    }
+    let orphanHtml = '';
+    if (orphanDevices.length > 0) {
+      const orphanNode = {
+        id: 'orphan-internet-devices',
+        name: 'أَجهزة مَدخل الإنترنت',
+        kind: 'unassigned',
+        device_count: orphanDevices.length,
+        online: orphanDevices.filter((d) => d.status === 'online').length,
+        offline: orphanDevices.filter((d) => d.status === 'offline').length,
+        unknown: orphanDevices.filter((d) => d.status === 'unknown').length,
+        children: orphanDevices,
+      };
+      orphanHtml = renderZoneCard(orphanNode);
+    }
+    const cards = orphanHtml + zoneKids.map((c) => renderZoneCard(c)).join('');
+    return {
+      html: cards,
+      zones: zoneKids.length + (orphanHtml ? 1 : 0),
+      devices: rootData.device_count || 0,
+    };
+  }
+
+  function renderMapGrid() {
+    const grid = document.getElementById('noc-map-grid');
+    if (!grid) return;
+    const note = document.getElementById('map-empty-note');
+    const badge = document.getElementById('map-locs-count');
+
+    if (!mapRootData) {
+      grid.innerHTML = '';
+      if (note) { note.textContent = '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.'; note.hidden = false; }
+      if (badge) badge.textContent = '—';
+      return;
+    }
+    // نفس سلوك «خريطة المواقع»: أول تحميل فقط — طيّ «أجهزة غير مُعيَّن» لو فيها > 8 أجهزة.
+    if (!nocMapInitialized && Array.isArray(mapRootData.children)) {
+      const unassigned = mapRootData.children.find((c) => c.kind === 'unassigned');
+      if (unassigned && unassigned.id === 'unassigned' && (unassigned.device_count || 0) > 8) {
+        nocCollapsed.add('unassigned');
+      }
+      nocMapInitialized = true;
+    }
+    const res = renderZonesGrid(mapRootData);
+    if (!res.html) {
+      grid.innerHTML = '';
+      if (note) { note.textContent = 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.'; note.hidden = false; }
+      if (badge) badge.textContent = '—';
+      return;
+    }
+    if (note) note.hidden = true;
+    if (badge) badge.textContent = `${res.zones} منطقة · ${res.devices} جهاز`;
+    grid.innerHTML = res.html;
+    bindMapGridEvents();
+  }
+
+  // نقرة على الترويسة = طيّ/توسيع — ونقرة على جهاز = نافذة التفاصيل (كما في خريطة المواقع).
+  let mapGridEventsBound = false;
+  function bindMapGridEvents() {
+    if (mapGridEventsBound) return;
+    const grid = document.getElementById('noc-map-grid');
+    if (!grid) return;
+    mapGridEventsBound = true;
+    grid.addEventListener('click', (event) => {
+      const chip = event.target.closest('.map-zone-device');
+      if (chip && chip.dataset.id) {
+        const id = mapDevNum({ id: String(chip.dataset.id) });
+        if (id != null) openDeviceDetails(id);
+        return;
+      }
+      const card = event.target.closest('.map-zone-card');
+      if (!card) return;
+      const key = String(card.dataset.id);
+      if (nocCollapsed.has(key)) nocCollapsed.delete(key);
+      else nocCollapsed.add(key);
+      card.classList.toggle('collapsed', nocCollapsed.has(key));
+      const toggle = card.querySelector(':scope > .map-zone-header .map-zone-toggle');
+      if (toggle) toggle.setAttribute('aria-expanded', String(!nocCollapsed.has(key)));
+    });
+  }
+
+  // ══ v2.8.6 — نافذة تفاصيل الجهاز (نفس بيانات وحقول نافذة «خريطة المواقع») ══
+  function fmtDateTime(s) {
+    if (!s) return '—';
+    try {
+      const d = new Date(s);
+      if (isNaN(d.getTime())) return String(s);
+      return d.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+    } catch (_) { return String(s); }
+  }
+  function statusBadgeText(status) {
+    return status === 'online' ? 'متصل' : (status === 'offline' ? 'متوقف' : 'غير معروف');
+  }
+  async function openDeviceDetails(deviceId) {
+    const modal = document.getElementById('noc-device-modal');
+    if (!modal) return;
+    const fieldsEl = document.getElementById('noc-modal-fields');
+    const nameEl = document.getElementById('noc-modal-name');
+    const iconEl = document.getElementById('noc-modal-icon');
+    const statusEl = document.getElementById('noc-modal-status');
+    if (fieldsEl) fieldsEl.innerHTML = '<p class="details-placeholder">⏳ جَلب التفاصيل…</p>';
+    if (nameEl) nameEl.textContent = '…';
+    if (statusEl) { statusEl.className = 'details-status-badge'; statusEl.textContent = '—'; }
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    try {
+      const res = await fetch('/api/devices/' + encodeURIComponent(deviceId), { credentials: 'same-origin' });
+      const json = await res.json();
+      if (!json || !json.success) throw new Error((json && json.error) || 'فشل الطلب');
+      const d = json.data;
+      if (nameEl) nameEl.textContent = d.name || ('#' + deviceId);
+      if (iconEl) iconEl.textContent = deviceIconByType(d.device_type_name);
+      if (statusEl) {
+        statusEl.className = 'details-status-badge ' + (d.current_status || 'unknown');
+        statusEl.textContent = statusBadgeText(d.current_status);
+      }
+      if (fieldsEl) {
+        fieldsEl.innerHTML = `
+          <div class="details-field"><span class="df-label">IP</span><span class="df-value">${esc(d.ip || '—')}</span></div>
+          <div class="details-field"><span class="df-label">النوع</span><span class="df-value">${esc(d.device_type_name || '—')}</span></div>
+          <div class="details-field"><span class="df-label">الموقع</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
+          <div class="details-field"><span class="df-label">طريقة الفحص</span><span class="df-value">${esc(d.check_protocol || 'ping')}</span></div>
+          <div class="details-field"><span class="df-label">المنفذ</span><span class="df-value">${esc(d.port || '—')}</span></div>
+          <div class="details-field"><span class="df-label">فترة الفحص</span><span class="df-value">${esc(d.check_interval_seconds ?? '—')} ث</span></div>
+          <div class="details-field"><span class="df-label">حد التنبيه</span><span class="df-value">${esc(d.failure_threshold ?? '—')}</span></div>
+          <div class="details-field"><span class="df-label">مفعّل</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
+          <div class="details-field"><span class="df-label">زمن الاستجابة</span><span class="df-value">${d.last_response_time_ms != null ? esc(d.last_response_time_ms) + ' ms' : '—'}</span></div>
+          <div class="details-field"><span class="df-label">آخر فحص</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
+        `;
+      }
+    } catch (e) {
+      if (fieldsEl) fieldsEl.innerHTML = '<p class="details-placeholder">⚠️ تعذّر جلب تفاصيل الجهاز.</p>';
+    }
+  }
+  function closeDeviceDetails() {
+    const modal = document.getElementById('noc-device-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  // ── 2b. RENDER DRAW BOARD (التخطيط المرسوم — تبويب مستقل) ──
+  function renderDrawBoard() {
     const cardsContainer = document.getElementById('map-cards-container');
     const svgLinks = document.getElementById('map-svg-links');
     if (!cardsContainer || !svgLinks) return;
@@ -997,11 +1711,10 @@
       `;
     }
 
-    // v2.8.5 — الشارة كانت ثابتة «12 موقع» في HTML: تعكس الآن ما هو مرسوم على الخريطة.
-    const locBadge = document.getElementById('map-locs-count');
+    // v2.8.6 — شارة تبويب «التخطيط المرسوم» + ملاحظته (لم يعد يشارك شارة «خريطة المباني»).
+    const locBadge = document.getElementById('draw-locs-count');
     if (locBadge) locBadge.textContent = `${renderedLocs} موقع`;
-    // ملاحظة الخريطة الفارغة: عنصر ثابت داخل .map-container (يظل مرئيًا مهما كان التمرير/RTL).
-    const note = document.getElementById('map-empty-note');
+    const note = document.getElementById('draw-empty-note');
     if (note) note.hidden = renderedLocs > 0;
     cardsContainer.innerHTML = cardsHtml;
   }
@@ -1109,28 +1822,130 @@
   function renderAll() {
     updateCounters();
     renderHero();
-    renderMap();
+    renderMapGrid();     // v2.8.6 — خريطة المباني (نسخة مطابقة لـ«خريطة المواقع»)
+    renderDrawBoard();   // v2.8.6 — التخطيط المرسوم (لوحة وضع الرسم — تبويب مستقل)
     renderCategories();
   }
+
+  // ── v2.8.7 — التحديث الحيّ عبر SSE (بلا سؤال متكرر للسيرفر) ──
+  function setPollInterval(ms) {
+    if (pollHandle) clearInterval(pollHandle);
+    pollIntervalMs = ms;
+    pollHandle = setInterval(tick, ms);
+  }
+
+  // نصّ التذييل: يوضّح هل الشاشة لحظية (SSE) أو دورية (polling) — يفيد الدعم الفنّي.
+  function refreshStatusText(serverOk) {
+    const el = document.getElementById('update-status');
+    if (!el) return;
+    if (serverOk === false) {
+      el.textContent = '⚠️ تعذر الوصول للخادم — إعادة المحاولة جارية...';
+      return;
+    }
+    el.textContent = liveConnected
+      ? 'مراقبة حية — تحديث فوري (SSE)'
+      : 'مراقبة حية — تحديث دوري كل ' + Math.round(pollIntervalMs / 1000) + ' ثانية';
+  }
+
+  // تطبيق تحديث السيرفر على الحالة المحلّية (بلا طلب شبكة) ثم إعادة رسم واحدة مجمّعة.
+  // ملاحظة: نُحدّث **المصدرين** معًا لأن الشاشة ترسم منهما:
+  //   1) شجرة /api/topology (devById) — للعدّادات ومسار الإنترنت وبطاقات الأجهزة.
+  //   2) شجرة «خريطة المباني» (mapRootData) — لصفوف الأجهزة داخل البطاقات.
+  function applyLiveUpdate(msg) {
+    if (!msg || !Array.isArray(msg.devices)) return;
+    const statusMap = {};
+    for (const d of msg.devices) statusMap[Number(d.id)] = d.status;
+
+    // 1) شجرة السلسلة.
+    let changed = 0;
+    for (const d of msg.devices) {
+      const dev = devById.get(Number(d.id));
+      if (!dev) continue;
+      if (dev.status !== d.status || !!dev.pathDown !== !!d.pathDown) changed++;
+      dev.status = d.status;
+      dev.pathDown = !!d.pathDown;
+    }
+
+    // 2) شجرة خريطة المباني (عُقد الأجهزة id = 'dev-<رقم>').
+    let mapChanged = 0;
+    (function walk(list) {
+      for (const n of list || []) {
+        if (n.kind === 'device') {
+          const s = statusMap[Number(String(n.id).replace(/^dev-/, ''))];
+          if (s && n.status !== s) { n.status = s; mapChanged++; }
+        } else if (n.children && n.children.length) {
+          walk(n.children);
+        }
+      }
+    })(mapRootData && mapRootData.children);
+
+    if (!changed && !mapChanged) return;
+    if (liveRenderTimer) clearTimeout(liveRenderTimer);
+    liveRenderTimer = setTimeout(() => {
+      liveRenderTimer = null;
+      renderAll();
+      const now = new Date();
+      const el = document.getElementById('last-updated-time');
+      if (el) el.textContent = 'آخر تحديث: ' + now.toLocaleTimeString('ar-EG') + ' (لحظي)';
+    }, 150);
+  }
+
+  function connectLive() {
+    if (typeof window.EventSource !== 'function') return;   // متصفح قديم ⇒ polling فقط
+    try { liveES = new EventSource('/api/live/status'); } catch (_) { liveES = null; return; }
+    liveES.onopen = () => {
+      liveConnected = true;
+      setPollInterval(60000);   // تخفيف الـ polling: للبنية فقط
+      refreshStatusText(true);
+    };
+    liveES.onmessage = (ev) => {
+      try { applyLiveUpdate(JSON.parse(ev.data)); } catch (_) {}
+    };
+    liveES.onerror = () => {
+      // EventSource يعيد المحاولة تلقائيًّا — ونرجّع الـ polling لـ 10 ثوانٍ فورًا حتى يعود الخط.
+      liveConnected = false;
+      if (pollIntervalMs !== 10000) setPollInterval(10000);
+      refreshStatusText(true);
+    };
+  }
+
+  // منفذ تشخيص صغير (سكربت الفحص + الدعم الفنّي): حالة البثّ، مدة الـ polling، وإغلاق الخط.
+  window.__nocLive = {
+    connected: () => liveConnected,
+    pollMs: () => pollIntervalMs,
+    close: () => {
+      if (liveES) { liveES.close(); liveES = null; }
+      liveConnected = false;
+      setPollInterval(10000);
+      refreshStatusText(true);
+    },
+  };
 
   // ── Fetch Topology API ──
   async function tick() {
     const updateStatusEl = document.getElementById('update-status');
     try {
-      const res = await fetch('/api/topology', { credentials: 'same-origin' });
-      const json = await res.json();
+      // v2.8.6 — مصدران: السلسلة (للأسماء والأجهزة) + شجرة «خريطة المواقع» العامة (الترتيب والتشكيل).
+      const [topoRes, treeRes] = await Promise.all([
+        fetch('/api/topology', { credentials: 'same-origin' }),
+        fetch('/api/map/public/tree', { credentials: 'same-origin' }),
+      ]);
+      const json = await topoRes.json();
+      let treeJson = null;
+      try { treeJson = await treeRes.json(); } catch (_) {}
       if (json.success && Array.isArray(json.data)) {
         rawTopology = json.data;
         flattenTree(rawTopology);
+        if (treeJson && treeJson.success && treeJson.data) mapRootData = treeJson.data;
         renderAll();
         
         const now = new Date();
         document.getElementById('last-updated-time').textContent = 
           'آخر تحديث: ' + now.toLocaleTimeString('ar-EG');
-        if (updateStatusEl) updateStatusEl.textContent = 'مراقبة حية — اتصال الخادم نشط';
+        if (updateStatusEl) refreshStatusText(true);
       }
     } catch (err) {
-      if (updateStatusEl) updateStatusEl.textContent = '⚠️ تعذر الوصول للخادم — إعادة المحاولة جارية...';
+      refreshStatusText(false);
     }
   }
 
@@ -1161,8 +1976,33 @@
   // ── Initialization ──
   clock();
   setInterval(clock, 1000);
+  // v2.8.6 — استرجاع التبويب المختار ومقياس «التخطيط المرسوم» بعد إعادة التحميل
+  // (كانا يعودان للحالة الافتراضية: أوّل شاشة «عرض شامل» ومقياس 100%).
+  (function restoreSavedView() {
+    let savedView = 'all';
+    try { savedView = localStorage.getItem(VIEW_STORAGE_KEY) || 'all'; } catch (e) {}
+    if (['all', 'hero', 'map', 'grid', 'draw'].indexOf(savedView) === -1) savedView = 'all';
+    setViewMode(savedView);
+    let savedZoom = 1.0;
+    try { savedZoom = parseFloat(localStorage.getItem(ZOOM_STORAGE_KEY)); } catch (e) {}
+    if (isFinite(savedZoom) && savedZoom > 0) {
+      mapZoomLevel = Math.max(0.4, Math.min(1.8, savedZoom));
+      applyMapTransform();
+    }
+  })();
+  // v2.8.6 — ربط نافذة تفاصيل الجهاز (إغلاق بزر ✕ / بالنقر خارجها / بمفتاح Escape).
+  (function bindDeviceModal() {
+    const modal = document.getElementById('noc-device-modal');
+    if (!modal) return;
+    const closeBtn = document.getElementById('noc-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeDeviceDetails);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeDeviceDetails(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDeviceDetails(); });
+  })();
   tick();
-  setInterval(tick, 10000); // 10s auto-refresh
+  // v2.8.7 — polling أوّلي 10 ثوانٍ + خط بثّ حيّ (SSE) يضبط الإيقاع حسب حالة الاتصال.
+  setPollInterval(10000);
+  connectLive();
 })();
 </script>
 </body>

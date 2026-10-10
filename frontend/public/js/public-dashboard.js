@@ -620,17 +620,56 @@ async function init() {
   }
 
 
-  setInterval(async function () {
-    try {
-      var r = await fetchApi('/api/devices');
-      if (r.success) {
-        allDevices = r.data;
-        applyFilters();
-      }
-    } catch (e) {
-      console.error('polling error', e);
+  // v2.8.7 — polling تكيفي + بثّ حيّ (SSE): كل 60 ثانية مع الخط المفتوح، وكل 10 ثوانٍ بدونه.
+  setPollInterval(10000);
+  connectPublicLive();
+}
+
+// ═══ v2.8.7 — التحديث الحيّ (SSE) في الصفحة العامة ═══
+// نفس مسار شاشة NOC: /api/live/status — لقطة أوّلية ثم التغييرات فقط، مع polling احتياطي.
+let publicPollHandle = null;
+let publicPollMs = 10000;
+let publicLiveES = null;
+
+async function pollDevices() {
+  try {
+    const r = await fetchApi('/api/devices');
+    if (r.success) {
+      allDevices = r.data;
+      applyFilters();
     }
-  }, 10000);
+  } catch (e) {
+    console.error('polling error', e);
+  }
+}
+
+function setPollInterval(ms) {
+  if (publicPollHandle) clearInterval(publicPollHandle);
+  publicPollMs = ms;
+  publicPollHandle = setInterval(pollDevices, ms);
+}
+
+// تطبيق الحالة القادمة من البثّ (بلا طلب شبكة) ثم إعادة رسم واحدة.
+function applyLiveStatus(msg) {
+  if (!msg || !Array.isArray(msg.devices)) return;
+  const st = {};
+  for (const d of msg.devices) st[Number(d.id)] = d.status;
+  let changed = 0;
+  for (const dev of allDevices) {
+    const s = st[Number(dev.id)];
+    if (s === undefined) continue;
+    if (dev.current_status !== s) changed++;
+    dev.current_status = s;
+  }
+  if (changed) applyFilters();
+}
+
+function connectPublicLive() {
+  if (typeof window.EventSource !== 'function') return;   // متصفح قديم ⇒ polling فقط
+  try { publicLiveES = new EventSource('/api/live/status'); } catch (_) { publicLiveES = null; return; }
+  publicLiveES.onopen = () => setPollInterval(60000);
+  publicLiveES.onmessage = (ev) => { try { applyLiveStatus(JSON.parse(ev.data)); } catch (_) {} };
+  publicLiveES.onerror = () => { if (publicPollMs !== 10000) setPollInterval(10000); };
 }
 
 function fillSelect(selectId, items) {
