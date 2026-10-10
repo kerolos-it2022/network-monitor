@@ -775,9 +775,14 @@ sudo systemctl restart network-monitor
 | `bash -n` + `node --check` لكل الملفات المعدّلة | OK |
 
 ### 📋 الخطوة التالية (بالترتيب)
-1. **إعادة بناء ISO** (الملفات الجديدة تُنسخ تلقائيًّا من الريبو) ثم اختبار على VM:
-   - تأكد: `systemctl status nm-update.path` = active · `ls /usr/local/sbin/nm-update` موجود.
-   - من لوحة التحكم ← تبويب التحديثات ← «تطبيق التحديث» ⇒ تقدّم من السجل ثم إعادة تشغيل.
-   - أو يدويًّا من الكونسول/SSH: اكتب ملف طلب فيه `latest` في `/var/lib/network-monitor/`.
-2. الالتزام + الوسوم + الرفع (يشمل v2.8.6 و v2.8.7) + تحديث `README.md` (بتدخّل يدوي).
-3. اختياري: توصيل عرض «خريطة المواقع» في الصفحة العامة بالبثّ الحيّ (الآن له polling خاص به).
+1. ✅ **تمّت محليًّا**: بناء ISO v2.8.7 + التحقق منه:
+   - `appliance/network-monitor-appliance-v2.8.7-amd64.iso` — 456.3 MB · MD5 `5be6bea00e3842e107d7b2ecd6706cf5` (مطابق داخل/خارج الحاوية).
+   - الإقلاع: `grub.cfg` يشير إلى نواة **مُسَنَّسَنة** `/live/vmlinuz-6.1.0-50-amd64` (لا مسار مجرّد) ⇒ مشكلة الشاشة السوداء/`unknown filesystem ext4` غير موجودة.
+   - داخل squashfs: `usr/local/sbin/nm-update` بصلاحية `rwxr-xr-x root` ✓ · `nm-update.service/path` (0644) ✓ · `appliance-update.routes.js` ✓ · `backup.routes.js` يحتوي `TMP_DIR` (الإصلاح) ✓.
+   - `nm-update.path` **مُفعَّل** في `multi-user.target.wants` ✓ (مع network-monitor و nm-console و nginx).
+2. **متبقٍّ**: تنصيب على VM واختبار دورة التحديث الكاملة (من اللوحة أو بملف طلب فيه `latest`) +
+   تجربة قياسية سابقة: `appliance/boot-test/e2e.sh` (QEMU، ~40 دقيقة).
+3. **الالتزام ✓ والوسوم ✓** تمّا محليًّا (`dd2ac2f` + v2.8.2→v2.8.7) — **الرفع (push) مؤجّل بقرار المستخدم**،
+   وهو مطلوب لتشغيل تبويب التحديثات في الأبلاينس (يقرأ التاجات من GitHub) وللبناء التلقائي عبر GitHub Actions.
+4. تحديث `README.md` (لا يزال 2.8.5) + تنظيف تعليق `update.routes.js` يدويًّا (حاجز حارس الأسرار) + تحديث شارة الإصدار.
+5. اختياري: توصيل عرض «خريطة المواقع» في الصفحة العامة بالبثّ الحيّ (الآن له polling خاص به).
