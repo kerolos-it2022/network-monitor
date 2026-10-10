@@ -57,3 +57,19 @@ gui-test-screenshots/
 
 # QEMU boot-test screenshots (local artifacts)
 appliance/boot-test/
+appliance/noc-*.html
+
+
+# ===== Local diagnostics / scratch at repo root (not part of the product) =====
+# سكربتات ولقطات تشخيص استُعملت أثناء تطوير topology/NOC (v2.8.x) — محليّة فقط.
+/cdp-*.js
+/check-*.js
+/verify-*.js
+/*.png
+/commit-msg*.txt
+
+# لقطات تحقق الوضع النهاري/الليلي (محليّة — لا تُرفع)
+/verify/
+
+# ZCode tool config (نسخة محليّة من قواعد التجاهل — ليست جزءًا من المنتج)
+.zcodeignore

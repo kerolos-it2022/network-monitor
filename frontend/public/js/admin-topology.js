@@ -9,7 +9,12 @@
   let nodes = [];       // {id, name, ip, status, parent_id, pos_x, pos_y, device_type_name}
   let drag = null;
   let dirty = false;
+  const CANVAS_W = 2800, CANVAS_H = 1450;
   const CARD_W = 210, CARD_H = 74;
+  const LOC_W = 320, LOC_HEAD_H = 17;
+  let zoomLevel = 1.0;
+
+
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
@@ -69,26 +74,14 @@
     } else {
       nodes = (dj.success && Array.isArray(dj.data)) ? dj.data.map((d) => ({ ...d, pos_x: null, pos_y: null })) : [];
     }
-    // UX: لو مفيش أي جهاز له موضع محفوظ — ترتيب تلقائي فوري (سلسلة من اليمين لليسار
-    // حسب الشجرة: الجذر يمينًا والأبناء يسارًا) — العضو يظبط بالسحب ثم 💾 يحفظ.
-    if (nodes.length && !nodes.some((n) => n.pos_x != null && n.pos_y != null)) {
-      const levelsMap = new Map();
-      (function collectLevels(list, depth) {
-        if (!levelsMap.has(depth)) levelsMap.set(depth, []);
-        for (const n of list) { levelsMap.get(depth).push(n); if (n.children && n.children.length) collectLevels(n.children, depth + 1); }
-      })(tj.success && Array.isArray(tj.data) ? tj.data : buildTreeFromFlat(nodes), 0);
-      const CW = 235, GAP = 70;
-      for (const [depth, lvl] of levelsMap) {
-        lvl.sort((a, b) => natKey(a) - natKey(b));
-        lvl.forEach((n, i) => {
-          n.pos_x = Math.max(20, 1500 - (depth + 1) * (CW + GAP));
-          n.pos_y = 50 + i * (CARD_H + 22);
-        });
-      }
-      dirty = true;
-    }
+    // لا يتم إضافة أي مبنى تلقائيًا على اللوحة:
+    // المباني التي تملك موضعًا محفوظًا فقط (pos_x != null && pos_y != null) تظهر على اللوحة،
+    // وأي مبنى ليس له موضع محفوظ يبقى في قائمة الاختيار (أضف مبنى/موقع للوحة) ليقوم الأدمن بإضافته يدوياً.
     dirty = false;
     renderCanvas();
+    if (placed().length) {
+      setTimeout(() => centerOnNodes(false), 50);
+    }
   }
 
   // بناء شجرة من القائمة المسطحة (لو الـ API رجع خطأ والقائمة متاحة).
@@ -216,15 +209,13 @@
   }
 
   // v2.8.4 — ارتكاز بطاقة المبنى: عرض 320px + منتصف الترويسة (~17px). مشترك مع NOC.
-  const LOC_W = 320, LOC_HEAD_H = 17;
   function locAnchor(n) {
     return { x: (n.pos_x || 0) + LOC_W / 2, y: (n.pos_y || 0) + LOC_HEAD_H };
   }
 
   function drawLinks() {
-    const rect = canvas.getBoundingClientRect();
-    svg.setAttribute('width', Math.max(rect.width, 1200));
-    svg.setAttribute('height', Math.max(rect.height, 600));
+    svg.setAttribute('width', CANVAS_W);
+    svg.setAttribute('height', CANVAS_H);
     let h = '';
     const nested = new Set();
     for (const n of placed()) {
@@ -268,37 +259,49 @@
     dirtyEl.classList.remove('hidden');
   }
 
-  // ── السحب (Pointer Events — يعمل بالماوس واللمس) ──
+  // ── السحب (Pointer Events — يعمل بالماوس واللمس مع دعم Zoom) ──
   canvas.addEventListener('pointerdown', (e) => {
     const card = e.target.closest('.t-card');
-    if (!card || e.target.closest('.t-parent') || e.target.closest('.t-remove') || e.target.closest('.t-inner')) return;
+    if (!card || e.target.closest('select') || e.target.closest('button')) return;
     const rect = canvas.getBoundingClientRect();
     drag = {
       id: card.dataset.id,
       card,
-      offX: e.clientX - rect.left - parseFloat(card.style.left || '0'),
-      offY: e.clientY - rect.top - parseFloat(card.style.top || '0'),
+      offX: (e.clientX - rect.left) / zoomLevel - parseFloat(card.style.left || '0'),
+      offY: (e.clientY - rect.top) / zoomLevel - parseFloat(card.style.top || '0'),
     };
-    card.setPointerCapture(e.pointerId);
+    try { card.setPointerCapture(e.pointerId); } catch (_) {}
     e.preventDefault();
   });
-  canvas.addEventListener('pointermove', (e) => {
+
+  const onPointerMove = (e) => {
     if (!drag) return;
     const rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left - drag.offX;
-    let y = e.clientY - rect.top - drag.offY;
-    const cw = drag.card.offsetWidth || CARD_W;
+    let x = (e.clientX - rect.left) / zoomLevel - drag.offX;
+    let y = (e.clientY - rect.top) / zoomLevel - drag.offY;
+    const cw = drag.card.offsetWidth || LOC_W;
     const ch = drag.card.offsetHeight || CARD_H;
-    x = Math.max(0, Math.min(x, rect.width - cw));
-    y = Math.max(0, Math.min(y, rect.height - ch));
-    drag.card.style.left = x + 'px';
-    drag.card.style.top = y + 'px';
+    x = Math.max(0, Math.min(x, CANVAS_W - cw));
+    y = Math.max(0, Math.min(y, CANVAS_H - ch));
+    drag.card.style.left = Math.round(x) + 'px';
+    drag.card.style.top = Math.round(y) + 'px';
     const n = byId(drag.id);
     if (n) { n.pos_x = Math.round(x); n.pos_y = Math.round(y); }
     drawLinks();
     markDirty();
-  });
-  canvas.addEventListener('pointerup', () => { drag = null; });
+  };
+
+  const onPointerUp = (e) => {
+    if (drag) {
+      try { drag.card.releasePointerCapture(e.pointerId); } catch (_) {}
+      drag = null;
+    }
+  };
+
+  canvas.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointerup', onPointerUp);
 
   // ── الأحداث ──
   canvas.addEventListener('change', async (e) => {
@@ -357,25 +360,33 @@
       renderCanvas();
     }
   });
-  // v2.8.1 fix — أول موضع فاضي داخل حدود اللوحة (بدل رمي الجهاز فوق بطاقات موجودة).
-  // نفحص شبكة مواضع (240×96) ونختار أول خلية لا تتقاطع مع أي بطاقة مرسومة.
+  // عند إضافة مبنى يظهر دائمًا في أقصى اليمين
   function firstFreeSpot() {
-    const W = CARD_W + 30, H = CARD_H + 22;
+    const W = LOC_W + 40, H = 240;
+    // في الواجهة العربية واللوحة (2800px)، أقصى اليمين يبدأ بالقرب من 2400px
+    const rightX = CANVAS_W - LOC_W - 60; // 2800 - 320 - 60 = 2420px
     const taken = placed().map((n) => ({ x: n.pos_x || 0, y: n.pos_y || 0 }));
-    const maxY = Math.max(40, ...taken.map((t) => t.y));
-    const cols = 6;
-    for (let row = 0; row <= Math.ceil((maxY + H) / H); row++) {
-      for (let col = 0; col < cols; col++) {
-        const x = 40 + col * W, y = 40 + row * H;
-        if (!taken.some((t) => Math.abs(t.x - x) < W - 10 && Math.abs(t.y - y) < H - 10)) {
-          return { x, y };
-        }
+    
+    // نبحث عن أول صف عمودي فاضي في أقصى اليمين من الأعلى للأسفل
+    for (let row = 0; row < 10; row++) {
+      const y = 40 + row * H;
+      if (!taken.some((t) => Math.abs(t.x - rightX) < W - 20 && Math.abs(t.y - y) < H - 20)) {
+        return { x: rightX, y };
       }
     }
-    return { x: 40, y: maxY + H };
+    // لو امتلأ العمود الأيمن، ننتقل للعمود المجاور له جهة اليسار
+    const nextColX = rightX - W;
+    for (let row = 0; row < 10; row++) {
+      const y = 40 + row * H;
+      if (!taken.some((t) => Math.abs(t.x - nextColX) < W - 20 && Math.abs(t.y - y) < H - 20)) {
+        return { x: nextColX, y };
+      }
+    }
+    const maxY = Math.max(40, ...taken.map((t) => t.y));
+    return { x: rightX, y: maxY + H };
   }
 
-  // v2.8.2 — إضافة مبنى: قائمته المنفصلة.
+  // v2.8.2 — إضافة مبنى يدويًا من القائمة المنسدلة:
   addLocSel.addEventListener('change', async () => {
     const id = addLocSel.value;
     if (!id) return;
@@ -386,7 +397,8 @@
     const ok = await saveLocationPositions([{ id, pos_x: n.pos_x, pos_y: n.pos_y }]);
     if (ok) {
       renderCanvas();
-      showToast('✅ المبنى اِتحطّ على اللوحة — اسحبه ثم 💾 احفظ', { type: 'success' });
+      showToast('✅ تم إضافة المبنى إلى اللوحة — يمكنك سحبه ثم 💾 حفظ التخطيط', { type: 'success' });
+      setTimeout(() => centerOnNodes(true), 50);
     }
     addLocSel.value = '';
   });
@@ -520,6 +532,72 @@
     if (m) return parseInt(m[1], 10);
     const ipm = String(n.ip || '').match(/(\d+)\s*$/);
     return ipm ? parseInt(ipm[1], 10) : 999999;
+  }
+
+  // ── التمركز حول البطاقات في منتصف مجال الرؤية ──
+  function centerOnNodes(smooth = false) {
+    const pl = placed().filter((n) => n.type === 'location');
+    if (!pl.length) return;
+    const wrap = canvas.closest('.topo-canvas-wrap');
+    if (!wrap || wrap.clientWidth === 0) return;
+    const minX = Math.min(...pl.map((n) => n.pos_x || 0));
+    const maxX = Math.max(...pl.map((n) => (n.pos_x || 0) + LOC_W));
+    const minY = Math.min(...pl.map((n) => n.pos_y || 0));
+    const maxY = Math.max(...pl.map((n) => (n.pos_y || 0) + 200));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const targetX = Math.max(0, centerX - wrap.clientWidth / 2);
+    const targetY = Math.max(0, centerY - wrap.clientHeight / 2);
+
+    if (smooth && typeof wrap.scrollTo === 'function') {
+      wrap.scrollTo({ left: targetX, top: targetY, behavior: 'smooth' });
+    } else {
+      wrap.scrollLeft = targetX;
+      wrap.scrollTop = targetY;
+    }
+  }
+
+  // ── أزرار التكبير والملاءمة للشاشة (Zoom & Fit) ──
+  function applyZoom() {
+    canvas.style.transform = `scale(${zoomLevel})`;
+    if (svg) svg.style.transform = `scale(${zoomLevel})`;
+  }
+  const zoomInBtn = document.getElementById('topo-zoom-in');
+  const zoomOutBtn = document.getElementById('topo-zoom-out');
+  const zoomResetBtn = document.getElementById('topo-zoom-reset');
+  const zoomFitBtn = document.getElementById('topo-zoom-fit');
+
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => { zoomLevel = Math.min(1.8, zoomLevel + 0.15); applyZoom(); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { zoomLevel = Math.max(0.35, zoomLevel - 0.15); applyZoom(); });
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => { zoomLevel = 1.0; applyZoom(); centerOnNodes(true); });
+  if (zoomFitBtn) zoomFitBtn.addEventListener('click', () => {
+    const wrap = canvas.closest('.topo-canvas-wrap');
+    const pl = placed().filter((n) => n.type === 'location');
+    if (wrap && pl.length) {
+      const minX = Math.min(...pl.map((n) => n.pos_x || 0));
+      const maxX = Math.max(...pl.map((n) => (n.pos_x || 0) + LOC_W));
+      const minY = Math.min(...pl.map((n) => n.pos_y || 0));
+      const maxY = Math.max(...pl.map((n) => (n.pos_y || 0) + 250));
+      const contentW = Math.max(400, (maxX - minX) + 100);
+      const contentH = Math.max(300, (maxY - minY) + 100);
+      const scaleX = wrap.clientWidth / contentW;
+      const scaleH = wrap.clientHeight / contentH;
+      zoomLevel = Math.max(0.35, Math.min(1.0, Math.min(scaleX, scaleH)));
+      applyZoom();
+      centerOnNodes(true);
+    }
+  });
+
+  // تحديث وتحريك الرؤية تلقائيًا عند الضغط على تبويب سلسلة الشبكة
+  const tabBtn = document.getElementById('tab-topology');
+  if (tabBtn) {
+    tabBtn.addEventListener('click', () => {
+      setTimeout(() => {
+        loadAll();
+        setTimeout(() => centerOnNodes(true), 120);
+      }, 50);
+    });
   }
 
   if (canvas) loadAll();

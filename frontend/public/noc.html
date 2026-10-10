@@ -3,379 +3,1166 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOC — مراقبة الشبكة</title>
+<title>NOC — مركز مراقبة وتتبع الشبكة</title>
+<link rel="icon" type="image/png" href="/icon-192.png">
 <style>
+  :root {
+    --bg-main: #060a14;
+    --bg-card: #0d1527;
+    --bg-card-hover: #131f38;
+    --bg-glass: rgba(13, 21, 39, 0.75);
+    --border-color: #1e2c4a;
+    --border-light: rgba(125, 211, 252, 0.15);
+    --text-primary: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --color-ok: #10b981;
+    --color-bad: #ef4444;
+    --color-warn: #f59e0b;
+    --color-info: #38bdf8;
+    --color-purple: #a855f7;
+    --color-indigo: #6366f1;
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body { min-height: 100%; height: 100%; }
   body {
-    background: radial-gradient(ellipse at top, #0d1428 0%, #070b16 70%);
-    color: #e8ecf4; font-family: 'Segoe UI', Tahoma, sans-serif;
-    min-height: 100vh; display: flex; flex-direction: column;
-    padding: 14px 22px;
+    /* v2.8.5 — خلفية واحدة ثابتة: كانت تتكرر (repeat افتراضي) وهي مقيسة على ارتفاع الشاشة
+       لأن body ارتفاعه 100% → كلما طالت الصفحة (زيادة الأجهزة) تتكرر التدرجات بوصلة
+       قاطعة عند كل 100vh وتتغيّر الألوان أثناء التمرير. fixed + no-repeat = تدرّج واحد ثابت. */
+    background: radial-gradient(ellipse at 50% 0%, #0d1a33 0%, #070b16 65%, #04070d 100%) fixed no-repeat #04070d;
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    display: flex; flex-direction: column;
+    padding: 12px 18px;
+    overflow-x: hidden;
   }
-  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-  h1 { font-size: 1.5rem; color: #7dd3fc; text-shadow: 0 0 16px rgba(125,211,252,.3); }
-  #clock { font-size: 1.15rem; color: #94a3b8; font-variant-numeric: tabular-nums; }
-  button.fs { background: #1e2a44; color: #e8ecf4; border: 1px solid #2c3a5c; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: .9rem; }
-  button.fs:hover { background: #2c3a5c; }
-  .counters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-  .counter { flex: 1; min-width: 130px; background: linear-gradient(180deg,#111a2e,#0d1526); border: 1px solid #1e2a44; border-radius: 12px; padding: 10px 14px; text-align: center; }
-  .counter .num { font-size: 2rem; font-weight: 800; line-height: 1.1; text-shadow: 0 0 12px currentColor; }
-  .counter .lbl { font-size: .9rem; color: #94a3b8; }
-  .num.ok { color: #22c55e; } .num.bad { color: #ef4444; } .num.warn { color: #f59e0b; } .num.info { color: #7dd3fc; }
 
-  /* ── السلسلة الرئيسية: بطاقات كبيرة موصولة بخطوط سميكة ملونة (hero) ── */
-  .section-title { color: #7dd3fc; font-size: 1.05rem; font-weight: 700; margin: 4px 0 10px; }
-  .chain-row { display: flex; flex-direction: row; align-items: stretch; gap: 0; overflow-x: auto; padding: 10px 6px 14px; }
-  .chain-card {
-    background: linear-gradient(180deg,#111a2e,#0c1424); border: 1px solid #1e2a44;
-    border-top: 4px solid #64748b; border-radius: 14px; padding: 14px 18px;
-    min-width: 240px; display: flex; flex-direction: column; gap: 4px;
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 12px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 10px 18px;
   }
-  .chain-card.up { border-top-color: #22c55e; box-shadow: 0 0 16px rgba(34,197,94,.25); }
-  .chain-card.down { border-top-color: #ef4444; box-shadow: 0 0 18px rgba(239,68,68,.4); animation: pulse-red 1.6s ease-in-out infinite; }
-  .chain-card.pathdown { border-top-color: #f59e0b; box-shadow: 0 0 14px rgba(245,158,11,.3); }
-  @keyframes pulse-red { 0%,100% { box-shadow: 0 0 12px rgba(239,68,68,.35); } 50% { box-shadow: 0 0 24px rgba(239,68,68,.6); } }
-  .chain-card .nm { font-size: 1.25rem; font-weight: 800; }
-  .chain-card .meta { color: #94a3b8; font-size: .9rem; direction: ltr; text-align: left; }
-  .chain-card .st { margin-top: 4px; font-weight: 800; font-size: 1rem; }
-  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.pathdown { color: #f59e0b; } .st.paused { color: #94a3b8; }
-  .chain-card.loc { border-top-color: #a78bfa; box-shadow: 0 0 14px rgba(167,139,250,.3); }
-  .chain-card.loc .nm { color: #c4b5fd; }
-  .chain-link { align-self: center; width: 56px; height: 6px; border-radius: 3px; background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.55); flex-shrink: 0; }
-  .chain-link.down { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,.55); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon {
+    font-size: 1.6rem; background: linear-gradient(135deg, #0284c7, #6366f1);
+    border-radius: 10px; padding: 6px 10px; box-shadow: 0 0 16px rgba(99,102,241,0.35);
+  }
+  .brand h1 { font-size: 1.35rem; color: #e0f2fe; font-weight: 800; letter-spacing: -0.5px; }
+  .brand .tag {
+    font-size: 0.72rem; color: #38bdf8; background: rgba(56,189,248,0.12);
+    border: 1px solid rgba(56,189,248,0.25); border-radius: 6px; padding: 2px 7px; font-weight: 700;
+  }
+  .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #clock {
+    font-size: 0.98rem; color: #cbd5e1; font-variant-numeric: tabular-nums;
+    background: rgba(15,23,42,0.6); padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--border-color); font-weight: 600;
+  }
+  .btn-action {
+    background: #16223b; color: #e2e8f0; border: 1px solid #2b3d63;
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem;
+    font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .btn-action:hover { background: #223459; border-color: #3b82f6; transform: translateY(-1px); }
+  .btn-action.active { background: #1e3a8a; border-color: #60a5fa; color: #93c5fd; }
 
-  /* ── مجموعات النوع: grid منظم بدل صف واحد ── */
-  .type-group { margin: 6px 0 18px; }
-  .type-head { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
-  .type-head .nm { font-weight: 800; font-size: 1rem; color: #c7d4ea; }
-  .type-head .cnt { font-size: .85rem; color: #94a3b8; background: #16213a; border: 1px solid #1e2a44; border-radius: 999px; padding: 2px 10px; }
-  .type-head .bar { flex: 1; height: 3px; background: linear-gradient(90deg, #1e2a44, transparent); border-radius: 2px; }
-  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 10px; }
-  .s-card {
-    background: linear-gradient(180deg,#111a2e,#0c1424); border: 1px solid #1e2a44;
-    border-inline-start: 4px solid #64748b; border-radius: 12px; padding: 10px 14px;
-    display: flex; flex-direction: column; gap: 2px;
+  /* ── Counters Dashboard ── */
+  .counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .counter {
+    background: linear-gradient(180deg, #101a30, #0a1122);
+    border: 1px solid var(--border-color); border-radius: 12px;
+    padding: 10px 14px; text-align: center; position: relative; overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .s-card.up { border-inline-start-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,.2); }
-  .s-card.down { border-inline-start-color: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,.35); }
-  .s-card.pathdown { border-inline-start-color: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.25); }
-  .s-card.paused { opacity: .5; }
-  .s-card .nm { font-weight: 800; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .s-card .meta { color: #94a3b8; font-size: .85rem; direction: ltr; text-align: left; }
-  .s-card .st { font-weight: 700; font-size: .85rem; }
-  .s-card .path-badge { font-size: .72rem; color: #f59e0b; }
-  /* ── v2.8.3 — قسم خريطة الشبكة (وضع الرسم للعرض فقط) ── */
-  #map-board { position: relative; width: 100%; height: 640px; border: 1px solid #1e2a44; border-radius: 12px;
-    background: repeating-conic-gradient(rgba(148,163,184,.05) 0% 25%, transparent 0% 50%) 50% / 24px 24px;
-    overflow: auto; margin-bottom: 18px; }
-  #map-board-inner { position: relative; width: 1800px; height: 1200px; }
-  #map-board svg.mv-links { position: absolute; inset: 0; pointer-events: none; }
-  .mv-card { position: absolute; box-sizing: border-box; pointer-events: none; }
-  .mv-card.loc { width: 320px; background: linear-gradient(180deg,#111a2e,#0c1424); border: 2px solid #94a3b8;
-    border-inline-start-width: 4px; border-radius: 10px; overflow: hidden; }
-  .mv-card.loc.up   { border-color: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,.2); }
-  .mv-card.loc.down { border-color: #ef4444; box-shadow: 0 0 14px rgba(239,68,68,.35); }
-  .mv-card.dev { width: 210px; border: 1px solid #1e2a44; border-inline-start: 4px solid #64748b; border-radius: 10px;
-    background: linear-gradient(180deg,#111a2e,#0c1424); padding: 8px 10px; }
-  .mv-card.dev.up   { border-inline-start-color: #22c55e; }
-  .mv-card.dev.down { border-inline-start-color: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,.3); }
-  .mv-card.dev.paused { opacity: .55; }
-  .mv-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(127,127,127,.06); border-bottom: 1px solid rgba(127,127,127,.12); }
-  .mv-nm { flex: 1; font-weight: 800; font-size: 1rem; color: #e8ecf4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mv-count { font-size: .78rem; color: #94a3b8; }
-  .mv-kind { font-size: .78rem; color: #94a3b8; padding: 4px 10px 0; }
-  .mv-meta { color: #94a3b8; font-size: .85rem; direction: ltr; text-align: left; }
-  .mv-st { font-weight: 700; font-size: .85rem; }
-  .st.up { color: #22c55e; } .st.down { color: #ef4444; } .st.paused { color: #94a3b8; }
-  .mv-inner { margin-top: 8px; border-top: 1px solid rgba(127,127,127,.15); padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; }
-  .mv-inner-row { display: flex; align-items: center; gap: 6px; font-size: .8rem; padding: 5px 8px; border-radius: 6px; background: rgba(148,163,184,.06); }
-  .mv-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .mv-inner-type { flex-shrink: 0; opacity: .6; font-size: .92em; max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mv-inner-nm { flex: 1; font-weight: 600; color: #e8ecf4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mv-inner-ip { direction: ltr; opacity: .55; font-size: .92em; flex-shrink: 0; }
-  .mv-inner-st { flex-shrink: 0; font-size: .92em; font-weight: 700; }
-  .mv-empty { margin: 8px 10px; font-size: .78rem; color: #475569; font-style: italic; }
-  #updated { margin-top: 8px; color: #475569; font-size: .8rem; text-align: center; }
+  .counter:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+  .counter::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: currentColor; opacity: 0.8;
+  }
+  .counter.c-ok { color: var(--color-ok); }
+  .counter.c-bad { color: var(--color-bad); }
+  .counter.c-warn { color: var(--color-warn); }
+  .counter.c-info { color: var(--color-info); }
+  .counter.c-purple { color: var(--color-purple); }
+  .counter .num { font-size: 2.1rem; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .counter .lbl { font-size: 0.82rem; color: #94a3b8; font-weight: 700; margin-top: 3px; }
+  .counter.c-bad .num.has-bad { animation: pulse-text-red 1.5s ease-in-out infinite; }
+  @keyframes pulse-text-red {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(239,68,68,0.5)); }
+    50% { transform: scale(1.06); filter: drop-shadow(0 0 10px rgba(239,68,68,0.9)); }
+  }
+
+  /* ── Filter & Navigation Toolbar ── */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+    background: var(--bg-glass); border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 8px 14px;
+  }
+  .views-tabs { display: flex; gap: 6px; }
+  .tab-btn {
+    background: transparent; color: var(--text-muted); border: 1px solid transparent;
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.86rem;
+    font-weight: 700; transition: all 0.2s ease;
+  }
+  .tab-btn:hover { color: #f8fafc; background: rgba(255,255,255,0.05); }
+  .tab-btn.active { background: #1e293b; color: #38bdf8; border-color: #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.2); }
+  
+  .filter-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .search-box {
+    background: #090e1a; border: 1px solid #1e2d4a; border-radius: 8px;
+    padding: 6px 12px; color: #f8fafc; font-size: 0.85rem; width: 190px;
+    transition: all 0.2s ease;
+  }
+  .search-box:focus { outline: none; border-color: #38bdf8; width: 230px; box-shadow: 0 0 10px rgba(56,189,248,0.25); }
+  .filter-pill {
+    background: #111a2e; border: 1px solid #1e2c4a; border-radius: 20px;
+    padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #94a3b8;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .filter-pill:hover { border-color: #38bdf8; color: #f8fafc; }
+  .filter-pill.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
+
+  /* ── Section Titles ── */
+  .section-title {
+    display: flex; align-items: center; gap: 10px; margin: 16px 0 10px;
+    font-size: 1.1rem; font-weight: 800; color: #e2e8f0;
+  }
+  .section-title .bar { flex: 1; height: 1px; background: linear-gradient(90deg, #334155, transparent); }
+  .section-title .badge {
+    font-size: 0.75rem; background: #1e293b; border: 1px solid #334155;
+    border-radius: 999px; padding: 2px 9px; color: #94a3b8; font-weight: 600;
+  }
+
+  /* ── SECTION 1: Internet & Backbone Hero ── */
+  #hero-section { margin-bottom: 18px; }
+  .hero-chain {
+    display: flex; align-items: center; gap: 0; overflow-x: auto;
+    padding: 10px 6px 16px; scrollbar-width: thin;
+  }
+  .hero-card {
+    background: linear-gradient(180deg, #131d36, #0c1326);
+    border: 1px solid #233357; border-top: 4px solid #64748b;
+    border-radius: 14px; padding: 14px 18px; min-width: 260px;
+    display: flex; flex-direction: column; gap: 6px; position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: transform 0.2s ease;
+  }
+  .hero-card:hover { transform: translateY(-3px); }
+  .hero-card.up { border-top-color: var(--color-ok); box-shadow: 0 0 18px rgba(16,185,129,0.2); }
+  .hero-card.down { border-top-color: var(--color-bad); box-shadow: 0 0 20px rgba(239,68,68,0.4); animation: pulse-card-red 1.6s infinite; }
+  .hero-card.warn { border-top-color: var(--color-warn); box-shadow: 0 0 16px rgba(245,158,11,0.25); }
+  /* v2.8.5 — حالة محايدة: لا بيانات مُعرَّفة (تثبيت جديد) — لا ندّعي حالة غير موجودة. */
+  .hero-card.neutral { border-top-color: #475569; }
+  .hero-card .role { font-size: 0.76rem; color: #38bdf8; font-weight: 800; text-transform: uppercase; }
+  .hero-card .nm { font-size: 1.18rem; font-weight: 900; color: #f8fafc; }
+  .hero-card .meta { color: #94a3b8; font-size: 0.88rem; direction: ltr; text-align: left; font-family: monospace; }
+  .hero-card .st-badge {
+    margin-top: 4px; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; width: fit-content;
+  }
+  .st-badge.up { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+  .st-badge.down { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .st-badge.warn { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .st-badge.neutral { background: rgba(148,163,184,0.12); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+  .hero-link {
+    width: 60px; height: 6px; border-radius: 3px; background: var(--color-ok);
+    box-shadow: 0 0 12px rgba(16,185,129,0.6); flex-shrink: 0; align-self: center;
+    position: relative;
+  }
+  .hero-link.down { background: var(--color-bad); box-shadow: 0 0 14px rgba(239,68,68,0.7); }
+  .hero-link::after {
+    content: '◀'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 10px; color: #0f172a;
+  }
+
+  /* ── SECTION 2: Map Board ── */
+  #map-section { margin-bottom: 20px; }
+  .map-container {
+    position: relative; width: 100%;
+  }
+  .map-wrapper {
+    position: relative; width: 100%; height: 680px; border: 1px solid var(--border-color);
+    border-radius: 14px; background: repeating-conic-gradient(rgba(148,163,184,0.04) 0% 25%, transparent 0% 50%) 50% / 28px 28px #080d1a;
+    overflow: auto; box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+  }
+  #map-board-inner {
+    position: relative; width: 2800px; height: 1450px;
+    transform-origin: 0 0; transition: transform 0.15s ease-out;
+  }
+  #map-board-inner svg.mv-links { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .map-controls {
+    position: absolute; bottom: 18px; left: 18px; z-index: 25;
+    display: flex; gap: 6px; background: rgba(15,23,42,0.88); backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color); border-radius: 10px; padding: 6px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .map-controls.at-right { left: auto; right: 18px; }
+  .map-btn {
+    background: #1e293b; color: #f8fafc; border: 1px solid #334155;
+    border-radius: 6px; width: 34px; height: 34px; font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    font-weight: 700; transition: all 0.15s ease;
+  }
+  .map-btn:hover { background: #334155; border-color: #38bdf8; }
+
+  /* Map Cards */
+  .mv-card {
+    position: absolute; box-sizing: border-box; z-index: 2;
+    transition: box-shadow 0.2s ease;
+  }
+  .mv-card.loc {
+    width: 330px; background: linear-gradient(180deg, #111b33, #0b1222);
+    border: 2px solid #64748b; border-inline-start-width: 5px;
+    border-radius: 12px; overflow: hidden; box-shadow: 0 6px 22px rgba(0,0,0,0.45);
+  }
+  .mv-card.loc.up { border-color: var(--color-ok); box-shadow: 0 0 16px rgba(16,185,129,0.22); }
+  .mv-card.loc.down { border-color: var(--color-bad); box-shadow: 0 0 20px rgba(239,68,68,0.4); }
+  .mv-card.loc.neutral { border-color: var(--color-purple); }
+  .mv-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 9px 12px; background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .mv-nm { font-weight: 900; font-size: 1.02rem; color: #f8fafc; }
+  .mv-count { font-size: 0.8rem; font-weight: 800; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 2px 8px; }
+  .mv-subhead {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 12px; font-size: 0.78rem; color: #94a3b8; background: rgba(0,0,0,0.2);
+  }
+  .mv-inner {
+    padding: 6px 8px; display: flex; flex-direction: column; gap: 4px;
+    max-height: 290px; overflow-y: auto; scrollbar-width: thin;
+  }
+  .mv-inner-row {
+    display: flex; align-items: center; gap: 6px; font-size: 0.8rem;
+    padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;
+  }
+  .mv-inner-row:hover { background: rgba(255,255,255,0.07); }
+  .mv-inner-row.down { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); }
+  .mv-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .mv-inner-nm { flex: 1; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mv-inner-type { font-size: 0.72rem; color: #94a3b8; opacity: 0.85; flex-shrink: 0; }
+  .mv-inner-ip { font-family: monospace; font-size: 0.75rem; color: #cbd5e1; direction: ltr; flex-shrink: 0; }
+  .mv-empty { padding: 12px; font-size: 0.82rem; color: #64748b; font-style: italic; text-align: center; }
+
+  /* ── SECTION 3: Categorized Devices Grid ── */
+  .category-group { margin-bottom: 22px; }
+  .category-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    padding-bottom: 6px; border-bottom: 1px solid #1e2c4a;
+  }
+  .category-head .cat-title { font-weight: 900; font-size: 1.05rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+  .category-head .cat-badge {
+    font-size: 0.78rem; font-weight: 700; background: #131d33;
+    border: 1px solid #233557; border-radius: 999px; padding: 2px 10px; color: #93c5fd;
+  }
+  .category-head .cat-stats { font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-inline-start: auto; }
+  
+  .device-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 10px;
+  }
+  .dev-card {
+    background: linear-gradient(180deg, #111a2f, #0b1222);
+    border: 1px solid var(--border-color); border-inline-start: 4px solid #64748b;
+    border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+    position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .dev-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
+  .dev-card.up { border-inline-start-color: var(--color-ok); }
+  .dev-card.down {
+    border-inline-start-color: var(--color-bad);
+    background: linear-gradient(180deg, #1f1422, #140d17);
+    box-shadow: 0 0 14px rgba(239,68,68,0.3);
+    animation: pulse-card-red 1.6s infinite;
+  }
+  .dev-card.pathdown { border-inline-start-color: var(--color-warn); }
+  .dev-card.paused { opacity: 0.6; }
+
+  @keyframes pulse-card-red {
+    0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.25); }
+    50% { box-shadow: 0 0 20px rgba(239,68,68,0.55); }
+  }
+
+  .dev-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .dev-card .nm {
+    font-weight: 800; font-size: 0.98rem; color: #f8fafc;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+  }
+  .dev-card .dev-badge {
+    font-size: 0.72rem; font-weight: 800; border-radius: 6px; padding: 2px 7px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .dev-badge.up { background: rgba(16,185,129,0.15); color: #34d399; }
+  .dev-badge.down { background: rgba(239,68,68,0.2); color: #f87171; }
+  .dev-badge.pathdown { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .dev-badge.paused { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+  .dev-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.82rem; }
+  .dev-card .ip { font-family: monospace; color: #38bdf8; direction: ltr; font-weight: 700; }
+  .dev-card .loc-tag {
+    font-size: 0.74rem; color: #a78bfa; background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.2); border-radius: 4px; padding: 1px 6px;
+    max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dev-card .parent-info {
+    font-size: 0.72rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ── Footer Status ── */
+  footer {
+    margin-top: 20px; padding: 10px 0; text-align: center;
+    color: var(--text-dim); font-size: 0.82rem; display: flex;
+    align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    border-top: 1px solid #1e293b;
+  }
+  .live-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok);
+    animation: blink 2s infinite ease-in-out;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ═══════════ v2.8.5 — الوضع النهاري (Day mode) ═══════════
+     الافتراضي في NOC يبقى ليليًّا (شاشة TV)، وهذا القسم يتجاوز متغيرات الألوان
+     والألوان الحرفية فقط — لا يُعدّل أي قاعدة يليلية. التفضيل مشترك مع الصفحة
+     العامة عبر نفس مفتاح التخزين (nm.publicTheme)، والصنف على <html> ليُطبَّق
+     في <head> قبل أول رسم (بلا وميض). */
+
+  /* أصناف بدل الألوان المضمّنة داخل JS (حتى تتبدّل مع الوضع) */
+  .mv-dot.up { background: #10b981; box-shadow: 0 0 6px #10b981; }
+  .mv-dot.down { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+  .mv-dot.path { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+  .mv-dot.paused { background: #94a3b8; }
+  .mv-links .mv-link { stroke: #818cf8; stroke-opacity: 0.65; }
+  .mv-links .mv-dot-child { fill: #a78bfa; }
+  .mv-links .mv-dot-parent { fill: #6366f1; }
+  .noc-board-note {
+    position: absolute; inset-inline-start: 24px; top: 24px; z-index: 20;
+    padding: 12px 16px; color: #64748b; font-size: 1rem;
+    background: rgba(15,23,42,0.72); border: 1px dashed #334155; border-radius: 10px;
+  }
+
+  html.noc-day {
+    /* عناصر النظام (أشرطة التمرير والحقول) تُرسم فاتحة داخل الوضع النهاري. */
+    color-scheme: light;
+    --bg-main: #eef2f8;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --bg-glass: rgba(255, 255, 255, 0.80);
+    --border-color: #dbe3ef;
+    --border-light: rgba(2, 132, 199, 0.18);
+    --text-primary: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+    /* نفس دلالات الحالة بدرجة أغمق تكفي للتباين على الأسطح الفاتحة */
+    --color-ok: #047857;
+    --color-bad: #dc2626;
+    --color-warn: #b45309;
+    --color-info: #0369a1;
+    --color-purple: #6d28d9;
+    --color-indigo: #4f46e5;
+  }
+  html.noc-day body {
+    background: radial-gradient(ellipse at 50% 0%, #ffffff 0%, #eef3fa 60%, #e6ecf5 100%) fixed no-repeat #e6ecf5;
+  }
+  /* الترويسة */
+  html.noc-day .brand h1 { color: #0f172a; }
+  html.noc-day .brand .tag { color: #0369a1; background: rgba(2,132,199,0.10); border-color: rgba(2,132,199,0.28); }
+  html.noc-day #clock { color: #334155; background: rgba(255,255,255,0.72); }
+  html.noc-day .btn-action { background: #ffffff; color: #1e293b; border-color: #d7e0ee; }
+  html.noc-day .btn-action:hover { background: #eff4fb; border-color: #0284c7; color: #0f172a; }
+  html.noc-day .btn-action.active { background: #e0edff; border-color: #2563eb; color: #1d4ed8; }
+  /* العدّادات */
+  html.noc-day .counter { background: linear-gradient(180deg, #ffffff, #f5f8fd); box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
+  html.noc-day .counter .lbl { color: #64748b; }
+  html.noc-day .counter:hover { box-shadow: 0 6px 18px rgba(15,23,42,0.12); }
+  /* شريط الأدوات والفلاتر */
+  html.noc-day .tab-btn:hover { color: #0f172a; background: rgba(15,23,42,0.05); }
+  html.noc-day .tab-btn.active { background: #e0edff; color: #0369a1; border-color: #7dd3fc; box-shadow: 0 0 10px rgba(2,132,199,0.15); }
+  html.noc-day .search-box { background: #ffffff; border-color: #d7e0ee; color: #0f172a; }
+  html.noc-day .filter-pill { background: #ffffff; border-color: #d7e0ee; color: #475569; }
+  html.noc-day .filter-pill:hover { color: #0f172a; border-color: #0284c7; }
+  /* عناوين الأقسام */
+  html.noc-day .section-title { color: #0f172a; }
+  html.noc-day .section-title .bar { background: linear-gradient(90deg, #cbd5e1, transparent); }
+  html.noc-day .section-title .badge { background: #ffffff; border-color: #d7e0ee; color: #475569; }
+  /* بطاقات المسار */
+  html.noc-day .hero-card { background: linear-gradient(180deg, #ffffff, #f7fafd); border-color: #e2e8f0; border-top-color: #94a3b8; box-shadow: 0 4px 16px rgba(15,23,42,0.08); }
+  html.noc-day .hero-card .role { color: #0369a1; }
+  html.noc-day .hero-card .nm { color: #0f172a; }
+  html.noc-day .hero-card .meta { color: #475569; }
+  html.noc-day .hero-card.up { box-shadow: 0 0 14px rgba(4,120,87,0.14); }
+  html.noc-day .hero-card.down { box-shadow: 0 0 16px rgba(220,38,38,0.20); }
+  html.noc-day .hero-card.warn { box-shadow: 0 0 14px rgba(180,83,9,0.16); }
+  /* سهم رابط الحالة: ألوان الحالة أغمق في الوضع النهاري ⇒ سهم أبيض بدل الكحلي. */
+  html.noc-day .hero-link::after { color: #ffffff; }
+  html.noc-day .st-badge.up { background: rgba(4,120,87,0.10); color: #047857; border-color: rgba(4,120,87,0.28); }
+  html.noc-day .st-badge.down { background: rgba(220,38,38,0.10); color: #b91c1c; border-color: rgba(220,38,38,0.28); }
+  html.noc-day .st-badge.warn { background: rgba(180,83,9,0.12); color: #b45309; border-color: rgba(180,83,9,0.28); }
+  html.noc-day .st-badge.neutral { background: rgba(100,116,139,0.10); color: #475569; border-color: rgba(100,116,139,0.28); }
+  /* الخريطة */
+  html.noc-day .map-wrapper {
+    background: repeating-conic-gradient(rgba(15,23,42,0.022) 0% 25%, transparent 0% 50%) 50% / 28px 28px #fbfcfe;
+    box-shadow: inset 0 0 30px rgba(15,23,42,0.05);
+  }
+  html.noc-day .map-controls { background: rgba(255,255,255,0.92); }
+  html.noc-day .map-btn { background: #ffffff; color: #334155; border-color: #d7e0ee; }
+  html.noc-day .map-btn:hover { background: #eef4fc; border-color: #0284c7; }
+  html.noc-day .mv-card.loc { background: linear-gradient(180deg, #ffffff, #f7fafd); border-color: #cbd5e1; box-shadow: 0 4px 16px rgba(15,23,42,0.10); }
+  html.noc-day .mv-head { background: rgba(15,23,42,0.03); border-bottom-color: rgba(15,23,42,0.08); }
+  html.noc-day .mv-nm { color: #0f172a; }
+  html.noc-day .mv-count { background: rgba(15,23,42,0.06); }
+  html.noc-day .mv-subhead { color: #475569; background: rgba(15,23,42,0.04); }
+  html.noc-day .mv-inner-row { background: rgba(15,23,42,0.03); border-color: rgba(15,23,42,0.05); }
+  html.noc-day .mv-inner-row:hover { background: rgba(15,23,42,0.06); }
+  html.noc-day .mv-inner-row.down { background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.20); }
+  html.noc-day .mv-inner-nm { color: #0f172a; }
+  html.noc-day .mv-inner-type { color: #64748b; }
+  html.noc-day .mv-inner-ip { color: #334155; }
+  html.noc-day .mv-links .mv-link { stroke: #6366f1; stroke-opacity: 0.55; }
+  html.noc-day .mv-links .mv-dot-child { fill: #7c3aed; }
+  html.noc-day .mv-links .mv-dot-parent { fill: #4f46e5; }
+  html.noc-day .mv-dot.up { background: #047857; box-shadow: 0 0 6px rgba(4,120,87,0.55); }
+  html.noc-day .mv-dot.down { background: #dc2626; box-shadow: 0 0 6px rgba(220,38,38,0.55); }
+  html.noc-day .mv-dot.path { background: #b45309; box-shadow: 0 0 6px rgba(180,83,9,0.55); }
+  html.noc-day .mv-dot.paused { background: #64748b; }
+  html.noc-day .noc-board-note { background: rgba(255,255,255,0.88); border-color: #cbd5e1; color: #475569; }
+  /* بطاقات الأجهزة المصنّفة */
+  html.noc-day .category-head { border-bottom-color: #e2e8f0; }
+  html.noc-day .category-head .cat-title { color: #0f172a; }
+  html.noc-day .category-head .cat-badge { background: #ffffff; border-color: #d7e0ee; color: #0369a1; }
+  html.noc-day .category-head .cat-stats { color: #475569; }
+  html.noc-day .dev-card { background: linear-gradient(180deg, #ffffff, #f7fafd); border-color: #e2e8f0; box-shadow: 0 2px 8px rgba(15,23,42,0.07); }
+  html.noc-day .dev-card:hover { box-shadow: 0 6px 16px rgba(15,23,42,0.12); }
+  html.noc-day .dev-card.down { background: linear-gradient(180deg, #fff5f5, #fdecec); box-shadow: 0 0 12px rgba(220,38,38,0.16); }
+  html.noc-day .dev-card .nm { color: #0f172a; }
+  html.noc-day .dev-badge.up { background: rgba(4,120,87,0.10); color: #047857; }
+  html.noc-day .dev-badge.down { background: rgba(220,38,38,0.10); color: #b91c1c; }
+  html.noc-day .dev-badge.pathdown { background: rgba(180,83,9,0.12); color: #b45309; }
+  html.noc-day .dev-badge.paused { background: rgba(100,116,139,0.12); color: #475569; }
+  html.noc-day .dev-card .ip { color: #0369a1; }
+  html.noc-day .dev-card .loc-tag { color: #6d28d9; background: rgba(109,40,217,0.08); border-color: rgba(109,40,217,0.20); }
+  html.noc-day .dev-card .parent-info { color: #64748b; }
+  html.noc-day footer { border-top-color: #dbe3ef; }
 </style>
+<script>
+  // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
+  try {
+    if (localStorage.getItem('nm.publicTheme') === 'light') document.documentElement.classList.add('noc-day');
+  } catch (e) {}
+</script>
 </head>
 <body>
+
+  <!-- Top Header -->
   <header>
-    <h1>🖥️ مراقبة الشبكة — NOC</h1>
-    <div style="display:flex; gap:10px; align-items:center;">
+    <div class="brand">
+      <span class="brand-icon">🖥️</span>
+      <div>
+        <h1>مراقبة الشبكة — NOC</h1>
+        <span class="tag">Network Operations Center v2.8.5</span>
+      </div>
+    </div>
+    <div class="header-actions">
       <span id="clock">—</span>
-      <button class="fs" onclick="document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()">⛶ ملء الشاشة</button>
+      <button class="btn-action" id="noc-theme-toggle" onclick="nocToggleTheme()" title="تبديل الوضع النهاري/الليلي (يُحفظ ويُشارَك مع الصفحة العامة)">
+        ☀️ وضع نهاري
+      </button>
+      <button class="btn-action" id="btn-audio" onclick="toggleAudioAlert()" title="تشغيل تنبيه صوتي عند انقطاع أي جهاز">
+        <span id="audio-icon">🔔</span> تنبيه صوتي
+      </button>
+      <button class="btn-action" onclick="toggleFullscreen()">
+        ⛶ ملء الشاشة
+      </button>
     </div>
   </header>
 
+  <!-- Counters Bar -->
   <div class="counters">
-    <div class="counter"><div class="num ok" id="c-up">—</div><div class="lbl">متصل</div></div>
-    <div class="counter"><div class="num bad" id="c-down">—</div><div class="lbl">منقطع</div></div>
-    <div class="counter"><div class="num warn" id="c-path">—</div><div class="lbl">مسدود عبر المسار</div></div>
-    <div class="counter"><div class="num info" id="c-total">—</div><div class="lbl">إجمالي الأجهزة</div></div>
+    <div class="counter c-ok">
+      <div class="num" id="c-up">—</div>
+      <div class="lbl">🟢 أجهزة متصلة (Online)</div>
+    </div>
+    <div class="counter c-bad">
+      <div class="num" id="c-down">—</div>
+      <div class="lbl">🔴 أجهزة منقطعة (Offline)</div>
+    </div>
+    <div class="counter c-warn">
+      <div class="num" id="c-path">—</div>
+      <div class="lbl">⛔ مسدودة عبر المسار (Blocked)</div>
+    </div>
+    <div class="counter c-purple">
+      <div class="num" id="c-locs">—</div>
+      <div class="lbl">🏢 إجمالي المواقع والمباني</div>
+    </div>
+    <div class="counter c-info">
+      <div class="num" id="c-total">—</div>
+      <div class="lbl">📊 إجمالي الأجهزة النشطة</div>
+    </div>
   </div>
 
-  <div id="map-section">
-    <div class="section-title">🗺️ خريطة الشبكة — كما رسمها الأدمن (عرض فقط)</div>
-    <div id="map-board"><div id="map-board-inner"><svg class="mv-links" xmlns="http://www.w3.org/2000/svg"></svg></div></div>
+  <!-- Filter & Navigation Toolbar -->
+  <div class="toolbar">
+    <div class="views-tabs">
+      <button class="tab-btn active" data-view="all" onclick="setViewMode('all')">عرض شامل</button>
+      <button class="tab-btn" data-view="hero" onclick="setViewMode('hero')">🔗 مسار الإنترنت</button>
+      <button class="tab-btn" data-view="map" onclick="setViewMode('map')">🗺️ خريطة المباني</button>
+      <button class="tab-btn" data-view="grid" onclick="setViewMode('grid')">🖧 الأجهزة حسب النوع</button>
+    </div>
+    <div class="filter-controls">
+      <input type="text" id="search-input" class="search-box" placeholder="🔍 بحث بالاسم أو الآي بي..." oninput="onSearchOrFilterChange()">
+      <button class="filter-pill active" data-st="all" onclick="setStatusFilter('all')">الكل</button>
+      <button class="filter-pill" data-st="down" onclick="setStatusFilter('down')">🔴 المنقطع فقط</button>
+      <button class="filter-pill" data-st="up" onclick="setStatusFilter('up')">🟢 المتصل</button>
+    </div>
   </div>
-  <div id="content"><p style="color:#475569">جاري التحميل…</p></div>
-  <div id="updated">—</div>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main id="noc-main-content">
+    
+    <!-- 1. HERO BACKBONE UPLINK -->
+    <section id="hero-section">
+      <div class="section-title">
+        <span>🔗 مسار الإنترنت والبنية التحتية الرئيسية (Backbone Uplink)</span>
+        <span class="badge" id="hero-status-badge">نشط</span>
+        <div class="bar"></div>
+      </div>
+      <div class="hero-chain" id="hero-chain-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- 2. SITES & BUILDINGS MAP -->
+    <section id="map-section">
+      <div class="section-title">
+        <span>🗺️ خريطة الشبكة والمباني (Sites & Locations Topology)</span>
+        <span class="badge" id="map-locs-count">—</span>
+        <div class="bar"></div>
+      </div>
+      <div class="map-container">
+        <div id="map-empty-note" class="noc-board-note" hidden>
+          لا توجد مواقع مرسومة على الخريطة بعد — ارسمها من لوحة التحكم ← وضع الرسم (💾 حفظ التخطيط).
+        </div>
+        <div class="map-wrapper" id="map-wrapper">
+          <div id="map-board-inner">
+            <svg class="mv-links" width="2800" height="1450" xmlns="http://www.w3.org/2000/svg" id="map-svg-links"></svg>
+            <div id="map-cards-container"></div>
+          </div>
+        </div>
+        <div class="map-controls">
+          <button class="map-btn" onclick="zoomMap(0.15)" title="تكبير">+</button>
+          <button class="map-btn" onclick="zoomMap(-0.15)" title="تصغير">−</button>
+          <button class="map-btn" onclick="resetMapZoom()" title="إعادة ضبط">↺</button>
+          <button class="map-btn" onclick="fitMapToScreen()" title="ملاءمة الشاشة" style="font-size:0.85rem">⛶</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. DEVICES CATEGORIZED BY TYPE -->
+    <section id="categories-section">
+      <div class="section-title">
+        <span>🖧 أجهزة الشبكة مصنفة حسب النوع (Categorized Assets)</span>
+        <span class="badge" id="devices-count-badge">—</span>
+        <div class="bar"></div>
+      </div>
+      <div id="categories-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div>
+      <span class="live-dot"></span>
+      <span id="update-status" style="margin-inline-start:6px">مراقبة حية — يتحدث تلقائياً كل 10 ثوانٍ</span>
+    </div>
+    <div id="last-updated-time">آخر تحديث: —</div>
+  </footer>
 
 <script>
-(function () {
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
+(function() {
+  'use strict';
 
-  function statusInfo(n) {
-    if (n.type === 'location') return { cls: 'up', st: '🏢 ' + (n.kind === 'building' ? 'مبنى' : n.kind === 'internet' ? 'بوابة إنترنت' : 'موقع') };
-    if (n.status === 'offline') return { cls: 'down', st: '🔴 منقطع' };
-    if (n.status === 'paused') return { cls: 'paused', st: '⏸ موقوف' };
-    if (n.status === 'unknown') return { cls: 'unknown', st: '❔ غير معروف' };
-    return { cls: 'up', st: '🟢 متصل' };
+  // ── State Variables ──
+  let rawTopology = [];
+  let allDevices = [];
+  let allLocations = [];
+  let locById = new Map();
+  let devById = new Map();
+  let searchFilter = '';
+  let statusFilter = 'all'; // 'all', 'down', 'up'
+  let currentView = 'all';   // 'all', 'hero', 'map', 'grid'
+  let mapZoomLevel = 1.0;
+  let audioAlertEnabled = false;
+  let previousDownIds = new Set();
+  let audioCtx = null;
+
+  // ── Smart Default Layout Coordinates for Locations (Width: 330px per card) ──
+  // If a location has pos_x/pos_y saved in DB, saved coords are used 100%.
+  // If pos_x is null, these carefully planned non-overlapping positions are used.
+  const DEFAULT_LOC_POS = {
+    18: { x: 1280, y: 15 },   // Internet-Gateway (Center Top)
+    19: { x: 1280, y: 120 },  // المبنى الادارى (Under Gateway)
+    8:  { x: 890,  y: 380 },  // الادارة-الدور الارضى
+    17: { x: 890,  y: 720 },  // غرفة الامن (Child of Floor 8)
+    9:  { x: 1280, y: 380 },  // الادارة-الدور الثانى
+    10: { x: 1670, y: 380 },  // الادارة-الدور الثالث (Main server cluster)
+    16: { x: 1310, y: 720 },  // عنبر منعم
+    13: { x: 1690, y: 700 },  // عنبر الكتاين (Admin saved pos)
+    14: { x: 2020, y: 700 },  // البوفية (Admin saved pos)
+    15: { x: 2350, y: 700 },  // عنبر المخزن (Admin saved pos)
+    11: { x: 2020, y: 1040 }, // الورشة-1 (Child of Bofeh)
+    12: { x: 2350, y: 1040 }, // الورشة-2 (Child of Warsha 1)
+  };
+
+  const TYPE_CONFIG = {
+    'Firewall':     { icon: '🛡️', title: 'جدار الحماية والبوابات (Firewall & Gateways)', order: 1 },
+    'Server':       { icon: '🖥️', title: 'الخوادم والأنظمة المركزية (Core Servers)', order: 2 },
+    'Switch':       { icon: '🔀', title: 'السويتشات وموزعات الشبكة (Switches)', order: 3 },
+    'Access Point': { icon: '📶', title: 'نقاط الواي فاي والشبكة اللاسلكية (Access Points)', order: 4 },
+    'NVR/DVR':      { icon: '📹', title: 'كاميرات المراقبة وأجهزة التسجيل (NVR & DVR)', order: 5 },
+    'Printer':      { icon: '🖨️', title: 'الطابعات وماكينات التصوير (Printers & Scanners)', order: 6 },
+    'Other':        { icon: '📌', title: 'أجهزة وأنظمة أخرى (Other Devices)', order: 7 }
+  };
+
+  const KIND_LABELS = {
+    'building': '🏢 مبنى إداري',
+    'internet': '🌐 بوابة إنترنت',
+    'floor':    '📐 طابق',
+    'room':     '🚪 غرفة',
+    'rack':     '🗄️ خزانة رك',
+    'site':     '🏛️ موقع / عنبر',
+    'zone':     '📍 منطقة'
+  };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
   }
 
-  function markPathDown(nodes, parentDown) {
-    for (const n of nodes) {
-      const pd = parentDown || n.status === 'offline';
-      if (n.type === 'device') {
-        n.pathDown = !!(pd && n.status !== 'offline' && n.status !== 'paused');
-      }
-      if (n.children && n.children.length) markPathDown(n.children, pd);
-    }
-  }
   function natKey(n) {
     const m = String(n.name || '').match(/(\d+)\s*$/);
     if (m) return parseInt(m[1], 10);
     const ipm = String(n.ip || '').match(/(\d+)\s*$/);
     return ipm ? parseInt(ipm[1], 10) : 999999;
   }
-  function sortLevel(list) { list.sort((a, b) => natKey(a) - natKey(b)); }
 
-  function chainCardHtml(n) {
-    const s = statusInfo(n);
-    if (n.type === 'location') {
-      return '<div class="chain-card loc">'
-        + '<div class="nm">' + esc(n.name) + '</div>'
-        + '<div class="meta">' + s.st + '</div>'
-        + '</div>';
-    }
-    const cls = n.status === 'offline' ? 'down' : n.pathDown ? 'pathdown' : 'up';
-    const stCls = n.status === 'offline' ? 'down' : n.pathDown ? 'pathdown' : 'up';
-    return '<div class="chain-card ' + cls + '">'
-      + '<div class="nm">' + esc(n.name) + '</div>'
-      + '<div class="meta">' + esc(n.ip) + (n.device_type_name ? ' — ' + esc(n.device_type_name) : '') + '</div>'
-      + '<div class="st ' + stCls + '">' + s.st + '</div>'
-      + '</div>';
-  }
-  function linkHtml(n) {
-    return '<div class="chain-link' + (n.status === 'offline' ? ' down' : '') + '"></div>';
-  }
-
-  // السلسلة الرئيسية: نمشي من الجذر تابعًا الطفل الوحيد في كل مستوى.
-  function chainPathHtml(root) {
-    const path = [root];
-    let cur = root;
-    while (cur.children && cur.children.length === 1) { cur = cur.children[0]; path.push(cur); }
-    let html = '';
-    for (let i = 0; i < path.length; i++) {
-      html += chainCardHtml(path[i]);
-      if (i < path.length - 1) html += linkHtml(path[i + 1]);
-    }
-    return html;
-  }
-
-  // مجموعات حسب النوع — ترتيب ثابت منطقي.
-  const TYPE_ORDER = ['Firewall', 'Router', 'Switch', 'Server', 'Access Point', 'NVR/DVR', 'Printer'];
-  const TYPE_LABEL = { 'Firewall': '🛡️ Firewalls', 'Router': '🌐 Routers', 'Switch': '🔀 سويتشات', 'Server': '🖥️ سيرفرات', 'Access Point': '📶 نقاط واي فاي', 'NVR/DVR': '📹 كاميرات NVR/DVR', 'Printer': '🖨️ طابعات وماكينات تصوير' };
-
-  function groupCardsHtml(nodes) {
-    const groups = new Map();
-    for (const n of nodes) {
-      if (n.type === 'location') continue; // المواقع تعرض في قسم السلسلة، ليست أجهزة.
-      const t = n.device_type_name || 'أخرى';
-      if (!groups.has(t)) groups.set(t, []);
-      groups.get(t).push(n);
-    }
-    const keys = [...groups.keys()].sort((a, b) => {
-      const ia = TYPE_ORDER.indexOf(a), ib = TYPE_ORDER.indexOf(b);
-      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b, 'ar');
-    });
-    let html = '';
-    for (const k of keys) {
-      const list = groups.get(k).sort((a, b) => natKey(a) - natKey(b));
-      html += '<div class="type-group">'
-        + '<div class="type-head"><span class="nm">' + esc(TYPE_LABEL[k] || '📌 ' + k) + '</span>'
-        + '<span class="cnt">' + list.length + ' جهاز</span><span class="bar"></span></div>'
-        + '<div class="cards-grid">'
-        + list.map((n) => {
-            const s = statusInfo(n);
-            const cls = n.status === 'offline' ? 'down' : n.pathDown ? 'pathdown' : s.cls;
-            const stCls = n.status === 'offline' ? 'down' : s.cls === 'unknown' ? 'paused' : s.cls;
-            const badge = n.pathDown ? '<span class="path-badge">⛔ مسدود عبر الأب</span>' : '';
-            return '<div class="s-card ' + cls + '">'
-              + '<div class="nm" title="' + esc(n.name) + '">' + esc(n.name) + '</div>'
-              + '<div class="meta">' + esc(n.ip) + '</div>'
-              + '<div class="st ' + stCls + '">' + s.st + ' ' + badge + '</div>'
-              + '</div>';
-          }).join('')
-        + '</div></div>';
-    }
-    return html;
-  }
-
-  // إيجاد آخر عقدة في المسار الخطي (أول عقدة عندها أكثر من ابن أو صفر أبناء).
-  function chainTail(root) {
-    let cur = root;
-    while (cur.children && cur.children.length === 1) cur = cur.children[0];
-    return cur;
-  }
-
-  function render(data) {
-    markPathDown(data, false);
-    sortLevel(data);
-    const root = data[0];
-    let html = '';
-    if (root) {
-      // السلسلة الرئيسية: المسار من الجذر (الإنترنت) حتى بوابة الشبكة الداخلية.
-      html += '<div class="section-title">🔗 مسار الإنترنت</div><div class="chain-row">' + chainPathHtml(root) + '</div>';
-      // أجهزة الشبكة الداخلية = أبناء آخر عقدة في المسار (بوابة 88.x).
-      const tail = chainTail(root);
-      const inner = tail.children || [];
-      if (inner.length) {
-        html += '<div class="section-title">🖧 أجهزة الشبكة الداخلية — خلف ' + esc(tail.name) + ' (' + inner.length + ')</div>';
-        html += groupCardsHtml(inner);
-      }
+  // ── Audio Alert System ──
+  window.toggleAudioAlert = function() {
+    audioAlertEnabled = !audioAlertEnabled;
+    const btn = document.getElementById('btn-audio');
+    const icon = document.getElementById('audio-icon');
+    if (audioAlertEnabled) {
+      btn.classList.add('active');
+      icon.textContent = '🔊';
+      playAlertBeep(520, 0.15); // test sound
     } else {
-      html = '<p style="color:#475569">لا توجد أجهزة.</p>';
+      btn.classList.remove('active');
+      icon.textContent = '🔔';
     }
-    document.getElementById('content').innerHTML = html;
-    const flat = [];
-    (function count(nodes) { for (const n of nodes) { flat.push(n); count(n.children || []); } })(data);
-    const up = flat.filter((n) => n.status === 'online').length;
-    const down = flat.filter((n) => n.status === 'offline').length;
-    const path = flat.filter((n) => n.pathDown).length;
-    document.getElementById('c-up').textContent = up;
-    document.getElementById('c-down').textContent = down;
-    document.getElementById('c-path').textContent = path;
-    document.getElementById('c-total').textContent = flat.length;
-    document.getElementById('updated').textContent =
-      'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG') + ' — يتحدث تلقائيًا كل 10 ثوانٍ';
-  }
+  };
 
-  // ── v2.8.3 — خريطة الشبكة (وضع الرسم للعرض فقط) ──
-  // نفس بيانات /api/topology — المباني وأجهزتها على مواضعها المحفوظة (pos_x/pos_y).
-  function escMV(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    }[c]));
-  }
-  function mvStatus(n) {
-    if (n.type === 'location') return { cls: '', st: '', color: '#a78bfa' };
-    if (n.status === 'offline') return { cls: 'down', st: '🔴 منقطع', color: '#ef4444' };
-    if (n.status === 'paused') return { cls: 'paused', st: '⏸ موقوف', color: '#94a3b8' };
-    return { cls: 'up', st: '🟢 متصل', color: '#22c55e' };
-  }
-  function mvKind(kind) {
-    if (kind === 'building') return '🏢 مبنى';
-    if (kind === 'internet') return '🌐 بوابة إنترنت';
-    if (kind === 'floor') return '📐 طابق';
-    if (kind === 'room') return '🚪 غرفة';
-    if (kind === 'rack') return '🗄️ خزانة';
-    if (kind === 'site') return '🏛️ موقع';
-    return '📍 منطقة';
-  }
-  // أبناء المبنى: أجهزة location_id = المبنى (نفس مصدر وضع الرسم).
-  function mvKids(data, locId) {
-    const kids = [];
-    (function walk(list) {
-      for (const n of list) {
-        if (n.type === 'device' && Number(n.location_id) === Number(locId)) kids.push(n);
-        if (n.children) walk(n.children);
-      }
-    })(data);
-    return kids;
-  }
-
-  function renderMap(data) {
-    const board = document.getElementById('map-board-inner');
-    if (!board) return;
-    // تجميع العقد المسطحة.
-    const flat = [];
-    (function walk(list) { for (const n of list) { flat.push(n); if (n.children) walk(n.children); } })(data);
-    const locs = flat.filter((n) => n.type === 'location' && n.pos_x != null && n.pos_y != null);
-    const locIds = new Set(locs.map((l) => Number(l.location_id)));
-    // أجهزة مستقلة على اللوحة: لها pos ولا location_id مرسوم (مثل DNS).
-    const solo = flat.filter((n) => n.type === 'device' && n.pos_x != null && n.pos_y != null
-      && !(n.location_id != null && locIds.has(Number(n.location_id))));
-
-    let cards = '';
-    // كروت المباني + أجهزتها.
-    for (const l of locs) {
-      const kids = mvKids(data, l.location_id);
-      const up = kids.filter((k) => k.status === 'online').length;
-      const down = kids.filter((k) => k.status === 'offline').length;
-      const borderCls = !kids.length ? '' : down > 0 ? 'down' : 'up';
-      const rows = kids.map((k, i) => {
-        const st = mvStatus(k);
-        return '<div class="mv-inner-row">'
-          + '<span class="mv-dot" style="background:' + st.color + '"></span>'
-          + '<span class="mv-inner-type">🖥️ ' + escMV(k.device_type_name || 'جهاز') + '</span>'
-          + '<span class="mv-inner-nm">' + escMV(k.name) + '</span>'
-          + '<span class="mv-inner-ip">' + escMV(k.ip) + '</span>'
-          + '<span class="mv-inner-st">' + st.st + '</span>'
-          + '</div>';
-      }).join('');
-      cards += '<div class="mv-card loc ' + borderCls + '" style="left:' + l.pos_x + 'px; top:' + l.pos_y + 'px">'
-        + '<div class="mv-head"><b class="mv-nm">' + escMV(l.name) + '</b>'
-        + '<span class="mv-count">🟢 ' + up + ' · 🔴 ' + down + '</span></div>'
-        + '<div class="mv-kind">' + escMV(mvKind(l.kind)) + '</div>'
-        + (kids.length ? '<div class="mv-inner">' + rows + '</div>' : '<div class="mv-empty">لا أجهزة داخل هذا المبنى</div>')
-        + '</div>';
-    }
-    // كروت الأجهزة المستقلة (DNS وأمثالها).
-    for (const d of solo) {
-      const st = mvStatus(d);
-      cards += '<div class="mv-card dev ' + st.cls + '" style="left:' + d.pos_x + 'px; top:' + d.pos_y + 'px">'
-        + '<div class="mv-nm">' + escMV(d.name) + '</div>'
-        + '<div class="mv-meta">' + escMV(d.ip) + (d.device_type_name ? ' — ' + escMV(d.device_type_name) : '') + '</div>'
-        + '<div class="mv-st ' + st.cls + '">' + st.st + '</div>'
-        + '</div>';
-    }
-    // خطوط الوصل: مبنى → مبنى الأب (parent_id) بلون بنفسجي.
-    // v2.8.4 — مرتكز وإحداثيات مطابقة تمامًا لخطوط «وضع الرسم» في لوحة التحكم
-    // (منتصف ترويسة البطاقة: عرض 320 / ارتفاع ترويسة 17) مع نفس سماكة/عتامة الخط.
-    let lines = '';
-    for (const l of locs) {
-      if (!l.parent_id) continue;
-      const parent = locs.find((o) => Number(o.location_id) === Number(l.parent_id));
-      if (!parent) continue;
-      const ax = l.pos_x + 160, ay = l.pos_y + 17;
-      const bx = parent.pos_x + 160, by = parent.pos_y + 17;
-      lines += '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" stroke="#a78bfa" stroke-width="3" opacity="0.75" />';
-    }
-    board.innerHTML = '<svg class="mv-links" width="1800" height="1200">' + lines + '</svg>' + cards;
-  }
-
-  async function tick() {
+  function playAlertBeep(freq = 660, dur = 0.25) {
     try {
-      const r = await fetch('/api/topology', { credentials: 'same-origin' });
-      const j = await r.json();
-      if (j.success && Array.isArray(j.data)) { render(j.data); renderMap(j.data); }
-    } catch (e) { /* تعيد المحاولة في الدورة التالية */ }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    } catch (_) {}
   }
 
+  // ── Fullscreen Toggle ──
+  window.toggleFullscreen = function() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+    }
+  };
+
+  // ── View Mode Switcher ──
+  window.setViewMode = function(mode) {
+    currentView = mode;
+    document.querySelectorAll('.views-tabs .tab-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-view') === mode);
+    });
+    const heroSec = document.getElementById('hero-section');
+    const mapSec = document.getElementById('map-section');
+    const catSec = document.getElementById('categories-section');
+
+    heroSec.style.display = (mode === 'all' || mode === 'hero') ? 'block' : 'none';
+    mapSec.style.display  = (mode === 'all' || mode === 'map')  ? 'block' : 'none';
+    catSec.style.display  = (mode === 'all' || mode === 'grid') ? 'block' : 'none';
+  };
+
+  // ── Filter Controls ──
+  window.setStatusFilter = function(st) {
+    statusFilter = st;
+    document.querySelectorAll('.filter-controls .filter-pill').forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-st') === st);
+    });
+    renderAll();
+  };
+
+  window.onSearchOrFilterChange = function() {
+    searchFilter = (document.getElementById('search-input').value || '').trim().toLowerCase();
+    renderAll();
+  };
+
+  // ── Map Zoom Controls ──
+  window.zoomMap = function(delta) {
+    mapZoomLevel = Math.max(0.4, Math.min(1.8, mapZoomLevel + delta));
+    applyMapTransform();
+  };
+
+  window.resetMapZoom = function() {
+    mapZoomLevel = 1.0;
+    applyMapTransform();
+  };
+
+  window.fitMapToScreen = function() {
+    const wrap = document.getElementById('map-wrapper');
+    if (!wrap) return;
+    const availW = wrap.clientWidth;
+    const targetW = 2750;
+    mapZoomLevel = Math.max(0.4, Math.min(1.1, availW / targetW));
+    applyMapTransform();
+  };
+
+  function applyMapTransform() {
+    const inner = document.getElementById('map-board-inner');
+    if (inner) inner.style.transform = `scale(${mapZoomLevel})`;
+  }
+
+  // ── Flatten Topology Tree ──
+  function flattenTree(roots) {
+    allDevices = [];
+    allLocations = [];
+    locById = new Map();
+    devById = new Map();
+
+    function walk(list) {
+      for (const n of list) {
+        if (n.type === 'location') {
+          allLocations.push(n);
+          locById.set(Number(n.location_id), n);
+        } else if (n.type === 'device') {
+          allDevices.push(n);
+          devById.set(Number(n.id), n);
+        }
+        if (n.children && n.children.length) walk(n.children);
+      }
+    }
+    walk(roots);
+  }
+
+  // ── Update Counters ──
+  function updateCounters() {
+    const total = allDevices.length;
+    const up = allDevices.filter(d => d.status === 'online').length;
+    const down = allDevices.filter(d => d.status === 'offline').length;
+    const path = allDevices.filter(d => d.pathDown).length;
+
+    const elUp = document.getElementById('c-up');
+    const elDown = document.getElementById('c-down');
+    const elPath = document.getElementById('c-path');
+    const elLocs = document.getElementById('c-locs');
+    const elTotal = document.getElementById('c-total');
+
+    if (elUp) elUp.textContent = up;
+    if (elDown) {
+      elDown.textContent = down;
+      elDown.classList.toggle('has-bad', down > 0);
+    }
+    if (elPath) elPath.textContent = path;
+    if (elLocs) elLocs.textContent = allLocations.length;
+    if (elTotal) elTotal.textContent = total;
+
+    // Check for new downs and sound alert if enabled
+    if (audioAlertEnabled) {
+      const currentDownIds = new Set(allDevices.filter(d => d.status === 'offline').map(d => d.id));
+      for (const id of currentDownIds) {
+        if (!previousDownIds.has(id)) {
+          playAlertBeep(750, 0.4);
+          break;
+        }
+      }
+      previousDownIds = currentDownIds;
+    }
+  }
+
+  // ── 1. RENDER HERO BACKBONE UPLINK ──
+  function renderHero() {
+    const container = document.getElementById('hero-chain-container');
+    if (!container) return;
+
+    // v2.8.5 — شارة القسم كانت ثابتة «نشط» في HTML: نربطها بوجود بيانات فعلية.
+    const heroBadge = document.getElementById('hero-status-badge');
+    if (heroBadge) heroBadge.textContent = (allDevices.length || allLocations.length) ? 'نشط' : 'غير مُهيَّأ';
+
+    // 1. Find Gateway (v2.8.5 — بلا كائن وهمي: لو غير مُعرَّف نعرض حالة محايدة صريحة)
+    const gateway = allLocations.find(l => l.kind === 'internet') || null;
+    
+    // 2. Find Primary Firewall (Sophos)
+    const firewall = allDevices.find(d => (d.name && d.name.toLowerCase().includes('sophos')) || d.device_type_name === 'Firewall')
+                  || allDevices.find(d => d.ip === '192.168.88.1');
+
+    // 3. Core Servers Pool
+    const coreServers = allDevices.filter(d => d.device_type_name === 'Server');
+    const serversDown = coreServers.filter(s => s.status === 'offline').length;
+    const serversUp = coreServers.filter(s => s.status === 'online').length;
+
+    // 4. DNS Resolver
+    const dns = allDevices.find(d => d.name === 'DNS' || d.ip === '8.8.8.8');
+
+    let html = '';
+
+    // Card 1: Internet Gateway
+    html += `
+      <div class="hero-card ${gateway ? 'up' : 'neutral'}">
+        <span class="role">🌐 المدخل الرئيسي</span>
+        <div class="nm">${gateway ? esc(gateway.name) : 'لا يوجد مدخل إنترنت مُعرَّف'}</div>
+        <div class="meta">${gateway ? 'ISP Gateway · مزود الخدمة' : 'أضِف موقعًا نوعه internet من لوحة التحكم'}</div>
+        <div class="st-badge ${gateway ? 'up' : 'neutral'}">${gateway ? '🟢 بوابة متصلة' : '⚪ غير مُهيَّأ'}</div>
+      </div>
+    `;
+
+    // Link 1 -> 2
+    const fwDown = firewall ? firewall.status === 'offline' : false;
+    html += `<div class="hero-link ${fwDown ? 'down' : ''}"></div>`;
+
+    // Card 2: Core Firewall (Sophos)
+    if (firewall) {
+      const isDown = firewall.status === 'offline';
+      const isPath = !!firewall.pathDown;
+      const cls = isDown ? 'down' : isPath ? 'warn' : 'up';
+      const stLabel = isDown ? '🔴 منقطع عن الخدمة' : isPath ? '⛔ مسدود عبر المسار' : '🟢 متصل ومحمي';
+      html += `
+        <div class="hero-card ${cls}">
+          <span class="role">🛡️ جدار الحماية المركزي</span>
+          <div class="nm">${esc(firewall.name)}</div>
+          <div class="meta">${esc(firewall.ip)} — ${esc(firewall.device_type_name || 'Firewall')}</div>
+          <div class="st-badge ${cls}">${stLabel}</div>
+        </div>
+      `;
+    }
+
+    // Link 2 -> 3
+    const srvClusterDown = serversDown > 0 && serversUp === 0;
+    html += `<div class="hero-link ${srvClusterDown ? 'down' : ''}"></div>`;
+
+    // Card 3: Servers Core Infrastructure (v2.8.5 — لا «جميع الخوادم تعمل» بلا خوادم مُعرَّفة)
+    const noServers = coreServers.length === 0;
+    const srvCls = noServers ? 'neutral' : (serversDown > 0 ? (serversUp === 0 ? 'down' : 'warn') : 'up');
+    html += `
+      <div class="hero-card ${srvCls}">
+        <span class="role">🖥️ مجمع الخوادم المركزية</span>
+        <div class="nm">خوادم الشبكة الرئيسية</div>
+        <div class="meta">${coreServers.length} خوادم (Odoo · ESXi · SIS · Synology)</div>
+        <div class="st-badge ${srvCls}">
+          ${noServers ? '⚪ لا توجد خوادم مُعرَّفة' : (serversDown === 0 ? '🟢 جميع الخوادم تعمل' : `⚠️ ${serversDown} خوادم منقطعة`)}
+        </div>
+      </div>
+    `;
+
+    // Card 4: DNS (if present)
+    if (dns) {
+      html += `<div class="hero-link ${dns.status === 'offline' ? 'down' : ''}"></div>`;
+      const dnsDown = dns.status === 'offline';
+      html += `
+        <div class="hero-card ${dnsDown ? 'down' : 'up'}">
+          <span class="role">🌍 فحص الاتصال الخارجي</span>
+          <div class="nm">${esc(dns.name)}</div>
+          <div class="meta">${esc(dns.ip)} — Google Public DNS</div>
+          <div class="st-badge ${dnsDown ? 'down' : 'up'}">${dnsDown ? '🔴 انقطاع الاستجابة' : '🟢 اتصال إنترنت مستقر'}</div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+  }
+
+  // ── 2. RENDER MAP BOARD ──
+  function renderMap() {
+    const cardsContainer = document.getElementById('map-cards-container');
+    const svgLinks = document.getElementById('map-svg-links');
+    if (!cardsContainer || !svgLinks) return;
+
+    // Build position map for locations that have saved positions
+    const posMap = new Map();
+    for (const loc of allLocations) {
+      const lid = Number(loc.location_id);
+      if (loc.pos_x != null && loc.pos_y != null) {
+        posMap.set(lid, { x: Number(loc.pos_x), y: Number(loc.pos_y) });
+      }
+    }
+
+    // SVG Connection Lines (Parent Location -> Child Location)
+    let linesSvg = '';
+    for (const loc of allLocations) {
+      if (!loc.parent_id) continue;
+      const lid = Number(loc.location_id);
+      const pid = Number(loc.parent_id);
+      const childPos = posMap.get(lid);
+      const parentPos = posMap.get(pid);
+
+      if (childPos && parentPos) {
+        const ax = childPos.x + 165, ay = childPos.y + 20;
+        const bx = parentPos.x + 165, by = parentPos.y + 40;
+
+        // Smooth cubic bezier or clean line
+        const midY = (ay + by) / 2;
+        const pathData = `M ${bx} ${by} C ${bx} ${midY}, ${ax} ${midY}, ${ax} ${ay}`;
+        linesSvg += `
+          <path class="mv-link" d="${pathData}" fill="none" stroke-width="2.5" stroke-dasharray="4 2" />
+          <circle class="mv-dot-child" cx="${ax}" cy="${ay}" r="4" />
+          <circle class="mv-dot-parent" cx="${bx}" cy="${by}" r="4" />
+        `;
+      }
+    }
+    svgLinks.innerHTML = linesSvg;
+
+    // Render Location Cards
+    let cardsHtml = '';
+    let renderedLocs = 0; // v2.8.5 — عدد بطاقات المواقع المرسومة فعلًا (لشارة القسم).
+    for (const loc of allLocations) {
+      const lid = Number(loc.location_id);
+      const pos = posMap.get(lid);
+      if (!pos) continue;
+      renderedLocs++;
+
+      // Filter devices inside this location
+      const directDevices = allDevices.filter(d => Number(d.location_id) === lid);
+      const upCount = directDevices.filter(d => d.status === 'online').length;
+      const downCount = directDevices.filter(d => d.status === 'offline').length;
+      const borderCls = directDevices.length === 0 ? 'neutral' : (downCount > 0 ? 'down' : 'up');
+
+      // Filter rows if search query is active
+      const visibleDevices = directDevices.filter(d => {
+        if (!searchFilter) return true;
+        return (d.name && d.name.toLowerCase().includes(searchFilter)) ||
+               (d.ip && d.ip.includes(searchFilter));
+      });
+
+      const rowsHtml = visibleDevices.map(d => {
+        const isDown = d.status === 'offline';
+        const isPath = !!d.pathDown;
+        // v2.8.5 — لون النقطة صار صنفًا (يتبدّل مع الوضع النهاري/الليلي) بدل ستايل مضمّن.
+        const dotCls = isDown ? 'down' : isPath ? 'path' : (d.status === 'paused' ? 'paused' : 'up');
+        return `
+          <div class="mv-inner-row ${isDown ? 'down' : ''}">
+            <span class="mv-dot ${dotCls}"></span>
+            <span class="mv-inner-type">${esc(d.device_type_name || 'جهاز')}</span>
+            <span class="mv-inner-nm" title="${esc(d.name)}">${esc(d.name)}</span>
+            <span class="mv-inner-ip">${esc(d.ip)}</span>
+          </div>
+        `;
+      }).join('');
+
+      const kindName = KIND_LABELS[loc.kind] || '📍 موقع';
+
+      cardsHtml += `
+        <div class="mv-card loc ${borderCls}" style="left:${pos.x}px; top:${pos.y}px">
+          <div class="mv-head">
+            <span class="mv-nm">${esc(loc.name)}</span>
+            <span class="mv-count">🟢 ${upCount} · 🔴 ${downCount}</span>
+          </div>
+          <div class="mv-subhead">
+            <span>${kindName}</span>
+            <span>${directDevices.length} جهاز</span>
+          </div>
+          ${directDevices.length ? `<div class="mv-inner">${rowsHtml}</div>` : `<div class="mv-empty">مبنى تنظيمي — لا أجهزة مباشرة</div>`}
+        </div>
+      `;
+    }
+
+    // v2.8.5 — الشارة كانت ثابتة «12 موقع» في HTML: تعكس الآن ما هو مرسوم على الخريطة.
+    const locBadge = document.getElementById('map-locs-count');
+    if (locBadge) locBadge.textContent = `${renderedLocs} موقع`;
+    // ملاحظة الخريطة الفارغة: عنصر ثابت داخل .map-container (يظل مرئيًا مهما كان التمرير/RTL).
+    const note = document.getElementById('map-empty-note');
+    if (note) note.hidden = renderedLocs > 0;
+    cardsContainer.innerHTML = cardsHtml;
+  }
+
+  // ── 3. RENDER CATEGORIZED DEVICES GRID ──
+  function renderCategories() {
+    const container = document.getElementById('categories-container');
+    if (!container) return;
+
+    // Group all devices by category
+    const groups = new Map();
+    let shownCount = 0; // v2.8.5 — عدد الأجهزة المعروضة فعلًا بعد الفلاتر (لشارة القسم).
+    for (const d of allDevices) {
+      // Apply search & status filters
+      if (searchFilter) {
+        const matchName = d.name && d.name.toLowerCase().includes(searchFilter);
+        const matchIp = d.ip && d.ip.includes(searchFilter);
+        const matchLoc = d.location_id && locById.get(Number(d.location_id)) && locById.get(Number(d.location_id)).name.toLowerCase().includes(searchFilter);
+        if (!matchName && !matchIp && !matchLoc) continue;
+      }
+      if (statusFilter === 'down' && d.status !== 'offline') continue;
+      if (statusFilter === 'up' && d.status !== 'online') continue;
+
+      const rawType = d.device_type_name || 'Other';
+      const typeKey = TYPE_CONFIG[rawType] ? rawType : 'Other';
+
+      if (!groups.has(typeKey)) groups.set(typeKey, []);
+      groups.get(typeKey).push(d);
+      shownCount++;
+    }
+
+    // v2.8.5 — الشارة كانت ثابتة «39 جهاز» في HTML ولا يحدّثها أي كود (عدد وهمي).
+    const devBadge = document.getElementById('devices-count-badge');
+    if (devBadge) devBadge.textContent = `${shownCount} جهاز`;
+
+    // Sort categories according to config order
+    const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+      const orderA = (TYPE_CONFIG[a] && TYPE_CONFIG[a].order) || 99;
+      const orderB = (TYPE_CONFIG[b] && TYPE_CONFIG[b].order) || 99;
+      return orderA - orderB;
+    });
+
+    if (sortedKeys.length === 0) {
+      // v2.8.5 — نفرّق بين «لا أجهزة أصلًا» (تثبيت جديد) و«لا نتائج للفلاتر».
+      container.innerHTML = `
+        <div style="text-align:center; padding:30px; color:#64748b; font-size:1.1rem">
+          ${allDevices.length
+            ? 'لا توجد أجهزة مطابقة لخيارات البحث أو الفلتر الحالية.'
+            : 'لا توجد أجهزة بعد — أضِف أجهزة من لوحة التحكم وستظهر هنا تلقائيًّا.'}
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    for (const key of sortedKeys) {
+      const cfg = TYPE_CONFIG[key] || { icon: '📌', title: key };
+      const list = groups.get(key).sort((a, b) => natKey(a) - natKey(b));
+      const up = list.filter(d => d.status === 'online').length;
+      const down = list.filter(d => d.status === 'offline').length;
+
+      html += `
+        <div class="category-group">
+          <div class="category-head">
+            <span class="cat-title">${cfg.icon} ${cfg.title}</span>
+            <span class="cat-badge">${list.length} جهاز</span>
+            <span class="cat-stats">🟢 ${up} متصل &nbsp;·&nbsp; 🔴 ${down} منقطع</span>
+          </div>
+          <div class="device-grid">
+            ${list.map(d => {
+              const isDown = d.status === 'offline';
+              const isPath = !!d.pathDown;
+              const isPaused = d.status === 'paused';
+              const cardCls = isDown ? 'down' : isPath ? 'pathdown' : isPaused ? 'paused' : 'up';
+              const badgeCls = isDown ? 'down' : isPath ? 'pathdown' : isPaused ? 'paused' : 'up';
+              const badgeText = isDown ? '🔴 منقطع' : isPath ? '⛔ مسدود عبر الأب' : isPaused ? '⏸ موقوف' : '🟢 متصل';
+              
+              const loc = d.location_id ? locById.get(Number(d.location_id)) : null;
+              const locName = loc ? loc.name : 'غير محدد';
+              const parentDev = d.parent_id ? devById.get(Number(d.parent_id)) : null;
+
+              return `
+                <div class="dev-card ${cardCls}">
+                  <div class="dev-card-top">
+                    <span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>
+                    <span class="dev-badge ${badgeCls}">${badgeText}</span>
+                  </div>
+                  <div class="dev-card-meta">
+                    <span class="ip">${esc(d.ip)}</span>
+                    <span class="loc-tag" title="الموقع: ${esc(locName)}">📍 ${esc(locName)}</span>
+                  </div>
+                  ${parentDev ? `<div class="parent-info">🔗 متصل عبر: <b>${esc(parentDev.name)}</b></div>` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+  }
+
+  // ── Render All Sections ──
+  function renderAll() {
+    updateCounters();
+    renderHero();
+    renderMap();
+    renderCategories();
+  }
+
+  // ── Fetch Topology API ──
+  async function tick() {
+    const updateStatusEl = document.getElementById('update-status');
+    try {
+      const res = await fetch('/api/topology', { credentials: 'same-origin' });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        rawTopology = json.data;
+        flattenTree(rawTopology);
+        renderAll();
+        
+        const now = new Date();
+        document.getElementById('last-updated-time').textContent = 
+          'آخر تحديث: ' + now.toLocaleTimeString('ar-EG');
+        if (updateStatusEl) updateStatusEl.textContent = 'مراقبة حية — اتصال الخادم نشط';
+      }
+    } catch (err) {
+      if (updateStatusEl) updateStatusEl.textContent = '⚠️ تعذر الوصول للخادم — إعادة المحاولة جارية...';
+    }
+  }
+
+  // ── Live Clock ──
   function clock() {
     const d = new Date();
-    document.getElementById('clock').textContent =
-      d.toLocaleDateString('ar-EG') + ' — ' + d.toLocaleTimeString('ar-EG');
+    const timeStr = d.toLocaleTimeString('ar-EG', { hour12: true });
+    const dateStr = d.toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const clockEl = document.getElementById('clock');
+    if (clockEl) clockEl.textContent = `${dateStr}  ·  ${timeStr}`;
   }
 
+  // ── v2.8.5 — الوضع النهاري: تفضيل مشترك مع الصفحة العامة (nm.publicTheme) ──
+  const THEME_STORAGE_KEY = 'nm.publicTheme';
+  function applyNocTheme(isDay) {
+    document.documentElement.classList.toggle('noc-day', !!isDay);
+    const btn = document.getElementById('noc-theme-toggle');
+    if (btn) btn.textContent = isDay ? '🌙 وضع ليلي' : '☀️ وضع نهاري';
+  }
+  window.nocToggleTheme = function () {
+    const isDay = !document.documentElement.classList.contains('noc-day');
+    applyNocTheme(isDay);
+    try { localStorage.setItem(THEME_STORAGE_KEY, isDay ? 'light' : 'dark'); } catch (e) {}
+  };
+  // مزامنة نص الزر مع الوضع الذي طُبِّق مسبقًا من <head> (قبل أول رسم).
+  applyNocTheme(document.documentElement.classList.contains('noc-day'));
+
+  // ── Initialization ──
   clock();
   setInterval(clock, 1000);
   tick();
-  setInterval(tick, 10000);
+  setInterval(tick, 10000); // 10s auto-refresh
 })();
 </script>
 </body>
