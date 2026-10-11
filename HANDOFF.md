@@ -786,6 +786,17 @@ sudo systemctl restart network-monitor
 - كل ما سبق مُلتزَم ومرفوع (`ee4d88e`)، والمستخدم فعّل الـ workflows اللي كانت `disabled_manually`.
 - أداة تحقق محلية جديدة (غير مُتتبَّعة مثل باقي أدوات `verify/`): `verify/check-workflows.py` — تحليل YAML
   فعلي لكل ملفات `.github` + فحص `bash -n` لسكربت الـ CI.
+- **تنظيف كامل للمستودع (بموافقة المستخدم + توثيق `gh`)**:
+  - دمج 4 تحديثات GitHub Actions (`checkout@7` · `setup-node@7` · `upload-artifact@7` · `action-gh-release@3`)
+    — والـ CI بعدهما **success** ✓.
+  - إغلاق PR #9 بتعليق: يرفع 8 حزم إنتاجية لقفزات major (express 4→5، better-sqlite3 11→13، multer 1→2،
+    bcryptjs 2→3، node-cron 3→4…) ⇒ **مهمة ترحيل مخصّصة مؤجّلة** (لا يُدمج تلقائيًّا).
+  - حذف **كل الفروع القديمة/المدموجة** — تبقّى `main` فقط على الريموت ✓.
+  - وصف المستودع + **18 Topics** (noc · monitoring · appliance · iso · systemd · rtl …) ✓.
+  - **Release v2.8.7** مع `network-monitor-appliance-v2.8.7-amd64.iso` + `SHA256SUMS.txt`
+    (MD5 `5be6bea00e3842e107d7b2ecd6706cf5` · SHA-256 `8c2be73aefb51d63eb0659105f3c4038a5b33a4096adf1304d0e360c6d716aa4`).
+    ملاحظة: رفع ملف 456MB قد يحتاج إعادة محاولة إذا انقطع الرفع — يُكمَل بـ `gh release upload v2.8.7 <file> --clobber`
+    ثم النشر بـ `gh release edit v2.8.7 --draft=false --latest`.
 
 - **السبب الجذري لاحمرار CI دائمًا (اكتُشف 2026-10-11)**: ملف `ci-cd.yml` كان **غير صالح أصلًا** عند GitHub —
   استخدام `secrets` داخل `if:` غير مسموح في ملفات ال workflows ⇒ **كل التشغيلات القديمة كانت startup failure
