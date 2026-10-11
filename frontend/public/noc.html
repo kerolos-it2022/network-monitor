@@ -271,6 +271,9 @@
     border: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;
   }
   .mv-inner-row:hover { background: rgba(255,255,255,0.07); }
+  /* v2.8.8 — صف الجهاز داخل «التخطيط المرسوم» قابل للنقر (يفتح نافذة التفاصيل كما في «خريطة المباني») */
+  .mv-inner-row[data-device-id] { cursor: pointer; }
+  .mv-inner-row[data-device-id]:focus-visible { outline: 2px solid var(--color-info); outline-offset: 1px; }
   .mv-inner-row.down { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); }
   .mv-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .mv-inner-nm { flex: 1; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -791,7 +794,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.8.7</span>
+        <span class="tag">Network Operations Center v2.8.8</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1684,8 +1687,10 @@
         const isPath = !!d.pathDown;
         // v2.8.5 — لون النقطة صار صنفًا (يتبدّل مع الوضع النهاري/الليلي) بدل ستايل مضمّن.
         const dotCls = isDown ? 'down' : isPath ? 'path' : (d.status === 'paused' ? 'paused' : 'up');
+        // v2.8.8 — الصف قابل للنقر: يفتح نفس نافذة تفاصيل الجهاز (كما في «خريطة المباني»).
         return `
-          <div class="mv-inner-row ${isDown ? 'down' : ''}">
+          <div class="mv-inner-row ${isDown ? 'down' : ''}" data-device-id="${Number(d.id)}" role="button" tabindex="0"
+               title="${esc(d.name)} — انقر لعرض التفاصيل">
             <span class="mv-dot ${dotCls}"></span>
             <span class="mv-inner-type">${esc(d.device_type_name || 'جهاز')}</span>
             <span class="mv-inner-nm" title="${esc(d.name)}">${esc(d.name)}</span>
@@ -1717,6 +1722,30 @@
     const note = document.getElementById('draw-empty-note');
     if (note) note.hidden = renderedLocs > 0;
     cardsContainer.innerHTML = cardsHtml;
+    bindDrawBoardEvents();
+  }
+
+  // v2.8.8 — نقر جهاز داخل «التخطيط المرسوم» يفتح **نفس** نافذة التفاصيل (كما في «خريطة المباني»):
+  // نفس المسار GET /api/devices/:id ونفس الحقول، مع دعم لوحة المفاتيح (Enter/Space).
+  let drawBoardEventsBound = false;
+  function bindDrawBoardEvents() {
+    if (drawBoardEventsBound) return;
+    const container = document.getElementById('map-cards-container');
+    if (!container) return;
+    drawBoardEventsBound = true;
+    const openFromRow = (row) => {
+      const id = Number(row && row.dataset ? row.dataset.deviceId : NaN);
+      if (Number.isInteger(id) && id > 0) openDeviceDetails(id);
+    };
+    container.addEventListener('click', (e) => {
+      const row = e.target.closest('.mv-inner-row[data-device-id]');
+      if (row) openFromRow(row);
+    });
+    container.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const row = e.target.closest('.mv-inner-row[data-device-id]');
+      if (row) { e.preventDefault(); openFromRow(row); }
+    });
   }
 
   // ── 3. RENDER CATEGORIZED DEVICES GRID ──
