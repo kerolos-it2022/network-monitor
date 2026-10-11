@@ -640,6 +640,13 @@
   .map-zone-card.collapsed > .map-zone-body { max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
   /* sub-zone داخل البطاقة (building/floor/room/rack) */
   .map-subzone { margin: 0.2rem 0 0.35rem; }
+  /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (بدل إدخال المبنى داخل بطاقة أبيه) */
+  .map-zone-parent {
+    font-size: 0.78em;
+    color: var(--mv-muted);
+    padding: 0 0.6rem 0.35rem;
+    opacity: 0.9;
+  }
   .map-subzone-title {
     display: flex;
     align-items: center;
@@ -807,7 +814,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.10.6</span>
+        <span class="tag">Network Operations Center v2.10.7</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1414,7 +1421,7 @@
     const kids = Array.isArray(node.children) ? node.children : [];
     if (kids.length === 0) {
       const dc = node.device_count || 0;
-      if (dc === 0) return '<p class="map-zone-empty">لا أجهزة في هذه الموقع.</p>';
+      if (dc === 0) return '<p class="map-zone-empty">لا أجهزة في هذا الموقع.</p>';
       return '';
     }
     const devices = [];
@@ -1430,27 +1437,13 @@
     });
     let html = '';
     if (devices.length > 0) html += devices.map((d) => renderZoneDevice(d)).join('');
-    for (const sz of subzones) {
-      const szIcon = KIND_ICON[sz.kind] || '📍';
-      const szDc = sz.device_count || 0;
-      const szOn = sz.online || 0;
-      const szOff = sz.offline || 0;
-      const szUnk = sz.unknown || 0;
-      html += `
-      <div class="map-subzone" data-id="${esc(String(sz.id))}" data-kind="${esc(sz.kind)}">
-        <div class="map-subzone-title">
-          <span>${szIcon}</span>
-          <span class="map-subzone-name">${esc(sz.name || '')}</span>
-          <span class="map-subzone-stats">🟢${szOn} · 🔴${szOff} · ⚪${szUnk} (${szDc})</span>
-        </div>
-        ${renderZoneBody(sz)}
-      </div>`;
-    }
-    return html || '<p class="map-zone-empty">لا مُحتَوى.</p>';
+    // v2.10.7 — لا إدخال مبانٍ داخل مبانٍ: كل مبنى بطاقة مستقلة (والعلاقة في سطر «متصل عبر»).
+    return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
   }
 
   // بطاقة موقع واحدة — نفس markup وألوان وحالات «خريطة المواقع».
-  function renderZoneCard(node) {
+  // v2.10.7 — parentName: اسم المبنى الأب (يُعرَض في سطر «متصل عبر» داخل البطاقة).
+  function renderZoneCard(node, parentName) {
     const kind = node.kind || 'zone';
     const icon = KIND_ICON[kind] || '📍';
     const isUnassigned = kind === 'unassigned';
@@ -1471,6 +1464,10 @@
     const cls = `map-zone-card kind-${kind}${off > 0 ? ' has-offline' : ''}${(off > 0 && on === 0) ? ' has-all-offline' : ''}${(on > 0 && off === 0) ? ' has-online' : ''}${collapsedNow ? ' collapsed' : ''}${isUnassigned ? ' kind-unassigned' : ''}`;
     const body = renderZoneBody(node);
 
+    // v2.10.7 — سطر «متصل عبر» (بدل الإدخال داخل بطاقة الأب)
+    const parentLine = parentName
+      ? `<div class="map-zone-parent">🧩 متصل عبر: ${esc(parentName)}</div>`
+      : '';
     return `
     <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"
              style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
@@ -1480,6 +1477,7 @@
         <span class="map-zone-stats">${stats}</span>
         <button type="button" class="map-zone-toggle" aria-label="توسيع/طي" aria-expanded="${!collapsedNow}">▼</button>
       </div>
+      ${parentLine}
       <div class="map-zone-body">${body}</div>
     </article>`;
   }
@@ -1506,12 +1504,23 @@
         unknown: orphanDevices.filter((d) => d.status === 'unknown').length,
         children: orphanDevices,
       };
-      orphanHtml = renderZoneCard(orphanNode);
+      orphanHtml = renderZoneCard(orphanNode, '');
     }
-    const cards = orphanHtml + zoneKids.map((c) => renderZoneCard(c)).join('');
+    // v2.10.7 — تسطيح كامل (نفس سلوك «خريطة المواقع» بالحرف): كل مبنى بطاقة مستقلة،
+    // والعلاقة تُعرَض كسطر «متصل عبر» داخل البطاقة. ترتيب DFS يطابق اللوحة تمامًا.
+    const flatZones = [];
+    (function walkZone(list, parentName) {
+      for (const c of list) {
+        if (!c || c.kind === 'device') continue;
+        flatZones.push({ node: c, parentName: parentName || '' });
+        const kk = Array.isArray(c.children) ? c.children : [];
+        if (kk.length) walkZone(kk, c.name || '');
+      }
+    })(zoneKids, '');
+    const cards = orphanHtml + flatZones.map((e) => renderZoneCard(e.node, e.parentName)).join('');
     return {
       html: cards,
-      zones: zoneKids.length + (orphanHtml ? 1 : 0),
+      zones: flatZones.length + (orphanHtml ? 1 : 0),
       devices: rootData.device_count || 0,
     };
   }

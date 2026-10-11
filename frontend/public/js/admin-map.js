@@ -208,12 +208,24 @@ function renderZonesGrid(rootData) {
   // للأَجهزة المُيَتِّمَة نُطبِّق nodeKeptByFilters مُباشِرة (filters device-level).
   // v2.7.0 — تَمرير aria-posinset/aria-setsize للـ a11y (P)D.
   const keptZoneKids = zoneKids.filter((c) => !hasActiveFilters() || nodeKeptByFilters(c));
+  // v2.10.7 — تسطيح كامل (بطلب المستخدم): **كل مبنى بطاقة مستقلة** مثل «سلسلة الشبكة»
+  // بدل إدخال المبنى داخل بطاقة أبيه. العلاقة تُعرَض كسطر «متصل عبر» داخل البطاقة.
+  const flatZones = [];
+  (function walkZone(list, parentName) {
+    for (const c of list) {
+      if (!c || c.kind === 'device') continue;
+      flatZones.push({ node: c, parentName: parentName || '' });
+      const kk = Array.isArray(c.children) ? c.children : [];
+      if (kk.length) walkZone(kk, c.name || '');
+    }
+  })(zoneKids, '');
+  const keptFlat = flatZones.filter((e) => !hasActiveFilters() || nodeKeptByFilters(e.node));
   let orphanCardCount = 0;
   if (orphanDevices.length > 0) {
     const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
     if (kept.length > 0) orphanCardCount = 1;
   }
-  const setSize = keptZoneKids.length + orphanCardCount;
+  const setSize = keptFlat.length + orphanCardCount;
   // v2.7.5 — بطاقة «أَجهزة مَدخل الإنترنت» ثابتة في الأَول دائماً (لا تُحرَّك).
   // نَبنيها قَبل zones لِـ تُدرَج في أَول cards، ونُحدّث posinset للـ zones لِـ تَبقى
   // مُتسلسلة بَعدَها (start=2) أَمام a11y.
@@ -239,8 +251,8 @@ function renderZonesGrid(rootData) {
   }
   // zones تُعرَض بَعْد البطاقة الصِناعيّة (posinset يَبدأ من 2 لو وُجدت).
   const start = orphanCount > 0 ? 2 : 1;
-  let cards = keptZoneKids
-    .map((c, i) => renderZoneCard(c, { posinset: start + i, setsize: setSize }))
+  let cards = keptFlat
+    .map((e, i) => renderZoneCard(e.node, { posinset: start + i, setsize: setSize, parentName: e.parentName }))
     .join('');
   // نُدرِج البطاقة الصِناعيّة في الأَول (قَبل zones).
   cards = orphanHtml + cards;
@@ -291,6 +303,11 @@ function renderZoneCard(node, opts) {
   // لا تُسحَب — لا row تَحدّثه في DB (لا id رقمي). draggable="false" يَمنع الـ DnD.
   const draggable = !isUnassigned && node.id != null && typeof node.id === 'number' ? 'true' : 'false';
 
+  // v2.10.7 — سطر «متصل عبر» داخل البطاقة (بدل الإدخال داخل بطاقة الأب)
+  const parentLine = opts.parentName
+    ? `<div class="map-zone-parent">🧩 متصل عبر: ${esc(opts.parentName)}</div>`
+    : '';
+
   return `
     <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"${ariaSet} draggable="${draggable}"
              style="--node-bg:${bg}; --node-border:${border}; --node-border-w:${borderW};">
@@ -300,6 +317,7 @@ function renderZoneCard(node, opts) {
         <span class="map-zone-stats">${stats}</span>
         <button type="button" class="map-zone-toggle" aria-label="تَوسيع/طي" aria-expanded="${!collapsedNow}">▼</button>
       </div>
+      ${parentLine}
       <div class="map-zone-body">${body}</div>
     </article>`;
 }
@@ -313,7 +331,7 @@ function renderZoneBody(node) {
     // لا أَبناء — إِما فارِغة أو عقدة leaf; رِسالة hint قَد لا تَلزم لأَنّ reveal عبر
     // has-offline / stats يُكفي. نُعيد سَلسلة فَارِغة فقط.
     const dc = node.device_count || 0;
-    if (dc === 0) return '<p class="map-zone-empty">لا أَجهزة في هذه الموقع.</p>';
+    if (dc === 0) return '<p class="map-zone-empty">لا أجهزة في هذا الموقع.</p>';
     return '';
   }
   // نَفصل الأَبناء location عَن device.
@@ -333,25 +351,8 @@ function renderZoneBody(node) {
       .join('');
   }
 
-  // sub-zones داخل نَفس البطاقة (تَسلسل عميق بِلا grid مُنفَصِل — خِيار A مُسطّح).
-  for (const sz of subzones) {
-    // v2.5.5 فلترة: اِسكِت sub-zone التي لا تَملِك مُطابِقات في سُلالتها.
-    if (hasActiveFilters() && !nodeKeptByFilters(sz)) continue;
-    const szIcon = KIND_ICON[sz.kind] || '📍';
-    const szDc = sz.device_count || 0;
-    const szOn = sz.online || 0;
-    const szOff = sz.offline || 0;
-    const szUnk = sz.unknown || 0;
-    html += `
-      <div class="map-subzone" data-id="${esc(String(sz.id))}" data-kind="${esc(sz.kind)}">
-        <div class="map-subzone-title">
-          <span>${szIcon}</span>
-          <span class="map-subzone-name">${esc(sz.name || '')}</span>
-          <span class="map-subzone-stats">🟢${szOn} · 🔴${szOff} · ⚪${szUnk} (${szDc})</span>
-        </div>
-        ${renderZoneBody(sz)}
-      </div>`;
-  }
+  // v2.10.7 — لا إدخال مبانٍ داخل مبانٍ: كل مبنى صار بطاقة مستقلة في الشبكة
+  // (والعلاقة تظهر في سطر «متصل عبر» داخل البطاقة). نُعيد صفوف الأجهزة المُباشرة فقط.
   return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
 }
 

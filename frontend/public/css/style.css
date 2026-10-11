@@ -1161,7 +1161,15 @@ body.dark .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::aft
 
 /* ═══ v2.7.0 — الثيم الليلي للخريطة (PB) ═══ */
 /* خلفية header بطاقة مُجَدَّدة في الوَضع الليلي */
-body.dark .map-zone-header { background: rgba(255, 255, 255, 0.03); }
+body.dark /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header { background: rgba(255, 255, 255, 0.03); }
 /* glow أَكثر وضُوحاً للـ has-online في الليلي */
 body.dark .map-zone-card.has-online { box-shadow: 0 0 8px var(--online-glow); }
 body.dark .map-zone-card.has-offline { box-shadow: 0 0 8px var(--partial-offline-glow); }
@@ -1181,7 +1189,15 @@ body.dark .map-zone-device[data-status="unknown"] .map-device-dot { box-shadow: 
 body.dark .map-zone-card { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
 body.dark .map-zone-card:hover { box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45); }
 /* header البطاقة في الليلي يَبقى مُميَّزاً بِـ tint خَفيف */
-body.dark .map-zone-header { background: var(--map-zone-bg-offset); border-bottom-color: var(--border); }
+body.dark /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header { background: var(--map-zone-bg-offset); border-bottom-color: var(--border); }
 /* sub-zone title border أَوضح في الليلي */
 body.dark .map-subzone-title { color: var(--muted); border-inline-start-color: var(--accent); opacity: 1; }
 body.dark .map-subzone-title .map-subzone-stats { color: var(--muted); opacity: 0.85; }
@@ -1201,6 +1217,14 @@ body.dark .map-summary-chip { background: transparent; }
 body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 
 /* تَرويسة البطاقة: زرّ toggle + أَيَقونة + اسم + إِحصائيات */
+/* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
 .map-zone-header {
   display: flex;
   align-items: center;
@@ -1212,7 +1236,15 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
   border-bottom: 1px solid var(--border);
   user-select: none;
 }
-.map-zone-card.collapsed > .map-zone-header { border-bottom-color: transparent; }
+.map-zone-card.collapsed > /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header { border-bottom-color: transparent; }
 .map-zone-icon { font-size: 1.05rem; flex: 0 0 auto; line-height: 1; }
 .map-zone-name {
   font-weight: 600;
