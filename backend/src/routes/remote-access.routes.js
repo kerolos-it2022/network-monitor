@@ -48,7 +48,9 @@ const ALLOWED_ACTIONS = ACTIONS_NO_VALUE.concat(ACTIONS_WITH_VALUE);
 
 // تحقّق صارم: دومين FQDN · قيمة سرّية (أحرف/أرقام/_/- بطول 20–120)
 const DOMAIN_RE = /^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
-const VALUE_RE = /^[A-Za-z0-9_-]{20,120}$/;
+// v2.10.8 — توسيع التحقّق: مفاتيح ngrok قد تحتوي + / = . : - بجانب الأحرف والأرقام
+// (كانت ضيّقة فترفض مفتاح API صحيحًا). نمنع فقط المسافات وعلامات التنصيص والمحارف الخطرة.
+const VALUE_RE = /^[A-Za-z0-9_+=./:-]{20,200}$/;
 
 const ACTION_LABELS = {
   start: 'تشغيل النفق',
@@ -260,7 +262,7 @@ router.post('/request', requireAuth, (req, res) => {
           return res.status(400).json({ success: false, error: 'دومين غير صالح (مثال: myname.ngrok-free.app).' });
         }
       } else if (!VALUE_RE.test(value)) {
-        return res.status(400).json({ success: false, error: 'قيمة غير صالحة (أحرف وأرقام و _ و - فقط، 20–120 حرفًا).' });
+        return res.status(400).json({ success: false, error: 'قيمة غير صالحة (لا مسافات ولا علامات تنصيص — 20 حرفًا فأكثر).' });
       }
     }
 

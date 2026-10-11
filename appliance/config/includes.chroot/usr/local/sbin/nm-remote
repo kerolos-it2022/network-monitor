@@ -80,7 +80,7 @@ esac
 
 # ── تحقّق صارم من القيم ──
 require_domain() { [[ "$VALUE" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$ ]] || fail "دومين غير صالح (مثال: myname.ngrok-free.app)"; }
-require_value() { [[ "$VALUE" =~ ^[A-Za-z0-9_-]{20,120}$ ]] || fail "قيمة غير صالحة (أحرف وأرقام و _ و - فقط، 20–120 حرفًا)"; }
+require_value() { [[ "$VALUE" =~ ^[A-Za-z0-9_+=./:-]{20,200}$ ]] || fail "قيمة غير صالحة (لا مسافات ولا علامات تنصيص — 20 حرفًا فأكثر)"; }
 
 # ملاحظة مهمّة: لا نُسجّل قيم الأسرار إطلاقًا — فقط اسم الفعل وحالة الحقول.
 log "=== طلب: $ACTION (حقل1: $(state_one) · حقل2: $(state_two) · pid: $(tunnel_pid || echo -)) ==="
@@ -96,6 +96,10 @@ After=network-online.target nginx.service
 Wants=network-online.target
 
 [Service]
+# v2.10.8 — السبب الجذري لفشل «تشغيل النفق رمز 1» من اللوحة:
+# تحت systemd لا يُضبط HOME للخدمات ⇒ ngrok لم يكن يجد إعداداته (/root/.config/ngrok/ngrok.yml)
+# فيفشل البدء ولا يظهر أي endpoint في ngrok — بينما الكونسول يعمل لأنه شل root وفيه HOME=/root.
+Environment=HOME=/root
 ExecStart=$NGROK_BIN http 80${D:+ --domain=$D}
 Restart=on-failure
 RestartSec=5
@@ -135,14 +139,22 @@ case "$ACTION" in
       0) : ;;
       2) fail "ngrok غير مثبّت على الجهاز (استخدم زر التثبيت أو كونسول الجهاز)" ;;
       3) fail "المفتاح (حقل1) غير مضبوط — اضبطه من هذه الصفحة أو من كونسول الجهاز: Remote access → [2]" ;;
-      *) fail "تعذّر تشغيل النفق — راجع: journalctl -u $UNIT -n 30" ;;
+      *)
+        # v2.10.8 — نُرفق آخر سطور سجل ngrok (منقّاة من أي أسرار) لتشخيص السبب الحقيقي فورًا
+        TAIL="$(grep -viE 'token|api[_-]?key|secret' "$NGROK_LOG" 2>/dev/null | tail -n 3 | tr '\n' ' ' | cut -c1-260)"
+        fail "تعذّر تشغيل النفق — آخر سطور سجل ngrok: ${TAIL:-لا يوجد سجل} (أو راجع: journalctl -u $UNIT -n 30)"
+        ;;
     esac
     ;;
   stop) stop_tunnel ;;
   restart)
     stop_tunnel
     start_tunnel; RC=$?
-    [ "$RC" = "0" ] || fail "تعذّر إعادة تشغيل النفق (رمز $RC)"
+    if [ "$RC" != "0" ]; then
+      # v2.10.8 — نفس تشخيص التشغيل: نُرفق آخر سطور سجل ngrok (منقّاة من الأسرار)
+      TAIL="$(grep -viE 'token|api[_-]?key|secret' "$NGROK_LOG" 2>/dev/null | tail -n 3 | tr '\n' ' ' | cut -c1-260)"
+      fail "تعذّر إعادة تشغيل النفق (رمز $RC) — آخر سطور سجل ngrok: ${TAIL:-لا يوجد سجل}"
+    fi
     ;;
   autostart-on)
     [ -x "$NGROK_BIN" ] || fail "ngrok غير مثبّت على الجهاز"
