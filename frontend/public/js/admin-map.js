@@ -191,6 +191,11 @@ function findDeviceNode(node, id) {
 // المُباشِرين (zones/internet/unassigned) — الجذر نفسه (root/internet المُصطَنَع which
 // يَتَراص أَبناؤه) لا نُولّد له بطاقة مستَقِلّة، إِنّما نَكشِف أَبناءه. هذا ما يُحوّل
 // الشَجِرة المُتداخِلة (ul/li) إِلى grid مُسطّح لِـ zones الرئيسية.
+// ✅ v2.10.13 — قاعدة الاحتواء (بطلب المستخدم): **الطوابق/الغرف فقط** تُدخَل داخل بطاقة المبنى.
+//   • مبنى/موقع = بطاقة مستقلة في أي عمق (لا يُدخَل داخل بطاقة أبيه).
+//   • طابق/غرفة/خزانة = قسم (sub-zone) داخل بطاقة أقرب مبنى/موقع فوقه.
+const MAP_NESTED_KINDS = new Set(['floor', 'room', 'rack']);
+const isMapNestedKind = (n) => MAP_NESTED_KINDS.has((n && n.kind) || '');
 function renderZonesGrid(rootData) {
   if (!rootData) return '';
   // الجذر يَحوي أَبناءً (zones/internet/unassigned) — نُولّد بطاقة لِـ كُلّ وَاحد.
@@ -211,10 +216,19 @@ function renderZonesGrid(rootData) {
   // v2.10.10 — القاعدة النهائية (بطلب المستخدم): **مستويان** —
   //   • المواقع الرئيسية = كروت مستقلة (المستوى الأول).
   //   • الطوابق/الغرف = **داخل** بطاقة المبنى كأقسام مفتوحة دائمًا (renderZoneBody).
-  // ✅ v2.10.12 — تأكيد المستخدم (2026-10-11): **خريطة المواقع = احتواء**، بينما «سلسلة الشبكة»
-  //   = **كل موقع منفرد** بلا احتواء. الشاشتان مختلفتان بالقصد — لا تُوحّدهما مرة أخرى
-  //   إلا بطلب صريح جديد من المستخدم (تعديل v2.10.11 للتسطيح أُلغي).
-  const keptFlat = keptZoneKids.map((c) => ({ node: c, parentName: '' }));
+  // ✅ v2.10.12 — تأكيد المستخدم: **خريطة المواقع = احتواء** بينما «سلسلة الشبكة» = كل موقع منفرد.
+  // ✅ v2.10.13 — الاحتواء للطوابق/الغرف **فقط** (بطلب المستخدم): المباني/المواقع بطاقات مستقلة
+  //   في أي عمق (البوفية، الورشة-1/2، عنبر الكتاين/منعم…) بدل إدخالها داخل بطاقة المبنى الأعلى.
+  const flatCards = [];
+  (function walkCards(list, parentName) {
+    for (const c of list) {
+      if (!c || c.kind === 'device') continue;
+      if (isMapNestedKind(c)) { walkCards(Array.isArray(c.children) ? c.children : [], parentName); continue; }
+      flatCards.push({ node: c, parentName: parentName || '' });
+      walkCards(Array.isArray(c.children) ? c.children : [], c.name || '');
+    }
+  })(zoneKids, '');
+  const keptFlat = flatCards.filter((e) => !hasActiveFilters() || nodeKeptByFilters(e.node));
   let orphanCardCount = 0;
   if (orphanDevices.length > 0) {
     const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
@@ -334,7 +348,9 @@ function renderZoneBody(node) {
   const subzones = [];
   for (const c of kids) {
     if (c.kind === 'device') devices.push(c);
-    else subzones.push(c);
+    // ✅ v2.10.13 — الطوابق/الغرف فقط تُعرَض كأقسام داخل البطاقة؛
+    // أي مبنى/موقع أعمق له بطاقته المستقلة (لا يُدخَل هنا).
+    else if (isMapNestedKind(c)) subzones.push(c);
   }
   let html = '';
 

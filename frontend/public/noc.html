@@ -814,7 +814,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.10.12</span>
+        <span class="tag">Network Operations Center v2.10.13</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1416,6 +1416,11 @@
     </button>`;
   }
 
+  // ✅ v2.10.13 — «خريطة المباني»: الاحتواء للطوابق/الغرف **فقط** (نفس قاعدة لوحة التحكم):
+  //   مبنى/موقع = بطاقة مستقلة في أي عمق · طابق/غرفة/خزانة = قسم داخل بطاقة أقرب مبنى فوقه.
+  const MAP_NESTED_KINDS = new Set(['floor', 'room', 'rack']);
+  const isMapNestedKind = (n) => MAP_NESTED_KINDS.has((n && n.kind) || '');
+
   // جسم الكارت: صفوف الأجهزة ثم الـ sub-zones المتداخلة (نفس منطق لوحة التحكم بلا فلترة).
   function renderZoneBody(node) {
     const kids = Array.isArray(node.children) ? node.children : [];
@@ -1428,7 +1433,8 @@
     const subzones = [];
     for (const c of kids) {
       if (c.kind === 'device') devices.push(c);
-      else subzones.push(c);
+      // ✅ v2.10.13 — الطوابق/الغرف فقط أقسام داخل البطاقة؛ المباني/المواقع الأعمق بطاقات مستقلة.
+      else if (isMapNestedKind(c)) subzones.push(c);
     }
     devices.sort((a, b) => {
       const A = mapDevSortKey(a);
@@ -1525,11 +1531,20 @@
     // v2.10.10 — مستويان (نفس سلوك «خريطة المواقع»): المواقع الرئيسية كروت مستقلة،
     // والطوابق/الغرف تُدخَل داخل بطاقة المبنى في renderZoneBody (مفتوحة دائمًا).
     // ✅ v2.10.12 — تأكيد المستخدم: **خريطة المواقع = احتواء** · «سلسلة الشبكة» = **كل موقع منفرد**.
-    // لا تُسطَّح هذه الشاشة مرة أخرى إلا بطلب صريح جديد (تعديل v2.10.11 للتسطيح أُلغي).
-    const cards = orphanHtml + zoneKids.map((c) => renderZoneCard(c, '')).join('');
+    // ✅ v2.10.13 — الاحتواء للطوابق/الغرف **فقط**: المباني/المواقع بطاقات مستقلة في أي عمق.
+    const flatCards = [];
+    (function walkCards(list, parentName) {
+      for (const c of list) {
+        if (!c || c.kind === 'device') continue;
+        if (isMapNestedKind(c)) { walkCards(Array.isArray(c.children) ? c.children : [], parentName); continue; }
+        flatCards.push({ node: c, parentName: parentName || '' });
+        walkCards(Array.isArray(c.children) ? c.children : [], c.name || '');
+      }
+    })(zoneKids, '');
+    const cards = orphanHtml + flatCards.map((e) => renderZoneCard(e.node, e.parentName)).join('');
     return {
       html: cards,
-      zones: zoneKids.length + (orphanHtml ? 1 : 0),
+      zones: flatCards.length + (orphanHtml ? 1 : 0),
       devices: rootData.device_count || 0,
     };
   }
