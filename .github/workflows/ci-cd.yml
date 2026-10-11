@@ -13,6 +13,10 @@ env:
   NODE_VERSION: '20'
   PORT: '4000'
 
+# v2.8.7 — صلاحيات دنيا: هذا المسار يقرأ الكود فقط (لا يكتب في المستودع).
+permissions:
+  contents: read
+
 concurrency:
   group: ci-cd-${{ github.ref }}
   cancel-in-progress: true
@@ -39,19 +43,20 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: 📦 Install dependencies (better-sqlite3 native build)
+      - name: 📦 Install dependencies
+        # v2.8.7 — بلا build-from-source: better-sqlite3 يوفّر prebuilt لـ Node 20 على Linux
+        # (أسرع وأقل هشاشة). لو احتاج بناءً من المصدر مستقبلًا يُضاف fallback صريح هنا.
         run: npm ci
-        env:
-          # بناء better-sqlite3 من المصدر على النظام المستهدف
-          npm_config_build_from_source: 'true'
 
-      - name: 🔍 Syntax check — all source files (node --check)
+      - name: 🔍 Syntax check — backend + frontend (node --check)
+        # v2.8.7 — إصلاح جوهري: كان العدّاد `status` يُضبط داخل subshell (بسبب الأنبوب `| while`)
+        # فيضيع الفشل ولا يفشل الفحص أبدًا. الآن نقرأ القائمة بـ process substitution،
+        # ونفحص كذلك ملفات الواجهة (frontend/public/js).
         run: |
           set -e
-          echo "::group::فحص قواعد JavaScript syntax لكل ملفات src/"
+          echo "::group::node --check — backend/src + frontend/public/js"
           status=0
-          # العثور على كل ملفات .js داخل src/ وفحصها بـ node --check
-          find src -name '*.js' -type f | sort | while read -r file; do
+          while IFS= read -r file; do
             if node --check "$file" 2>err.log; then
               echo "  ✓ $file"
             else
@@ -59,9 +64,14 @@ jobs:
               cat err.log
               status=1
             fi
-            rm -f err.log
-          done
-          exit $status
+          done < <(find src ../frontend/public/js -name '*.js' -type f | sort)
+          rm -f err.log
+          echo "::endgroup::"
+          if [ "$status" -ne 0 ]; then
+            echo "❌ فشل فحص الصياغة — راجع الملفات أعلاه"
+            exit 1
+          fi
+          echo "✅ كل الملفات سليمة صياغيًا"
 
       - name: 🗄️ Initialize database for health test
         run: |

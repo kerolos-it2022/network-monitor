@@ -1,0 +1,37 @@
+# release.yml — تصنيف ملاحظات الإصدار المولَّدة تلقائيًّا (GitHub Releases).
+# يُستعمل عند تشغيل generate_release_notes (في build-iso.yml).
+# الهدف: بدل قائمة commits خام، تُجمَّع التغييرات في أقسام عربية واضحة.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - dependencies
+    authors:
+      - dependabot[bot]
+  categories:
+    - title: 🚀 ميزات جديدة
+      labels:
+        - feature
+        - enhancement
+    - title: 🐛 إصلاحات
+      labels:
+        - bug
+        - fix
+    - title: 🛡️ أمان
+      labels:
+        - security
+    - title: 🎨 واجهة وتجربة
+      labels:
+        - ui
+        - design
+    - title: 📚 توثيق
+      labels:
+        - docs
+        - documentation
+    - title: 🧰 صيانة و CI
+      labels:
+        - chore
+        - ci
+    - title: 📦 تغييرات أخرى
+      labels:
+        - '*'

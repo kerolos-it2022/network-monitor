@@ -1,6 +1,6 @@
 # build-iso.yml — بناء صورة appliance ISO تلقائيًّا.
 # التشغيل: يدويًّا (workflow_dispatch) أو تلقائيًّا مع كل tag يبدأ بـ v.
-# الناتج: artifact اسمه appliance-iso + مرفق بـ Release لو كان الTrigger tag.
+# الناتج: artifact اسمه appliance-iso (ISO + SHA256) + مرفق بـ Release لو كان المُشغِّل tag.
 name: Build Appliance ISO
 
 on:
@@ -9,10 +9,21 @@ on:
     tags:
       - 'v*'
 
+# v2.8.7 — صلاحيات دنيا: قراءة الكود افتراضيًّا، والكتابة فقط لخطوة إنشاء الـ Release.
+permissions:
+  contents: read
+
+# بناءان متزامنان = استهلاك مضاعف؛ نُلغي القديم عند التزاحم.
+concurrency:
+  group: iso-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-iso:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    permissions:
+      contents: write      # مطلوب لإرفاق الملفات بالـ Release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,9 +34,11 @@ jobs:
       # live-build على أوبونتو مكسور مع دبيان bookworm (روابط security قديمة،
       # مسارات firmware 404) — لذا نبني داخل حاوية debian:bookworm الحقيقية،
       # وبـ --privileged لِـ أن live-build يحتاج chroot/mount.
+      # v2.8.7: نمرّر اسم الوسم صراحةً عند البناء من tag (اسم ISO مقروء مثل
+      # network-monitor-appliance-v2.8.7-amd64.iso) بدل اسم مبنيّ على sha الـ commit.
       - name: Build ISO (inside debian:bookworm)
         env:
-          NM_VERSION: ${{ github.sha }}
+          NM_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
           docker run --rm --privileged \
             -v "$GITHUB_WORKSPACE":/workspace \
@@ -34,11 +47,19 @@ jobs:
             debian:bookworm bash build.sh
           ls -lh appliance/*.iso
 
-      - name: Upload artifact
+      - name: Generate SHA256 checksums
+        run: |
+          cd appliance
+          sha256sum *.iso > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload artifact (ISO + checksums)
         uses: actions/upload-artifact@v4
         with:
           name: appliance-iso
-          path: appliance/*.iso
+          path: |
+            appliance/*.iso
+            appliance/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
 
@@ -46,5 +67,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: appliance/*.iso
+          files: |
+            appliance/*.iso
+            appliance/SHA256SUMS.txt
           generate_release_notes: true
