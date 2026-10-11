@@ -1,0 +1,19 @@
+[Unit]
+Description=Network Monitor — privileged remote-access (ngrok) helper (appliance)
+Documentation=file:///opt/network-monitor/HANDOFF.md
+# يُشغَّل تلقائيًّا عبر nm-remote.path عند ظهور ملف الطلب.
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/sbin/nm-remote
+
+# صلاحيات دنيا: كتابة في مجلد البيانات + وحدة ngrok + سجل النفق فقط.
+NoNewPrivileges=true
+ProtectSystem=strict
+# read-only: المساعد يحتاج **فحص وجود** التوكن (/root/.config/ngrok/ngrok.yml) بلا قراءة قيمته.
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/var/lib/network-monitor /etc/systemd/system /var/log
+
+TimeoutStartSec=120

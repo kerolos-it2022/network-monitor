@@ -34,6 +34,8 @@ const mapRoutes = require('./routes/map.routes');
 const liveRoutes = require('./routes/live.routes');
 // v2.8.7 — تحديث الأبلاينس بصلاحية root عبر مساعد منفصل (ملف طلب + تقدّم).
 const applianceUpdateRoutes = require('./routes/appliance-update.routes');
+// v2.9.0 — قسم «الوصول عن بُعد» (ngrok): قراءة الحالة + طلب تحكم عبر مساعد root منفصل.
+const remoteAccessRoutes = require('./routes/remote-access.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -105,6 +107,8 @@ app.use('/api/map', mapRoutes);
 app.use('/api/live', liveRoutes);
 // v2.8.7 — تحديث الأبلاينس: مسارات محميّة بجلسة الأدمن (طلب + تقدّم).
 app.use('/api/appliance-update', applianceUpdateRoutes);
+// v2.9.0 — الوصول عن بُعد (ngrok): قراءة الحالة + كتابة ملف طلب فقط (التنفيذ بمصدر root).
+app.use('/api/remote-access', remoteAccessRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {

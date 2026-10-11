@@ -35,6 +35,7 @@
       <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
       <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
       <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span></button></li>
+      <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label">الوصول عن بُعد</span></button></li>
     </ul>
   </aside>
 
@@ -618,6 +619,71 @@
         </div>
       </div>
     </section>
+
+    <!-- v2.9.0 — قسم «الوصول عن بُعد» (ngrok): عرض الحالة + تحكّم آمن عبر مساعد root -->
+    <section id="section-remote" class="hidden">
+      <div class="form-card">
+        <h3>🌍 الوصول عن بُعد (ngrok)</h3>
+        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
+          حالة النفق الذي ينشر واجهة الجهاز على الإنترنت — والتحكّم فيه من هنا بدل شاشة الجهاز.
+          التنفيذ يتم بصلاحية root عبر مساعد منفصل؛ الويب لا تُنفّذ أي أمر بنفسها.
+        </p>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+          <div class="form-card" style="text-align:center; padding:1.25rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">حالة النفق</div>
+            <div id="remote-state" style="font-size:1.2rem; font-weight:bold;">⏳ جارٍ الفحص…</div>
+          </div>
+          <div class="form-card" style="text-align:center; padding:1.25rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">ملف ngrok</div>
+            <div id="remote-binary" style="font-size:1rem; font-weight:bold;">—</div>
+          </div>
+          <div class="form-card" style="text-align:center; padding:1.25rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">التشغيل التلقائي عند الإقلاع</div>
+            <div id="remote-autostart" style="font-size:1rem; font-weight:bold;">—</div>
+          </div>
+          <div class="form-card" style="text-align:center; padding:1.25rem;">
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">حالة مفتاح ngrok</div>
+            <div id="remote-auth-state" style="font-size:1rem; font-weight:bold;">—</div>
+          </div>
+        </div>
+
+        <div class="form-card" style="margin-bottom:1.25rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">🔗 الرابط العام</div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <input id="remote-url" type="text" readonly value="—" style="flex:1; min-width:240px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-family:monospace; direction:ltr;" />
+            <button type="button" class="btn" id="remote-copy-btn">📋 نسخ</button>
+            <button type="button" class="btn" id="remote-open-btn">🌐 فتح</button>
+            <button type="button" class="btn" id="remote-refresh-btn">🔄 تحديث</button>
+          </div>
+          <div id="remote-domain" style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">—</div>
+        </div>
+
+        <div style="padding:0.75rem 0.9rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:0.85rem; color:var(--muted); margin-bottom:1.25rem;">
+          🛡️ <strong style="color:var(--text);">المكشوف على الإنترنت:</strong> واجهة الويب فقط (عبر nginx) وهي محميّة بكلمة مرور الدخول.
+          <span style="display:block; margin-top:0.25rem;">غير مكشوف: SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+          <button type="button" class="btn btn-primary" id="remote-start-btn" disabled>▶️ تشغيل</button>
+          <button type="button" class="btn" id="remote-restart-btn" disabled>🔁 إعادة تشغيل</button>
+          <button type="button" class="btn" id="remote-stop-btn" disabled>⏹️ إيقاف</button>
+          <button type="button" class="btn" id="remote-auto-on-btn" disabled>🔒 تفعيل التشغيل التلقائي</button>
+          <button type="button" class="btn" id="remote-auto-off-btn" disabled>🔓 تعطيل التشغيل التلقائي</button>
+        </div>
+        <div id="remote-status" class="hidden" style="margin-bottom:1rem; font-weight:600;"></div>
+        <div id="remote-note" style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;"></div>
+
+        <div class="form-card hidden" id="remote-log-card" style="max-height:280px; overflow:auto;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">📋 آخر عمليات التحكّم:</div>
+          <pre id="remote-log" style="background:#1e293b; color:#e2e8f0; padding:1rem; border-radius:6px; font-family:monospace; font-size:0.8rem; white-space:pre-wrap; margin:0;"></pre>
+        </div>
+        <div class="form-card hidden" id="remote-ngrok-log-card" style="max-height:280px; overflow:auto; margin-top:1rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">📋 آخر سطور سجل ngrok:</div>
+          <pre id="remote-ngrok-log" style="background:#1e293b; color:#e2e8f0; padding:1rem; border-radius:6px; font-family:monospace; font-size:0.8rem; white-space:pre-wrap; margin:0;"></pre>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- ===== popup modal إِضافة/تعديل جهاز (v2.7.4 — نَقل inline form إلى popup) ===== -->
@@ -785,6 +851,7 @@
   <script src="../js/admin-map.js"></script>
   <script src="../js/admin-update.js"></script>
   <script src="../js/admin-backup.js"></script>
+  <script src="../js/admin-remote.js"></script>
 
   <!-- ذيل الصفحة -->
   <footer class="site-footer">

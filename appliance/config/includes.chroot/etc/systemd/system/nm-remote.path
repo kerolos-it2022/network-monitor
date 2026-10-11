@@ -1,0 +1,11 @@
+[Unit]
+Description=Network Monitor — watch for remote-access (ngrok) requests (appliance)
+Documentation=file:///opt/network-monitor/HANDOFF.md
+
+[Path]
+# خدمة الويب (netmon) تكتب هذا الملف فقط — والمساعد المميّز (root) هو الذي ينفّذ.
+PathExists=/var/lib/network-monitor/remote-request.json
+Unit=nm-remote.service
+
+[Install]
+WantedBy=multi-user.target

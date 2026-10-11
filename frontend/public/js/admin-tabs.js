@@ -13,6 +13,7 @@ const TAB_TO_SECTION = {
   'tab-profile': 'section-profile',
   'tab-backup': 'section-backup',
   'tab-updates': 'section-updates',
+  'tab-remote': 'section-remote',
 };
 
 function showSection(tabId) {

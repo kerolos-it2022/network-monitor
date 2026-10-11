@@ -4,6 +4,9 @@
 set -e
 chmod +x /usr/local/sbin/nm-console /usr/local/sbin/nm-install-to-disk
 chmod +x /usr/local/sbin/nm-update 2>/dev/null || true
+# v2.9.0 — مساعد «الوصول عن بُعد» (ngrok) + وحدتاه
+chmod +x /usr/local/sbin/nm-remote 2>/dev/null || true
 chmod 644 /etc/systemd/system/nm-console.service /etc/systemd/system/network-monitor.service 2>/dev/null || true
 chmod 644 /etc/systemd/system/nm-update.service /etc/systemd/system/nm-update.path 2>/dev/null || true
+chmod 644 /etc/systemd/system/nm-remote.service /etc/systemd/system/nm-remote.path 2>/dev/null || true
 chmod 644 /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null || true
