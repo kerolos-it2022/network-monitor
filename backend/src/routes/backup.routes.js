@@ -234,6 +234,26 @@ router.get('/list', requireAuth, (req, res) => {
 // ============================================================
 // POST /api/backup/restore  🔒 — استعادة من ملف مرفوع (.db)
 // ============================================================
+// v2.10.0 — إنشاء نسخة احتياطية على الخادم (خطوة «نسخة احتياطية + تحديث» في تبويب التحديثات).
+// تُكتب في <DB_DIR>/backups بنفس نمط كونسول الجهاز (db-YYYYMMDD-HHMMSS.db) عبر واجهة db.backup()
+// (نسخة متسقة من SQLite بلا تعطيل الخدمة — نفس الطريقة المستخدمة في كونسول الأبلاينس).
+router.post('/create', requireAuth, async (req, res) => {
+  try {
+    fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    const d = new Date();
+    const p2 = (n, l = 2) => String(n).padStart(l, '0');
+    const name = `db-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}.db`;
+    const dest = path.join(BACKUPS_DIR, name);
+    await db.backup(dest);
+    const sizeMB = +(fs.statSync(dest).size / (1024 * 1024)).toFixed(2);
+    console.log('[BACKUP] create:', name, sizeMB + 'MB');
+    res.json({ success: true, file: name, sizeMB, message: 'تم إنشاء نسخة احتياطية ✓ (' + sizeMB + ' MB)' });
+  } catch (e) {
+    console.error('[BACKUP] create error:', e.message);
+    res.status(500).json({ success: false, error: 'تعذّر إنشاء النسخة الاحتياطية: ' + e.message });
+  }
+});
+
 router.post('/restore', requireAuth, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {

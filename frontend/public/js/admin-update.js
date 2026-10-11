@@ -1,415 +1,447 @@
-// admin-update.js: منطق تحديثات النظام في لوحة التحكم.
-// ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
-let updateAbortController = null;
+// admin-update.js (v2.10.0) — صفحة «🔄 تحديثات النظام» في لوحة التحكم.
+// ما الذي تغيّر عن النسخة السابقة؟
+//   1) بنية جديدة: شريط حالة واحد (الحالي · المتاح · الحالة · آخر فحص) بدل 3 كروت + بنرات متفرقة.
+//   2) مصدر واحد لرسالة الحالة + حذف الكارت الداخلي المكرر للـ changelog (نافذة واحدة فقط).
+//   3) شارة برتقالية على التبويب عند توفّر تحديث + فحص تلقائي (عند الفتح + كل 6 ساعات).
+//   4) زر واحد «🛡️ نسخة احتياطية + تحديث» (إنشاء نسخة ثم طلب التحديث).
+//   5) «↩️ الرجوع لإصدار أقدم» من قائمة وسوم GitHub عبر نفس مسار الطلب الآمن.
+//   6) تقدّم على شكل خطوات + سجل قابل للطي + سجل عمليات + زر نسخ السجل.
+// ⚠️ قيد أمني: الويب لا تنفّذ أوامر — على الأبلاينس نكتب «ملف طلب» فقط والمساعد root ينفّذ.
+// esc() / api() / confirmAction() مُعرَّفة في admin-utils.js (يُحمَّل أولًا).
 
-// حالة عامة لحفظ نتيجة آخر فحص (تستخدمها الأزرار)
-let lastCheckResult = null;
+let updMode = 'plain';          // appliance | plain
+let updBusy = false;
+let updLastCheck = null;        // آخر نتيجة فحص ناجحة
+let updProgressTimer = null;
+const UPD_LAST_KEY = 'nm.updatesLastCheckAt';
+const UPD_AUTO_MS = 6 * 60 * 60 * 1000;      // فحص تلقائي كل 6 ساعات
+const UPD_FRESH_MS = 15 * 60 * 1000;         // «طازج» = خلال 15 دقيقة (لتجنّب نداءات متكرّرة)
 
-// v2.8.7 — وضع الأبلاينس: التحديث ينفّذه مساعد root منفصل عبر ملف طلب (واجهة الويب لا تنفّذ أوامر).
-let applianceMode = false;
+const updEl = (id) => document.getElementById(id);
+const updShow = (id, on = true) => { const el = updEl(id); if (el) el.classList.toggle('hidden', !on); };
+function updSet(id, txt, cls) {
+  const el = updEl(id);
+  if (!el) return;
+  el.textContent = txt == null ? '—' : String(txt);
+  if (cls !== undefined) el.className = cls;
+}
+function updNote(msg) { const el = updEl('upd-note'); if (el) el.textContent = msg || ''; }
+function updBadge(on) { const b = updEl('upd-tab-badge'); if (b) b.classList.toggle('hidden', !on); }
 
-async function detectApplianceMode() {
+function updSetBusy(on) {
+  updBusy = on;
+  ['upd-check-btn', 'upd-safe-btn', 'upd-rollback-btn', 'upd-download-btn', 'upd-apply-btn'].forEach((id) => {
+    const b = updEl(id);
+    if (b) b.disabled = on;
+  });
+  // منع إغلاق الصفحة أثناء عملية تحديث جارية
+  window.onbeforeunload = on ? (e) => { e.preventDefault(); e.returnValue = ''; return ''; } : null;
+}
+
+// ── آخر فحص (يُحفظ محليًّا) ──
+function updReadLast() { try { return Number(localStorage.getItem(UPD_LAST_KEY)) || 0; } catch (e) { return 0; } }
+function updRenderLast(ts) {
+  const t = ts || updReadLast();
+  if (!t) { updSet('upd-lastcheck', '—'); return; }
+  const mins = Math.round((Date.now() - t) / 60000);
+  updSet('upd-lastcheck', mins < 1 ? 'الآن' : (mins < 60 ? `قبل ${mins} دقيقة` : `قبل ${Math.round(mins / 60)} ساعة`));
+}
+
+// ── خطوات التقدّم ──
+const UPD_STEPS = [
+  [['تنزيل', 'جلب', 'الأرشيف', 'git pull'], 'download'],
+  [['ملفات', 'rsync', 'نسخ ملفات'], 'files'],
+  [['npm', 'تبعيات'], 'deps'],
+  [['تشغيل', 'restart', 'success'], 'restart'],
+];
+function updStepFromMessage(msg) {
+  const m = String(msg || '').toLowerCase();
+  for (const [keys, step] of UPD_STEPS) {
+    if (keys.some((k) => m.includes(String(k).toLowerCase()))) return step;
+  }
+  return null;
+}
+function updStepsReset() {
+  document.querySelectorAll('#upd-steps li').forEach((li) => li.classList.remove('active', 'done'));
+}
+function updStepSet(step, state) {
+  const li = document.querySelector(`#upd-steps li[data-step="${step}"]`);
+  if (!li) return;
+  li.classList.remove('active', 'done');
+  if (state) li.classList.add(state);
+}
+function updStepsAllDone() {
+  document.querySelectorAll('#upd-steps li').forEach((li) => { li.classList.remove('active'); li.classList.add('done'); });
+}
+
+// ── كشف وضع الأبلاينس ──
+async function updDetectMode() {
+  const r = await api('/api/appliance-update/mode');
+  updMode = r && r.success && r.appliance ? 'appliance' : 'plain';
+  updShow('upd-plain-actions', updMode !== 'appliance');
+  updShow('upd-rollback-btn', updMode === 'appliance');
+  updNote(updMode === 'appliance'
+    ? '🔐 وضع الأبلاينس: التنفيذ بصلاحية root عبر «ملف طلب» (بلا أوامر من الويب) — والتحديث يشمل ملفات التطبيق فقط.'
+    : '💻 تثبيت عادي (Git): التحديث يتم بسحب الفرع + تثبيت التبعيات + إعادة تشغيل الخدمة.');
+  return updMode;
+}
+
+// ── الفحص ──
+async function updCheck(silent = false) {
+  const btn = updEl('upd-check-btn');
+  if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ جارٍ الفحص…'; }
+  if (!silent) updSet('upd-state', '⏳ جارٍ الفحص…', 'upd-hero-value upd-muted');
   try {
-    const r = await api('/api/appliance-update/mode');
-    applianceMode = !!(r && r.success && r.appliance);
-  } catch (e) {
-    applianceMode = false;
-  }
-  console.log('[UPDATE] appliance mode:', applianceMode);
-  return applianceMode;
-}
-
-// متابعة تقدّم تحديث الأبلاينس (حالة + آخر سطور السجل) حتى النهاية.
-function followApplianceUpdate(applyBtn) {
-  const started = Date.now();
-  const timer = setInterval(async () => {
-    try {
-      const p = await api('/api/appliance-update/progress');
-      const st = p && p.state;
-      const logEl = document.getElementById('update-log');
-      if (logEl && p && typeof p.log === 'string' && p.log) logEl.textContent = p.log;
-      if (st && st.message) {
-        showUpdateStatus((st.state === 'failed' ? '❌ ' : '⏳ ') + st.message, st.state === 'failed');
-      }
-      if (st && st.state === 'success') {
-        clearInterval(timer);
-        showUpdateStatus('✅ ' + st.message + ' — جاري إعادة تحميل الصفحة…', false);
-        setTimeout(() => location.reload(), 2500);
-      } else if (st && st.state === 'failed') {
-        clearInterval(timer);
-        if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = '🚀 تطبيق التحديث'; }
-      }
-    } catch (e) {
-      // الخدمة قد تكون في لحظة إعادة تشغيل — نواصل المحاولة حتى انتهاء المهلة.
-    }
-    if (Date.now() - started > 20 * 60 * 1000) clearInterval(timer);
-  }, 2500);
-}
-
-function showUpdateStatus(message, isError = false) {
-  const statusEl = document.getElementById('update-status');
-  if (statusEl) {
-    statusEl.textContent = message;
-    statusEl.style.color = isError ? 'var(--offline)' : 'var(--online)';
-    statusEl.classList.remove('hidden');
-  }
-}
-
-function hideUpdateStatus() {
-  const statusEl = document.getElementById('update-status');
-  if (statusEl) statusEl.classList.add('hidden');
-}
-
-// ضبط حالة زر الفحص فقط (بدون لمس أزرار التحميل/التطبيق)
-function setButtonsState(checking = false) {
-  const checkBtn = document.getElementById('update-check-btn');
-  if (checkBtn) {
-    checkBtn.disabled = checking;
-    checkBtn.textContent = checking ? '⏳ جاري الفحص...' : '🔍 فحص التحديثات';
-  }
-}
-
-// إظهار/إخفاء أزرار التحميل والتطبيق وفق نتائج الفحص
-function setUpdateButtonsVisibility(hasUpdate) {
-  const changelogBtn = document.getElementById('update-view-changelog-btn');
-  const downloadBtn = document.getElementById('update-download-btn');
-  const applyBtn = document.getElementById('update-apply-btn');
-
-  if (hasUpdate) {
-    if (changelogBtn) changelogBtn.disabled = false;
-    if (downloadBtn) { downloadBtn.disabled = false; downloadBtn.style.display = 'inline-block'; }
-    if (applyBtn) { applyBtn.disabled = false; applyBtn.style.display = 'inline-block'; }
-  } else {
-    if (changelogBtn) changelogBtn.disabled = true;
-    if (downloadBtn) { downloadBtn.disabled = true; downloadBtn.style.display = 'none'; }
-    if (applyBtn) { applyBtn.disabled = true; applyBtn.style.display = 'none'; }
-  }
-}
-
-async function checkUpdates() {
-  setButtonsState(true);
-  hideUpdateStatus();
-
-  try {
-    // التحديث يُسحب دائمًا من فرع main (لا يوجد اختيار للفرع في الواجهة)
-    const branch = 'main';
-
     const r = await api('/api/update/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ branch })
+      body: JSON.stringify({ branch: 'main' }),
     });
-
-    console.log('[UPDATE] API Response:', r);
-
-    if (!r.success) {
-      throw new Error(r.error || 'فشل في فحص التحديثات');
+    if (!r || !r.success) {
+      updSet('upd-state', '❌ تعذّر الفحص', 'upd-hero-value upd-bad');
+      updSet('upd-latest-sub', (r && r.error) ? String(r.error).slice(0, 80) : '');
+      if (!silent) updNote('تعذّر فحص التحديثات — تأكّد من الإنترنت أو حدود GitHub API.');
+      return null;
     }
-
-    // حفظ نتيجة الفحص لاستخدامها في الأزرار
-    lastCheckResult = r;
-
-    // عرض معلومات الإصدار
-    const curEl = document.getElementById('update-current-version');
-    const latEl = document.getElementById('update-latest-version');
-    if (curEl) curEl.textContent = r.currentVersion || 'غير معروف';
-    if (latEl) latEl.textContent = r.latestVersion || 'غير معروف';
-
-    const hasUpdate = !!(r.hasUpdate || r.updateAvailable);
-
-    if (hasUpdate) {
-      showUpdateStatus('🎉 يتوفر تحديث جديد! الإصدار ' + (r.latestVersion || '') + ' متاح.', false);
-    } else {
-      const statusMsg = r.error ? `⚠️ ${r.error}` : `✅ أنت تستخدم أحدث إصدار (${r.currentVersion || ''}).`;
-      showUpdateStatus(statusMsg, !!r.error);
-    }
-
-    setUpdateButtonsVisibility(hasUpdate);
+    updLastCheck = r;
+    const cur = String(r.currentVersion || '—').replace(/^v/i, '');
+    const lat = String(r.latestVersion || '—').replace(/^v/i, '');
+    const has = !!(r.hasUpdate || r.updateAvailable);
+    updSet('upd-current', 'v' + cur, 'upd-hero-value');
+    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
+    updSet('upd-latest-sub', has ? 'يتوفّر تحديث جديد 🟠' : 'أنت على أحدث إصدار ✓', 'upd-hero-sub');
+    updSet('upd-state', has ? '🟠 تحديث متاح' : '🟢 محدَّث', 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
+    const now = Date.now();
+    try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
+    updRenderLast(now);
+    updBadge(has);
+    updShow('upd-changelog-btn', has);
+    updShow('upd-safe-btn', has && updMode === 'appliance');
+    if (updMode === 'plain') { updShow('upd-download-btn', has); updShow('upd-apply-btn', has); }
+    return r;
   } catch (e) {
-    console.error('[UPDATE] Error:', e);
-    showUpdateStatus('❌ خطأ: ' + e.message, true);
-    setUpdateButtonsVisibility(false);
+    updSet('upd-state', '❌ خطأ', 'upd-hero-value upd-bad');
+    if (!silent) updNote('خطأ: ' + e.message);
+    return null;
   } finally {
-    setButtonsState(false);
+    if (btn) { btn.disabled = false; btn.textContent = '🔍 فحص التحديثات'; }
   }
 }
 
-function showChangelog(changelog) {
-  const modal = document.getElementById('changelog-modal');
-  const content = document.getElementById('changelog-content');
-  if (modal && content) {
-    content.textContent = changelog || 'لا توجد تغييرات مسجلة';
-    modal.classList.remove('hidden');
-  }
+// ── متابعة تنفيذ التحديث (أبلاينس: من ملف الحالة + السجل) ──
+function updFollowAppliance() {
+  const started = Date.now();
+  updSetBusy(true);
+  updShow('upd-progress-card', true);
+  updStepsReset();
+  updStepSet('download', 'active');
+  if (updProgressTimer) clearInterval(updProgressTimer);
+  updProgressTimer = setInterval(async () => {
+    try {
+      const p = await api('/api/appliance-update/progress');
+      const st = p && p.state;
+      if (p && typeof p.log === 'string' && p.log) { const el = updEl('upd-log'); if (el) el.textContent = p.log; }
+      if (st && st.message) {
+        updSet('upd-progress-text', st.message);
+        const step = updStepFromMessage(st.message);
+        if (step) updStepSet(step, 'active');
+      }
+      if (st && st.state === 'success') {
+        clearInterval(updProgressTimer); updProgressTimer = null;
+        updStepsAllDone();
+        updSet('upd-progress-text', '✅ ' + st.message);
+        updNote('✅ ' + st.message + ' — جارٍ إعادة تحميل الصفحة…');
+        updSetBusy(false);
+        setTimeout(() => location.reload(), 3000);
+        return;
+      }
+      if (st && st.state === 'failed') {
+        clearInterval(updProgressTimer); updProgressTimer = null;
+        updSetBusy(false);
+        updSet('upd-progress-text', '❌ ' + st.message);
+        updNote('❌ فشل التحديث: ' + st.message + ' — راجع السجل التفصيلي.');
+      }
+    } catch (e) {
+      // الخدمة قد تكون في لحظة إعادة تشغيل — نواصل المحاولة
+    }
+    if (Date.now() - started > 20 * 60 * 1000) {
+      clearInterval(updProgressTimer); updProgressTimer = null;
+      updSetBusy(false);
+      updNote('⏳ انتهت مدة المتابعة — راجع سجل التحديث أو أعد الفحص.');
+    }
+  }, 2500);
 }
 
-function closeChangelog() {
-  const modal = document.getElementById('changelog-modal');
-  if (modal) modal.classList.add('hidden');
-}
-
-// عرض الكارد الداخلي لسجل التغييرات (الموجود داخل القسم)
-function showInlineChangelog(changelog) {
-  const card = document.getElementById('update-changelog');
-  const content = document.getElementById('update-changelog-content');
-  if (card && content) {
-    content.textContent = changelog || 'لا توجد تغييرات مسجلة';
-    card.classList.remove('hidden');
-  }
-}
-
-function closeInlineChangelog() {
-  const card = document.getElementById('update-changelog');
-  if (card) card.classList.add('hidden');
-}
-
-async function applyUpdate() {
+// ── 🛡️ نسخة احتياطية ثم تحديث (ضغطة واحدة) ──
+async function updSafeRun() {
   const ok = await confirmAction({
-    title: 'تَأكيد تَحديث النظام',
-    message: '⚠️ سيتم تحديث النظام وإعادة تشغيل الخدمة. هل تريد المتابعة؟',
-    confirmText: '🔄 مُتابعة',
+    title: '🛡️ نسخة احتياطية + تحديث',
+    message: 'سيتم:\n① إنشاء نسخة احتياطية من قاعدة البيانات\n② تحديث النظام وإعادة تشغيل الخدمة\n\nمتابعة؟',
+    confirmText: '🛡️ تنفيذ',
+    danger: false,
+  });
+  if (!ok) return;
+  updSetBusy(true);
+  try {
+    updNote('⏳ إنشاء نسخة احتياطية…');
+    const b = await api('/api/backup/create', { method: 'POST' });
+    if (!b || !b.success) throw new Error((b && b.error) || 'فشل إنشاء النسخة الاحتياطية');
+    updNote('✅ ' + (b.message || 'تم إنشاء النسخة الاحتياطية') + ' — بدء التحديث…');
+    const r = await api('/api/appliance-update/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tag: 'latest' }),
+    });
+    if (!r || !r.success) throw new Error((r && r.error) || 'تعذّر إرسال طلب التحديث');
+    updFollowAppliance();
+  } catch (e) {
+    updSetBusy(false);
+    updNote('❌ ' + e.message);
+  }
+}
+
+// ── ↩️ الرجوع لإصدار أقدم ──
+async function updOpenRollback() {
+  const modal = updEl('rollback-modal');
+  const listEl = updEl('rollback-list');
+  const stEl = updEl('rollback-status');
+  if (!modal || !listEl) return;
+  modal.classList.remove('hidden');
+  if (stEl) stEl.textContent = '';
+  listEl.innerHTML = '<div style="padding:0.8rem; color:var(--muted);">⏳ جارٍ جلب الإصدارات…</div>';
+  const r = await api('/api/appliance-update/tags');
+  const tags = (r && r.success && Array.isArray(r.tags)) ? r.tags : [];
+  const cur = updLastCheck && updLastCheck.currentVersion ? 'v' + String(updLastCheck.currentVersion).replace(/^v/i, '') : '';
+  if (!tags.length) {
+    listEl.innerHTML = '<div style="padding:0.8rem; color:var(--muted);">' + esc((r && r.error) || 'تعذّر جلب قائمة الإصدارات') + '</div>';
+    return;
+  }
+  listEl.innerHTML = tags.map((t) => {
+    const isCur = t === cur;
+    return '<div class="upd-row" style="padding:0.55rem 0.8rem; align-items:center;">'
+      + '<span style="font-family:monospace;">' + esc(t) + (isCur ? ' <span style="color:var(--online);">(الحالي)</span>' : '') + '</span>'
+      + (isCur ? '' : '<button type="button" class="btn" data-tag="' + esc(t) + '" style="padding:0.2rem 0.6rem; font-size:0.8rem;">↩️ الرجوع</button>')
+      + '</div>';
+  }).join('');
+  listEl.querySelectorAll('button[data-tag]').forEach((b) => {
+    b.addEventListener('click', () => updRollbackTo(b.getAttribute('data-tag')));
+  });
+  if (stEl && r && r.cached) stEl.textContent = 'قائمة من الكاش (يُحدَّث كل 10 دقائق).';
+}
+
+async function updRollbackTo(tag) {
+  const ok = await confirmAction({
+    title: 'الرجوع إلى ' + tag,
+    message: 'سيتم تثبيت الإصدار ' + tag + ' وإعادة تشغيل الخدمة.\nيُنصح بعمل نسخة احتياطية أولاً.',
+    confirmText: '↩️ رجوع',
     danger: true,
   });
   if (!ok) return;
-
-  const applyBtn = document.getElementById('update-apply-btn');
-  if (applyBtn) {
-    applyBtn.disabled = true;
-    applyBtn.textContent = '⏳ جاري التحديث...';
-  }
-
-  showUpdateStatus('🔄 جاري تنفيذ التحديث...', false);
-
-  // v2.8.7 — الأبلاينس: نطلب من المساعد root التنفيذ ثم نتابع التقدّم من سجلّه.
-  if (applianceMode) {
-    try {
-      const r = await api('/api/appliance-update/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag: 'latest' }),
-      });
-      if (!r || !r.success) throw new Error((r && r.error) || 'تعذّر إرسال طلب التحديث');
-      showUpdateStatus('⏳ ' + (r.message || 'بدأ التحديث على الخادم…'), false);
-      followApplianceUpdate(applyBtn);
-      return;
-    } catch (e) {
-      showUpdateStatus('❌ خطأ: ' + e.message, true);
-      if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = '🚀 تطبيق التحديث'; }
-      return;
-    }
-  }
-
-  try {
-    // التحديث يُسحب دائمًا من فرع main
-    const branch = 'main';
-
-    const r = await api('/api/update/perform', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ branch })
-    });
-
-    if (r.success) {
-      showUpdateStatus('✅ ' + (r.message || 'تم التحديث بنجاح! جاري إعادة تشغيل الخدمة...'), false);
-
-      setTimeout(() => {
-        showUpdateStatus('✅ تم التحديث بنجاح! يرجى تحديث الصفحة.', false);
-        setTimeout(() => location.reload(), 3000);
-      }, 5000);
-    } else {
-      throw new Error(r.error || 'فشل في تنفيذ التحديث');
-    }
-  } catch (e) {
-    showUpdateStatus('❌ خطأ: ' + e.message, true);
-    if (applyBtn) {
-      applyBtn.disabled = false;
-      applyBtn.textContent = '🚀 تطبيق التحديث';
-    }
-  }
+  const stEl = updEl('rollback-status');
+  const r = await api('/api/appliance-update/request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tag }),
+  });
+  if (!r || !r.success) { if (stEl) stEl.textContent = '❌ ' + ((r && r.error) || 'تعذّر إرسال الطلب'); return; }
+  if (stEl) stEl.textContent = '⏳ ' + (r.message || 'جارٍ التنفيذ…');
+  updShow('rollback-modal', false);
+  updFollowAppliance();
 }
 
-async function downloadUpdate() {
-  console.log('[DOWNLOAD] downloadUpdate() called');
-
-  const downloadBtn = document.getElementById('update-download-btn');
-  const applyBtn = document.getElementById('update-apply-btn');
-  const progressDiv = document.getElementById('update-progress');
-  const progressText = document.getElementById('update-progress-text');
-  const outputDiv = document.getElementById('update-output');
-  const logPre = document.getElementById('update-log');
-
-  // تعطيل زر التحميل أثناء العملية
-  if (downloadBtn) downloadBtn.disabled = true;
+// ── مسار التثبيت العادي (Git): تحميل (SSE) + تطبيق ──
+async function updPlainDownload() {
+  const dlBtn = updEl('upd-download-btn');
+  const applyBtn = updEl('upd-apply-btn');
+  const logEl = updEl('upd-log');
+  updShow('upd-progress-card', true);
+  updStepsReset();
+  updStepSet('download', 'active');
+  if (dlBtn) dlBtn.disabled = true;
   if (applyBtn) applyBtn.disabled = true;
-
-  // إظهار واجهة التقدم
-  if (progressDiv) progressDiv.classList.remove('hidden');
-  if (outputDiv) outputDiv.classList.remove('hidden');
-  if (logPre) logPre.textContent = '';
-
-  if (progressText) progressText.textContent = 'جاري الاتصال بالخادم...';
-  if (logPre) logPre.textContent += '⏳ جاري بدء عملية التحميل...\n';
-
+  if (logEl) logEl.textContent = '⏳ بدء التحميل…\n';
   try {
-    // التحميل دائمًا من فرع main
-    const branch = 'main';
-    const url = `/api/update/download?branch=${encodeURIComponent(branch)}`;
-
-    console.log('[DOWNLOAD] Fetching:', url);
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-
-    if (!response.body) {
-      throw new Error('الاستجابة لا تحتوي على بث بيانات (SSE غير مدعوم)');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
+    const res = await fetch('/api/update/download?branch=' + encodeURIComponent('main'), { credentials: 'include' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.body) throw new Error('لا يوجد بثّ بيانات');
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split('\n\n');
-      buffer = parts.pop() || '';
-
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop() || '';
       for (const part of parts) {
         const lines = part.trim().split('\n');
-        let eventType = 'line';
-        let data = '';
-
-        for (const line of lines) {
-          if (line.startsWith('event:')) {
-            eventType = line.substring(6).trim();
-          } else if (line.startsWith('data:')) {
-            data = line.substring(5).trim();
-          }
+        let ev = 'line', data = '';
+        for (const ln of lines) {
+          if (ln.startsWith('event:')) ev = ln.slice(6).trim();
+          else if (ln.startsWith('data:')) data = ln.slice(5).trim();
         }
-
         if (!data) continue;
-
-        let parsed = null;
-        try { parsed = JSON.parse(data); } catch (e) { parsed = null; }
-
-        if (eventType === 'start' || eventType === 'line') {
-          const message = (parsed && parsed.message) ? parsed.message : data;
-          if (logPre) logPre.textContent += message + '\n';
-          if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
-        } else if (eventType === 'progress' && parsed) {
-          if (progressText) progressText.textContent = `⬇️ تحميل: ${parsed.percent}% (${parsed.downloaded} / ${parsed.total})`;
-          if (logPre) logPre.textContent += `\r[${parsed.percent}%] ${parsed.downloaded} / ${parsed.total}\n`;
-          if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
-        } else if (eventType === 'error') {
-          const errMsg = (parsed && parsed.message) ? parsed.message : 'خطأ غير معروف';
-          throw new Error(errMsg);
-        } else if (eventType === 'done') {
-          const doneMsg = (parsed && parsed.message) ? parsed.message : 'اكتمل التحميل';
-          if (progressText) progressText.textContent = doneMsg;
-          if (logPre) logPre.textContent += `\n✅ ${doneMsg}\n`;
-          if (outputDiv) outputDiv.scrollTop = outputDiv.scrollHeight;
-          // تمكين زر التطبيق فقط
-          if (applyBtn) {
-            applyBtn.disabled = false;
-            applyBtn.textContent = '🚀 تطبيق التحديث';
-            applyBtn.style.display = 'inline-block';
-          }
+        let js = null;
+        try { js = JSON.parse(data); } catch (e) { js = null; }
+        const msg = (js && js.message) ? js.message : data;
+        if (ev === 'line' || ev === 'start') {
+          if (logEl) logEl.textContent += msg + '\n';
+          const step = updStepFromMessage(msg);
+          if (step) updStepSet(step, 'active');
+          updSet('upd-progress-text', msg);
+        } else if (ev === 'progress' && js) {
+          updSet('upd-progress-text', `⬇️ ${js.percent}% (${js.downloaded} / ${js.total})`);
+        } else if (ev === 'error') {
+          throw new Error(msg);
+        } else if (ev === 'done') {
+          updStepSet('download', 'done');
+          updSet('upd-progress-text', msg);
+          if (applyBtn) { applyBtn.disabled = false; applyBtn.style.display = 'inline-block'; }
         }
       }
     }
-
-    // في حال انتهى البث بدون حدث done
-    if (progressText) progressText.textContent = '✅ اكتمل التحميل';
-    if (applyBtn) {
-      applyBtn.disabled = false;
-      applyBtn.textContent = '🚀 تطبيق التحديث';
-      applyBtn.style.display = 'inline-block';
-    }
-    if (downloadBtn) downloadBtn.disabled = false;
-
   } catch (e) {
-    console.error('[UPDATE] Download error:', e);
-    if (logPre) logPre.textContent += `\n❌ خطأ: ${e.message}\n`;
-    if (progressText) progressText.textContent = `خطأ: ${e.message}`;
-    showUpdateStatus('❌ خطأ في التحميل: ' + e.message, true);
-    if (downloadBtn) downloadBtn.disabled = false;
-    if (applyBtn) applyBtn.disabled = false;
+    if (logEl) logEl.textContent += '\n❌ ' + e.message + '\n';
+    updNote('❌ خطأ في التحميل: ' + e.message);
+  } finally {
+    if (dlBtn) dlBtn.disabled = false;
   }
 }
 
-function initUpdateTab() {
-  // ملاحظة: تم إزالة اختيار الفرع — التحديث يُسحب دائمًا من main تلقائيًا.
-
-  // v2.8.7 — نكتشف وضع الأبلاينس مرة واحدة (يغيّر مسار التنفيذ إلى المساعد root).
-  detectApplianceMode();
-
-  // ===== ربط الأزرار بشكل دائم وموثوق (بدلاً من التعيين الديناميكي) =====
-  const checkBtn = document.getElementById('update-check-btn');
-  const changelogBtn = document.getElementById('update-view-changelog-btn');
-  const downloadBtn = document.getElementById('update-download-btn');
-  const applyBtn = document.getElementById('update-apply-btn');
-  const closeChangelogInlineBtn = document.getElementById('update-close-changelog-btn');
-
-  if (checkBtn) {
-    checkBtn.addEventListener('click', checkUpdates);
-  }
-  if (downloadBtn) {
-    downloadBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      console.log('[DOWNLOAD] Button clicked');
-      if (!downloadBtn.disabled) downloadUpdate();
+async function updPlainApply() {
+  const ok = await confirmAction({
+    title: 'تأكيد تطبيق التحديث',
+    message: 'سيتم سحب الفرع، تثبيت التبعيات، وإعادة تشغيل الخدمة. متابعة؟',
+    confirmText: '🚀 متابعة',
+    danger: true,
+  });
+  if (!ok) return;
+  updSetBusy(true);
+  updShow('upd-progress-card', true);
+  updNote('⏳ جارٍ تطبيق التحديث…');
+  try {
+    const r = await api('/api/update/perform', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ branch: 'main' }),
     });
+    if (!r || !r.success) throw new Error((r && r.error) || 'فشل تنفيذ التحديث');
+    updStepsAllDone();
+    updNote('✅ ' + (r.message || 'تم التحديث') + ' — جارٍ إعادة تحميل الصفحة…');
+    updSetBusy(false);
+    setTimeout(() => location.reload(), 3000);
+  } catch (e) {
+    updSetBusy(false);
+    updNote('❌ ' + e.message);
   }
-  if (applyBtn) {
-    applyBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (!applyBtn.disabled) applyUpdate();
-    });
-  }
-  if (changelogBtn) {
-    changelogBtn.addEventListener('click', () => {
-      if (lastCheckResult && lastCheckResult.changelog) {
-        showChangelog(lastCheckResult.changelog);
-      } else if (changelogBtn && !changelogBtn.disabled) {
-        // على الأقل نعرض رسالة
-        showChangelog('لا توجد تغييرات مسجلة');
-      }
-    });
-  }
-  if (closeChangelogInlineBtn) {
-    closeChangelogInlineBtn.addEventListener('click', closeInlineChangelog);
-  }
+}
 
-  // إغلاق المودال
-  const closeModal = document.getElementById('changelog-close');
-  if (closeModal) closeModal.addEventListener('click', closeChangelog);
-
-  const modalOverlay = document.getElementById('changelog-modal');
-  if (modalOverlay) {
-    modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) closeChangelog();
-    });
+// ── سجل عمليات التحديث ──
+async function updLoadHistory() {
+  const el = updEl('upd-history');
+  if (!el) return;
+  el.innerHTML = '<span style="color:var(--muted);">⏳…</span>';
+  const r = await api('/api/update/history');
+  const rows = (r && r.success && Array.isArray(r.history)) ? r.history : (Array.isArray(r) ? r : []);
+  if (!rows.length) {
+    const p = (updMode === 'appliance') ? await api('/api/appliance-update/progress') : null;
+    const st = p && p.state;
+    el.innerHTML = (st && st.message)
+      ? '<div class="upd-row"><span>آخر عملية (مساعد الأبلاينس)</span><span>' + esc(st.message) + (st.at ? ' — ' + esc(st.at) : '') + '</span></div>'
+      : '<span style="color:var(--muted);">لا توجد عمليات مسجّلة بعد.</span>';
+    return;
   }
+  el.innerHTML = rows.slice(0, 10).map((h) => {
+    const when = esc(h.at || h.date || h.time || '');
+    const what = esc(h.message || h.text || h.tag || h.version || JSON.stringify(h));
+    return '<div class="upd-row"><span>' + when + '</span><span>' + what + '</span></div>';
+  }).join('');
+}
 
-  // مفتاح Escape لإغلاق المودال
+function updCopyAll() {
+  const parts = [];
+  const hist = updEl('upd-history');
+  if (hist) parts.push('سجل عمليات التحديث:\n' + hist.innerText);
+  const log = updEl('upd-log');
+  if (log && log.textContent) parts.push('\nسجل التحديث التفصيلي:\n' + log.textContent);
+  const txt = parts.join('\n') || 'لا يوجد سجل';
+  let done = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt); done = true; }
+  } catch (e) { done = false; }
+  if (!done) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      done = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) { done = false; }
+  }
+  updNote(done ? '📋 تم نسخ السجل ✓' : '📋 تعذّر النسخ التلقائي — حدّد النص وانسخه يدويًا');
+}
+
+// ── التشغيل ──
+async function updInit() {
+  const tab = updEl('tab-updates');
+  if (!tab) return;
+
+  await updDetectMode();
+  updRenderLast();
+  updCheck(true);                     // فحص أولي (صامت) لرسم شريط الحالة
+  updLoadHistory();
+
+  const checkBtn = updEl('upd-check-btn');
+  if (checkBtn) checkBtn.addEventListener('click', () => updCheck(false));
+
+  const safeBtn = updEl('upd-safe-btn');
+  if (safeBtn) safeBtn.addEventListener('click', updSafeRun);
+
+  const rollbackBtn = updEl('upd-rollback-btn');
+  if (rollbackBtn) rollbackBtn.addEventListener('click', updOpenRollback);
+
+  const dlBtn = updEl('upd-download-btn');
+  if (dlBtn) dlBtn.addEventListener('click', updPlainDownload);
+
+  const applyBtn = updEl('upd-apply-btn');
+  if (applyBtn) applyBtn.addEventListener('click', updPlainApply);
+
+  const copyBtn = updEl('upd-log-copy-btn');
+  if (copyBtn) copyBtn.addEventListener('click', updCopyAll);
+
+  const chBtn = updEl('upd-changelog-btn');
+  if (chBtn) chBtn.addEventListener('click', () => {
+    const modal = updEl('changelog-modal');
+    const content = updEl('changelog-content');
+    if (content) content.textContent = (updLastCheck && updLastCheck.changelog) || 'لا توجد تغييرات مسجّلة';
+    if (modal) modal.classList.remove('hidden');
+  });
+  const chClose = updEl('changelog-close');
+  if (chClose) chClose.addEventListener('click', () => updShow('changelog-modal', false));
+  const chModal = updEl('changelog-modal');
+  if (chModal) chModal.addEventListener('click', (e) => { if (e.target === chModal) updShow('changelog-modal', false); });
+
+  // نافذة الرجوع
+  const rbClose = updEl('rollback-close');
+  if (rbClose) rbClose.addEventListener('click', () => updShow('rollback-modal', false));
+  const rbModal = updEl('rollback-modal');
+  if (rbModal) rbModal.addEventListener('click', (e) => { if (e.target === rbModal) updShow('rollback-modal', false); });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeChangelog();
+    if (e.key !== 'Escape') return;
+    updShow('rollback-modal', false);
+    updShow('changelog-modal', false);
   });
 
-  // الفحص التلقائي عند فتح تبويب التحديثات
-  const tabUpdates = document.getElementById('tab-updates');
-  if (tabUpdates) {
-    tabUpdates.addEventListener('click', () => {
-      // فحص تلقائي بعد لحظة من فتح التبويب لإظهار الحالة مباشرة
-      setTimeout(() => {
-        if (!lastCheckResult) checkUpdates();
-      }, 200);
-    });
-  }
+  // عند فتح التبويب: تحديث إن كانت البيانات قديمة + تحديث سجل العمليات
+  tab.addEventListener('click', () => {
+    const last = updReadLast();
+    if (!updBusy && (!last || Date.now() - last > UPD_FRESH_MS)) updCheck(true);
+    updLoadHistory();
+  });
+
+  // فحص تلقائي كل 6 ساعات (يعمل حتى لو التبويب مقفول)
+  setInterval(() => { if (!updBusy) updCheck(true); }, UPD_AUTO_MS);
 }
 
-document.addEventListener('DOMContentLoaded', initUpdateTab);
+document.addEventListener('DOMContentLoaded', updInit);

@@ -18,6 +18,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 
@@ -26,6 +27,30 @@ const APPLIANCE_HELPER = process.env.APPLIANCE_HELPER_PATH || '/usr/local/sbin/n
 // semver صارم: v1.2.3 أو 1.2.3 مع لاحقة اختيارية — لا مسافات ولا رموز shell.
 const TAG_RE = /^v?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.]*)?$/;
 const STATE_SUBDIR = 'update';
+
+// v2.10.0 — قائمة وسوم الإصدارات (للرجوع لإصدار أقدم) من GitHub، بكاش داخلي يجنّبنا حدود الـ API.
+const TAGS_REPO = 'kerolos-it2022/network-monitor';   // نفس المستودع المُثبَّت داخل nm-update
+const TAGS_TTL_MS = 10 * 60 * 1000;
+let tagsCache = { at: 0, list: [] };
+
+// طلب HTTPS JSON بمهلة قصيرة (بلا أي اعتماديات إضافية).
+function httpsGetJson(url, timeoutMs = 6000) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      timeout: timeoutMs,
+      headers: { 'User-Agent': 'nm-appliance-update', Accept: 'application/vnd.github+json' },
+    }, (r) => {
+      let body = '';
+      r.setEncoding('utf8');
+      r.on('data', (c) => { body += c; if (body.length > 500000) req.destroy(); });
+      r.on('end', () => {
+        try { resolve(JSON.parse(body)); } catch (e) { reject(new Error('رد غير صالح من GitHub')); }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('مهلة الاتصال بـGitHub')); });
+    req.on('error', (e) => reject(e));
+  });
+}
 
 function isAppliance() {
   try { return fs.existsSync(APPLIANCE_HELPER); } catch (e) { return false; }
@@ -88,6 +113,36 @@ router.get('/progress', requireAuth, (req, res) => {
     res.json({ success: true, appliance: isAppliance(), state, log });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// GET /tags — قائمة وسوم الإصدارات المتاحة (تنازليًّا) للرجوع لإصدار أقدم.
+// كاش 10 دقائق + إرجاع آخر كاش عند فشل الشبكة (حتى لا تتعطّل الواجهة).
+router.get('/tags', requireAuth, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (tagsCache.list.length && now - tagsCache.at < TAGS_TTL_MS) {
+      return res.json({ success: true, cached: true, tags: tagsCache.list });
+    }
+    const json = await httpsGetJson(`https://api.github.com/repos/${TAGS_REPO}/tags?per_page=50`);
+    const cmp = (a, b) => {
+      const pa = String(a).replace(/^v/i, '').split('.').map(Number);
+      const pb = String(b).replace(/^v/i, '').split('.').map(Number);
+      for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pb[i] || 0) - (pa[i] || 0);
+      return 0;
+    };
+    const list = (Array.isArray(json) ? json : [])
+      .map((t) => String((t && t.name) || ''))
+      .filter((n) => /^v?\d+\.\d+\.\d+$/.test(n))
+      .sort(cmp)
+      .slice(0, 30);
+    if (list.length) tagsCache = { at: now, list };
+    res.json({ success: true, cached: false, tags: list });
+  } catch (e) {
+    if (tagsCache.list.length) {
+      return res.json({ success: true, cached: true, stale: true, tags: tagsCache.list });
+    }
+    res.status(502).json({ success: false, error: 'تعذّر جلب قائمة الإصدارات من GitHub: ' + e.message });
   }
 });
 

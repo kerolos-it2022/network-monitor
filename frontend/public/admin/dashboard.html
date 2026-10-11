@@ -34,7 +34,7 @@
       <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label">السجل</span></button></li>
       <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
       <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
-      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span></button></li>
+      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
       <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label">الوصول عن بُعد</span></button></li>
     </ul>
   </aside>
@@ -566,59 +566,102 @@
 
     <!-- ============ قسم التحديثات ============ -->
     <section id="section-updates" class="hidden">
+      <style>
+        /* v2.10.0 — تنسيقات صفحة التحديثات (داخل القسم لتقليل مخاطر التعارض مع بقية الصفحة) */
+        .upd-hero { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:0.9rem; margin-bottom:1.25rem; }
+        .upd-hero-item { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:0.9rem 1rem; text-align:center; }
+        .upd-hero-label { font-size:0.8rem; color:var(--muted); margin-bottom:0.35rem; }
+        .upd-hero-value { font-size:1.15rem; font-weight:700; color:var(--text); }
+        .upd-hero-sub { font-size:0.78rem; color:var(--muted); margin-top:0.2rem; }
+        .upd-ok { color:var(--online); }
+        .upd-warn { color:#d97706; }
+        .upd-bad { color:var(--offline); }
+        .upd-muted { color:var(--muted); }
+        .upd-actions { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.75rem; }
+        .upd-plain-actions { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.75rem; }
+        .upd-note { font-size:0.85rem; color:var(--muted); padding:0.6rem 0.8rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; }
+        .upd-steps { list-style:none; margin:0; padding:0; display:grid; gap:0.4rem; }
+        .upd-steps li { position:relative; padding-inline-start:1.9rem; font-size:0.9rem; color:var(--muted); }
+        .upd-steps li::before { content:'○'; position:absolute; inset-inline-start:0.4rem; color:var(--muted); }
+        .upd-steps li.active { color:var(--text); font-weight:600; }
+        .upd-steps li.active::before { content:'◉'; color:#d97706; }
+        .upd-steps li.done { color:var(--online); }
+        .upd-steps li.done::before { content:'✓'; color:var(--online); }
+        .upd-log { background:#1e293b; color:#e2e8f0; padding:0.8rem; border-radius:6px; font-family:monospace; font-size:0.78rem; white-space:pre-wrap; max-height:220px; overflow:auto; margin:0.5rem 0 0; }
+        .upd-row { display:flex; justify-content:space-between; gap:0.75rem; padding:0.45rem 0; border-bottom:1px dashed var(--border); font-size:0.85rem; }
+        .upd-row:last-child { border-bottom:none; }
+        .tab-badge { display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; margin-inline-start:6px; vertical-align:middle; }
+      </style>
+
       <div class="form-card">
         <h3>🔄 تحديثات النظام</h3>
-        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
-          تحقق من وجود تحديثات جديدة من مستودع GitHub وقم بتطبيقها بسهولة.
+        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1.25rem;">
+          فحص الإصدارات من GitHub وتنفيذ التحديث بأمان — الويب لا تنفّذ أوامر، والتنفيذ بصلاحية root عبر «ملف طلب».
         </p>
-        
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-          <div class="form-card" style="text-align:center; padding:1.5rem;">
-            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">الإصدار الحالي</div>
-            <div id="update-current-version" style="font-size:1.5rem; font-weight:bold; color:var(--text);">—</div>
+
+        <!-- شريط الحالة: مصدر واحد لكل المعلومات والحالة -->
+        <div class="upd-hero">
+          <div class="upd-hero-item">
+            <div class="upd-hero-label">الإصدار الحالي</div>
+            <div class="upd-hero-value" id="upd-current">—</div>
           </div>
-          <div class="form-card" style="text-align:center; padding:1.5rem;">
-            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">أحدث إصدار</div>
-            <div id="update-latest-version" style="font-size:1.5rem; font-weight:bold; color:var(--accent);">—</div>
+          <div class="upd-hero-item">
+            <div class="upd-hero-label">آخر إصدار متاح</div>
+            <div class="upd-hero-value" id="upd-latest">—</div>
+            <div class="upd-hero-sub" id="upd-latest-sub"></div>
           </div>
-          <div class="form-card" style="text-align:center; padding:1.5rem;">
-            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">الحالة</div>
-            <div id="update-status" style="font-size:1.2rem; font-weight:bold;">⏳ جاري الفحص...</div>
+          <div class="upd-hero-item">
+            <div class="upd-hero-label">الحالة</div>
+            <div class="upd-hero-value" id="upd-state">⏳ جارٍ الفحص…</div>
+          </div>
+          <div class="upd-hero-item">
+            <div class="upd-hero-label">آخر فحص</div>
+            <div class="upd-hero-value" id="upd-lastcheck" style="font-size:0.95rem;">—</div>
           </div>
         </div>
 
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1.5rem; padding:0.6rem 0.9rem; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <span style="font-size:0.9rem; color:var(--muted);">🔄 التحديثات تُسحب تلقائيًا من فرع:</span>
-          <span style="font-size:0.9rem; font-weight:600; color:var(--accent); font-family:monospace;">main</span>
+        <div class="upd-actions">
+          <button type="button" class="btn btn-primary" id="upd-check-btn">🔍 فحص التحديثات</button>
+          <button type="button" class="btn btn-primary hidden" id="upd-safe-btn" title="ينشئ نسخة احتياطية ثم ينفّذ التحديث">🛡️ نسخة احتياطية + تحديث</button>
+          <button type="button" class="btn hidden" id="upd-changelog-btn">📋 عرض التغييرات</button>
+          <button type="button" class="btn hidden" id="upd-rollback-btn">↩️ الرجوع لإصدار أقدم</button>
         </div>
 
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
-          <button type="button" class="btn btn-primary" id="update-check-btn">🔍 فحص التحديثات</button>
-          <button type="button" class="btn" id="update-view-changelog-btn" disabled>📋 عرض التغييرات</button>
-          <button type="button" class="btn" id="update-download-btn" disabled style="display:none;">⬇️ تحميل التحديث</button>
-          <button type="button" class="btn btn-primary" id="update-apply-btn" disabled style="display:none;">🚀 تطبيق التحديث</button>
+        <!-- مسار التثبيت العادي (غير الأبلاينس) فقط -->
+        <div class="upd-plain-actions hidden" id="upd-plain-actions">
+          <button type="button" class="btn" id="upd-download-btn">⬇️ تحميل التحديث</button>
+          <button type="button" class="btn btn-primary" id="upd-apply-btn">🚀 تطبيق التحديث</button>
         </div>
 
-        <div id="update-progress" class="form-card hidden" style="margin-top:1rem;">
-          <div style="font-weight:600; margin-bottom:0.5rem;">⏳ جاري التحديث...</div>
-          <div class="tools-spinner" style="width:30px; height:30px; border-width:3px; margin:0 auto;"></div>
-          <div id="update-progress-text" style="margin-top:0.5rem; color:var(--muted); font-size:0.9rem;">جاري التحضير...</div>
+        <div class="upd-note" id="upd-note"></div>
+
+        <!-- التقدّم: خطوات واضحة بدل السبينر الأعمى -->
+        <div class="form-card hidden" id="upd-progress-card" style="margin-top:1rem;">
+          <div style="font-weight:600; margin-bottom:0.75rem;">⏳ التحديث جارٍ…</div>
+          <ol class="upd-steps" id="upd-steps">
+            <li data-step="download">تهيئة وتنزيل الإصدار</li>
+            <li data-step="files">تحديث ملفات التطبيق</li>
+            <li data-step="deps">تثبيت التبعيات (npm ci)</li>
+            <li data-step="restart">إعادة تشغيل الخدمة</li>
+          </ol>
+          <div id="upd-progress-text" style="margin-top:0.6rem; color:var(--muted); font-size:0.9rem;"></div>
+          <details style="margin-top:0.75rem;">
+            <summary style="cursor:pointer; font-size:0.9rem; color:var(--accent);">📋 عرض السجل التفصيلي</summary>
+            <pre class="upd-log" id="upd-log"></pre>
+          </details>
         </div>
 
-        <div id="update-output" class="form-card hidden" style="margin-top:1rem; max-height:300px; overflow:auto;">
-          <div style="font-weight:600; margin-bottom:0.5rem;">📋 سجل العملية:</div>
-          <pre id="update-log" style="background:#1e293b; color:#e2e8f0; padding:1rem; border-radius:6px; font-family:monospace; font-size:0.85rem; white-space:pre-wrap;"></pre>
-        </div>
-
-        <div id="update-changelog" class="form-card hidden" style="margin-top:1rem; max-height:400px; overflow:auto;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-            <div style="font-weight:600;">📋 سجل التغييرات</div>
-            <button type="button" class="btn" id="update-close-changelog-btn" style="padding:0.25rem 0.5rem; font-size:0.8rem;">إغلاق</button>
+        <!-- سجل عمليات التحديث -->
+        <div class="form-card" style="margin-top:1rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+            <div style="font-weight:600;">🗂️ سجل عمليات التحديث</div>
+            <button type="button" class="btn" id="upd-log-copy-btn" style="padding:0.25rem 0.6rem; font-size:0.8rem;">📋 نسخ السجل</button>
           </div>
-          <div id="update-changelog-content" style="background:var(--bg); padding:1rem; border-radius:6px; font-size:0.9rem; line-height:1.6;"></div>
+          <div id="upd-history" style="font-size:0.9rem; color:var(--muted);">—</div>
         </div>
       </div>
     </section>
+
 
     <!-- v2.9.0 — قسم «الوصول عن بُعد» (ngrok): عرض الحالة + تحكّم آمن عبر مساعد root -->
     <section id="section-remote" class="hidden">
@@ -784,6 +827,20 @@
   </div>
 
   <!-- Changelog Modal -->
+  <!-- v2.10.0 — نافذة الرجوع لإصدار أقدم (Rollback) -->
+  <div id="rollback-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الرجوع لإصدار أقدم">
+    <div class="modal-content" style="max-width:560px;">
+      <button type="button" class="modal-close" id="rollback-close" aria-label="إغلاق">✕</button>
+      <h3>↩️ الرجوع لإصدار أقدم</h3>
+      <p style="font-size:0.88rem; color:var(--muted); margin-bottom:0.75rem;">
+        اختر الإصدار الذي تريد الرجوع إليه — سيُنفَّذ بنفس الآلية الآمنة (ملف طلب ← مساعد root).
+        <br><strong style="color:var(--text);">يُنصح بعمل نسخة احتياطية أولاً.</strong>
+      </p>
+      <div id="rollback-list" style="max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:8px;"></div>
+      <div id="rollback-status" style="margin-top:0.75rem; font-size:0.9rem;"></div>
+    </div>
+  </div>
+
   <div id="changelog-modal" class="modal hidden">
     <div class="modal-content" style="max-width:800px;">
       <button id="changelog-close" type="button" class="modal-close" aria-label="إغلاق">✕</button>
