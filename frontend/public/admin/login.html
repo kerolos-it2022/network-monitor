@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- login.html: صفحة تسجيل دخول لوحة التحكم. -->
+<!-- login.html: صفحة تسجيل دخول لوحة التحكم.
+     v2.8.9 — تنسيق منظَّم + زر إظهار/إخفاء كلمة المرور + تحذير Caps Lock + تعطيل الزر أثناء الدخول. -->
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -7,39 +8,101 @@
   <title>تسجيل الدخول — لوحة التحكم</title>
   <link rel="stylesheet" href="../css/style.css" />
   <style>
-    .login-wrap { max-width: 360px; margin: 4rem auto; padding: 0 1rem; }
-    .login-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; box-shadow: var(--shadow); }
-    .login-card h2 { margin-top: 0; }
-    .login-card label { display: flex; flex-direction: column; margin-bottom: 0.75rem; font-size: 0.9rem; }
-    .login-card input { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.95rem; }
-    .login-back { display: block; margin-top: 0.75rem; text-align: center; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
-    .login-remember { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--muted); cursor: pointer; user-select: none; }
-    .login-remember input { width: auto; cursor: pointer; }
+    /* ── v2.8.9 — تصميم صفحة الدخول: بطاقة مركّزة، حقول واضحة، زر إظهار كلمة المرور ── */
+    .login-wrap { max-width: 400px; margin: 7vh auto 2rem; padding: 0 1rem; }
+    .login-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.6rem 1.5rem 1.3rem; box-shadow: 0 6px 28px rgba(15, 23, 42, 0.10);
+    }
+    .login-brand { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; margin-bottom: 1.15rem; text-align: center; }
+    .login-brand .icon {
+      font-size: 1.8rem; line-height: 1; padding: 0.55rem 0.7rem; border-radius: 14px;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #fff;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.30);
+    }
+    .login-brand h2 { margin: 0.45rem 0 0; font-size: 1.15rem; }
+    .login-brand p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+    .login-field { display: flex; flex-direction: column; gap: 0.32rem; margin-bottom: 0.9rem; }
+    .login-field label { font-size: 0.88rem; font-weight: 600; }
+    .login-input-wrap { position: relative; display: flex; align-items: center; }
+    .login-card input[type="text"],
+    .login-card input[type="password"] {
+      width: 100%; padding: 0.62rem 0.7rem; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--text); font-size: 0.95rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .login-card input[type="text"]:focus,
+    .login-card input[type="password"]:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    .login-input-wrap.with-toggle input { padding-inline-end: 2.7rem; }
+    .pw-toggle {
+      position: absolute; inset-inline-end: 0.35rem;
+      background: transparent; border: none; cursor: pointer;
+      font-size: 1.05rem; line-height: 1; padding: 0.35rem 0.45rem; border-radius: 6px;
+      color: var(--muted); transition: background 0.15s ease, color 0.15s ease;
+    }
+    .pw-toggle:hover { background: rgba(127, 127, 127, 0.14); color: var(--text); }
+    .pw-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .pw-hint { min-height: 1rem; font-size: 0.78rem; color: var(--warning, #b45309); }
+
+    .login-remember {
+      display: flex; align-items: center; gap: 0.45rem;
+      margin: 0.2rem 0 1rem; font-size: 0.86rem; color: var(--muted);
+      cursor: pointer; user-select: none;
+    }
+    .login-remember input { width: auto; cursor: pointer; accent-color: var(--accent); }
+    .login-card .btn.btn-primary { width: 100%; padding: 0.65rem 1rem; font-size: 0.98rem; font-weight: 700; }
+    .login-card .btn.btn-primary[disabled] { opacity: 0.7; cursor: progress; }
+    .login-back { display: block; margin-top: 0.9rem; text-align: center; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+    .login-back:hover { text-decoration: underline; }
+    #login-error { margin-top: 0.7rem; text-align: center; }
+    @media (max-width: 480px) { .login-wrap { margin-top: 4vh; } }
   </style>
 </head>
 <body>
+  <!-- تطبيق الوضع المحفوظ (نفس مفتاح لوحة التحكم) قبل رسم المحتوى — بلا وميض -->
+  <script>try { if (localStorage.getItem('nm.adminTheme') === 'dark') document.body.classList.add('dark'); } catch (e) {}</script>
+
   <div class="login-wrap">
     <div class="login-card">
-      <h2>تسجيل الدخول</h2>
-      <form id="login-form">
-        <label>
-          اسم المستخدم
-          <input id="username" type="text" autocomplete="username" required />
-        </label>
-        <label>
-          كلمة المرور
-          <input id="password" type="password" autocomplete="current-password" required />
-        </label>
+      <div class="login-brand">
+        <span class="icon">🖥️</span>
+        <h2>تسجيل الدخول</h2>
+        <p>لوحة تحكم نظام مراقبة الشبكة</p>
+      </div>
+
+      <form id="login-form" autocomplete="on">
+        <div class="login-field">
+          <label for="username">اسم المستخدم</label>
+          <input id="username" name="username" type="text" autocomplete="username"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" required />
+        </div>
+
+        <div class="login-field">
+          <label for="password">كلمة المرور</label>
+          <div class="login-input-wrap with-toggle">
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+            <button type="button" class="pw-toggle" id="pw-toggle"
+                    aria-label="إظهار كلمة المرور" aria-pressed="false"
+                    title="إظهار/إخفاء كلمة المرور">👁️</button>
+          </div>
+          <span class="pw-hint" id="pw-hint" role="status" aria-live="polite"></span>
+        </div>
+
         <label class="login-remember">
           <input id="remember" type="checkbox" />
-          🔒 تذكّرني
+          🔒 تذكّرني (30 يومًا)
         </label>
+
         <button type="submit" class="btn btn-primary">🔑 دخول</button>
-        <div id="login-error" class="error-msg" style="margin-top:0.75rem;"></div>
+        <div id="login-error" class="error-msg"></div>
         <a href="../index.html" class="login-back">← العودة للصفحة العامة</a>
       </form>
     </div>
   </div>
+
   <!-- ذيل الصفحة -->
   <footer class="site-footer">
     &copy; 2026 نظام مراقبة أجهزة الشبكة — جميع الحقوق محفوظة

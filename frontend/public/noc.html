@@ -42,6 +42,9 @@
     --mv-device-hover: rgba(255, 255, 255, 0.06);
     --mv-online-glow: rgba(34, 197, 94, 0.40);
     --mv-offline-glow: rgba(239, 68, 68, 0.40);
+    /* v2.8.9 — إشارة انقطاع **برتقالية** لبطاقات المواقع (الأحمر يبقى للأجهزة فقط) */
+    --mv-warn: #f59e0b;
+    --mv-warn-glow: rgba(245, 158, 11, 0.40);
     --mv-subzone-border: #3b82f6;
     --mv-meta-opacity: 0.85;
     --mv-empty-opacity: 0.8;
@@ -249,6 +252,8 @@
   }
   .mv-card.loc.up { border-color: var(--color-ok); box-shadow: 0 0 16px rgba(16,185,129,0.22); }
   .mv-card.loc.down { border-color: var(--color-bad); box-shadow: 0 0 20px rgba(239,68,68,0.4); }
+  /* v2.8.9 — انقطاع جهاز واحد أو أكثر داخل الموقع ⇒ إطار **برتقالي** (تحذير) بدل الأحمر (إنذار) */
+  .mv-card.loc.warn { border-color: var(--color-warn); box-shadow: 0 0 18px rgba(245,158,11,0.32); }
   .mv-card.loc.neutral { border-color: var(--color-purple); }
   .mv-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -405,6 +410,7 @@
     --mv-text: #1f2937;
     --mv-muted: #6b7280;
     --mv-accent: #2563eb;
+    --mv-warn: #d97706;   /* برتقالي أغمق لتباين أوضح على الأسطح الفاتحة (v2.8.9) */
     --mv-header-bg: rgba(127, 127, 127, 0.04);
     --mv-device-hover: rgba(127, 127, 127, 0.08);
     --mv-zone-internet-bg: rgba(37, 99, 235, 0.10);
@@ -561,9 +567,10 @@
   html.noc-day .map-zone-card:hover { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); }
   /* إطار أحمر أبرز لو وُجد جهاز offline داخلها */
   .map-zone-card.has-offline {
-    border-color: var(--mv-offline);
+    /* v2.8.9 — إشارة الموقع: برتقالي عند انقطاع جهاز أو أكثر (بدل الأحمر) */
+    border-color: var(--mv-warn);
     border-width: 2px;
-    box-shadow: 0 0 8px var(--mv-offline-glow);
+    box-shadow: 0 0 8px var(--mv-warn-glow);
   }
   html.noc-day .map-zone-card.has-offline { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
   /* إطار أخضر مميّز لو كل الأجهزة online (offline=0, online>0) */
@@ -794,7 +801,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.8.8</span>
+        <span class="tag">Network Operations Center v2.8.9</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1371,7 +1378,8 @@
   }
   function zoneBorderColor(node) {
     if (!node) return 'var(--mv-border)';
-    if (node.offline > 0) return 'var(--mv-offline)';
+    // v2.8.9 — انقطاع جهاز أو أكثر داخل الموقع ⇒ برتقالي (تحذير) بدل الأحمر — مطابق للوحة المرسومة
+    if (node.offline > 0) return 'var(--mv-warn)';
     if (node.device_count > 0 && node.online === node.device_count) return 'var(--mv-online)';
     return 'var(--mv-border)';
   }
@@ -1673,7 +1681,8 @@
       const directDevices = allDevices.filter(d => Number(d.location_id) === lid);
       const upCount = directDevices.filter(d => d.status === 'online').length;
       const downCount = directDevices.filter(d => d.status === 'offline').length;
-      const borderCls = directDevices.length === 0 ? 'neutral' : (downCount > 0 ? 'down' : 'up');
+      // v2.8.9 — أي جهاز منقطع داخل المبنى ⇒ إطار برتقالي (كان أحمر) — نفس إشارة «خريطة المباني»
+      const borderCls = directDevices.length === 0 ? 'neutral' : (downCount > 0 ? 'warn' : 'up');
 
       // Filter rows if search query is active
       const visibleDevices = directDevices.filter(d => {

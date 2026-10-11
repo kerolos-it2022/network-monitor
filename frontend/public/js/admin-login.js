@@ -29,6 +29,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// v2.8.9 — مساعدات صفحة الدخول: زر إظهار/إخفاء كلمة المرور + تحذير Caps Lock + التركيز المبدئي.
+document.addEventListener('DOMContentLoaded', () => {
+  const pwEl = document.getElementById('password');
+  const toggleEl = document.getElementById('pw-toggle');
+  const hintEl = document.getElementById('pw-hint');
+  const userEl = document.getElementById('username');
+
+  // زر الإظهار/الإخفاء (تفادي أخطاء كتابة كلمة المرور)
+  if (toggleEl && pwEl) {
+    toggleEl.addEventListener('click', () => {
+      const show = pwEl.type === 'password';
+      pwEl.type = show ? 'text' : 'password';
+      toggleEl.textContent = show ? '🙈' : '👁️';
+      toggleEl.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+      toggleEl.setAttribute('aria-pressed', String(show));
+      pwEl.focus();
+      try { const n = pwEl.value.length; pwEl.setSelectionRange(n, n); } catch (_) {}
+    });
+  }
+
+  // تحذير Caps Lock (سبب شائع لفشل الدخول)
+  if (hintEl && pwEl) {
+    const capsCheck = (e) => {
+      let on = false;
+      try { on = !!(e.getModifierState && e.getModifierState('CapsLock')); } catch (_) {}
+      hintEl.textContent = on ? '⚠️ مفتاح Caps Lock مُفعَّل — ستُكتب الحروف كبيرة' : '';
+    };
+    ['keydown', 'keyup', 'focus'].forEach((ev) => pwEl.addEventListener(ev, capsCheck));
+  }
+
+  // التركيز على اسم المستخدم عند فتح الصفحة
+  if (userEl && !userEl.value) { try { userEl.focus(); } catch (_) {} }
+});
+
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = document.getElementById('username').value;
@@ -36,6 +70,18 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const remember = document.getElementById('remember') ? document.getElementById('remember').checked : false;
   const errEl = document.getElementById('login-error');
   errEl.textContent = '';
+
+  // v2.8.9 — تعطيل الزر أثناء الطلب لمنع الإرسال المزدوج + إعلام المستخدم
+  const submitBtn = document.querySelector('#login-form button[type="submit"]');
+  const submitLabel = submitBtn ? submitBtn.textContent : '';
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ جارٍ الدخول…'; }
+  const resetSubmit = () => {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitLabel; }
+  };
+  const focusPassword = () => {
+    const pwEl = document.getElementById('password');
+    if (pwEl) { try { pwEl.focus(); pwEl.select(); } catch (_) {} }
+  };
 
   try {
     const r = await fetch('/api/auth/login', {
@@ -50,8 +96,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       window.location.href = 'dashboard.html';
     } else {
       errEl.textContent = data.error || 'بيانات الدخول غير صحيحة';
+      resetSubmit();
+      focusPassword();
     }
   } catch (err) {
     errEl.textContent = 'تعذر الاتصال بالخادم';
+    resetSubmit();
   }
 });
