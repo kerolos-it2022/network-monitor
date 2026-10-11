@@ -140,16 +140,24 @@ jobs:
     # النشر يعمل فقط عند push على main — والـ step الداخلي يتحقق من وجود SERVER_HOST secret.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
+    # v2.8.7 — إصلاح جذري: استخدام `secrets` داخل `if:` **غير مسموح** في ملفات ال workflows
+    # (كان الملف كله غير صالح ⇒ كل التشغيلات تفشل فورًا بلا أي job: startup failure).
+    # الحل الرسمي: تمرير السرّ إلى env ثم فحص الـ env في الشرط.
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_PORT: ${{ secrets.SERVER_PORT }}
+
     steps:
       - name: 🛑 Skip if SERVER_HOST not configured
-        if: ${{ secrets.SERVER_HOST == '' }}
+        if: env.SERVER_HOST == ''
         run: |
           echo "ℹ️ لم يُضبط secret SERVER_HOST — تم تخطّي النشر."
           echo "لتفعيل النشر التلقائي، أضف secrets: SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, SERVER_PORT"
           exit 0
 
       - name: 🚀 Deploy via SSH
-        if: ${{ secrets.SERVER_HOST != '' }}
+        if: env.SERVER_HOST != ''
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -181,11 +189,14 @@ jobs:
     needs: [lint-and-test]
     runs-on: ubuntu-latest
     if: always()
+    # v2.8.7 — نفس الإصلاح: سرّ Discord يُمرَّر عبر env (استخدامه في if: يجعل الملف غير صالح).
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
     steps:
       - name: 📢 Notify Discord
         # يعمل فقط إذا أُعدّ secret DISCORD_WEBHOOK على المستودع
-        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        if: env.DISCORD_WEBHOOK != ''
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
