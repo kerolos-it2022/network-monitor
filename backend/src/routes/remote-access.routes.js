@@ -267,6 +267,9 @@ router.post('/request', requireAuth, (req, res) => {
     const p = paths();
     const payload = { action, requestedAt: new Date().toISOString() };
     if (value) payload.value = value;
+    // v2.10.4 — حذف ثم إنشاء من جديد: يضمن أن مُراقب systemd يرى الملف «ظهر» فيعمل دائمًا
+    // حتى لو بقي ملف طلب قديم من محاولة سابقة (PathExists لا يُشغَّل بكتابة فوق ملف موجود).
+    try { fs.unlinkSync(p.requestFile); } catch (e) { /* لا يوجد ملف سابق */ }
     // 🔐 صلاحية 0600 لأن الملف قد يحمل قيمة سرّية لحظيًّا — والمساعد يحذفه فورًا.
     fs.writeFileSync(p.requestFile, JSON.stringify(payload) + '\n', { encoding: 'utf8', mode: 0o600 });
     try { fs.chmodSync(p.requestFile, 0o600); } catch (e) { /* منصّات غير لينكس */ }

@@ -86,6 +86,9 @@ router.post('/request', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, error: 'وسم إصدار غير صالح (semver مثل v2.8.7 أو latest).' });
     }
     const p = paths();
+    // v2.10.4 — نحذف الملف أولًا ثم ننشئه من جديد: هذا يضمن أن مُراقب systemd (PathExists/PathModified)
+    // يرى «ظهورًا» للملف فيعمل دائمًا — حتى لو كان ملف طلب قديم موجودًا من محاولة سابقة.
+    try { fs.unlinkSync(p.requestFile); } catch (e) { /* لا يوجد ملف سابق */ }
     fs.writeFileSync(
       p.requestFile,
       JSON.stringify({ tag, requestedAt: new Date().toISOString() }) + '\n',

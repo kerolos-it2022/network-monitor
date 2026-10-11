@@ -5,6 +5,8 @@ Documentation=file:///opt/network-monitor/HANDOFF.md
 [Path]
 # خدمة الويب (netmon) تكتب هذا الملف فقط — والمساعد المميّز (root) هو الذي ينفّذ.
 PathExists=/var/lib/network-monitor/remote-request.json
+# v2.10.4 — نفس درس nm-update: نُشغّل عند الظهور وعند التعديل معًا.
+PathModified=/var/lib/network-monitor/remote-request.json
 Unit=nm-remote.service
 
 [Install]

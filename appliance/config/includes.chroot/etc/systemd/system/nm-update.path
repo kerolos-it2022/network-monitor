@@ -5,6 +5,9 @@ Documentation=file:///opt/network-monitor/HANDOFF.md
 [Path]
 # خدمة الويب (netmon) تكتب هذا الملف فقط — والأداة المميّزة (root) هي التي تنفّذ.
 PathExists=/var/lib/network-monitor/update-request.json
+# v2.10.4 — PathModified ضروري: لو الملف **موجود مسبقًا** (طلب سابق لم يُنفّذ مثلًا) فالكتابة فوقه
+# لا تُشغّل PathExists وحده — فيبدو الأمر كأن «لا شيء حدث». إضافة PathModified تضمن التشغيل في الحالتين.
+PathModified=/var/lib/network-monitor/update-request.json
 Unit=nm-update.service
 
 [Install]
