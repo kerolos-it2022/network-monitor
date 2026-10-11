@@ -1,13 +1,15 @@
 # 📡 نظام مراقبة أجهزة الشبكة المحلية - Network Monitor
 
-[![Version](https://img.shields.io/badge/version-2.8.5-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![Version](https://img.shields.io/badge/version-2.8.7-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > **نظام مراقبة احترافي** لأجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات...) مع مراقبة لحظية، إدارة شاملة، وإشعارات فورية عبر **Telegram** و **WhatsApp** و **تطبيق الموبايل (PWA)**.
 
-> 🌟 **الإصدار الحالي: v2.8.5** — **وضع نهاري/ليلي لشاشة NOC** (زر تبديل + تفضيل محفوظ مشترك مع الصفحة العامة + بلا وميض عند الإقلاع) مع تحصين الشاشة من الأرقام والحالات الوهمية. فوق سلسلة الشبكة (topology chain) + **وضع الرسم** بمواضع بطاقات محفوظة + مواءمة خطوط NOC مع لوحة التحكم (v2.8.4)، والمسح الدوري (v2.5.0) وشجرة المواقع الهرمية (v2.5.1→v2.5.4) وإصلاحات v2.4.0 الجذرية.
+> 🌟 **الإصدار الحالي: v2.8.7** — **بثّ حيّ SSE** لشاشات العرض (تحديث لحظي + polling تكيفي 60s مع الخط / 10s بدونه)، و**إصلاحات النسخ الاحتياطي على الأبلاينس** (السبب الجذري: `ProtectSystem=strict` يجعل `/tmp` للقراءة فقط)، و**تحديث الأبلاينس الآمن** بمساعد root منفصل (ملف طلب + `nm-update.path`) بدل تنفيذ أوامر من الويب.
+> وقبلها **v2.8.6**: **مواءمة «خريطة المباني» في NOC مع «خريطة المواقع»** (نفس الترتيب والأماكن ومحتوى الكارت) + **نافذة تفاصيل الجهاز** بالنقر + «🌍 فحص الاتصال الخارجي» أول بطاقة في مسار الإنترنت + تثبيت «التخطيط المرسوم» على اليمين + حفظ التبويب والمقياس بعد إعادة التحميل.
 
 ---
 
@@ -17,6 +19,7 @@
 - [🎯 المتطلبات](#-المتطلبات)
 - [🚀 التثبيت السريع](#-التثبيت-السريع)
 - [🐧 النشر على سيرفر Linux](#-النشر-على-سيرفر-linux)
+- [💿 صورة الأبلاينس (Appliance ISO)](#-صورة-الأبلاينس-appliance-iso)
 - [🔄 نظام التحديثات من GitHub](#-نظام-التحديثات-من-github)
 - [🔍 Network Discovery (اكتشاف الشبكة)](#-network-discovery-اكتشاف-الشبكة)
 - [🤖 إعداد بوت تيليجرام](#-إعداد-بوت-تيليجرام)
@@ -35,6 +38,7 @@
 | الميزة | الوصف |
 |----------|---------|
 | 📊 **مراقبة لحظية** | Ping / HTTP / HTTPS / TCP Port كل 10 ثوانٍ (قابل للتعديل) |
+| 📡 **بثّ حيّ SSE** | تحديث لحظي لحالة الأجهزة لشاشة NOC والصفحة العامة (`/api/live/status`) + polling احتياطي تلقائي |
 | 📱 **PWA جاهز** | تثبيت على Android/iOS/Desktop، يعمل أوفلاين |
 | 🔔 **إشعارات فورية** | Telegram + WhatsApp + Web Push (VAPID) |
 | 🌐 **واجهة عربية RTL** | دعم كامل للغة العربية، وضع ليلي/نهاري |
@@ -42,7 +46,8 @@
 | 🔍 **أدوات الشبكة** | Ping + Tracert مباشر عبر SSE |
 | 🔐 **أمان عالي** | bcrypt، Prepared Statements، Sessions آمنة |
 | 🐧 **جاهز لـ Linux** | سكريبت نشر آلي، PM2، systemd/Nginx، يدعم كل التوزيعات |
-| 🔄 **تحديثات GitHub** | تحديث بنقرة واحدة من لوحة التحكم |
+| 💿 **صورة Appliance (ISO)** | Debian 12 live + نظام مثبَّت + **تحديث ذاتي آمن** بمساعد root منفصل |
+| 🔄 **تحديثات GitHub** | تحديث بنقرة واحدة من لوحة التحكم (أو عبر مساعد root على الأبلاينس) |
 | 🔍 **Network Discovery** | اكتشاف تلقائي للأجهزة على الشبكة |
 
 ---
@@ -101,10 +106,11 @@ npm start                # تشغيل الخادم
 | الواجهة | الرابط |
 |----------|--------|
 | 🌐 **الصفحة العامة** (عرض حالة الأجهزة) | `http://localhost:4000/` |
+| 🖥️ **شاشة NOC** (للعرض على TV) | `http://localhost:4000/noc.html` |
 | 🔐 **تسجيل الدخول** | `http://localhost:4000/admin/login.html` |
 | 📊 **لوحة التحكم** | `http://localhost:4000/admin/dashboard.html` |
 
-> 🔑 **بيانات الدخول الافتراضية**: `admin` / `ChangeMe123!` — ⚠️ **غيّرها فورًا** من لوحة التحكم بعد أول تسجيل دخول (أو عدّل `DEFAULT_ADMIN_PASSWORD` في `backend/.env` ثم أعد تشغيل الباك إند).
+> 🔑 **بيانات الدخول الافتراضية**: اسم المستخدم `admin` وكلمة المرور من متغيّر `DEFAULT_ADMIN_PASSWORD` في `backend/.env` (القيمة الاحتياطية الافتراضية داخل `backend/src/seedAdmin.js`) — ⚠️ **غيّرها فورًا** من لوحة التحكم بعد أول تسجيل دخول.
 
 ---
 
@@ -141,7 +147,7 @@ sudo bash deploy.sh install
 3. ✅ يثبّت **أدوات البناء** (python3, make, g++)
 4. ✅ يثبّت **Node.js 20 LTS** (عبر NodeSource)
 5. ✅ يثبّت **PM2** عالمياً + **sqlite3 CLI**
-6. ✅ ينشئ `.env` + يولّد `SESSION_SECRET` عشوائي + **مفاتيح VAPID تلقائياً**
+6. ✅ ينشئ `.env` + يولّد سرّ الجلسة عشوائيًّا + **مفاتيح VAPID تلقائياً**
 7. ✅ `npm install` + بناء `better-sqlite3` للنظام المستهدف
 8. ✅ يهيّئ قاعدة البيانات + ينشئ مديراً افتراضياً
 9. ✅ يشغّل التطبيق عبر **PM2** + يفعّل البدء التلقائي (systemd/OpenRC)
@@ -164,6 +170,19 @@ pm2 delete network-monitor    # إزالة من PM2
 | [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي خطوة بخطوة (بدون سكريبت) |
 | [`DEPLOY.md`](./DEPLOY.md) | نشر إنتاجي كامل (Nginx, HTTPS, Firewall, Backup) |
 | [`linux-setup/`](./linux-setup/) | ملفات systemd + Nginx جاهزة (بديل عن PM2) |
+| [`APPLIANCE-HANDOFF.md`](./APPLIANCE-HANDOFF.md) | صورة الأبلاينس (ISO): البناء، التنصيب، والتشخيص |
+| [`appliance/boot-test/e2e.sh`](./appliance/boot-test/e2e.sh) | اختبار تنصيب كامل آليًّا في QEMU |
+
+---
+
+## 💿 **صورة الأبلاينس (Appliance ISO)**
+
+- تُبنى تلقائيًّا عبر [`.github/workflows/build-iso.yml`](.github/workflows/build-iso.yml) عند دفع أي **وسم** `v*` (وتُرفَق بالـ Release مع ملف `SHA256SUMS.txt`)، أو يدويًّا.
+- بناء محلي: `cd appliance && NM_VERSION=v2.8.7 bash build.sh` (داخل حاوية `debian:bookworm`).
+- على النظام المثبَّت: خدمة `network-monitor` تعمل كمستخدم `netmon` مع تحصين systemd
+  (`ProtectSystem=strict` + `NoNewPrivileges` + `PrivateTmp`)، والتحديث يتم عبر **مساعد root منفصل**:
+  لوحة التحكم تكتب **ملف طلب** يحوي وسماً فقط ⇒ `nm-update.path` يُشغّل `nm-update.service` (root) ⇒
+  تنزيل من المستودع + `rsync` + `npm ci` + إعادة تشغيل. (خدمة الويب لا تستطيع الكتابة في كودها.)
 
 ---
 
@@ -172,15 +191,15 @@ pm2 delete network-monitor    # إزالة من PM2
 ### ✨ المميزات
 - **فحص التحديثات** - التحقق من وجود إصدارات جديدة عبر GitHub API
 - **عرض سجل التغييرات** - عرض Changelog في مودال تفاعلي
-- **تحديث بنقرة واحدة** - Git Pull + npm install + PM2 Restart
+- **تحديث بنقرة واحدة** - Git Pull + npm install + PM2 Restart، وعلى الأبلاينس عبر مساعد root
+- **متابعة التقدّم** - `/api/appliance-update/progress` يعرض حالة التحديث وآخر سطور السجل
 - **سكريبت التحديث (update.sh)** - حفظ التغييرات المحلية، تحديث التبعيات، إعادة تشغيل PM2
 
 ### 🎯 كيفية الاستخدام
 1. افتح لوحة التحكم → تبويب **"🔄 التحديثات"**
-2. اختر الفرع (main/develop/master)
-3. اضغط **"🔍 فحص التحديثات"**
-4. إذا وجد تحديث → اضغط **"🚀 تطبيق التحديث"**
-4. النظام سينفذ: `git pull` → `npm install` → `pm2 restart`
+2. اضغط **"🔍 فحص التحديثات"**
+3. إذا وجد تحديث → اضغط **"🚀 تطبيق التحديث"**
+4. النظام سينفذ: `git pull` → `npm install` → `pm2 restart` (وفي وضع الأبلاينس: ملف طلب ⇒ مساعد root ⇒ إعادة تشغيل تلقائية)
 
 ### 📋 سكريبت التحديث (update.sh)
 ```bash
@@ -205,11 +224,11 @@ cd /opt/network-monitor
 1. افتح لوحة التحكم → تبويب **"🔍 اكتشاف الأجهزة"**
 2. أدخل نطاق الشبكة (مثال: `192.168.1.0/24`)
 3. اختر الخيارات: مسح المنافذ، استعلام SNMP
-3. اضغط **"🚀 بدء المسح"**
-4. ستظهر الأجهزة المكتشفة مع:
+4. اضغط **"🚀 بدء المسح"**
+5. ستظهر الأجهزة المكتشفة مع:
    - IP، اسم مقترح، النوع، الشركة المصنعة (MAC)
    - المنافذ المفتوحة، زمن الاستجابة
-4. حدد الأجهزة → اضغط **"➕ إضافة للمراقبة"**
+6. حدد الأجهزة → اضغط **"➕ إضافة للمراقبة"**
 
 ---
 
@@ -219,16 +238,19 @@ cd /opt/network-monitor
 
 1. افتح **[BotFather](https://t.me/BotFather)** في تيليجرام
 2. أرسل `/newbot` واتبع التعليمات
-3. احصل على **Bot Token** (مثال: `123456789:ABC-DEF...`)
-3. احصل على **Chat ID**:
+3. احصل على توكن البوت من BotFather (شكله: أرقام ثم `:` ثم أحرف وأرقام ورموز)
+4. احصل على **Chat ID**:
    - أرسل رسالة للبوت
-   - افتح: `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`
+   - افتح: `https://api.telegram.org/bot<ضع-التوكن-هنا>/getUpdates`
    - ابحث عن `"chat":{"id":123456789}` → هذا هو Chat ID
-4. أضف إلى `backend/.env`:
-   ```env
-   TELEGRAM_BOT_TOKEN=123456789:ABC-DEF...
-   TELEGRAM_CHAT_ID=123456789
-   ```
+5. أضف **اسم المتغيّر وقيمته** إلى `backend/.env` (اسم متغيّر التوكن مذكور في `backend/.env.example`، والـ Chat ID قيمة رقمية):
+
+```env
+# داخل backend/.env — ضع هنا توكن البوت (المتغيّر المذكور في .env.example)
+TELEGRAM_CHAT_ID=123456789
+```
+
+> ⚠️ **لا تضع قيمًا حقيقية في ملفات المشروع أو المستودع** — القيم الحقيقية تُكتب فقط في `backend/.env` (غير مُتتبَّع في git).
 
 ---
 
@@ -241,21 +263,10 @@ cd /opt/network-monitor
 cd backend
 node -e "console.log(require('web-push').generateVAPIDKeys())"
 ```
-**النتيجة:**
-```json
-{
-  "publicKey": "BHTp...qpY",
-  "privateKey": "u2vn...wS4"
-}
-```
+**النتيجة:** كائن فيه `publicKey` و `privateKey` — انسخهما إلى `.env`.
 
-### 2️⃣ إضافة المفاتيح لـ `.env`
-```env
-VAPID_PUBLIC_KEY=BHTp...qpY
-VAPID_PRIVATE_KEY=u2vn...wS4
-VAPID_SUBJECT=mailto:you@example.com
-MOBILE_ENABLED=1
-```
+### 2️⃣ أضف المفاتيح في `.env`
+المتغيّرات الأربعة مذكورة في `backend/.env.example` (عام/خاص/موضوع + تفعيل الموبايل) — الصق ناتج الخطوة السابقة في المتغيّرين المخصّصين للمفاتيح.
 
 ### 3️⃣ تفعيل من لوحة التحكم
 1. تسجيل دخول → تبويب **الإشعارات**
@@ -266,7 +277,7 @@ MOBILE_ENABLED=1
 1. افتح `http://<IP-السيرفر>:4000` من **Chrome** (Android) أو **Safari** (iOS 16.4+)
 2. اضغط **🔔 تفعيل الإشعارات** → اسمح
 3. اضغط قائمة المتصفح (⋮) → **Add to Home Screen** لتثبيت التطبيق
-3. **اختبر**: من لوحة التحكم → 🔔 اختبار إشعار الهاتف
+4. **اختبر**: من لوحة التحكم → 🔔 اختبار إشعار الهاتف
 
 > ⚠️ **iOS**: يتطلب iOS 16.4+ و Safari. الأجهزة الأقدم لا تدعم Web Push لكن التطبيق يعمل كـ PWA.
 
@@ -275,34 +286,24 @@ MOBILE_ENABLED=1
 ## 🔧 **إعدادات متقدمة**
 
 ### 🔐 متغيرات البيئة الأساسية (`backend/.env`)
-```env
-# أساسي
-PORT=4000
-SESSION_SECRET=سلسلة_عشوائية_طويلة_جداً_مهمة_للأمان
-DB_PATH=../database/monitoring.db
 
-# المدير الافتراضي
-DEFAULT_ADMIN_USERNAME=admin
-DEFAULT_ADMIN_PASSWORD=كلمة_مرور_قوية_جداً
+الأسماء الكاملة مع الشرح موجودة في [`backend/.env.example`](./backend/.env.example). أهمّها:
 
-# جلسة
-SESSION_MAX_AGE=43200000  # 12 ساعة
+| المتغيّر | الوصف |
+|-----------|--------|
+| `PORT` | منفذ الخادم (افتراضي 4000) |
+| `DB_PATH` | مسار ملف قاعدة البيانات (نسبي أو مطلق) |
+| `SESSION_SECRET` | سرّ الجلسة — **يُولَّد تلقائيًّا** في `deploy.sh install`، وإلا يولّد الخادم مفتاحًا عشوائيًّا عند الإقلاع |
+| `DEFAULT_ADMIN_USERNAME` / `DEFAULT_ADMIN_PASSWORD` | حساب المدير الافتراضي (يُستخدم أول تشغيل فقط) |
+| `SESSION_MAX_AGE` | عمر الجلسة بالمللي ثانية (افتراضي 12 ساعة) |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | إشعارات تيليجرام (اختياري) |
+| `WHATSAPP_API_URL` / `WHATSAPP_API_TOKEN` / `WHATSAPP_TO_NUMBER` | إشعارات واتساب عبر مزوّد (اختياري) |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | مفاتيح Web Push (تُولَّد في `deploy.sh` أو يدويًّا) |
+| `MOBILE_ENABLED` | تفعيل إشعارات الموبايل (1/0) |
+| `GITHUB_REPO_URL` / `GITHUB_BRANCH` / `GITHUB_TOKEN` | إعدادات التحديثات من GitHub (التوكن اختياري — يرفع حدّ الـ API) |
 
-# تيليجرام (اختياري)
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
-
-# واتساب (اختياري - عبر مزود)
-WHATSAPP_API_URL=
-WHATSAPP_API_TOKEN=
-WHATSAPP_TO_NUMBER=
-
-# موبايل / Web Push
-MOBILE_ENABLED=1
-VAPID_PUBLIC_KEY=...
-VAPID_PRIVATE_KEY=...
-VAPID_SUBJECT=mailto:admin@example.com
-```
+> 📌 **قاعدة عامة**: أي قيمة سرّية (توكن/مفتاح/كلمة مرور) تبقى في `backend/.env` فقط — وليس في README أو الكود.
+> ملف `backend/.env.example` يحتوي على الأسماء مع قيم توضيحية فقط.
 
 ### 🔐 توليد مفاتيح VAPID يدوياً (إذا احتجت)
 ```bash
@@ -320,38 +321,49 @@ node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUB
 network-monitor/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js         # نقطة البداية + Express + Static
+│   │   ├── server.js         # نقطة البداية + Express + Static + تركيب المسارات
 │   │   ├── db.js             # اتصال better-sqlite3
 │   │   ├── seedAdmin.js      # إنشاء المدير الافتراضي
-│   │   ├── routes/           # مسارات API (auth, devices, locations, deviceTypes, notifications, tools, update)
+│   │   ├── routes/           # auth, devices, locations, deviceTypes, notifications,
+│   │   │                     # tools, update, backup, map, topology, live (SSE),
+│   │   │                     # appliance-update (مساعد root للأبلاينس)
 │   │   ├── services/         # محرك المراقبة + الفاحصون + الإشعارات + إدارة الانقطاع
+│   │   │                     # + topology.service.js + live.service.js (ناقل البثّ الحيّ)
 │   │   └── middleware/       # requireAuth
 │   ├── package.json
 │   ├── .env.example
 ├── frontend/
 │   └── public/
 │       ├── index.html        # الصفحة العامة
+│       ├── noc.html          # شاشة NOC (خريطة مباني + مسار الإنترنت + بثّ حيّ)
 │       ├── admin/            # login.html + dashboard.html
 │       ├── css/style.css
-│       └── js/               # public-dashboard, charts, admin-*
+│       └── js/               # public-dashboard, public-map, charts, admin-* (منها admin-update)
 ├── database/
 │   └── schema.sql
+├── appliance/                # بناء صورة ISO + hooks + اختبار QEMU
+│   ├── build.sh              # باني ISO (live-build داخل debian:bookworm)
+│   ├── config/includes.chroot/usr/local/sbin/nm-update   # مساعد التحديث (root)
+│   ├── config/includes.chroot/etc/systemd/system/nm-update.{path,service}
+│   └── boot-test/e2e.sh      # تنصيب آلي كامل في QEMU
 ├── linux-setup/              # ملفات systemd + Nginx (بديل عن PM2)
 ├── ecosystem.config.js       # إعدادات PM2
 ├── PROGRESS.md               # سجل تقدم البناء
-├── CHANGELOG.md              # سجل التغييرات
+├── CHANGELOG.md              # سجل التغييرات (Keep a Changelog)
+├── HANDOFF.md                # حالة المشروع للمتابعة بين الجلسات
+├── APPLIANCE-HANDOFF.md      # حالة الأبلاينس/الـ ISO
 ├── DEPLOY.md                 # دليل النشر المفصل
-├── README.md                 # هذا الملف
 ├── deploy.sh                 # سكريبت النشر التلقائي
 ├── update.sh                 # سكريبت التحديث التلقائي
-├── .github/
-│   ├── workflows/ci-cd.yml     # CI/CD: فحص الكود + اختبار صحة + نشر SSH
-│   ├── dependabot.yml          # تحديثات تلقائية للتبعيات + GitHub Actions
-│   ├── CODEOWNERS              # مالكو مستودع/موافقات تلقائية على PRs
-│   ├── SECURITY.md             # سياسة الإبلاغ عن الثغرات
-│   ├── PULL_REQUEST_TEMPLATE.md
-│   └── ISSUE_TEMPLATE/         # قوالب تقرير الأخطاء + طلبات الميزات
-└── README.md                 # هذا الملف
+└── .github/
+    ├── workflows/ci-cd.yml     # CI: فحص صياغة (backend+frontend) + اختبار صحة + نشر SSH اختياري
+    ├── workflows/build-iso.yml # بناء ISO عند الوسوم + إرفاقه بالـ Release مع SHA256
+    ├── release.yml             # تصنيف ملاحظات الإصدارات تلقائيًّا
+    ├── dependabot.yml          # تحديثات تلقائية للتبعيات + GitHub Actions
+    ├── CODEOWNERS              # مالكو المستودع/موافقات تلقائية على PRs
+    ├── SECURITY.md             # سياسة الإبلاغ عن الثغرات
+    ├── PULL_REQUEST_TEMPLATE.md
+    └── ISSUE_TEMPLATE/         # قوالب تقرير الأخطاء + طلبات الميزات
 ```
 
 ---
@@ -363,6 +375,7 @@ network-monitor/
 | المسار | الطريقة | الحماية | الوصف |
 |--------|---------|---------|-------|
 | `/health` | GET | لا | فحص صحة الخادم |
+| `/live/status` | GET | لا | **بثّ حيّ SSE** لحالات الأجهزة + العدّادات (لقطة ثم تغييرات فقط) |
 | `/auth/login` | POST | لا | تسجيل الدخول |
 | `/auth/logout` | POST | 🔒 | تسجيل الخروج |
 | `/auth/me` | GET | لا | الجلسة الحالية |
@@ -373,7 +386,15 @@ network-monitor/
 | `/devices/export/excel` | GET | 🔒 | تصدير Excel |
 | `/devices/import/excel` | POST | 🔒 | استيراد Excel |
 | `/locations` | GET/POST/PUT/DELETE | الكتابة 🔒 | إدارة المواقع |
+| `/locations/reorder` | POST | 🔒 | حفظ ترتيب بطاقات «خريطة المواقع» |
 | `/device-types` | GET/POST/PUT/DELETE | الكتابة 🔒 | إدارة الأنواع |
+| `/map/tree` · `/map/public/tree` | GET | الأول 🔒 | شجرة المواقع (لوحة التحكم / عام) |
+| `/topology` | GET | لا | سلسلة الشبكة + المواضع + تمييز انقطاع المسار |
+| `/topology/layout` | POST | 🔒 | حفظ مواضع بطاقات «وضع الرسم» |
+| `/backup/info` · `/backup/list` · `/backup/download` | GET | 🔒 | معلومات/قائمة/تنزيل نسخة احتياطية |
+| `/backup/restore` · `/backup/restore-existing` | POST | 🔒 | استعادة نسخة (مع نسخة أمنية قبل الاستبدال) |
+| `/appliance-update/mode` · `/progress` | GET | 🔒 | وضع الأبلاينس + تقدّم التحديث |
+| `/appliance-update/request` | POST | 🔒 | كتابة ملف طلب تحديث (وسم فقط) |
 | `/notifications/settings` | GET/PUT | 🔒 | إعدادات الإشعارات |
 | `/notifications/register` | POST/DELETE | لا | تسجيل/إلغاء موبايل |
 | `/notifications/vapid-public` | GET | لا | مفتاح VAPID العام |
@@ -383,6 +404,7 @@ network-monitor/
 | `/tools/tracert` | GET | لا | Traceroute مباشر (SSE) |
 | `/update/check` | POST | 🔒 | فحص التحديثات |
 | `/update/perform` | POST | 🔒 | تنفيذ التحديث |
+| `/update/progress` | GET | 🔒 | تقدّم تحديث الأبلاينس (حالة + سجل) |
 | `/update/history` | GET | لا | سجل الـ 20 commit الأخيرة |
 
 ---
@@ -396,16 +418,17 @@ curl http://localhost:4000/api/health
 
 # 2. افتح المتصفح
 # http://localhost:4000/          # الصفحة العامة
+# http://localhost:4000/noc.html  # شاشة NOC
 # http://localhost:4000/admin/login.html  # تسجيل الدخول
 
-# 3. سجل دخول: admin / ChangeMe123!  ⚠️ غيّرها فورًا من لوحة التحكم بعد الدخول
+# 3. سجل دخول بالحساب الإداري (المُعرَّف في backend/.env) ⚠️ غيّر كلمة المرور فورًا بعد الدخول
 # 4. اضغط تبويب "الأنواع" → أضف نوعاً (مثل "Router")
 # 5. اضغط تبويب "المواقع" → أضف موقعاً
 # 6. اضغط تبويب "الأجهزة" → أضف جهازاً
 #    IP: 192.168.1.1، النوع: Router، البروتوكول: ping
-# 6. انتظر 30 ثانية → سيظهر الجهاز بحالة "متصل" ✅
+# 7. انتظر 30 ثانية → سيظهر الجهاز بحالة "متصل" ✅
 
-# 7. جرّب أدوات الشبكة
+# 8. جرّب أدوات الشبكة
 # http://localhost:4000/ → قسم "أدوات الشبكة" → Ping / Tracert
 ```
 
@@ -417,11 +440,13 @@ curl http://localhost:4000/api/health
 |--------|--------|
 | **كلمات المرور** | bcryptjs (10 rounds) |
 | **SQL Injection** | Prepared Statements فقط |
-| **Sessions** | express-session + سر عشوائي طويل |
+| **Sessions** | express-session + سر عشوائي طويل (من `.env` أو مولَّد عند الإقلاع) |
 | **XSS/CSRF** | Helmet + SameSite Cookies |
 | **API Tokens** | مقنعة في الواجهة (آخر 4 خانات) |
 | **VAPID Keys** | خاصة في `.env` فقط، عامة في API |
 | **Mobile Registrations** | معطلة تلقائياً عند انتهاء الصلاحية (404/410 من FCM) |
+| **الأبلاينس (systemd)** | `ProtectSystem=strict` + `NoNewPrivileges` + `PrivateTmp` + مسار كتابة واحد (`/var/lib/network-monitor`) |
+| **تحديث الأبلاينس** | مساعد root منفصل: خدمة الويب تكتب **وسم إصدار فقط** — لا أوامر ولا مسارات، والمستودع مُثبَّت داخل الأداة |
 
 ---
 
@@ -429,14 +454,15 @@ curl http://localhost:4000/api/health
 
 | الميزة | الحالة | الأولوية |
 |---------|--------|----------|
-| تحديثات لحظية عبر WebSocket/SSE | 📋 مخطط | عالية |
-| تقارير PDF/Excel قابلة للتصدير | 📋 مخطط | متوسطة |
+| تحديثات لحظية عبر SSE | ✅ **منفَّذ في v2.8.7** (`/api/live/status`) | عالية |
+| تحديثات لحظية عبر WebSocket | 📋 مخطط (لو احتجنا أوامر من الشاشة) | منخفضة |
+| تقارير PDF قابلة للتصدير | 📋 مخطط (Excel منفَّذ) | متوسطة |
 | صلاحيات متعددة (Admin / Operator) | 📋 مخطط | عالية |
-| دعم SNMP | 📋 مخطط | متوسطة |
+| دعم SNMP / MikroTik / Sophos (المصادر الخارجية) | 📋 مخطط (v2.6.0) | متوسطة |
 | الانتقال إلى PostgreSQL | 📋 مخطط | عند النمو |
 | مهلة هدوء (cooldown) للإشعارات | 📋 مخطط | متوسطة |
 
-> انظر [`PROGRESS.md`](./PROGRESS.md) لتفاصيل ما تم تنفيذه وما تأجل.
+> انظر [`PROGRESS.md`](./PROGRESS.md) و [`CHANGELOG.md`](./CHANGELOG.md) لتفاصيل ما تم تنفيذه وما تأجل.
 
 ---
 
@@ -444,14 +470,17 @@ curl http://localhost:4000/api/health
 
 | الملف | الوصف |
 |-------|---------|
-| [`CHANGELOG.md`](./CHANGELOG.md) | سجل التغييرات الكامل |
+| [`CHANGELOG.md`](./CHANGELOG.md) | سجل التغييرات الكامل (Keep a Changelog) |
+| [`HANDOFF.md`](./HANDOFF.md) | حالة المشروع الكاملة + خطوات الجلسة التالية |
+| [`APPLIANCE-HANDOFF.md`](./APPLIANCE-HANDOFF.md) | حالة الأبلاينس/الـ ISO وتشخيصه |
 | [`DEPLOY.md`](./DEPLOY.md) | دليل النشر المفصل (Nginx، HTTPS، Firewall، Backup) |
 | [`PROGRESS.md`](./PROGRESS.md) | سجل تقدم البناء |
 | [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي على Linux خطوة بخطوة |
 | [`deploy.sh`](./deploy.sh) | سكريبت النشر التلقائي |
 | [`update.sh`](./update.sh) | سكريبت التحديث التلقائي |
 | [`ecosystem.config.js`](./ecosystem.config.js) | إعدادات PM2 |
-| [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) | CI/CD: فحص الكود + اختبار صحة + نشر SSH اختياري |
+| [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) | CI: فحص صياغة + اختبار صحة + نشر SSH اختياري |
+| [`.github/workflows/build-iso.yml`](.github/workflows/build-iso.yml) | بناء ISO عند الوسوم + إرفاقه بالـ Release مع SHA256 |
 | [`.github/dependabot.yml`](.github/dependabot.yml) | تحديثات تلقائية للتبعيات + GitHub Actions |
 | [`.github/SECURITY.md`](.github/SECURITY.md) | سياسة الإبلاغ عن الثغرات الأمنية |
 
@@ -461,9 +490,12 @@ curl http://localhost:4000/api/health
 
 1. Fork المشروع
 2. أنشئ فرع: `git checkout -b feature/amazing-feature`
-2. Commit: `git commit -m 'Add amazing feature'`
-3. Push: `git push origin feature/amazing-feature`
-4. افتح Pull Request
+3. Commit: `git commit -m 'Add amazing feature'`
+4. Push: `git push origin feature/amazing-feature`
+5. افتح Pull Request
+
+> 💡 قبل الـ PR: شغّل `node --check` على أي ملف JS عدّلته (نفس ما يفعله الـ CI)،
+> وراجع [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
 
 ---
 
@@ -489,88 +521,39 @@ curl http://localhost:4000/api/health
 
 ---
 
-## 🆕 ما الجديد في v2.5.0
-- **⏱️ المسح الدوري التلقائي**: جدولة مسح شبكة فرعية (CIDR) كل X دقيقة (افتراضيًّا 15)، مع تسجيل نتائج كل مسح في `scan_runs`.
-- **🆕 اكتشاف الأَجهزة الجديدة**: تَعريف الأَجهزة التي تَظهر في المسح ولا تَوجد في مكتبة `devices`. يُمكن اعتمادها (نَقلها تلقائيًّا لِـ `devices`) أَو رفضها.
-- **🔔 تنبيه عند جهاز جديد**: عبر Telegram + WhatsApp + Web Push + **webhook خارجي** (لِـ Slack/Discord/ntfy/Grafana).
-- **🔗 واجهة "المَصادر الخارجية"** (stub حاليًّا) — ستُتاح في v2.6.0 لِـ سَحب الأَجهزة من MikroTik REST API + Sophos Firewall API + SNMP + LLDP.
-- **🔒 auto-migration**: تَطبيق `database/schema.sql` تلقائيًّا عند بدء الخادم — لَا حاجة لإِعادة `deploy.sh install` لِـ إِنشاء جداول جديدة.
-- **💾 WAL mode** لِـ SQLite لِأَداء أَفضل + تَزامن آمن للـ background scheduler مع الـ reads الأمامية.
+## 🆕 ما الجديد في v2.8.6
+- **🗺️ مواءمة «خريطة المباني» في NOC مع «خريطة المواقع»**: التبويب لم يعد لوحة رسم حرة — صار **نسخة مطابقة**
+  لتبويب «خريطة المواقع»: نفس المصدر (`/api/map/public/tree`) ونفس منطق البناء (بطاقة «أَجهزة مَدخل الإنترنت»
+  أولًا ثم بطاقات المواقع المتداخلة) ونفس الترتيب `sort_order` والترقيم `01/02…` وسهم `↣` ونفس العدادات
+  وصفوف الأجهزة (بالأسماء المدموجة من `/api/topology`) وبنفس ترتيبها، مع نفس الألوان والأبعاد في الوضعين.
+- **🖱️ نافذة تفاصيل الجهاز في خريطة NOC**: النقر على أي جهاز يفتح نافذة بنفس حقول «خريطة المواقع»
+  (الشارة + IP + النوع + الموقع + طريقة الفحص + المنفذ + فترة الفحص + حد التنبيه + مفعّل + زمن الاستجابة +
+  آخر فحص) من نفس المسار `GET /api/devices/:id`، وتُغلق بزر ✕ أو بالنقر خارجها أو بـ `Esc`.
+- **✏️ تبويب «التخطيط المرسوم»**: لوحة «وضع الرسم» انتقلت إلى تبويب مستقل في NOC بدل حذفها، والرسم مُثبَّت
+  على **يمين اللوحة** (RTL) بعد أي تكبير/تصغير، و«ملاءمة الشاشة» تقيس **إطار البطاقات المرسومة** ⇒ تظهر كاملة.
+- **🌍 ترتيب «مسار الإنترنت»**: «فحص الاتصال الخارجي» صار **أول بطاقة** في السلسلة، مع إصلاح التقاط جهاز
+  «جدار الحماية المركزي» (كان يكرّر نفس جهاز الـ DNS).
+- **💾 حفظ حالة العرض**: التبويب المختار في NOC (`nm.nocView`) ومقياس «التخطيط المرسوم» (`nm.nocZoom`)
+  يبقيان بعد إعادة تحميل الصفحة.
 
-### اَلية المسح الدوري
-```
-  scan_settings (DB) → scan-scheduler.service.js (setInterval)
-    ↓ ping sweep + ARP + ports (nفس helpers الواجهة)
-  scan_runs (DB) + discovered_devices (DB)
-    ↓ nonzero IP not in devices?
-  notifier.service.js (Telegram/WhatsApp/Push + webhook)
-```
-
->💡 لإِتاحة المسح الدوري: ادخل لِـ تبويب «المسح الدوري» في لوحة التحكم، أَدخل CIDR (مثال: `192.168.1.0/24`)، اضبط الفترة (دقائق)، فعّل «تَفعيل المسح الدوري»، احفظ.
-
->🔒 ربط Sophos / MikroTik سيُتاح في v2.6.0 (المرحلة 2). لو تَريد تجربة سَرِيعة فَأَوّلًا: فعّل SNMP على الجدار/الراوتر وشَغّل «scan SNMP» في الاكتشاف اليدوي — لكن النَّسخة v2.6.0 ستُوفّرها بشكل آلي عبر API.
-
-## 🆕 ما الجديد في v2.5.1
-- **🗺️ شجرة المواقع الهرمية**: تبويب جديد «خريطة المواقع». يَعرض هرم المواقع + الأَجهزة معًا — العُقدة الأَبوية تُلخّص حالة أَجهزتها (إِطار أَحمر لو offline، أَخضر لو كلها online).
-- **🗂️ نوع موقع (`kind`)**: `internet` (قمة الهرم/مصدر الإنترنت) → `zone` (مناطق وَسَطية مُتداخلة) + الأَنواع القديمة `site|building|floor|room|rack` لِـ back-compat.
-- **🔗 تكامل مع tab الأَجهزة**: نَقر مزدوج على موقع في الخريطة يَعفل فِلتر الموقع في tab الأَجهزة.
-
-## 🆕 ما الجديد في v2.5.2
-- **🌳 إِعادة كتابة الخريطة بِـ HTML/CSS**: بَدل مكتبة D3 الخارجية، صارت شجرة `ul/li` متداخلة — RTL طبيعي، لا dependency على CDN، أَخف تَحميلًا.
-- ملاحظة: zoom + أَزرار `+`/`−` + حدث نقر الجهاز لِـ تَصفية tab الأَجهزة المذكورة في نُسخ سابقة مِن هذا القِسم **أُزيلت لاحقًا** في v2.5.3 (انظر أَسفله) — scroll فقط، و نقر الجهاز يَفتح modal تَفاصيل عائمًا بَدل القَفز لِـ tab الأَجهزة.
-
-## 🆕 ما الجديد في v2.5.3
-- **🔍 إِزالة zoom**: عادت الشجرة لِـ scroll فقط (لا عجلة تَكبير، لا أَزرار `+`/`−`). التَفاعل البَصري أَصبح أَبسط و أَكثر ثباتًا، و طي/تَوسيع العُقد يَتم بِـ transition سلسة على `max-height` دون إِعادة بناء DOM.
-- **👉 نقر الجهاز يَفتح modal تَفاصيل**: بَدل القَفز لِـ tab الأَجهزة و تَسليط الصف (الذي تَطلبه `devices:focus-device` + `focusDeviceFilter`، وكِلاهما أُزيل)، يَفتح نقر عقدة جهاز modalًا عائمًا في نفس tab الخريطة يَعرض IP/النوع/الموقع/زمن الاستجابة/آخر فحص + أَزرار فتح HTTP/HTTPS و «فتح في tab الأَجهزة». يُغلق بِـ × أَو ESC أَو نقر الخلفية.
-
-## 🆕 ما الجديد في v2.5.4
-- **🔢 مسار رقمي هرمي (`1.2.3`)**: أَمام كل عقدة المسار الكامل من الجذر (مثل `1.2.1`) بَدل id مجرّد — يُسهّل تَتبّع التَسلُّسلات في الشجرة.
-- **🎨 خلفية عُقدة متتابعة حسب العمق**: لون خلفية العُقدة يُعمَّق تَدريجيًا حسب `data-depth` لِـ تَمييز بَصري أَوضح بين المستويات. internet أَزرق، zone أَصفر/برتقالي، و الأَجهزة مَلؤوة بلون الحالة (online/offline/unknown).
-- **🟢🔴 إِطار عُقدة الموقع = تَلخيص الحالة**: إِطار أَحمر لو وُجد offline، أَخضر لو كل الأَجهزة online — نَظرة سريعة على صِحّة كل منطقة.
-- **🔗 خطوط وصل `::before` على شكل L**: خط رأسي + خط أَفقي قَصير بين الأَب و أَبنائه (آخر ابن L قَصير)، RTL تلقائي.
-- **🐛 إِصلاح**: النَقر المزدوج على عقدة «أَجهزة غير مُعَيَّن» أَصبح no-op بدل إطلاق فلتر `location_id='unassigned'` الذي كان يَترك جدول الأَجهزة فَارغًا بِلا رِسالة (Number('unassigned')=NaN).
-## 🆕 ما الجديد في v2.7.0
-- **PA — قائمة جانبية عمودية**: sidebar يمين ثابت 240px + drawer 🍔 في `<768px` بدل التبويبات الأفقية.
-- **PG — modal تأكيد موحّد**: `confirmAction()` + `showToast()` — استبدال كل 48 `confirm()`/`alert()` الأصلية.
-- **PE — `has-online` class**: على zone-cards كلّها online ⇒ إطار أخضر + glow على `device-dot`.
-- **PB — الثيم الليلي للخريطة**: متغيّرات ليلية + `box-shadow` glow للـ `has-online`/`has-offline`.
-- **PD — ترقيم zone-cards تسلسليًّا** (01، 02…) عبر CSS counter + `aria-posinset`/`aria-setsize`.
-- **PC — شريط نِسبة التشغيل** (`#map-uptime-bar`) في الصفحة العامة — polling 10s.
-- **PF — `POST /api/devices/cleanup-history`** (week/month/year) + زر موحّد «مسح السجل» popup (نوع + مدّة).
-
-## 🆕 ما الجديد في v2.7.1
-- **🪟 نمط rail للقائمة الجانبية**: زر إظهار/إخفاء؛ على الحاسوب تطوى إلى 60px بأيقونات موسّطة، وعلى الموبايل drawer كامل. الحالة محفوظة في `localStorage:nm.adminSidebarCollapsed`.
-- **🌙 مظهر ليلي متناسق لـ grid خريطة المواقع**: استبدال ألوان `rgba` الثابتة بمتغيّرات CSS في `:root` و`body.dark`.
-- **📊 نِسبة التشغيل من الخريطة العامة**: نقر chip جهاز يفتح modal (`uptime_percentage` + رسم 24h + انقطاعات).
-- **↤ ترتيب أطر العرض**: عمود `sort_order` للمواقع (`ORDER BY sort_order ASC, id ASC`) + حقل «الترتيب» + سهم مرئي بين البطاقات.
-- **✅ popups تأكيد عند التعديل/الحفظ** في تبويبات الأجهزة/الأنواع/المواقع/الإشعارات/المسح.
-
-## 🆕 ما الجديد في v2.7.5
-- **تذكّرني** في تسجيل الدخول: جلسة 30 يومًا.
-- **`web_port` للجهاز**: فتح واجهة الجهاز على منفذ مخصص (مثل `4444`) + فحص HTTP/HTTPS تلقائي.
-- **اختبار سرعة الإنترنت** في الصفحة العامة مع اختيار سيرفر (Cloudflare كامل / jsDelivr+unpkg تنزيل فقط).
-- **خط أنابيب ISO للـ Appliance**: Debian 12 live-build + nginx (80→4001) + nftables + مُثبِّت قرص.
-- **`POST /api/devices/cleanup-status-logs`** + حفظ ترتيب/فلتر تبويب الأجهزة في `localStorage`.
-
-## 🆕 ما الجديد في v2.8.0
-- **🔗 سلسلة الشبكة (Topology chain)**: عمود `parent_id` + `GET /api/topology` مع وسم «انقطاع المسار» + تبويب إداري بتحرير الأب مباشرةً + ترتيب طبيعي.
-- **🖥️ شاشة NOC للعرض العام** (`/noc.html`) + رابط من الصفحة العامة.
-- **📦 تحديثات بنمط الأرشيف** للـ Appliance (GitHub API tags + zipball بدل git/PM2) مع مقارنة semver حقيقية.
-- **🧰 تقوية الـ Appliance**: بوابة كلمة مرور لوحدة التحكم (SHA-512 + قفل)، أدوات شبكة (ping/traceroute/فحص إنترنت)، مستخدم `sysadmin`، ومُثبِّت يختار كلمة المرور وإعداد الشبكة.
-
-## 🆕 ما الجديد في v2.8.4
-- **🗺️ «وضع الرسم» بمواضع محفوظة**: سحب بطاقات المباني على اللوحة + زر 💾 حفظ التخطيط (`locations.pos_x/pos_y` عبر `_pos_only`)، وتُعرض المواضع نفسها في NOC («كما رسمها الأدمن»).
-- **🔗 «متصل عبر» موحّد**: علاقة واحدة عبر `parent_id` لكل الأنواع (موقع ← موقع، جهاز ← جهاز ثم موقعه) — إصلاح ضياع اختيار «متصل عبر» لمبنى (كان يستعمل عمودًا لا يقرأه الخادم ولا يكتبه ⇒ صفر خطوط بين المباني).
-- **✕ إخراج صريح من اللوحة**: `PUT /api/locations/:id` يقبل `_clear` ويكتب `pos_x/pos_y = NULL` بصدق (كان `null` يتحوّل إلى `0` ⇒ البطاقة تعود بعد إعادة التحميل).
-- **🛡️ حارس `(0,0)`** على مساري `/api/topology/layout` و `PUT /api/locations/:id` ⇒ لا تلتصق كل الكروت فوق بعضها عند تحميل ناقص.
-- **📐 مواءمة خطوط NOC مع لوحة التحكم**: نفس الإحداثيات والسماكة والعتامة ومرتكز منتصف الترويسة (عرض 320 / ارتفاع 17).
-- **👁️ عارض السلسلة** (`admin-topology-view.js`) داخل تبويب «سلسلة الشبكة» + بطاقة المبنى بنفس شكل كارت خريطة المواقع (ترويسة بعدادات + الأجهزة داخلها).
-
-## 🆕 ما الجديد في v2.8.5
-- **☀️🌙 الوضع النهاري/الليلي في شاشة NOC**: زر تبديل في الترويسة + تفضيل محفوظ في `localStorage:nm.publicTheme` **مشترك مع الصفحة العامة**، ويُطبَّق على `<html>` من `<head>` قبل أول رسم ⇒ **بلا وميض**، مع `color-scheme: light` لعناصر النظام. الافتراضي في NOC يبقى **ليليًّا** (شاشة TV) والنهاري تجاوز ألوان فقط — لا تُعدَّل أي قاعدة ليلية.
-- **🔢 لا أرقام وهمية**: شارتَي «مواقع» و«أجهزة» كانتا ثابتتين في HTML (`12 موقع` / `39 جهاز`) ولا يحدّثهما أي كود ⇒ صارتا تُحسبان من المعروض فعلًا بعد الفلاتر.
-- **⚪ حالة محايدة صريحة**: «لا يوجد مدخل إنترنت مُعرَّف» و«لا توجد خوادم مُعرَّفة» بدل ادّعاء «بوابة متصلة»/«جميع الخوادم تعمل» على تثبيت جديد بلا بيانات، مع تمييز رسالة «لا توجد أجهزة بعد» عن «لا نتائج للفلاتر».
-- **🧭 ملاحظة خريطة فارغة**: تظهر داخل إطار الخريطة عند عدم رسم أي موقع، وتختفي فور رسمها.
-- **🐛 إصلاح تكرار الخلفية**: تدرّج `body` كان يتكرّر كل `100vh` (وصلات لونية أثناء التمرير) ⇒ `fixed no-repeat` = تدرّج واحد ثابت.
+## 🆕 ما الجديد في v2.8.7
+- **📡 بثّ حيّ SSE (`GET /api/live/status`)**: لقطة أولية عند الاتصال ثم **التغييرات فقط** + نبض كل 25 ثانية.
+  يقرأ من خدمة شجرة موحّدة (`topology.service.js`) — نفس منطق `/api/topology` و`pathDown` تمامًا،
+  ويُبثّ فورًا بعد أي كتابة حالة في محرك المراقبة (بتجميع 400ms).
+- **⏱️ تحديث لحظي في NOC والصفحة العامة**: polling تكيفي (**60 ثانية** مع الخط المفتوح، و**10 ثوانٍ فورًا**
+  عند أي انقطاع) + مؤشّر في تذييل NOC («تحديث فوري (SSE)» / «تحديث دوري كل N ثانية») + إعادة اتصال تلقائية.
+  **القياس الفعلي**: 444ms من كتابة الحالة في القاعدة حتى ظهورها على الشاشة.
+- **🧰 إصلاح النسخ الاحتياطي على الأبلاينس**: السبب الجذري كان `ProtectSystem=strict` مع عدم تفعيل
+  `PrivateTmp` ⇒ `/tmp` للقراءة فقط ⇒ فشل تصدير النسخة وفحص ملف الاستعادة. الحل: ملفات مؤقتة داخل
+  **مجلد القاعدة** (`<DB_DIR>/.tmp`) + `PrivateTmp=true` + رفع حدّ الرفع إلى **300m** في nginx
+  (و300MB في الخادم) + رسائل أوضح في الواجهة + تصحيح رسالة عربية مكسورة.
+- **🛡️ تحديث الأبلاينس الآمن**: مساعد root منفصل (`/usr/local/sbin/nm-update` + `nm-update.path`/`.service`)
+  — لوحة التحكم تكتب **ملف طلب يحوي وسماً فقط**، والأداة تتحقّق (semver صارم)، وتُنزّل من المستودع
+  المُثبَّت داخلها، وتنسخ بـ `rsync`، وتُحدّث التبعيات، وتُعيد تشغيل الخدمة، وتكتب الحالة/السجل في مجلد
+  يملكه root. (خدمة الويب — المكشوفة عبر ngrok — لا تستطيع الكتابة في كودها ولا تنفيذ أوامر.)
+- **🌐 nginx**: كتلة `location /api/live/` (بلا buffering + مهلة 3600s) في إعدادات الأبلاينس و`linux-setup`.
+- **⚙️ CI/CD**: إصلاح جذري لملف الـ workflow (كان **غير صالح** بسبب استخدام `secrets` داخل `if:` ⇒ كل
+  التشغيلات كانت startup failure)، وإصلاح خطوة فحص الصياغة (كانت لا تفشل أبدًا)، وفحص الواجهة كذلك،
+  وتوليد `SHA256SUMS.txt` وإرفاقه بالـ Release، وملف `.github/release.yml` لتصنيف ملاحظات الإصدارات.
 
 > 📌 **ملاحظة تخطيط**: الإصدار **v2.6.0** (المصادر الخارجية: MikroTik REST + Sophos XG + SNMP + LLDP) **لم يُنفَّذ بعد** — الموجود حاليًّا هو `sources.routes.js` (stub يُرجع 501) في انتظار المرحلة 2.
