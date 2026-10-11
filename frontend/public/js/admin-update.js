@@ -100,7 +100,10 @@ async function updCheck(silent = false) {
     if (!r || !r.success) {
       updSet('upd-state', '❌ تعذّر الفحص', 'upd-hero-value upd-bad');
       updSet('upd-latest-sub', (r && r.error) ? String(r.error).slice(0, 80) : '');
-      if (!silent) updNote('تعذّر فحص التحديثات — تأكّد من الإنترنت أو حدود GitHub API.');
+      if (!silent) {
+        updNote('تعذّر فحص التحديثات — تأكّد من الإنترنت أو حدود GitHub API.');
+        showToast('❌ تعذّر فحص التحديثات', { type: 'error', duration: 7000 });
+      }
       return null;
     }
     updLastCheck = r;
@@ -115,6 +118,11 @@ async function updCheck(silent = false) {
     try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
     updRenderLast(now);
     updBadge(has);
+    // v2.10.5 — إشعار بنتيجة الفحص (وإلا تبدو الصفحة صامتة)؛ ويظهر أيضًا في الفحص التلقائي لو وُجد تحديث
+    if (!silent || has) {
+      showToast(has ? ('🟠 يتوفّر تحديث جديد: v' + lat) : ('🟢 أنت على أحدث إصدار (v' + cur + ')'),
+        { type: has ? 'warning' : 'success', duration: has ? 6000 : 3000 });
+    }
     updShow('upd-changelog-btn', has);
     updShow('upd-safe-btn', has && updMode === 'appliance');
     if (updMode === 'plain') { updShow('upd-download-btn', has); updShow('upd-apply-btn', has); }
@@ -151,6 +159,7 @@ function updFollowAppliance() {
         updStepsAllDone();
         updSet('upd-progress-text', '✅ ' + st.message);
         updNote('✅ ' + st.message + ' — جارٍ إعادة تحميل الصفحة…');
+        showToast('✅ ' + st.message, { type: 'success', duration: 6000 });
         updSetBusy(false);
         setTimeout(() => location.reload(), 3000);
         return;
@@ -160,6 +169,7 @@ function updFollowAppliance() {
         updSetBusy(false);
         updSet('upd-progress-text', '❌ ' + st.message);
         updNote('❌ فشل التحديث: ' + st.message + ' — راجع السجل التفصيلي.');
+        showToast('❌ فشل التحديث: ' + st.message, { type: 'error', duration: 10000 });
       }
     } catch (e) {
       // الخدمة قد تكون في لحظة إعادة تشغيل — نواصل المحاولة
@@ -184,9 +194,11 @@ async function updSafeRun() {
   updSetBusy(true);
   try {
     updNote('⏳ إنشاء نسخة احتياطية…');
+    showToast('⏳ إنشاء نسخة احتياطية…', { type: 'info', duration: 3000 });
     const b = await api('/api/backup/create', { method: 'POST' });
     if (!b || !b.success) throw new Error((b && b.error) || 'فشل إنشاء النسخة الاحتياطية');
     updNote('✅ ' + (b.message || 'تم إنشاء النسخة الاحتياطية') + ' — بدء التحديث…');
+    showToast('✅ ' + (b.message || 'تم إنشاء النسخة الاحتياطية'), { type: 'success', duration: 4500 });
     const r = await api('/api/appliance-update/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -197,6 +209,7 @@ async function updSafeRun() {
   } catch (e) {
     updSetBusy(false);
     updNote('❌ ' + e.message);
+    showToast('❌ ' + e.message, { type: 'error', duration: 9000 });
   }
 }
 
@@ -214,6 +227,7 @@ async function updOpenRollback() {
   const cur = updLastCheck && updLastCheck.currentVersion ? 'v' + String(updLastCheck.currentVersion).replace(/^v/i, '') : '';
   if (!tags.length) {
     listEl.innerHTML = '<div style="padding:0.8rem; color:var(--muted);">' + esc((r && r.error) || 'تعذّر جلب قائمة الإصدارات') + '</div>';
+    showToast('❌ ' + ((r && r.error) || 'تعذّر جلب قائمة الإصدارات'), { type: 'error', duration: 7000 });
     return;
   }
   listEl.innerHTML = tags.map((t) => {
@@ -246,6 +260,7 @@ async function updRollbackTo(tag) {
   if (!r || !r.success) { if (stEl) stEl.textContent = '❌ ' + ((r && r.error) || 'تعذّر إرسال الطلب'); return; }
   if (stEl) stEl.textContent = '⏳ ' + (r.message || 'جارٍ التنفيذ…');
   updShow('rollback-modal', false);
+  showToast('⏳ ' + (r.message || 'جارٍ التنفيذ…'), { type: 'info', duration: 3500 });
   updFollowAppliance();
 }
 
@@ -380,6 +395,7 @@ function updCopyAll() {
     } catch (e) { done = false; }
   }
   updNote(done ? '📋 تم نسخ السجل ✓' : '📋 تعذّر النسخ التلقائي — حدّد النص وانسخه يدويًا');
+  showToast(done ? '📋 تم نسخ السجل ✓' : 'تعذّر النسخ التلقائي — حدّد النص يدويًا', { type: done ? 'success' : 'warning', duration: 4000 });
 }
 
 // ── التشغيل ──

@@ -9,6 +9,8 @@
 let remoteAutoTimer = null;
 let remoteBusy = false;
 let lastRemoteAt = null;
+// v2.10.5 — تتبّع آخر حالة معروفة لإطلاق إشعار عند أي تغيّر (لوحة حيّة)
+const remoteLastSeen = { running: null, url: '', installed: null };
 
 // أسماء الأفعال والحقول (تُبنى من جزئين — بلا أي نمط «اسم=قيمة» في الكود)
 const R_ACT_A = 'set-' + 'authtoken';
@@ -69,6 +71,20 @@ function renderRemoteStatus(s) {
   const rep = s.report || {};
   const stOne = s[F_ONE];
   const stTwo = s[F_TWO];
+
+  // v2.10.5 — إشعارات التغيّر: نُطعم المستخدم فورًا بأي تبدّل في حالة النفق أو الرابط أو التثبيت
+  if (remoteLastSeen.installed !== null && remoteLastSeen.installed !== !!s.installed) {
+    showToast(s.installed ? '⬇️ تم تثبيت ngrok ✓' : '⚠️ ملف ngrok لم يعد موجودًا', { type: s.installed ? 'success' : 'warning', duration: 6000 });
+  }
+  if (remoteLastSeen.running !== null && remoteLastSeen.running !== !!s.running) {
+    showToast(s.running ? '🟢 النفق رجع يعمل' : '🔴 النفق اتوقف', { type: s.running ? 'success' : 'warning', duration: 7000 });
+  }
+  if (remoteLastSeen.url && s.publicUrl && remoteLastSeen.url !== s.publicUrl) {
+    showToast('🔗 الرابط العام اتغيّر: ' + s.publicUrl, { type: 'info', duration: 9000 });
+  }
+  remoteLastSeen.installed = !!s.installed;
+  remoteLastSeen.running = !!s.running;
+  remoteLastSeen.url = s.publicUrl || '';
 
   // 1) حالة النفق (+ pid والمستخدم والمدة)
   if (!s.installed) {
@@ -207,16 +223,27 @@ async function remoteAction(action, label, value) {
     });
     if (!r || !r.success) {
       rStatus('❌ ' + ((r && r.error) || 'تعذّر إرسال الطلب'), true);
+      showToast('❌ ' + ((r && r.error) || 'تعذّر إرسال الطلب'), { type: 'error', duration: 7000 });
       return;
     }
     rStatus('⏳ ' + (r.message || 'جارٍ التنفيذ…'));
+    showToast('⏳ ' + (r.message || 'جارٍ التنفيذ…'), { type: 'info', duration: 3500 });
     const before = lastRemoteAt;
+    let changed = false;
     for (let i = 0; i < 25; i++) {
       await new Promise((res) => setTimeout(res, 1000));
       const s = await loadRemoteStatus();
-      const at = s && s.control && s.control.last && s.control.last.at;
-      if (at && at !== before) break;
+      const last = s && s.control && s.control.last;
+      const at = last && last.at;
+      if (at && at !== before) {
+        changed = true;
+        // v2.10.5 — إشعار فوري بالنتيجة (نجاح/فشل) بدل الصمت
+        if (last.state === 'success') showToast('✅ ' + (last.message || 'تم التنفيذ'), { type: 'success', duration: 5000 });
+        else if (last.state === 'failed') showToast('❌ ' + (last.message || 'فشل التنفيذ'), { type: 'error', duration: 9000 });
+        break;
+      }
     }
+    if (!changed) showToast('⚠️ لم تصل نتيجة بعد — راجع السجل في الأسفل', { type: 'warning', duration: 7000 });
   } finally {
     remoteBusy = false;
     const s = await loadRemoteStatus();
@@ -252,6 +279,8 @@ async function remoteSendSecret(inputId, action, label) {
   const s = await loadRemoteStatus();
   const okState = action === R_ACT_A ? (s && s[F_ONE] === 'set') : (s && s[F_TWO] === 'set');
   rSecretsStatus(okState ? ('✅ ' + label + ' — تم ✓') : ('⚠️ ' + label + ' — راجع النتيجة أعلى الصفحة'), !okState);
+  showToast(okState ? ('✅ ' + label + ' — تم ✓') : ('⚠️ ' + label + ' — راجع النتيجة أعلى الصفحة'),
+    { type: okState ? 'success' : 'warning', duration: okState ? 5000 : 8000 });
 }
 
 function initRemoteTab() {
@@ -262,7 +291,10 @@ function initRemoteTab() {
 
   const on = (id, fn) => { const b = rEl(id); if (b) b.addEventListener('click', fn); };
 
-  on('remote-refresh-btn', () => loadRemoteStatus());
+  on('remote-refresh-btn', async () => {
+    await loadRemoteStatus();
+    showToast('🔄 تم تحديث الحالة', { type: 'info', duration: 2000 });
+  });
 
   on('remote-copy-btn', async () => {
     const el = rEl('remote-url');
@@ -276,6 +308,7 @@ function initRemoteTab() {
       try { if (el) { el.removeAttribute('readonly'); el.select(); done = document.execCommand('copy'); el.setAttribute('readonly', 'readonly'); } } catch (_) { done = false; }
     }
     rStatus(done ? '📋 تم نسخ الرابط ✓' : '📋 حدّد الرابط وانسخه يدويًا (المتصفح منع النسخ التلقائي)', !done);
+    showToast(done ? '📋 تم نسخ الرابط العام ✓' : 'حدّد الرابط وانسخه يدويًا', { type: done ? 'success' : 'warning', duration: 4000 });
   });
 
   on('remote-open-btn', () => {
