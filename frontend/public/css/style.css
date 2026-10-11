@@ -9,6 +9,8 @@
   --accent: #2563eb;
   --online: #22c55e;
   --offline: #ef4444;
+  /* v2.8.9 — انقطاع **جزئي** في موقع (فيه متصل + منقطع) ⇒ برتقالي بدل الأحمر */
+  --partial-offline: #d97706;
   --unknown: #9ca3af;
   --warning: #eab308;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -33,6 +35,8 @@ body.dark {
   --map-device-hover: rgba(255, 255, 255, 0.06);
   --online-glow: rgba(34, 197, 94, 0.40);
   --offline-glow: rgba(239, 68, 68, 0.40);
+  --partial-offline: #f59e0b;                       /* v2.8.9 — برتقالي (ليلي) */
+  --partial-offline-glow: rgba(245, 158, 11, 0.40); /* v2.8.9 */
   --unknown-glow: rgba(156, 163, 175, 0.20);
   /* v2.7.1 — خلفيات بطاقات zones ليلية: أَكثر تَباينًا على الخلفية الداكنة #1e293b */
   --zone-internet-bg: rgba(59, 130, 246, 0.16);   /* أَزرق أَوضح */
@@ -1112,8 +1116,13 @@ body.dark .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::aft
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 .map-zone-card:hover { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); }
-/* إِطار أَبرز أَحمر لو وُجد offline داخلها */
+/* v2.8.9 — إطار الموقع عند الانقطاع **الجزئي** (فيه متصل + منقطع): برتقالي (كان أحمر) */
 .map-zone-card.has-offline {
+  border-color: var(--partial-offline);
+  border-width: 2px;
+}
+/* v2.8.9 — إطار الموقع عند **انهيار كامل** (كل الأجهزة واقعة): أحمر */
+.map-zone-card.has-all-offline {
   border-color: var(--offline);
   border-width: 2px;
 }
@@ -1155,7 +1164,8 @@ body.dark .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::aft
 body.dark .map-zone-header { background: rgba(255, 255, 255, 0.03); }
 /* glow أَكثر وضُوحاً للـ has-online في الليلي */
 body.dark .map-zone-card.has-online { box-shadow: 0 0 8px var(--online-glow); }
-body.dark .map-zone-card.has-offline { box-shadow: 0 0 8px var(--offline-glow); }
+body.dark .map-zone-card.has-offline { box-shadow: 0 0 8px var(--partial-offline-glow); }
+body.dark .map-zone-card.has-all-offline { box-shadow: 0 0 8px var(--offline-glow); }
 /* device-dot glow أَوضح في الليلي */
 body.dark .map-zone-device[data-status="online"]  .map-device-dot { box-shadow: 0 0 6px var(--online-glow); }
 body.dark .map-zone-device[data-status="offline"] .map-device-dot { box-shadow: 0 0 6px var(--offline-glow); }

@@ -177,7 +177,7 @@
       : '—';
 
     // v2.7.0 — has-online: zone بأَجهزة كلها online (offline=0, online>0) → إِطار أَخضر مُميَّز.
-    const cls = `map-zone-card kind-${kind}${off > 0 ? ' has-offline' : ''}${(on > 0 && off === 0) ? ' has-online' : ''}${collapsedNow ? ' collapsed' : ''}`;
+    const cls = `map-zone-card kind-${kind}${off > 0 ? ' has-offline' : ''}${(off > 0 && on === 0) ? ' has-all-offline' : ''}${(on > 0 && off === 0) ? ' has-online' : ''}${collapsedNow ? ' collapsed' : ''}`;
     const body = renderZoneBody(node);
 
     // v2.7.0 (PD) — aria-posinset/aria-setsize من opts للـ a11y (اِختياري).
