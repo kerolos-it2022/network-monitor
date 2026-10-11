@@ -23,6 +23,34 @@ const upload = multer({
 const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || '../database/monitoring.db');
 const DB_DIR = path.dirname(DB_PATH);
 const BACKUPS_DIR = path.join(DB_DIR, 'backups');
+// v2.10.3 — مجلد نسخ بديل **قابل للكتابة من خدمة الويب (netmon)**:
+// على الأجهزة الحقيقية قد يُنشئ كونسول الجهاز (root) مجلد <DB_DIR>/backups بملكية root،
+// فتفشل خدمة netmon في الكتابة داخله (EACCES) ويظهر «تعذّر إنشاء النسخة الاحتياطية».
+// الحل الأوتوماتيكي: نجرّب المجلد القياسي أولًا، وإن تعذّرت الكتابة نستخدم <DB_DIR>/svc-backups
+// (ينشئه netmon بنفسه داخل المسار المسموح له) ⇒ زر «نسخة احتياطية + تحديث» يعمل بلا أي تدخّل يدوي.
+const FALLBACK_BACKUPS_DIR = path.join(DB_DIR, 'svc-backups');
+const WRITE_DIRS = [BACKUPS_DIR, FALLBACK_BACKUPS_DIR];
+
+// يختار أول مجلد قابل للكتابة فعلًا (اختبار كتابة/حذف حقيقي) — وإلا يعيد سبب الفشل.
+function pickWritableBackupDir() {
+  let lastErr = null;
+  for (const dir of WRITE_DIRS) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const probe = path.join(dir, '.write-probe');
+      fs.writeFileSync(probe, 'ok');
+      fs.unlinkSync(probe);
+      return { dir: dir, err: null };
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  return { dir: null, err: lastErr };
+}
+// كل المجلدات الموجودة فعليًّا (للقائمة والحذف).
+function readableBackupDirs() {
+  return WRITE_DIRS.filter((d) => { try { return fs.existsSync(d); } catch (e) { return false; } });
+}
 
 // v2.8.7 — مجلد مؤقّت **قابل للكتابة** بدل os.tmpdir():
 // خدمة الأبلاينس تعمل بـ ProtectSystem=strict مع ReadWritePaths=/var/lib/network-monitor فقط،
@@ -97,12 +125,15 @@ function validateBackupBuffer(buffer) {
 
 // دالة لإنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال
 async function createSafetyBackup() {
-  // نتأكد من وجود مجلد النسخ (recursive يتجاهل الوجود المسبق)
-  fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  // v2.10.3 — نختار مجلدًا قابلًا للكتابة فعلًا (قد يكون القياسي مملوكًا لـ root)
+  const pick = pickWritableBackupDir();
+  if (!pick.dir) {
+    throw new Error('لا يوجد مجلد نسخ قابل للكتابة (' + WRITE_DIRS.join(' · ') + ')' + (pick.err ? ' — ' + pick.err.message : ''));
+  }
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
   const backupFile = `backup-before-restore-${ts}.db`;
-  const backupPath = path.join(BACKUPS_DIR, backupFile);
+  const backupPath = path.join(pick.dir, backupFile);
 
   // better-sqlite3 backup: نسخة transaction-consistent دون إيقاف الكتابة
   // على Windows قد لا يكون الملف ظاهراً لـ stat في نفس الـ tick؛ ننتظر نسخياً.
@@ -207,22 +238,26 @@ router.get('/download', requireAuth, async (req, res) => {
 // ============================================================
 router.get('/list', requireAuth, (req, res) => {
   try {
-    if (!fs.existsSync(BACKUPS_DIR)) {
-      return res.json({ success: true, backups: [] });
+    // v2.10.3 — ندمج المجلد القياسي + المجلد البديل (لو موجود) حتى تظهر كل النسخ في الواجهة.
+    const files = [];
+    for (const dir of readableBackupDirs()) {
+      let names = [];
+      try { names = fs.readdirSync(dir); } catch (e) { continue; }
+      for (const f of names.filter((n) => n.endsWith('.db'))) {
+        try {
+          const fpath = path.join(dir, f);
+          const stat = fs.statSync(fpath);
+          files.push({
+            filename: f,
+            dir: dir,
+            sizeBytes: stat.size,
+            sizeMB: (stat.size / 1024 / 1024).toFixed(2),
+            createdAt: stat.mtime.toISOString(),
+          });
+        } catch (e) { /* ملف غير قابل للقراءة — نتجاوزه */ }
+      }
     }
-    const files = fs.readdirSync(BACKUPS_DIR)
-      .filter((f) => f.endsWith('.db'))
-      .map((f) => {
-        const fpath = path.join(BACKUPS_DIR, f);
-        const stat = fs.statSync(fpath);
-        return {
-          filename: f,
-          sizeBytes: stat.size,
-          sizeMB: (stat.size / 1024 / 1024).toFixed(2),
-          createdAt: stat.mtime.toISOString(),
-        };
-      })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    files.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.json({ success: true, backups: files });
   } catch (error) {
@@ -239,15 +274,21 @@ router.get('/list', requireAuth, (req, res) => {
 // (نسخة متسقة من SQLite بلا تعطيل الخدمة — نفس الطريقة المستخدمة في كونسول الأبلاينس).
 router.post('/create', requireAuth, async (req, res) => {
   try {
-    fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    const pick = pickWritableBackupDir();
+    if (!pick.dir) {
+      return res.status(500).json({
+        success: false,
+        error: 'تعذّر إنشاء النسخة الاحتياطية: لا يوجد مجلد نسخ قابل للكتابة (' + WRITE_DIRS.join(' · ') + ')',
+      });
+    }
     const d = new Date();
     const p2 = (n, l = 2) => String(n).padStart(l, '0');
     const name = `db-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}.db`;
-    const dest = path.join(BACKUPS_DIR, name);
+    const dest = path.join(pick.dir, name);
     await db.backup(dest);
     const sizeMB = +(fs.statSync(dest).size / (1024 * 1024)).toFixed(2);
-    console.log('[BACKUP] create:', name, sizeMB + 'MB');
-    res.json({ success: true, file: name, sizeMB, message: 'تم إنشاء نسخة احتياطية ✓ (' + sizeMB + ' MB)' });
+    console.log('[BACKUP] create:', dest, sizeMB + 'MB');
+    res.json({ success: true, file: name, dir: pick.dir, sizeMB, message: 'تم إنشاء نسخة احتياطية ✓ (' + sizeMB + ' MB)' });
   } catch (e) {
     console.error('[BACKUP] create error:', e.message);
     res.status(500).json({ success: false, error: 'تعذّر إنشاء النسخة الاحتياطية: ' + e.message });
@@ -409,13 +450,17 @@ router.delete('/:filename', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, error: 'الملف يجب أن ينتهي بـ .db' });
     }
 
-    const filePath = path.join(BACKUPS_DIR, filename);
+    // v2.10.3 — نبحث في المجلد القياسي ثم البديل
+    let filePath = path.join(BACKUPS_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      const alt = path.join(FALLBACK_BACKUPS_DIR, filename);
+      if (fs.existsSync(alt)) filePath = alt;
+    }
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, error: 'النسخة غير موجودة' });
     }
 
     // نمنع حذف الملف الرئيسي للقاعدة (حماية إضافية ضد سوء الاستخدام)
-    const realBackupsDir = fs.realpathSync(BACKUPS_DIR);
     const realTarget = fs.realpathSync(filePath);
     const realDb = fs.realpathSync(DB_PATH);
     if (realTarget === realDb) {
