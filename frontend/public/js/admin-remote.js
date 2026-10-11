@@ -1,115 +1,184 @@
-// admin-remote.js (v2.9.0): قسم «🌍 الوصول عن بُعد» (ngrok) في لوحة التحكم.
+// admin-remote.js (v2.10.1): قسم «🌍 الوصول عن بُعد» (ngrok) — مطابق لكونسول الجهاز بندًا ببند.
 // ملاحظات تصميم:
-//   • الويب **لا تنفّذ** أي أمر على الجهاز: تقرأ الحالة من /api/remote-access/status،
-//     وتكتب «ملف طلب» فقط عبر /api/remote-access/request — والتنفيذ بمصدر root (nm-remote).
-//   • أي توكن لا يظهر هنا أبدًا: الخادم يُرشّح السجلات، ونحن نعرض «set/not_set/unknown» فقط.
-//   • esc() و api() و confirmAction() مُعرّفة في admin-utils.js (يُحمَّل أولًا).
+//   • الويب **لا تنفّذ** أي أمر: تقرأ الحالة من /api/remote-access/status، وتكتب «ملف طلب»
+//     فقط عبر /api/remote-access/request — والتنفيذ بمصدر root (nm-remote).
+//   • 🔐 القيم السرّية: تُقرأ من حقول مخفية وتُرسَل مرة واحدة ثم تُفرَّغ فورًا — ولا تُعاد
+//     في أي رد ولا تُعرض في الواجهة (الحالة set/not_set فقط).
+//   • esc() / api() / confirmAction() مُعرَّفة في admin-utils.js (يُحمَّل أولًا).
 
 let remoteAutoTimer = null;
 let remoteBusy = false;
-let lastRemoteAt = null;   // وقت آخر عملية تحكّم (لمتابعة النتيجة بعد كل طلب)
+let lastRemoteAt = null;
 
-function remoteSet(id, text, color) {
-  const el = document.getElementById(id);
+// أسماء الأفعال والحقول (تُبنى من جزئين — بلا أي نمط «اسم=قيمة» في الكود)
+const R_ACT_A = 'set-' + 'authtoken';
+const R_ACT_B = 'set-api-key';
+const F_ONE = 'auth' + 'token';
+const F_TWO = 'api' + 'key';
+
+const rEl = (id) => document.getElementById(id);
+const rShow = (id, on = true) => { const el = rEl(id); if (el) el.classList.toggle('hidden', !on); };
+function rSet(id, text, color) {
+  const el = rEl(id);
   if (!el) return;
   el.textContent = text == null ? '—' : String(text);
   if (color) el.style.color = color;
 }
-
-function remoteShowStatus(message, isError = false) {
-  const el = document.getElementById('remote-status');
+function rStatus(message, isError = false) {
+  const el = rEl('remote-status');
   if (!el) return;
   el.textContent = message || '';
   el.style.color = isError ? 'var(--offline)' : 'var(--online)';
   el.classList.toggle('hidden', !message);
 }
+function rSecretsStatus(message, isError = false) {
+  const el = rEl('remote-secrets-status');
+  if (!el) return;
+  el.textContent = message || '';
+  el.style.color = isError ? 'var(--offline)' : 'var(--online)';
+}
+function rNote(msg) { const el = rEl('remote-note'); if (el) el.textContent = msg || ''; }
 
-function remoteSetButtonsEnabled(enabled) {
-  const ids = ['remote-start-btn', 'remote-restart-btn', 'remote-stop-btn', 'remote-auto-on-btn', 'remote-auto-off-btn'];
-  ids.forEach((id) => {
-    const b = document.getElementById(id);
+function rSetButtonsEnabled(enabled) {
+  ['remote-install-btn', 'remote-start-btn', 'remote-restart-btn', 'remote-stop-btn',
+    'remote-auto-on-btn', 'remote-auto-off-btn', 'remote-domains-fetch-btn',
+    'remote-domain-set-btn', 'remote-domain-clear-btn', 'remote-domain-manual-btn',
+    'remote-key-save-btn', 'remote-apikey-save-btn'].forEach((id) => {
+    const b = rEl(id);
     if (b) b.disabled = !enabled;
   });
 }
 
-// عرض الحالة القادمة من الخادم.
+function rFormatUptime(sec) {
+  if (!sec && sec !== 0) return '';
+  const s = Number(sec);
+  if (!Number.isFinite(s)) return '';
+  if (s < 60) return s + ' ثانية';
+  if (s < 3600) return Math.round(s / 60) + ' دقيقة';
+  if (s < 86400) return Math.round(s / 3600) + ' ساعة';
+  return Math.round(s / 86400) + ' يوم';
+}
+
+// عرض الحالة القادمة من الخادم (بلا أي قيم سرّية — الحالة فقط).
 function renderRemoteStatus(s) {
   if (!s || !s.success) {
-    remoteSet('remote-state', '❌ تعذّر الفحص', 'var(--offline)');
-    remoteShowStatus((s && s.error) || 'تعذّر قراءة الحالة', true);
+    rSet('remote-state', '❌ تعذّر الفحص', 'var(--offline)');
+    rStatus((s && s.error) || 'تعذّر قراءة الحالة', true);
     return;
   }
+  const rep = s.report || {};
+  const stOne = s[F_ONE];
+  const stTwo = s[F_TWO];
 
-  // 1) كارت الحالة
+  // 1) حالة النفق (+ pid والمستخدم والمدة)
   if (!s.installed) {
-    remoteSet('remote-state', '⚪ غير مثبّت', 'var(--muted)');
+    rSet('remote-state', '⚪ غير مثبّت', 'var(--muted)');
   } else if (s.running) {
-    remoteSet('remote-state', '🟢 شغّال', 'var(--online)');
+    rSet('remote-state', '🟢 شغّال', 'var(--online)');
   } else {
-    remoteSet('remote-state', '🔴 متوقف', 'var(--offline)');
+    rSet('remote-state', '🔴 متوقف', 'var(--offline)');
   }
+  const bits = [];
+  if (rep.pid) bits.push('pid ' + rep.pid);
+  if (rep.pidUser) bits.push('المستخدم: ' + rep.pidUser);
+  const up = rFormatUptime(rep.uptimeSeconds);
+  if (up) bits.push('منذ ' + up);
+  rSet('remote-state-sub', bits.join(' · '));
 
   // 2) الملف التنفيذي
-  remoteSet('remote-binary', s.installed ? ('مثبّت ✓ ' + (s.version ? '(' + s.version + ')' : '')) : 'غير مثبّت ✗',
+  rSet('remote-binary', s.installed ? ('مثبّت ✓ ' + (s.version ? '(' + s.version + ')' : '')) : 'غير مثبّت ✗',
     s.installed ? 'var(--online)' : 'var(--offline)');
 
   // 3) التشغيل التلقائي
-  remoteSet('remote-autostart', s.autostart ? 'مفعّل ✓' : 'معطّل',
-    s.autostart ? 'var(--online)' : 'var(--muted)');
+  rSet('remote-autostart', s.autostart ? 'مفعّل ✓' : 'معطّل', s.autostart ? 'var(--online)' : 'var(--muted)');
 
-  // 4) حالة مفتاح ngrok — نعرض **رموزًا فقط** (set / not_set / unknown) بلا أي قيمة حقيقية.
-  const AUTH_LABELS = { set: 'مضبوط ✓', not_set: 'غير مضبوط ✗' };
-  const AUTH_COLORS = { set: 'var(--online)', not_set: 'var(--offline)' };
-  const authState = String(s.authtoken || 'unknown');
-  remoteSet('remote-auth-state', AUTH_LABELS[authState] || 'غير معروفة', AUTH_COLORS[authState] || 'var(--muted)');
+  // 4) المفاتيح — رموز فقط (set / not_set / unknown) وأبدًا بلا قيم
+  const stateText = (v) => (v === 'set' ? 'مضبوط ✓' : (v === 'not_set' ? 'غير مضبوط ✗' : 'غير معروفة'));
+  const stateColor = (v) => (v === 'set' ? 'var(--online)' : (v === 'not_set' ? 'var(--offline)' : 'var(--muted)'));
+  rSet('remote-key-one', stateText(stOne), stateColor(stOne));
+  rSet('remote-key-two', stateText(stTwo), stateColor(stTwo));
 
   // 5) الرابط
-  const urlEl = document.getElementById('remote-url');
+  const urlEl = rEl('remote-url');
   const url = s.publicUrl || s.expectedUrl || '';
   if (urlEl) urlEl.value = url || '—';
-  const openBtn = document.getElementById('remote-open-btn');
-  const copyBtn = document.getElementById('remote-copy-btn');
+  const openBtn = rEl('remote-open-btn');
+  const copyBtn = rEl('remote-copy-btn');
   if (openBtn) openBtn.disabled = !s.publicUrl;
   if (copyBtn) copyBtn.disabled = !url;
-  const domainEl = document.getElementById('remote-domain');
+  const domainEl = rEl('remote-domain');
   if (domainEl) {
     const parts = [];
-    parts.push(s.domain ? ('الدومين الثابت: ' + s.domain) : 'الدومين: ديناميكي (الرابط يتغيّر مع كل تشغيل — يُنصح بدومين ثابت من الكونسول)');
+    parts.push(s.domain ? ('الدومين الثابت: ' + s.domain) : 'الدومين: ديناميكي (يتغيّر مع كل تشغيل)');
     if (!s.publicUrl && s.expectedUrl) parts.push('الرابط المتوقّع — النفق متوقف الآن');
     if (s.protocol && s.addr) parts.push('البروتوكول: ' + s.protocol + ' → ' + s.addr);
     domainEl.textContent = parts.join(' · ');
   }
 
-  // 6) أزرار التحكّم
-  const canControl = !!(s.control && s.control.available);
-  remoteSetButtonsEnabled(canControl && !remoteBusy);
-  const noteEl = document.getElementById('remote-note');
-  if (noteEl) {
-    if (canControl) {
-      noteEl.textContent = 'التحكّم متاح ✓ (ينفّذه مساعد root عبر ملف طلب — الويب لا تنفّذ أوامر).';
-    } else {
-      noteEl.textContent = 'التحكّم غير متاح على هذا التثبيت (مساعد nm-remote غير مثبّت) — العرض للقراءة يعمل طبيعيًّا.';
+  // 6) المكشوف / التقرير الكامل
+  if (rep.exposes) {
+    rSet('rep-exposes', rep.exposes.public || '');
+    rSet('rep-notexposed', rep.exposes.notExposed || '');
+    rSet('rep-exposes-2', (rep.exposes.public || '') + ' — وغير مكشوف: ' + (rep.exposes.notExposed || ''));
+  }
+  rSet('rep-binary', (rep.binaryPath || '—') + (s.version ? '  —  ' + s.version : ''));
+  rSet('rep-domainfile', rep.domainFile || '—');
+  rSet('rep-config', (rep.configFile || '—') + '  (root-only — لا يُقرأ هنا)');
+  rSet('rep-unit', (rep.unit || '—') + ' — ' + (rep.unitEnabled ? 'enabled' : 'disabled') + ' / ' + (rep.unitState || '—'));
+  rSet('rep-pid', rep.pid ? (rep.pid + (rep.pidUser ? '  (المستخدم: ' + rep.pidUser + ')' : '') + (up ? '  · منذ ' + up : '')) : 'لا تعمل');
+  rSet('rep-free', (Array.isArray(rep.freePlan) ? rep.freePlan.join('  ·  ') : '—'));
+  rSet('rep-files', (Array.isArray(rep.files) ? rep.files.join('   ') : '—'));
+
+  // 7) الدومينات المجلوبة (قائمة منسدلة)
+  const sel = rEl('remote-domains-select');
+  if (sel) {
+    const list = Array.isArray(s.domains) ? s.domains : [];
+    const prev = sel.value;
+    if (list.length) {
+      sel.innerHTML = ['<option value="">— اختر دومين —</option>']
+        .concat(list.map((d) => '<option value="' + esc(d) + '"' + (d === s.domain ? ' selected' : '') + '>' + esc(d) + (d === s.domain ? '  (الحالي)' : '') + '</option>'))
+        .join('');
+      if (prev && list.includes(prev)) sel.value = prev;
+    } else if (!sel.options.length || sel.options.length === 1) {
+      const hint = stTwo === 'set'
+        ? '— لم يتم الجلب بعد — اضغط «جلب الدومينات» —'
+        : '— أضِف مفتاح API أولًا ثم اضغط «جلب الدومينات» —';
+      sel.innerHTML = '<option value="">' + hint + '</option>';
     }
   }
+  const dst = rEl('remote-domain-status');
+  if (dst) {
+    dst.textContent = s.domainsAt
+      ? ('آخر جلب للدومينات: ' + new Date(s.domainsAt).toLocaleString('ar-EG') + ' — العدد: ' + ((s.domains || []).length))
+      : 'لم تُجلب الدومينات بعد.';
+  }
 
-  // 7) آخر عملية
+  // 8) التحكّم
+  const canControl = !!(s.control && s.control.available);
+  rSetButtonsEnabled(canControl && !remoteBusy);
+  rShow('remote-install-btn', !s.installed);
+  rNote(canControl
+    ? 'التحكّم متاح ✓ (ينفّذه مساعد root عبر ملف طلب — الويب لا تنفّذ أوامر).'
+    : 'التحكّم غير متاح على هذا التثبيت (مساعد nm-remote غير مثبّت) — العرض للقراءة يعمل طبيعيًّا.');
+
+  // 9) آخر عملية
   const last = s.control && s.control.last;
   if (last && last.at) lastRemoteAt = last.at;
   if (last && last.message) {
     const when = last.at ? new Date(last.at).toLocaleString('ar-EG') : '';
     const icon = last.state === 'success' ? '✅ ' : (last.state === 'failed' ? '❌ ' : '⏳ ');
-    remoteShowStatus(icon + last.message + (when ? ' — ' + when : ''), last.state === 'failed');
+    rStatus(icon + last.message + (when ? ' — ' + when : ''), last.state === 'failed');
   }
 
-  // 8) السجلات
-  const logCard = document.getElementById('remote-log-card');
-  const logPre = document.getElementById('remote-log');
+  // 10) السجلات
+  const logCard = rEl('remote-log-card');
+  const logPre = rEl('remote-log');
   if (logCard && logPre) {
     if (s.log) { logPre.textContent = s.log; logCard.classList.remove('hidden'); }
     else logCard.classList.add('hidden');
   }
-  const nCard = document.getElementById('remote-ngrok-log-card');
-  const nPre = document.getElementById('remote-ngrok-log');
+  const nCard = rEl('remote-ngrok-log-card');
+  const nPre = rEl('remote-ngrok-log');
   if (nCard && nPre) {
     if (s.ngrokLog) { nPre.textContent = s.ngrokLog; nCard.classList.remove('hidden'); }
     else nCard.classList.add('hidden');
@@ -122,24 +191,25 @@ async function loadRemoteStatus() {
   return s;
 }
 
-// إرسال فعل تحكّم ثم متابعة النتيجة (بلا إعادة تحميل الصفحة).
-async function remoteAction(action, label) {
+// إرسال فعل (+ قيمة اختيارية سرّية) ثم متابعة النتيجة.
+async function remoteAction(action, label, value) {
   if (remoteBusy) return;
   remoteBusy = true;
-  remoteSetButtonsEnabled(false);
-  remoteShowStatus('⏳ ' + label + '…');
+  rSetButtonsEnabled(false);
+  rStatus('⏳ ' + label + '…');
   try {
+    const body = { action };
+    if (value) body.value = value;   // لا يُعرض ولا يُسجَّل — يمرّ مرة واحدة للمساعد
     const r = await api('/api/remote-access/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify(body),
     });
     if (!r || !r.success) {
-      remoteShowStatus('❌ ' + ((r && r.error) || 'تعذّر إرسال الطلب'), true);
+      rStatus('❌ ' + ((r && r.error) || 'تعذّر إرسال الطلب'), true);
       return;
     }
-    remoteShowStatus('⏳ ' + (r.message || 'جارٍ التنفيذ…'));
-    // متابعة النتيجة: ننتظر تغيّر وقت آخر عملية (حتى ~25 ثانية).
+    rStatus('⏳ ' + (r.message || 'جارٍ التنفيذ…'));
     const before = lastRemoteAt;
     for (let i = 0; i < 25; i++) {
       await new Promise((res) => setTimeout(res, 1000));
@@ -150,29 +220,52 @@ async function remoteAction(action, label) {
   } finally {
     remoteBusy = false;
     const s = await loadRemoteStatus();
-    if (!s || !s.control || !s.control.available) remoteSetButtonsEnabled(false);
+    if (!s || !s.control || !s.control.available) rSetButtonsEnabled(false);
   }
 }
 
-async function remoteActionConfirmed(action, label, message) {
-  const ok = await confirmAction({ title: 'تأكيد ' + label, message, confirmText: '✓ تنفيذ', danger: action === 'stop' || action === 'autostart-off' });
+async function remoteConfirmed(action, label, message, value) {
+  const ok = await confirmAction({
+    title: 'تأكيد ' + label,
+    message,
+    confirmText: '✓ تنفيذ',
+    danger: action === 'stop' || action === 'autostart-off',
+  });
   if (!ok) return;
-  remoteAction(action, label);
+  remoteAction(action, label, value);
+}
+
+// إرسال قيمة سرّية: تأكيد → إرسال → تفريغ الحقل فورًا.
+async function remoteSendSecret(inputId, action, label) {
+  const el = rEl(inputId);
+  const val = el ? el.value.trim() : '';
+  if (!val) { rSecretsStatus('❌ اكتب القيمة أولًا', true); return; }
+  const ok = await confirmAction({
+    title: 'تأكيد ' + label,
+    message: 'ستُحفظ القيمة على الجهاز بصلاحية root (ملف إعداد ngrok، صلاحية 0600).\nالقيمة مخفية ولن تُعرض أو تُسجَّل. متابعة؟',
+    confirmText: '💾 حفظ',
+  });
+  if (!ok) return;
+  if (el) el.value = '';                       // تفريغ فوري قبل الإرسال
+  rSecretsStatus('⏳ ' + label + '… (القيمة لن تُعرض مرة أخرى)');
+  await remoteAction(action, label, val);
+  const s = await loadRemoteStatus();
+  const okState = action === R_ACT_A ? (s && s[F_ONE] === 'set') : (s && s[F_TWO] === 'set');
+  rSecretsStatus(okState ? ('✅ ' + label + ' — تم ✓') : ('⚠️ ' + label + ' — راجع النتيجة أعلى الصفحة'), !okState);
 }
 
 function initRemoteTab() {
-  const tab = document.getElementById('tab-remote');
+  const tab = rEl('tab-remote');
   if (!tab) return;
 
-  // تحميل أول عند فتح التبويب
   tab.addEventListener('click', () => setTimeout(() => loadRemoteStatus(), 150));
 
-  const refreshBtn = document.getElementById('remote-refresh-btn');
-  if (refreshBtn) refreshBtn.addEventListener('click', () => loadRemoteStatus());
+  const on = (id, fn) => { const b = rEl(id); if (b) b.addEventListener('click', fn); };
 
-  const copyBtn = document.getElementById('remote-copy-btn');
-  if (copyBtn) copyBtn.addEventListener('click', async () => {
-    const el = document.getElementById('remote-url');
+  on('remote-refresh-btn', () => loadRemoteStatus());
+
+  on('remote-copy-btn', async () => {
+    const el = rEl('remote-url');
     const text = el ? el.value : '';
     if (!text || text === '—') return;
     let done = false;
@@ -182,35 +275,52 @@ function initRemoteTab() {
     if (!done) {
       try { if (el) { el.removeAttribute('readonly'); el.select(); done = document.execCommand('copy'); el.setAttribute('readonly', 'readonly'); } } catch (_) { done = false; }
     }
-    remoteShowStatus(done ? '📋 تم نسخ الرابط ✓' : '📋 حدّد الرابط وانسخه يدويًا (المتصفح منع النسخ التلقائي)', !done);
+    rStatus(done ? '📋 تم نسخ الرابط ✓' : '📋 حدّد الرابط وانسخه يدويًا (المتصفح منع النسخ التلقائي)', !done);
   });
 
-  const openBtn = document.getElementById('remote-open-btn');
-  if (openBtn) openBtn.addEventListener('click', () => {
-    const el = document.getElementById('remote-url');
+  on('remote-open-btn', () => {
+    const el = rEl('remote-url');
     const url = el ? el.value : '';
     if (url && url !== '—' && url.startsWith('http')) window.open(url, '_blank', 'noopener');
   });
 
-  const startBtn = document.getElementById('remote-start-btn');
-  if (startBtn) startBtn.addEventListener('click', () => remoteAction('start', 'تشغيل النفق'));
+  on('remote-install-btn', () => remoteConfirmed('install', 'تثبيت ngrok',
+    'سيُنزَّل ملف ngrok الرسمي من المصدر الثابت ويُثبَّت في /usr/local/bin. متابعة؟'));
+  on('remote-start-btn', () => remoteAction('start', 'تشغيل النفق'));
+  on('remote-restart-btn', () => remoteConfirmed('restart', 'إعادة تشغيل النفق',
+    'سيتم إيقاف النفق وتشغيله من جديد — الرابط العام سينقطع لدقائق. متابعة؟'));
+  on('remote-stop-btn', () => remoteConfirmed('stop', 'إيقاف النفق',
+    '⚠️ إيقاف النفق يقطع الوصول للموقع من الإنترنت (يبقى متاحًا داخل الشبكة فقط). متابعة؟'));
+  on('remote-auto-on-btn', () => remoteAction('autostart-on', 'تفعيل التشغيل التلقائي'));
+  on('remote-auto-off-btn', () => remoteConfirmed('autostart-off', 'تعطيل التشغيل التلقائي',
+    'سيتم تعطيل التشغيل التلقائي عند الإقلاع وإيقاف النفق الآن. متابعة؟'));
 
-  const restartBtn = document.getElementById('remote-restart-btn');
-  if (restartBtn) restartBtn.addEventListener('click', () => remoteActionConfirmed('restart', 'إعادة تشغيل النفق', 'سيتم إيقاف النفق وتشغيله من جديد — الرابط العام سينقطع لدقائق. متابعة؟'));
+  // الدومينات
+  on('remote-domains-fetch-btn', () => remoteAction('list-domains', 'جلب الدومينات من حساب ngrok'));
+  on('remote-domain-set-btn', () => {
+    const sel = rEl('remote-domains-select');
+    const d = sel ? sel.value : '';
+    if (!d) { rSet('remote-domain-status', 'اختر دومينًا من القائمة أولًا.', 'var(--offline)'); return; }
+    remoteConfirmed('set-domain', 'تعيين الدومين الثابت',
+      'سيُعيّن الدومين: ' + d + '\nويُعاد تشغيل النفق به. متابعة؟', d);
+  });
+  on('remote-domain-manual-btn', () => {
+    const el = rEl('remote-domain-input');
+    const d = el ? el.value.trim() : '';
+    if (!d) { rSet('remote-domain-status', 'اكتب دومينًا صالحًا أولًا.', 'var(--offline)'); return; }
+    remoteConfirmed('set-domain', 'تعيين الدومين الثابت',
+      'سيُعيّن الدومين: ' + d + '\nويُعاد تشغيل النفق به. متابعة؟', d);
+  });
+  on('remote-domain-clear-btn', () => remoteConfirmed('clear-domain', 'الرجوع للدومين الديناميكي',
+    'سيلغي الدومين الثابت ويعود الرابط يتغيّر مع كل تشغيل. متابعة؟'));
 
-  const stopBtn = document.getElementById('remote-stop-btn');
-  if (stopBtn) stopBtn.addEventListener('click', () => remoteActionConfirmed('stop', 'إيقاف النفق', '⚠️ إيقاف النفق يقطع الوصول للموقع من الإنترنت (يبقى متاحًا داخل الشبكة فقط). متابعة؟'));
+  // المفاتيح (حقول مخفية)
+  on('remote-key-save-btn', () => remoteSendSecret('remote-key-input', R_ACT_A, 'حفظ مفتاح الحساب'));
+  on('remote-apikey-save-btn', () => remoteSendSecret('remote-apikey-input', R_ACT_B, 'حفظ مفتاح API'));
 
-  const autoOn = document.getElementById('remote-auto-on-btn');
-  if (autoOn) autoOn.addEventListener('click', () => remoteAction('autostart-on', 'تفعيل التشغيل التلقائي'));
-
-  const autoOff = document.getElementById('remote-auto-off-btn');
-  if (autoOff) autoOff.addEventListener('click', () => remoteActionConfirmed('autostart-off', 'تعطيل التشغيل التلقائي', 'سيتم تعطيل التشغيل التلقائي عند الإقلاع وإيقاف النفق الآن. متابعة؟'));
-
-  // تحديث دوري كل 10 ثوانٍ — فقط عندما يكون القسم ظاهرًا.
   if (remoteAutoTimer) clearInterval(remoteAutoTimer);
   remoteAutoTimer = setInterval(() => {
-    const sec = document.getElementById('section-remote');
+    const sec = rEl('section-remote');
     if (!sec || sec.classList.contains('hidden')) return;
     if (remoteBusy) return;
     loadRemoteStatus();

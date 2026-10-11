@@ -668,14 +668,16 @@
       <div class="form-card">
         <h3>🌍 الوصول عن بُعد (ngrok)</h3>
         <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
-          حالة النفق الذي ينشر واجهة الجهاز على الإنترنت — والتحكّم فيه من هنا بدل شاشة الجهاز.
-          التنفيذ يتم بصلاحية root عبر مساعد منفصل؛ الويب لا تُنفّذ أي أمر بنفسها.
+          مطابق لقائمة «Remote access (ngrok)» في كونسول الجهاز — بندًا ببند.
+          التنفيذ يتم بصلاحية root عبر مساعد منفصل و«ملف طلب»؛ الويب لا تُنفّذ أي أمر بنفسها.
         </p>
 
+        <!-- ═══ كروت الحالة ═══ -->
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
           <div class="form-card" style="text-align:center; padding:1.25rem;">
             <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">حالة النفق</div>
             <div id="remote-state" style="font-size:1.2rem; font-weight:bold;">⏳ جارٍ الفحص…</div>
+            <div id="remote-state-sub" style="font-size:0.78rem; color:var(--muted); margin-top:0.25rem;"></div>
           </div>
           <div class="form-card" style="text-align:center; padding:1.25rem;">
             <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">ملف ngrok</div>
@@ -686,11 +688,13 @@
             <div id="remote-autostart" style="font-size:1rem; font-weight:bold;">—</div>
           </div>
           <div class="form-card" style="text-align:center; padding:1.25rem;">
-            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">حالة مفتاح ngrok</div>
-            <div id="remote-auth-state" style="font-size:1rem; font-weight:bold;">—</div>
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">المفاتيح</div>
+            <div style="font-size:0.9rem;">مفتاح الحساب: <span id="remote-key-one" style="font-weight:bold;">—</span></div>
+            <div style="font-size:0.9rem; margin-top:0.15rem;">مفتاح API: <span id="remote-key-two" style="font-weight:bold;">—</span></div>
           </div>
         </div>
 
+        <!-- ═══ الرابط العام ═══ -->
         <div class="form-card" style="margin-bottom:1.25rem;">
           <div style="font-weight:600; margin-bottom:0.5rem;">🔗 الرابط العام</div>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
@@ -702,20 +706,79 @@
           <div id="remote-domain" style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">—</div>
         </div>
 
+        <!-- ═══ المكشوف على الإنترنت ═══ -->
         <div style="padding:0.75rem 0.9rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:0.85rem; color:var(--muted); margin-bottom:1.25rem;">
-          🛡️ <strong style="color:var(--text);">المكشوف على الإنترنت:</strong> واجهة الويب فقط (عبر nginx) وهي محميّة بكلمة مرور الدخول.
-          <span style="display:block; margin-top:0.25rem;">غير مكشوف: SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span>
+          🛡️ <strong style="color:var(--text);">المكشوف على الإنترنت:</strong> <span id="rep-exposes">واجهة الويب فقط (nginx) — محميّة بكلمة مرور الدخول.</span>
+          <span style="display:block; margin-top:0.25rem;">غير مكشوف: <span id="rep-notexposed">SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span></span>
         </div>
 
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
-          <button type="button" class="btn btn-primary" id="remote-start-btn" disabled>▶️ تشغيل</button>
-          <button type="button" class="btn" id="remote-restart-btn" disabled>🔁 إعادة تشغيل</button>
-          <button type="button" class="btn" id="remote-stop-btn" disabled>⏹️ إيقاف</button>
-          <button type="button" class="btn" id="remote-auto-on-btn" disabled>🔒 تفعيل التشغيل التلقائي</button>
-          <button type="button" class="btn" id="remote-auto-off-btn" disabled>🔓 تعطيل التشغيل التلقائي</button>
+        <!-- ═══ التحكم الرئيسي ═══ -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+          <button type="button" class="btn" id="remote-install-btn">⬇️ تثبيت ngrok</button>
+          <button type="button" class="btn btn-primary" id="remote-start-btn">▶️ تشغيل</button>
+          <button type="button" class="btn" id="remote-restart-btn">🔁 إعادة تشغيل</button>
+          <button type="button" class="btn" id="remote-stop-btn">⏹️ إيقاف</button>
+          <button type="button" class="btn" id="remote-auto-on-btn">🔒 تفعيل التشغيل التلقائي</button>
+          <button type="button" class="btn" id="remote-auto-off-btn">🔓 تعطيل التشغيل التلقائي</button>
         </div>
+
+        <!-- ═══ الدومين الثابت (مُجلب من حساب ngrok) ═══ -->
+        <div class="form-card" style="margin:1rem 0;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">🌐 الدومين الثابت</div>
+          <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.6rem;">
+            نجلب الدومينات المحجوزة في حسابك من ngrok تلقائيًا (تحتاج مفتاح API). الدومين الثابت يجعل الرابط لا يتغيّر.
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem;">
+            <select id="remote-domains-select" style="flex:1; min-width:220px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); direction:ltr;">
+              <option value="">— لم يتم الجلب بعد —</option>
+            </select>
+            <button type="button" class="btn" id="remote-domains-fetch-btn">🔄 جلب الدومينات</button>
+            <button type="button" class="btn btn-primary" id="remote-domain-set-btn">✅ تعيين المحدَّد</button>
+            <button type="button" class="btn" id="remote-domain-clear-btn">↩️ العودة للديناميكي</button>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <input id="remote-domain-input" type="text" placeholder="أو اكتب الدومين يدويًا: myname.ngrok-free.app" style="flex:1; min-width:240px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); direction:ltr;" />
+            <button type="button" class="btn" id="remote-domain-manual-btn">تعيين اليدوي</button>
+          </div>
+          <div id="remote-domain-status" style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);"></div>
+        </div>
+
+        <!-- ═══ المفاتيح (حقول مخفية — لا تُعرض القيم ولا تُسجَّل) ═══ -->
+        <div class="form-card" style="margin-bottom:1rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">🔑 المفاتيح (تُكتب بصلاحية root وتُخزَّن محليًّا فقط)</div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem;">
+            <input id="remote-key-input" type="password" autocomplete="new-password" placeholder="مفتاح الحساب (authtoken)" style="flex:1; min-width:220px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); direction:ltr;" />
+            <button type="button" class="btn btn-primary" id="remote-key-save-btn">💾 حفظ مفتاح الحساب</button>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <input id="remote-apikey-input" type="password" autocomplete="new-password" placeholder="مفتاح API (لجلب الدومينات)" style="flex:1; min-width:220px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); direction:ltr;" />
+            <button type="button" class="btn btn-primary" id="remote-apikey-save-btn">💾 حفظ مفتاح API</button>
+          </div>
+          <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--muted);">
+            تُجلَب المفاتيح من لوحة ngrok: مفتاح الحساب من <span style="direction:ltr; display:inline-block;">dashboard.ngrok.com → Your Authtoken</span> ·
+            ومفتاح API من <span style="direction:ltr; display:inline-block;">dashboard.ngrok.com → API keys</span>.
+            الحقول مخفية، ولا تُعاد القيم في أي رد أو سجل.
+          </div>
+          <div id="remote-secrets-status" style="margin-top:0.5rem; font-weight:600;"></div>
+        </div>
+
         <div id="remote-status" class="hidden" style="margin-bottom:1rem; font-weight:600;"></div>
         <div id="remote-note" style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;"></div>
+
+        <!-- ═══ التقرير الكامل (نظير [8] في الكونسول) ═══ -->
+        <details class="form-card" style="margin-bottom:1rem;">
+          <summary style="cursor:pointer; font-weight:600;">📋 التقرير الكامل (كل شيء — بلا إخفاء)</summary>
+          <div style="margin-top:0.75rem; font-size:0.85rem; line-height:1.9;">
+            <div>الملف التنفيذي: <span id="rep-binary" style="direction:ltr; display:inline-block; font-family:monospace;">—</span></div>
+            <div>ملف الدومين الثابت: <span id="rep-domainfile" style="direction:ltr; display:inline-block; font-family:monospace;">—</span></div>
+            <div>ملف الإعداد (root-only): <span id="rep-config" style="direction:ltr; display:inline-block; font-family:monospace;">—</span></div>
+            <div>وحدة النظام: <span id="rep-unit" style="font-family:monospace;">—</span></div>
+            <div>العملية: <span id="rep-pid">—</span></div>
+            <div>المكشوف على الإنترنت: <span id="rep-exposes-2">—</span></div>
+            <div>ملاحظات الخطة المجانية: <span id="rep-free">—</span></div>
+            <div>الملفات ذات الصلة: <span id="rep-files" style="direction:ltr; display:inline-block; font-family:monospace; font-size:0.78rem;">—</span></div>
+          </div>
+        </details>
 
         <div class="form-card hidden" id="remote-log-card" style="max-height:280px; overflow:auto;">
           <div style="font-weight:600; margin-bottom:0.5rem;">📋 آخر عمليات التحكّم:</div>
@@ -727,6 +790,7 @@
         </div>
       </div>
     </section>
+
   </main>
 
   <!-- ===== popup modal إِضافة/تعديل جهاز (v2.7.4 — نَقل inline form إلى popup) ===== -->
