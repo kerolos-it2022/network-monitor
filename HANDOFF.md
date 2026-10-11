@@ -774,6 +774,26 @@ sudo systemctl restart network-monitor
 | `verify/check-appliance-update.js` (وضع الطلب + رفض الحقن) | **7 PASS / 0 FAIL** |
 | `bash -n` + `node --check` لكل الملفات المعدّلة | OK |
 
+### 🎛️ تنظيم GitHub (2026-10-11)
+- **Build Appliance ISO**: ✅ نجح تشغيل يدوي على `main` (artifact `appliance-iso` 441.7 MB صالح 30 يومًا)
+  — مسار بديل ممتاز لبناء الـ ISO بعيدًا عن Docker المحلي.
+- **إصلاح جوهري في `ci-cd.yml`**: خطوة فحص الصياغة كانت **لا تفشل أبدًا** (العدّاد يُضبط داخل subshell بسبب
+  `| while`) ⇒ صُحّحت بـ process substitution، وتفحص الآن `frontend/public/js` كذلك، وبلا `build-from-source`.
+- **`build-iso.yml`**: اسم الـ ISO من الوسم (`github.ref_name`) بدل الـ sha + `permissions` دنيا +
+  `concurrency` + توليد `SHA256SUMS.txt` وإرفاقه بالـ Release.
+- **`.github/release.yml` جديد**: تصنيف تلقائي لملاحظات الإصدارات (ميزات/إصلاحات/أمان/واجهة/توثيق/صيانة).
+- **`SECURITY.md`**: إزالة البريد الوهمي `security@example.com` (الاعتماد على Security Advisories).
+- كل ما سبق مُلتزَم ومرفوع (`ee4d88e`)، والمستخدم فعّل الـ workflows اللي كانت `disabled_manually`.
+- أداة تحقق محلية جديدة (غير مُتتبَّعة مثل باقي أدوات `verify/`): `verify/check-workflows.py` — تحليل YAML
+  فعلي لكل ملفات `.github` + فحص `bash -n` لسكربت الـ CI.
+
+**متبقٍّ في تنظيم GitHub:**
+1. **README** واقف عند 2.8.5: الكتابة الآلية محجوبة لأن السطر ~229 يحوي قيمة توكن تلجرام **مثالًا توضيحيًّا**
+   (أكّد المستخدم أنه وهمي). المسارَان: (أ) استبدال القيمة بـ `<ضع-التوكن-هنا>` ثم أتمكّن من التعديل،
+   أو (ب) لصق نص الإصدار يدويًّا (شارة + سطر الإصدار + قسم «ما الجديد»).
+2. **Release v2.8.7** (بإرفاق الـ ISO + SHA256) + وصف المستودع + Topics + مراجعة 5 PRs من Dependabot
+   — تحتاج `gh auth login` مرة واحدة (الأداة مثبّتة 2.96.0 وغير مسجّلة دخول).
+
 ### 📋 الخطوة التالية (بالترتيب)
 1. ✅ **تمّت محليًّا**: بناء ISO v2.8.7 + التحقق منه:
    - `appliance/network-monitor-appliance-v2.8.7-amd64.iso` — 456.3 MB · MD5 `5be6bea00e3842e107d7b2ecd6706cf5` (مطابق داخل/خارج الحاوية).
