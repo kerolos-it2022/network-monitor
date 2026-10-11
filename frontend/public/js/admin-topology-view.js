@@ -60,17 +60,56 @@
     return '📍 منطقة';
   }
 
+  // v2.10.2 — أيقونة النوع (نفس أيقونات «خريطة المواقع»).
+  function kindIcon(kind) {
+    if (kind === 'building') return '🏢';
+    if (kind === 'internet') return '🌐';
+    if (kind === 'floor') return '📐';
+    if (kind === 'room') return '🚪';
+    if (kind === 'rack') return '🗄️';
+    if (kind === 'site') return '🏛️';
+    return '📍';
+  }
+
+  // v2.10.2 — إحصاء أجهزة الشجرة الفرعية (للمباني: نفس معلومات كارت «خريطة المواقع»).
+  // القاعدة (مطابقة v2.8.9): لا أجهزة ⇒ محيّد · الكل متصل ⇒ أخضر · بعضها ⇒ برتقالي · كلها واقعة ⇒ أحمر.
+  function subtreeCounts(n) {
+    const acc = { online: 0, offline: 0, unknown: 0, total: 0 };
+    (function walk(node) {
+      const kids = Array.isArray(node.children) ? node.children : [];
+      for (const c of kids) {
+        if (c.type === 'location') { walk(c); continue; }
+        acc.total += 1;
+        if (c.status === 'offline') acc.offline += 1;
+        else if (c.status === 'online') acc.online += 1;
+        else acc.unknown += 1;
+        walk(c);
+      }
+    })(n);
+    return acc;
+  }
+  function locClass(c) {
+    if (!c.total) return 'loc-neutral';
+    if (c.offline > 0) return c.online > 0 ? 'loc-warn' : 'loc-bad';
+    if (c.online === c.total) return 'loc-ok';
+    return 'loc-neutral';
+  }
+
   // بناء HTML للعقدة وأبنائها تنازليًا — pathDown = مسدود عبر الأب.
   function renderNode(n, depth) {
     const si = statusInfo(n);
     const pathDown = !!n.pathDown;
-    const cls = ['t-node', si.cls, pathDown ? 'pathdown' : ''].filter(Boolean).join(' ');
+    const isLoc = n.type === 'location';
+    const lc = isLoc ? subtreeCounts(n) : null;
+    const cls = ['t-node', si.cls, isLoc ? locClass(lc) : '', pathDown ? 'pathdown' : ''].filter(Boolean).join(' ');
     const children = Array.isArray(n.children) ? n.children : [];
     let html = '<div class="' + cls + '" data-id="' + esc(n.id) + '">'
       + '<div class="t-row">'
       + '<b class="t-nm">' + esc(n.name) + '</b>'
-      + (n.type === 'location'
-          ? ' <span class="t-ip">' + esc(kindLabel(n.kind)) + '</span>'
+      + (isLoc
+          ? ' <span class="t-ip">' + esc(kindIcon(n.kind)) + ' ' + esc(kindLabel(n.kind)) + '</span>'
+            + ' <span class="t-loc-stats" title="أجهزة هذا المبنى: متصل · منقطع · غير معروف">🟢 ' + lc.online
+            + ' · 🔴 ' + lc.offline + ' · ⚪ ' + lc.unknown + ' <b>(' + lc.total + ')</b></span>'
           : ' <span class="t-ip">' + esc(n.ip) + (n.device_type_name ? ' — ' + esc(n.device_type_name) : '') + '</span>')
       + ' <span class="t-type">' + (si.st ? si.st + ' ' : '') + (pathDown ? '⛔ مسدود عبر الأب' : '') + '</span>'
       + ' <span class="t-type" title="المسار الرقمي الهرمي">🧭 ' + esc(pathLabel(n)) + '</span>'

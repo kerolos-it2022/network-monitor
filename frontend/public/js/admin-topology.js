@@ -168,7 +168,8 @@
         + '<span class="map-status unknown">⚪ ' + unk + '</span>'
         + '</span>';
       // لون إطار البطاقة: أحمر لو فيه منقطع، أخضر لو الكل متصل، رمادي لو فاضي.
-      const borderCls = !kids.length ? '' : down > 0 ? 'down' : 'up';
+      // v2.10.2 — نفس قاعدة «خريطة المواقع»: لا أجهزة ⇒ محيّد · الكل متصل ⇒ أخضر · جزئي ⇒ برتقالي · الكل واقع ⇒ أحمر.
+      const borderCls = !kids.length ? 'neutral' : (down > 0 ? (up > 0 ? 'warn' : 'down') : 'up');
       const rows = kids.map((k) => {
         const ksi = statusInfo(k);
         const kIcon = '🖥️';
