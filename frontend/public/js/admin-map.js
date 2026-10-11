@@ -208,18 +208,10 @@ function renderZonesGrid(rootData) {
   // للأَجهزة المُيَتِّمَة نُطبِّق nodeKeptByFilters مُباشِرة (filters device-level).
   // v2.7.0 — تَمرير aria-posinset/aria-setsize للـ a11y (P)D.
   const keptZoneKids = zoneKids.filter((c) => !hasActiveFilters() || nodeKeptByFilters(c));
-  // v2.10.7 — تسطيح كامل (بطلب المستخدم): **كل مبنى بطاقة مستقلة** مثل «سلسلة الشبكة»
-  // بدل إدخال المبنى داخل بطاقة أبيه. العلاقة تُعرَض كسطر «متصل عبر» داخل البطاقة.
-  const flatZones = [];
-  (function walkZone(list, parentName) {
-    for (const c of list) {
-      if (!c || c.kind === 'device') continue;
-      flatZones.push({ node: c, parentName: parentName || '' });
-      const kk = Array.isArray(c.children) ? c.children : [];
-      if (kk.length) walkZone(kk, c.name || '');
-    }
-  })(zoneKids, '');
-  const keptFlat = flatZones.filter((e) => !hasActiveFilters() || nodeKeptByFilters(e.node));
+  // v2.10.10 — القاعدة النهائية (بطلب المستخدم): **مستويان** —
+  //   • المواقع الرئيسية = كروت مستقلة (المستوى الأول).
+  //   • الطوابق/الغرف = **داخل** بطاقة المبنى كأقسام مفتوحة دائمًا (renderZoneBody).
+  const keptFlat = keptZoneKids.map((c) => ({ node: c, parentName: '' }));
   let orphanCardCount = 0;
   if (orphanDevices.length > 0) {
     const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
@@ -351,8 +343,24 @@ function renderZoneBody(node) {
       .join('');
   }
 
-  // v2.10.7 — لا إدخال مبانٍ داخل مبانٍ: كل مبنى صار بطاقة مستقلة في الشبكة
-  // (والعلاقة تظهر في سطر «متصل عبر» داخل البطاقة). نُعيد صفوف الأجهزة المُباشرة فقط.
+  // v2.10.10 — الطوابق/الغرف تُعرَض كأقسام **داخل** بطاقة المبنى (مفتوحة دائمًا، بلا طيّ)
+  for (const sz of subzones) {
+    if (hasActiveFilters() && !nodeKeptByFilters(sz)) continue;
+    const szIcon = KIND_ICON[sz.kind] || '📍';
+    const szDc = sz.device_count || 0;
+    const szOn = sz.online || 0;
+    const szOff = sz.offline || 0;
+    const szUnk = sz.unknown || 0;
+    html += `
+      <div class="map-subzone" data-id="${esc(String(sz.id))}" data-kind="${esc(sz.kind)}">
+        <div class="map-subzone-title">
+          <span>${szIcon}</span>
+          <span class="map-subzone-name">${esc(sz.name || '')}</span>
+          <span class="map-subzone-stats">🟢${szOn} · 🔴${szOff} · ⚪${szUnk} (${szDc})</span>
+        </div>
+        ${renderZoneBody(sz)}
+      </div>`;
+  }
   return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
 }
 

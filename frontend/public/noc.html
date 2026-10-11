@@ -814,7 +814,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.10.9</span>
+        <span class="tag">Network Operations Center v2.10.10</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1437,7 +1437,23 @@
     });
     let html = '';
     if (devices.length > 0) html += devices.map((d) => renderZoneDevice(d)).join('');
-    // v2.10.7 — لا إدخال مبانٍ داخل مبانٍ: كل مبنى بطاقة مستقلة (والعلاقة في سطر «متصل عبر»).
+    // v2.10.10 — الطوابق/الغرف تُعرَض كأقسام **داخل** بطاقة المبنى (مفتوحة دائمًا، بلا طيّ)
+    for (const sz of subzones) {
+      const szIcon = KIND_ICON[sz.kind] || '📍';
+      const szDc = sz.device_count || 0;
+      const szOn = sz.online || 0;
+      const szOff = sz.offline || 0;
+      const szUnk = sz.unknown || 0;
+      html += `
+      <div class="map-subzone" data-id="${esc(String(sz.id))}" data-kind="${esc(sz.kind)}">
+        <div class="map-subzone-title">
+          <span>${szIcon}</span>
+          <span class="map-subzone-name">${esc(sz.name || '')}</span>
+          <span class="map-subzone-stats">🟢${szOn} · 🔴${szOff} · ⚪${szUnk} (${szDc})</span>
+        </div>
+        ${renderZoneBody(sz)}
+      </div>`;
+    }
     return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
   }
 
@@ -1506,21 +1522,12 @@
       };
       orphanHtml = renderZoneCard(orphanNode, '');
     }
-    // v2.10.7 — تسطيح كامل (نفس سلوك «خريطة المواقع» بالحرف): كل مبنى بطاقة مستقلة،
-    // والعلاقة تُعرَض كسطر «متصل عبر» داخل البطاقة. ترتيب DFS يطابق اللوحة تمامًا.
-    const flatZones = [];
-    (function walkZone(list, parentName) {
-      for (const c of list) {
-        if (!c || c.kind === 'device') continue;
-        flatZones.push({ node: c, parentName: parentName || '' });
-        const kk = Array.isArray(c.children) ? c.children : [];
-        if (kk.length) walkZone(kk, c.name || '');
-      }
-    })(zoneKids, '');
-    const cards = orphanHtml + flatZones.map((e) => renderZoneCard(e.node, e.parentName)).join('');
+    // v2.10.10 — مستويان (نفس سلوك «خريطة المواقع»): المواقع الرئيسية كروت مستقلة،
+    // والطوابق/الغرف تُدخَل داخل بطاقة المبنى في renderZoneBody (مفتوحة دائمًا).
+    const cards = orphanHtml + zoneKids.map((c) => renderZoneCard(c, '')).join('');
     return {
       html: cards,
-      zones: flatZones.length + (orphanHtml ? 1 : 0),
+      zones: zoneKids.length + (orphanHtml ? 1 : 0),
       devices: rootData.device_count || 0,
     };
   }
