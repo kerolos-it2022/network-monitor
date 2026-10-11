@@ -17,6 +17,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -uo pipefail
 
+# v2.10.6 — معلومة إصدار للفحص السريع على الجهاز:  /usr/local/sbin/nm-remote --version
+if [ "${1:-}" = "--version" ]; then echo "nm-remote v2.10.6"; exit 0; fi
+
 DATA_DIR="/var/lib/network-monitor"
 REQ_FILE="$DATA_DIR/remote-request.json"
 STATE_DIR="$DATA_DIR/remote"

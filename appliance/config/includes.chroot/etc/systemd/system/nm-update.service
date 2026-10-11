@@ -13,7 +13,9 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=/opt/network-monitor /var/lib/network-monitor
+# v2.10.6 — أضفنا /etc/systemd/system و/usr/local/sbin و/usr/local/bin حتى يستطيع المساعد تحديث نفسه ونسخه
+# والوحدات تلقائيًا في كل تحديث (كانت تتطلب خطوة يدوية ⇒ بقيت أدوات nm-remote قديمة على الأجهزة).
+ReadWritePaths=/opt/network-monitor /var/lib/network-monitor /etc/systemd/system /usr/local/sbin /usr/local/bin
 
 # npm يحتاج HOME/كاش — نضعها داخل المسار المسموح (ProtectHome يمنع /root).
 Environment=HOME=/var/lib/network-monitor

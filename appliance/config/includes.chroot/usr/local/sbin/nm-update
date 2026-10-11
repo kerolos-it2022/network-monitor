@@ -15,6 +15,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -uo pipefail
 
+# v2.10.6 — معلومة إصدار للفحص السريع على الجهاز:  /usr/local/sbin/nm-update --version
+if [ "${1:-}" = "--version" ]; then echo "nm-update v2.10.6"; exit 0; fi
+
 DATA_DIR="/var/lib/network-monitor"
 REQ_FILE="$DATA_DIR/update-request.json"          # يكتبه netmon (مدخل غير موثوق ⇒ تحقّق صارم)
 STATE_DIR="$DATA_DIR/update"                      # مملوك لـ root (ننشئه أدناه)
@@ -101,6 +104,36 @@ done
 status in_progress "تحديث التبعيات (npm ci)" "$TAG"
 ( cd "$APP_DIR/backend" && npm ci --omit=dev --no-audit --no-fund >>"$LOG_FILE" 2>&1 ) \
   || fail "فشل تحديث التبعيات (npm ci) — راجع السجل"
+
+# ── v2.10.6 — تحديث أدوات النظام نفسها (المساعدون + وحدات systemd) ──
+# سبب الإضافة: تحديث اللوحة كان يُحدّث كود التطبيق فقط (backend/frontend/database)، فبقي مساعد
+# nm-remote على الأجهزة نسخة قديمة لا تعرف الأفعال الجديدة («فعل غير مسموح») — وكذلك وحدات systemd
+# (صلاحيات الكتابة). هنا نُحدّثها تلقائيًا في كل تحديث، مع محاولة آمنة (بلا فشل يُوقف التحديث).
+SRC_APP="$SRC/appliance/config/includes.chroot"
+if [ -d "$SRC_APP" ]; then
+  status in_progress "تحديث أدوات النظام (المساعدون والوحدات)" "$TAG"
+  UPDATED_TOOLS=0
+  for f in nm-update nm-remote; do
+    if [ -f "$SRC_APP/usr/local/sbin/$f" ]; then
+      install -m0755 "$SRC_APP/usr/local/sbin/$f" "/usr/local/sbin/$f" 2>/dev/null && UPDATED_TOOLS=1 || true
+    fi
+  done
+  for u in nm-update.service nm-update.path nm-remote.service nm-remote.path; do
+    if [ -f "$SRC_APP/etc/systemd/system/$u" ]; then
+      install -m0644 "$SRC_APP/etc/systemd/system/$u" "/etc/systemd/system/$u" 2>/dev/null && UPDATED_TOOLS=1 || true
+    fi
+  done
+  if [ "$UPDATED_TOOLS" = "1" ]; then
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl restart nm-update.path 2>/dev/null || true
+    systemctl restart nm-remote.path 2>/dev/null || true
+    log "أدوات النظام: تم تحديث المساعدين/الوحدات ✓"
+  else
+    # الحالة المتوقعة عند أول مرة على وحدة قديمة (لا تسمح بالكتابة في /usr/local/sbin):
+    # نكتفي بتحديث الوحدات (مجلدها مسموح) — وبعد إعادة التحميل يصبح تحديث المساعدين ممكنًا في المرة التالية.
+    log "أدوات النظام: تعذّر تحديث المساعدين (وحدة قديمة؟) — الوحدات حُدِّثت ودُمجت"
+  fi
+fi
 
 # ── إعادة التشغيل ──
 status in_progress "إعادة تشغيل الخدمة" "$TAG"

@@ -15,7 +15,7 @@ ProtectSystem=strict
 ProtectHome=read-only
 PrivateTmp=true
 # مسموح بالكتابة في: مجلد البيانات · وحدات النظام · سجل النفق · مسار تثبيت ngrok · مجلد إعداد ngrok
-ReadWritePaths=/var/lib/network-monitor /etc/systemd/system /var/log /usr/local/bin /root/.config/ngrok
+ReadWritePaths=/var/lib/network-monitor /etc/systemd/system /var/log /usr/local/bin /usr/local/sbin /root/.config/ngrok
 
 # ngrok يقرأ/يكتب إعداداته من $HOME — نضبطه بوضوح حتى تصل الأوامر لـ /root/.config/ngrok
 Environment=HOME=/root
