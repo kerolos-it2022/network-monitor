@@ -67,6 +67,7 @@ appliance/noc-*.html
 /verify-*.js
 /*.png
 /commit-msg*.txt
+/cdp-*.out.txt
 
 # لقطات تحقق الوضع النهاري/الليلي (محليّة — لا تُرفع)
 /verify/

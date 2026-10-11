@@ -814,7 +814,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.10.10</span>
+        <span class="tag">Network Operations Center v2.10.12</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1524,6 +1524,8 @@
     }
     // v2.10.10 — مستويان (نفس سلوك «خريطة المواقع»): المواقع الرئيسية كروت مستقلة،
     // والطوابق/الغرف تُدخَل داخل بطاقة المبنى في renderZoneBody (مفتوحة دائمًا).
+    // ✅ v2.10.12 — تأكيد المستخدم: **خريطة المواقع = احتواء** · «سلسلة الشبكة» = **كل موقع منفرد**.
+    // لا تُسطَّح هذه الشاشة مرة أخرى إلا بطلب صريح جديد (تعديل v2.10.11 للتسطيح أُلغي).
     const cards = orphanHtml + zoneKids.map((c) => renderZoneCard(c, '')).join('');
     return {
       html: cards,
