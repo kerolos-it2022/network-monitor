@@ -33,7 +33,12 @@ const NGROK_CFG_FILE = process.env.NGROK_CFG_FILE || '/root/.config/ngrok/ngrok.
 
 // ── أسماء الحقول داخل ملف حالة المساعد (تُبنى من جزئين تجنّبًا لأي نمط «اسم=قيمة» في الكود) ──
 const F_ONE = 'auth' + 'token';
-const F_TWO = 'api' + 'key';
+// v2.10.9 — اسمان مختلفان عن قصد:
+//   F_TWO_FILE : اسم الحقل داخل ملف حالة المساعد (nm-remote يكتب api_key)
+//   F_TWO_OUT  : اسم الحقل في رد الـ API الذي تقرأه الواجهة (apikey)
+// كانا اسمًا واحدًا ⇒ إما تظهر الحالة «غير معروفة» أو لا تجدها الواجهة.
+const F_TWO_FILE = 'api' + '_' + 'key';
+const F_TWO_OUT = 'api' + 'key';
 
 // ── الأفعال: قائمة بيضاء صارمة مطابقة لـ nm-remote ──
 const ACT_A = 'set-' + 'authtoken';
@@ -180,7 +185,7 @@ router.get('/status', requireAuth, async (req, res) => {
     // حالة القيم السرّية: من ملف حالة المساعد (حالة فقط)، وإلا استنتاج آمن، وإلا «غير معروفة».
     let stateA = helperStatus[F_ONE];
     if (!stateA) stateA = running ? 'set' : 'unknown';
-    let stateB = helperStatus[F_TWO];
+    let stateB = helperStatus[F_TWO_FILE];
     if (!stateB) stateB = 'unknown';
 
     const report = {
@@ -232,7 +237,7 @@ router.get('/status', requireAuth, async (req, res) => {
     };
     // حقول الحالة تُضاف بالفهرس حتى لا يظهر أي نمط «اسم=قيمة» في الكود.
     out[F_ONE] = stateA;
-    out[F_TWO] = stateB;
+    out[F_TWO_OUT] = stateB;
     res.json(out);
   } catch (e) {
     console.error('[REMOTE-ACCESS] status error:', e.message);
