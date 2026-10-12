@@ -58,10 +58,15 @@ async function loadSchedulerRuns() {
     return;
   }
   tbody.innerHTML = rows.map((row) => {
-    const statusBadge = row.status === 'completed' ? '✅ مكتمل' : (row.status === 'failed' ? '❌ فشل' : '🟡 جارٍ');
+    const statusBadge = row.status === 'completed' ? '✅ مكتمل'
+      : (row.status === 'failed' ? '❌ فشل' : (row.status === 'cancelled' ? '⏹ مُلغى' : '🟡 جارٍ'));
+    // v2.11.7 — نُميّز المسح اليدوي (من شاشة «🔍 اكتشاف الأجهزة») عن المسح الدوري.
+    const sourceBadge = row.source === 'manual'
+      ? ' <span style="background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:0 0.3rem; font-size:0.7rem; color:var(--muted);">✋ يدوي</span>'
+      : '';
     return `<tr>
       <td>${esc(row.id)}</td>
-      <td>${esc(row.subnet)}</td>
+      <td>${esc(row.subnet)}${sourceBadge}</td>
       <td>${esc(row.started_at || '—')}</td>
       <td>${esc(row.ended_at || '—')}</td>
       <td>${esc(row.devices_found)}</td>

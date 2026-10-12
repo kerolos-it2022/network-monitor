@@ -65,6 +65,8 @@ appliance/noc-*.html
 /cdp-*.js
 /check-*.js
 /verify-*.js
+/verify-*.py
+/cdp-*.py
 /*.png
 /commit-msg*.txt
 /cdp-*.out.txt

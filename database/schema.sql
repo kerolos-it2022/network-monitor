@@ -160,8 +160,9 @@ CREATE TABLE IF NOT EXISTS scan_runs (
     devices_found INTEGER NOT NULL DEFAULT 0,     -- إجمالي الأَجهزة المَكتشَفة في هذا المسح
     devices_added INTEGER NOT NULL DEFAULT 0,    -- أَجهزة جديدة لم تَكن معروفة
     devices_lost INTEGER NOT NULL DEFAULT 0,     -- أَجهزة معروفة اختفت عن هذا المسح (منذ آخر مسح ناجح)
-    status TEXT NOT NULL DEFAULT 'running',      -- 'running' | 'completed' | 'failed'
-    error_message TEXT
+    status TEXT NOT NULL DEFAULT 'running',      -- 'running' | 'completed' | 'cancelled' | 'failed'
+    error_message TEXT,
+    source TEXT NOT NULL DEFAULT 'scheduled'     -- v2.11.7: 'scheduled' (المجدول) | 'manual' (من شاشة اكتشاف الأجهزة)
 );
 CREATE INDEX IF NOT EXISTS idx_scan_runs_started ON scan_runs(started_at);
 

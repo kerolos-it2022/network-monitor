@@ -151,7 +151,10 @@
             <input type="checkbox" id="discovery-scan-snmp" />
             <span>استعلام SNMP</span>
           </label>
-          <button type="button" class="btn btn-primary" id="discovery-start-btn" style="height:fit-content;">🚀 بدء المسح</button>
+          <div style="display:flex; gap:0.5rem; height:fit-content;">
+            <button type="button" class="btn btn-primary" id="discovery-start-btn">🚀 بدء المسح</button>
+            <button type="button" class="btn" id="discovery-last-btn" title="عرض آخر نتيجة مسح محفوظة على الخادم (تبقى بعد إعادة تحميل الصفحة)">📄 آخر نتيجة مسح</button>
+          </div>
         </div>
         <div style="margin-top:0.75rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
           <label for="discovery-snmp-community" style="font-size:0.85rem; color:var(--muted);">Community String (للـ SNMP):</label>
@@ -166,15 +169,24 @@
           <span id="discovery-progress-text" style="font-weight:600;">جاري المسح...</span>
           <span id="discovery-progress-count" style="color:var(--muted);">0 / 0</span>
           <div style="flex:1;"></div>
-          <button type="button" class="btn btn-danger" id="discovery-stop-btn">⏹ إيقاف</button>
+          <button type="button" class="btn btn-danger" id="discovery-stop-btn" title="إلغاء المسح الجاري — يتوقف خلال ثوانٍ وتُحفظ أي نتائج وصلت">⏹ إيقاف</button>
         </div>
       </div>
 
       <div id="discovery-results" class="hidden" style="margin-top:1rem;">
-        <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+        <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap;">
           <span style="font-weight:600;">الأجهزة المكتشفة:</span>
           <span id="discovery-count" style="color:var(--accent);"></span>
+          <span id="discovery-summary" style="color:var(--muted); font-size:0.85rem;"></span>
           <div style="flex:1;"></div>
+          <input type="text" id="discovery-search" class="search-box" placeholder="🔎 بحث بالاسم أو IP أو الشركة..." style="max-width:240px;" title="بحث فوري داخل نتائج المسح" />
+          <select id="discovery-filter" class="sort-select" title="فلترة الصفوف">
+            <option value="all">الكل</option>
+            <option value="new">الجديد فقط</option>
+            <option value="existing">الموجود فقط</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
           <button type="button" class="btn btn-primary" id="discovery-add-selected-btn" disabled title="إضافة الأجهزة المحددة للمراقبة">➕ إضافة للمراقبة</button>
           <button type="button" class="btn" id="discovery-select-all-btn" title="تحديد جميع الأجهزة">☑️ تحديد الكل</button>
           <button type="button" class="btn" id="discovery-clear-selection-btn" title="إلغاء تحديد الكل">☐ إلغاء التحديد</button>
@@ -183,13 +195,15 @@
           <thead>
             <tr>
               <th style="width:40px;"><input type="checkbox" id="discovery-select-all-checkbox" /></th>
-              <th>IP</th>
-              <th>الاسم المقترح</th>
+              <th class="sortable" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز">IP ↕</th>
+              <th class="sortable" data-sort="name" data-label="الاسم المقترح" style="cursor:pointer;" title="انقر للفرز">الاسم المقترح ↕</th>
               <th>النوع</th>
+              <th>الموقع</th>
+              <th>الفحص</th>
               <th>الشركة المصنعة (MAC)</th>
               <th>المنافذ المفتوحة</th>
               <th>معلومات SNMP</th>
-              <th>زمن الاستجابة</th>
+              <th class="sortable" data-sort="time" data-label="زمن الاستجابة" style="cursor:pointer;" title="انقر للفرز">زمن الاستجابة ↕</th>
             </tr>
           </thead>
           <tbody id="discovery-table-body"></tbody>
@@ -219,12 +233,25 @@
           <option value="-1">مرفوض</option>
         </select>
         <button id="discovered-bulk-approve-btn" type="button" class="btn btn-primary" title="اعتماد جميع الأجهزة المحددة">✅ اعتماد المحدد</button>
+        <input type="text" id="discovered-search" class="search-box" placeholder="🔎 بحث بـ IP أو اسم أو صانع..." style="max-width:230px;" title="بحث على الخادم داخل الأجهزة المُكتشَفة" />
+        <div style="flex:1;"></div>
+        <span id="discovered-page-info" style="color:var(--muted); font-size:0.85rem;"></span>
+        <button id="discovered-prev-btn" type="button" class="btn" title="الصفحة السابقة">◀ السابق</button>
+        <button id="discovered-next-btn" type="button" class="btn" title="الصفحة التالية">التالي ▶</button>
       </div>
       <table class="data-table">
         <thead>
           <tr>
             <th><input type="checkbox" id="discovered-select-all" title="تحديد الكل" /></th>
-            <th>IP</th><th>MAC</th><th>الاسم</th><th>الصانع</th><th>النوع المتوقَّع</th><th>المصدر</th><th>آخر رؤية</th><th>التكرار</th><th>الحالة</th><th>إجراءات</th>
+            <th class="sortable" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز">IP ↕</th>
+            <th>MAC</th>
+            <th class="sortable" data-sort="hostname" data-label="الاسم" style="cursor:pointer;" title="انقر للفرز">الاسم ↕</th>
+            <th class="sortable" data-sort="vendor" data-label="الصانع" style="cursor:pointer;" title="انقر للفرز">الصانع ↕</th>
+            <th class="sortable" data-sort="detected_type" data-label="النوع المتوقَّع" style="cursor:pointer;" title="انقر للفرز">النوع المتوقَّع ↕</th>
+            <th>المصدر</th>
+            <th class="sortable" data-sort="last_seen_at" data-label="آخر رؤية" style="cursor:pointer;" title="انقر للفرز">آخر رؤية ↕</th>
+            <th class="sortable" data-sort="seen_count" data-label="التكرار" style="cursor:pointer;" title="انقر للفرز">التكرار ↕</th>
+            <th>الحالة</th><th>إجراءات</th>
           </tr>
         </thead>
         <tbody id="discovered-table-body"></tbody>

@@ -113,7 +113,7 @@ router.get('/runs', requireAuth, (req, res) => {
   try {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '20', 10) || 20));
     const rows = require('../db').prepare(
-      `SELECT id, subnet, started_at, ended_at, devices_found, devices_added, devices_lost, status, error_message
+      `SELECT id, subnet, started_at, ended_at, devices_found, devices_added, devices_lost, status, error_message, source
        FROM scan_runs ORDER BY started_at DESC LIMIT ?`
     ).all(limit);
     res.json({ success: true, data: rows });

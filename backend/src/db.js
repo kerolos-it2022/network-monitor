@@ -64,6 +64,9 @@ try {
       // منفصل تمامًا عن parent_id («متصل عبر» في سلسلة الشبكة): يحدّد فقط أي طابق/غرفة
       // يدخل داخل بطاقة أي مبنى/موقع في الخريطة. NULL = بطاقة مستقلة.
       "ALTER TABLE locations ADD COLUMN map_parent_id INTEGER",
+      // v2.11.7: مصدر المسح (source) في scan_runs — 'scheduled' (المجدول، الافتراضي) أو 'manual'
+      // (المسح اليدوي من شاشة «🔍 اكتشاف الأجهزة») ⇒ يَظهر تاريخ المسحات اليدوية في «⏱️ المسح الدوري».
+      "ALTER TABLE scan_runs ADD COLUMN source TEXT NOT NULL DEFAULT 'scheduled'",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

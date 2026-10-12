@@ -12,6 +12,9 @@ const db = require('../db');
 
 // تخزين نتائج المسح لكل scanId (في الذاكرة)
 const scanResults = {};
+// v2.11.7 — آخر نتيجة مسح محفوظة على الخادم (لا تُحذف مثل scanResults) ⇒ تُخدَم عبر
+// GET /api/scan/last، وعبر /results/:scanId كبديل احتياطي بعد انتهاء صلاحية scanResults (60ث).
+let lastScan = null;
 
 // التحقق من صحة CIDR
 function isValidCIDR(cidr) {
@@ -467,11 +470,13 @@ async function querySNMP(ip, community = 'public') {
 }
 
 // مسح شبكة كاملة (Ping Sweep)
-async function pingSweep(ips, concurrency = 50) {
+async function pingSweep(ips, concurrency = 50, isCancelled) {
   const results = [];
   
   // معالجة دفعات متزامنة
   for (let i = 0; i < ips.length; i += concurrency) {
+    // v2.11.7 — إلغاء فوري بين الدفعات (callback اختياري ⇒ لا يكسر استدعاء المجدول).
+    if (typeof isCancelled === 'function' && isCancelled()) break;
     const batch = ips.slice(i, i + concurrency);
     const promises = batch.map(async (ip) => {
       try {
@@ -507,6 +512,17 @@ router.post('/subnet', async (req, res) => {
       return res.status(400).json({ success: false, error: 'النطاق كبير جداً (الحد الأقصى 1024 IP). استخدم /24 أو أصغر.' });
     }
     
+    // v2.11.7 — تسجيل المسح اليدوي في scan_runs (source='manual') ليظهر في تبويب «⏱️ المسح الدوري».
+    // فشل التسجيل لا يُوقف المسح: نُسجّل تحذيرًا ونُكمل.
+    let runId = null;
+    try {
+      runId = db.prepare(
+        "INSERT INTO scan_runs (subnet, started_at, status, source) VALUES (?, datetime('now'), 'running', 'manual')"
+      ).run(cidr).lastInsertRowid;
+    } catch (e) {
+      console.warn('[SCAN] scan_runs manual insert failed:', e.message);
+    }
+
     // إرجاع استجابة فورية مع scanId
     const scanId = Date.now();
     res.json({ 
@@ -520,9 +536,10 @@ router.post('/subnet', async (req, res) => {
     
     // تنفيذ المسح في الخلفية (fire-and-forget) دون انتظار — لا نُبقي طلب /subnet مفتوحًا
     // نتائج المسح تُقرأ لاحقاً عبر SSE /stream/:scanId و /results/:scanId
-    performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity).catch(scanError => {
+    performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity, { cidr, runId }).catch(scanError => {
       console.error('[SCAN] Scan error:', scanError);
       scanResults[scanId] = { error: scanError.message, completed: true };
+      finishScanRun(runId, 0, 'failed', scanError.message);
     });
     
   } catch (error) {
@@ -533,23 +550,66 @@ router.post('/subnet', async (req, res) => {
   }
 });
 
+// v2.11.7 — إنهاء صف المسح في scan_runs (فشل التسجيل لا يكسر المسح).
+function finishScanRun(runId, devicesFound, status, errorMessage) {
+  if (!runId) return;
+  try {
+    db.prepare(
+      `UPDATE scan_runs SET ended_at = datetime('now'), devices_found = ?, status = ?, error_message = ? WHERE id = ?`
+    ).run(devicesFound || 0, status || 'completed', errorMessage || null, runId);
+  } catch (e) {
+    console.warn('[SCAN] scan_runs update failed:', e.message);
+  }
+}
+
 // دالة تنفيذ المسح الفعلي مع تحديث التقدم
-async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity) {
+async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity, meta) {
+  meta = meta || {};
   // تهيئة التخزين
-  scanResults[scanId] = { progress: '', completed: false, devices: [] };
+  scanResults[scanId] = {
+    progress: '', completed: false, devices: [], cancelRequested: false,
+    cidr: meta.cidr || null, startedAt: new Date().toISOString(),
+  };
+
+  // v2.11.7 — إلغاء حقيقي: يُفحص بين الدفعات وداخل حلقة التحليل (POST /api/scan/cancel/:scanId).
+  const isCancelled = () => !!(scanResults[scanId] && scanResults[scanId].cancelRequested);
+
+  // v2.11.7 — إنهاء موحّد (اكتمل / أُلغِي / فشل): يحفظ «آخر نتيجة» ويُحدّث scan_runs.
+  function finalize(devices, mode, errorMessage) {
+    const state = scanResults[scanId] || {};
+    state.devices = devices;
+    state.completed = true;
+    state.cancelled = (mode === 'cancelled');
+    if (mode === 'cancelled') {
+      state.progress = '⏹ أُلغِي المسح — ' + devices.length + ' جهاز قبل الإلغاء';
+    } else if (mode === 'failed') {
+      state.progress = '❌ فشل المسح: ' + (errorMessage || '');
+    }
+    lastScan = {
+      scanId: String(scanId),
+      cidr: meta.cidr || null,
+      endedAt: new Date().toISOString(),
+      deviceCount: devices.length,
+      cancelled: mode === 'cancelled',
+      devices,
+    };
+    finishScanRun(meta.runId, devices.length,
+      mode === 'cancelled' ? 'cancelled' : (mode === 'failed' ? 'failed' : 'completed'), errorMessage);
+  }
+  
   
   try {
     // 1. Ping Sweep
     scanResults[scanId].progress = `جاري مسح ${ips.length} عنوان IP...`;
     console.log(`[SCAN] Starting ping sweep for ${ips.length} IPs`);
-    const aliveHosts = await pingSweep(ips);
+    const aliveHosts = await pingSweep(ips, 50, isCancelled);
+    if (isCancelled()) { finalize([], 'cancelled'); return; }
     scanResults[scanId].progress = `اكتمل مسح البنج: ${aliveHosts.length} جهاز مستجيب`;
     console.log(`[SCAN] Ping sweep complete: ${aliveHosts.length} alive hosts`);
     
     if (aliveHosts.length === 0) {
       scanResults[scanId].progress = 'لم يتم العثور على أجهزة مستجيبة';
-      scanResults[scanId].completed = true;
-      scanResults[scanId].devices = [];
+      finalize([], 'completed');
       return;
     }
     
@@ -557,6 +617,8 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
     const detailedResults = [];
     
     for (let i = 0; i < aliveHosts.length; i++) {
+      // v2.11.7 — الإلغاء يُفحص لكل جهاز ⇒ يتوقف خلال ثوانٍ ويُحفظ ما اكتُشف قبل الإلغاء.
+      if (isCancelled()) { finalize(detailedResults, 'cancelled'); return; }
       const host = aliveHosts[i];
       scanResults[scanId].progress = `جاري تحليل الجهاز ${i + 1}/${aliveHosts.length}: ${host.ip}`;
       console.log(`[SCAN] Scanning ${host.ip}`);
@@ -637,13 +699,13 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
     
     // حفظ النتائج النهائية
     scanResults[scanId].progress = `اكتمل المسح! تم العثور على ${detailedResults.length} جهاز`;
-    scanResults[scanId].completed = true;
-    scanResults[scanId].devices = detailedResults;
+    finalize(detailedResults, 'completed');
     
     console.log(`[SCAN] Network scan completed: ${detailedResults.length} devices found`);
   } catch (error) {
     console.error('[SCAN] Perform scan error:', error);
     scanResults[scanId] = { error: error.message, completed: true };
+    finishScanRun(meta.runId, 0, 'failed', error.message);
   }
 }
 
@@ -704,7 +766,9 @@ router.get('/stream/:scanId', (req, res) => {
     }
     
     if (result.completed) {
-      if (result.devices) {
+      if (result.cancelled) {
+        sendLine('⏹ أُلغِي المسح — ' + (result.devices ? result.devices.length : 0) + ' جهاز قبل الإلغاء');
+      } else if (result.devices) {
         sendLine('اكتمل المسح! تم العثور على ' + result.devices.length + ' جهاز');
       }
       sendDone(result.devices ? result.devices.length : 0);
@@ -729,15 +793,64 @@ router.get('/results/:scanId', (req, res) => {
   const scanId = req.params.scanId;
   const result = scanResults[scanId];
   
+  // v2.11.7 — تمييز الحالات: known=false ⇒ لا سجل (معرّف خطأ/انتهت الصلاحية/إعادة تشغيل الخادم)،
+  // و completed=true مع data=[] ⇒ مسح اكتمل فعلًا ولم يجد أجهزة (نجاح فاضي، لا خطأ).
   if (!result) {
-    return res.json({ success: true, data: [] });
+    // بديل احتياطي: إن كان المعرّف لـ«آخر نتيجة» المحفوظة ⇒ نخدمها بدل إعلان الفشل.
+    if (lastScan && String(lastScan.scanId) === String(scanId)) {
+      return res.json({
+        success: true, data: lastScan.devices || [], known: true, completed: true,
+        cancelled: !!lastScan.cancelled, fromLastScan: true,
+      });
+    }
+    return res.json({ success: true, data: [], known: false, completed: false });
   }
   
   if (result.error) {
     return res.status(500).json({ success: false, error: result.error });
   }
   
-  res.json({ success: true, data: result.devices || [] });
+  res.json({
+    success: true,
+    data: result.devices || [],
+    known: true,
+    completed: !!result.completed,
+    cancelled: !!result.cancelled,
+  });
+});
+
+// GET /api/scan/last — v2.11.7: آخر نتيجة مسح محفوظة (تبقى بعد إعادة تحميل الصفحة وبعد انتهاء الـ60ث).
+router.get('/last', (req, res) => {
+  if (!lastScan) {
+    return res.json({ success: true, data: null });
+  }
+  res.json({
+    success: true,
+    data: {
+      scanId: lastScan.scanId,
+      cidr: lastScan.cidr,
+      endedAt: lastScan.endedAt,
+      deviceCount: lastScan.deviceCount,
+      cancelled: !!lastScan.cancelled,
+      devices: lastScan.devices || [],
+    },
+  });
+});
+
+// POST /api/scan/cancel/:scanId — v2.11.7: إلغاء حقيقي للمسح الجاري (يُفحص العلم بين الدفعات
+// وداخل حلقة التحليل ⇒ يتوقف خلال ثوانٍ ويُعلَن «أُلغِي» مع حفظ ما اكتُشف قبل الإلغاء).
+router.post('/cancel/:scanId', (req, res) => {
+  const scanId = req.params.scanId;
+  const result = scanResults[scanId];
+  if (!result) {
+    return res.status(404).json({ success: false, error: 'لا يوجد مسح بهذا المعرّف (انتهى أو انتهت صلاحيته)' });
+  }
+  if (result.completed) {
+    return res.json({ success: true, data: { cancelRequested: false, alreadyDone: true, cancelled: !!result.cancelled } });
+  }
+  result.cancelRequested = true;
+  result.progress = '⏹ جارٍ الإلغاء…';
+  res.json({ success: true, data: { cancelRequested: true } });
 });
 
 // POST /api/scan/bulk-add - إضافة أجهزة متعددة من نتائج المسح
@@ -757,8 +870,8 @@ router.post('/bulk-add', async (req, res) => {
     const locMap = new Map(locations.map(l => [l.name, l.id]));
     
     const insertStmt = db.prepare(`
-      INSERT INTO devices (name, ip, device_type_id, location_id, check_protocol, port, check_interval_seconds, failure_threshold, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO devices (name, ip, device_type_id, location_id, check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     let imported = 0;
@@ -799,6 +912,7 @@ router.post('/bulk-add', async (req, res) => {
           locId,
           d.check_protocol || 'ping',
           d.port ? Number(d.port) : null,
+          d.web_port ? Number(d.web_port) : null,
           d.check_interval_seconds || 30,
           d.failure_threshold || 3,
           d.is_active ? 1 : 0
