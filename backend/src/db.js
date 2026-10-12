@@ -60,6 +60,10 @@ try {
       // v2.8.2: مواضع بطاقات المواقع في وضع الرسم (تُعرض كما رسمها الأدمن في NOC).
       "ALTER TABLE locations ADD COLUMN pos_x INTEGER",
       "ALTER TABLE locations ADD COLUMN pos_y INTEGER",
+      // v2.11.0: ربط «خريطة المواقع» المستقل (map_parent_id) — «يتبع (خريطة المواقع)».
+      // منفصل تمامًا عن parent_id («متصل عبر» في سلسلة الشبكة): يحدّد فقط أي طابق/غرفة
+      // يدخل داخل بطاقة أي مبنى/موقع في الخريطة. NULL = بطاقة مستقلة.
+      "ALTER TABLE locations ADD COLUMN map_parent_id INTEGER",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

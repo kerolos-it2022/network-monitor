@@ -28,6 +28,11 @@ CREATE TABLE IF NOT EXISTS locations (
     -- المنطبيق/المواقع متَّصلة على التَوالي (منطقة ← منطقة). الافتراضي 0 (يُكمل ORDER BY id).
     -- يُضاف آمنًا عبر migration في db.js على DB قائمة.
     sort_order INTEGER NOT NULL DEFAULT 0,
+    -- v2.11.0 — «يتبع (خريطة المواقع)»: ربط **مستقل تمامًا** عن parent_id (الذي يخصّ
+    -- «سلسلة الشبكة» = «متصل عبر»). يُستعمل في «خريطة المواقع» فقط لإدخال الطوابق/الغرف
+    -- داخل بطاقة المبنى/الموقع الأب. NULL = بطاقة مستقلة في الخريطة.
+    -- يُضاف آمنًا عبر migration في db.js على DB قائمة.
+    map_parent_id INTEGER,
     FOREIGN KEY (parent_id) REFERENCES locations(id) ON DELETE SET NULL
 );
 

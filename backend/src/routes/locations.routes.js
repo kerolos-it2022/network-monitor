@@ -19,41 +19,48 @@ const DEFAULT_KIND = 'zone';
 //     أَقصى (عمق آمن 100). لو عُدنا لنفس id قبل ذلك → دائرة.
 // يَرجِع null لو صالح، أَو نص الخطأ غير الصالح.
 // ---------------------------------------------------------
-function validateParentId(id, parentId) {
+function validateLink(id, parentId, column) {
+  const col = column === 'map_parent_id' ? 'map_parent_id' : 'parent_id';
   if (parentId == null || parentId === '') return null; // جذر، صالح.
   const pid = Number(parentId);
-  if (!Number.isFinite(pid) || pid <= 0) return 'قيمة parent_id غير صالحة';
+  if (!Number.isFinite(pid) || pid <= 0) return 'قيمة ' + col + ' غير صالحة';
   if (id != null && pid === Number(id)) return 'لا يُمكن أَن يكون الموقع أَبًا لنفسه';
 
   // تأكد أَن الأَب المُشار إليه موجُود.
   const parent = db.prepare('SELECT id FROM locations WHERE id = ?').get(pid);
-  if (!parent) return 'الموقع الأَب غير موجُود (parent_id=' + pid + ')';
+  if (!parent) return 'الموقع الأَب غير موجُود (' + col + '=' + pid + ')';
 
-  // تَتبع صعودي لِكشف الدائرة (بما في ذلك أَنواع غير محدودة أَو بيانات تالفة).
+  // تَتبع صعودي لِكشف الدائرة (بما في ذلك أَنواع غير محدودة أَو بيانات تالفة) — على نفس العمود فقط.
   let current = pid;
   const seen = new Set([pid]);
   for (let i = 0; i < 1000; i++) {
-    const row = db.prepare('SELECT parent_id FROM locations WHERE id = ?').get(current);
+    const row = db.prepare('SELECT ' + col + ' AS pid FROM locations WHERE id = ?').get(current);
     if (!row) break; // صف تالف (مُستحيل عبر FK لكن نَتحوط).
-    if (row.parent_id == null) return null; // وَصلنا للجذر — صالح.
-    if (id != null && Number(row.parent_id) === Number(id)) {
-      return 'دائرة هرمية غير صالحة: الموقع الأَب يَنحدر من هذا الموقع';
+    if (row.pid == null) return null; // وَصلنا للجذر — صالح.
+    if (id != null && Number(row.pid) === Number(id)) {
+      return 'دائرة غير صالحة: الموقع الأَب يَنحدر من هذا الموقع';
     }
-    if (seen.has(Number(row.parent_id))) {
+    if (seen.has(Number(row.pid))) {
       // دائرة موجُودة في البيانات (ليست بسبب هذا الطلب) — نَقطع وَنُبلّغ.
-      return 'دائرة هرمية موجُودة في البيانات الأُم';
+      return 'دائرة موجُودة في البيانات الأُم';
     }
-    seen.add(Number(row.parent_id));
-    current = row.parent_id;
+    seen.add(Number(row.pid));
+    current = row.pid;
   }
-  return 'تعذّر التَحقق من سلامة parent_id (عمق مفرط)';
+  return 'تعذّر التَحقق من سلامة ' + col + ' (عمق مفرط)';
+}
+
+// v2.11.0 — ربطا المواقع مستقلان: parent_id = «متصل عبر» (سلسلة الشبكة) ·
+// map_parent_id = «يتبع» (خريطة المواقع). نفس التحقق يُطبَّق على كل عمود منفردًا.
+function validateParentId(id, parentId) {
+  return validateLink(id, parentId, 'parent_id');
 }
 
 // GET /api/locations  (عام)
 // v2.7.1: ترتيب بِـ sort_order أَوّلاً ثُمّ id (نفس ترتيب خريطة المواقع).
 router.get('/', (req, res) => {
   const rows = db
-    .prepare('SELECT id, name, parent_id, kind, sort_order, pos_x, pos_y FROM locations ORDER BY sort_order ASC, id ASC')
+    .prepare('SELECT id, name, parent_id, kind, sort_order, pos_x, pos_y, map_parent_id FROM locations ORDER BY sort_order ASC, id ASC')
     .all();
   return res.json({ success: true, data: rows });
 });
@@ -94,7 +101,7 @@ router.post('/reorder', requireAuth, (req, res) => {
 
 // POST /api/locations  🔒
 router.post('/', requireAuth, (req, res) => {
-  const { name, parent_id, kind, sort_order } = req.body || {};
+  const { name, parent_id, kind, sort_order, map_parent_id } = req.body || {};
   if (!name) {
     return res.status(400).json({ success: false, error: 'الحقل name مطلوب' });
   }
@@ -105,6 +112,12 @@ router.post('/', requireAuth, (req, res) => {
   if (parentErr) {
     return res.status(400).json({ success: false, error: parentErr });
   }
+  // v2.11.0 — نفس التحقق للربط المستقل «يتبع (خريطة المواقع)».
+  const mapErr = validateLink(null, map_parent_id, 'map_parent_id');
+  if (mapErr) {
+    return res.status(400).json({ success: false, error: mapErr });
+  }
+  const finalMapParentId = (map_parent_id == null || map_parent_id === '') ? null : Number(map_parent_id);
 
   // 'internet' يَنبغي أَلّا يَملك parent (قمة الهرم) — نَتجاهل parent_id بصمت
   // لِـ المرونة (لو أَرسل الإِطار قيمةً) لأن internet هو الجذر دائمًا.
@@ -122,8 +135,8 @@ router.post('/', requireAuth, (req, res) => {
   }
 
   const result = db
-    .prepare('INSERT INTO locations (name, parent_id, kind, sort_order) VALUES (?, ?, ?, ?)')
-    .run(name, finalParentId, safeKind, finalSortOrder);
+    .prepare('INSERT INTO locations (name, parent_id, kind, sort_order, map_parent_id) VALUES (?, ?, ?, ?, ?)')
+    .run(name, finalParentId, safeKind, finalSortOrder, finalMapParentId);
   return res.status(201).json({ success: true, data: { id: result.lastInsertRowid } });
 });
 
@@ -152,7 +165,7 @@ router.put('/:id', requireAuth, (req, res) => {
     db.prepare('UPDATE locations SET pos_x = ?, pos_y = ? WHERE id = ?').run(px, py, id);
     return res.json({ success: true, data: null });
   }
-  const { name, parent_id, kind, sort_order } = req.body || {};
+  const { name, parent_id, kind, sort_order, map_parent_id } = req.body || {};
   if (!name) {
     return res.status(400).json({ success: false, error: 'الحقل name مطلوب' });
   }
@@ -162,6 +175,20 @@ router.put('/:id', requireAuth, (req, res) => {
   const parentErr = validateParentId(id, parent_id);
   if (parentErr) {
     return res.status(400).json({ success: false, error: parentErr });
+  }
+  // v2.11.0 — map_parent_id: undefined = إبقاء القيمة · null/'' = فكّ الربط · رقم = ضبطه (بتحقق).
+  const existingMapRow = db.prepare('SELECT map_parent_id FROM locations WHERE id = ?').get(id);
+  let finalMapParentId = existingMapRow ? existingMapRow.map_parent_id : null;
+  if (map_parent_id !== undefined) {
+    if (map_parent_id == null || map_parent_id === '') {
+      finalMapParentId = null;
+    } else {
+      const mapErr = validateLink(id, map_parent_id, 'map_parent_id');
+      if (mapErr) {
+        return res.status(400).json({ success: false, error: mapErr });
+      }
+      finalMapParentId = Number(map_parent_id);
+    }
   }
 
   const finalParentId = safeKind === 'internet' ? null : (parent_id ?? null);
@@ -179,11 +206,12 @@ router.put('/:id', requireAuth, (req, res) => {
     finalSortOrder = Number.isFinite(n) ? n : 0;
   }
 
-  db.prepare('UPDATE locations SET name = ?, parent_id = ?, kind = ?, sort_order = ? WHERE id = ?').run(
+  db.prepare('UPDATE locations SET name = ?, parent_id = ?, kind = ?, sort_order = ?, map_parent_id = ? WHERE id = ?').run(
     name,
     finalParentId,
     safeKind,
     finalSortOrder,
+    finalMapParentId,
     id
   );
   return res.json({ success: true, data: null });

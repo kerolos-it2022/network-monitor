@@ -35,7 +35,7 @@ router.get('/tree', requireAuth, (req, res) => {
     //    الواسِع على DB كبيرة؛ SQLite محدود بِـ UNION ALL، هنا محدود بِـ parent_id).
     //    v2.7.1: ORDER BY sort_order أَولاً (تَرتيب العرض «متَّصلة على التَوالي») ثُمّ id.
     const locations = db
-      .prepare('SELECT id, name, parent_id, kind, sort_order FROM locations ORDER BY sort_order ASC, id ASC')
+      .prepare('SELECT id, name, parent_id, map_parent_id, kind, sort_order FROM locations ORDER BY sort_order ASC, id ASC')
       .all();
 
     // 2) جَلب كل الأَجهزة مَع نوعها وموقعها.
@@ -58,6 +58,8 @@ router.get('/tree', requireAuth, (req, res) => {
         kind: loc.kind || 'zone',
         // v2.7.1: نَحفظ sort_order لِـ يُستَعمل في تَلوين/تَرقيم البطاقات لو لَزِم.
         sort_order: loc.sort_order || 0,
+        // v2.11.0 — رابط «خريطة المواقع» المستقل («يتبع»)، منفصل عن parent_id (السلسلة).
+        map_parent_id: loc.map_parent_id || null,
         device_count: 0,
         online: 0,
         offline: 0,
@@ -199,7 +201,7 @@ router.get('/tree', requireAuth, (req, res) => {
 router.get('/public/tree', (req, res) => {
   try {
     const locations = db
-      .prepare('SELECT id, name, parent_id, kind, sort_order FROM locations ORDER BY sort_order ASC, id ASC')
+      .prepare('SELECT id, name, parent_id, map_parent_id, kind, sort_order FROM locations ORDER BY sort_order ASC, id ASC')
       .all();
     const devices = db
       .prepare(
@@ -218,6 +220,8 @@ router.get('/public/tree', (req, res) => {
         kind: loc.kind || 'zone',
         // v2.7.1: sort_order للعرض المُتتابع (نَحفظه على العُقدة لِـ توافق admin-side).
         sort_order: loc.sort_order || 0,
+        // v2.11.0 — رابط «خريطة المواقع» المستقل («يتبع») — منفصل عن parent_id.
+        map_parent_id: loc.map_parent_id || null,
         device_count: 0,
         online: 0,
         offline: 0,

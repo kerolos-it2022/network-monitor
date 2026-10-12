@@ -95,6 +95,26 @@ function populateParentSelect(currentId) {
   }
 }
 
+// v2.11.0 — قائمة «يتبع (خريطة المواقع)» (map_parent_id) — رابط مستقل تمامًا عن
+// parent_id («متصل عبر» في سلسلة الشبكة). تستثني currentId لمنع الإشارة الذاتية.
+function populateMapParentSelect(currentId) {
+  const sel = document.getElementById('loc-map_parent_id');
+  if (!sel) return;
+  const prevValue = sel.value;
+  sel.innerHTML = '<option value="">— بطاقة مستقلة (بلا أب في الخريطة) —</option>';
+  for (const l of currentLocations) {
+    if (currentId != null && Number(l.id) === Number(currentId)) continue;
+    const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
+    const o = document.createElement('option');
+    o.value = l.id;
+    o.textContent = `${kl.icon} [${l.kind || 'zone'}] ${l.name}`;
+    sel.appendChild(o);
+  }
+  if (prevValue && [...sel.options].some((o) => o.value === prevValue)) {
+    sel.value = prevValue;
+  }
+}
+
 async function loadLocations() {
   const r = await api('/api/locations');
   const tbody = document.getElementById('locations-table-body');
@@ -171,6 +191,7 @@ function resetLocationForm() {
   const sortEl = document.getElementById('loc-sort-order');
   if (sortEl) sortEl.value = '';
   populateParentSelect(null); // لإِضافة جديد: لا تَستثني أَحدًا.
+  populateMapParentSelect(null); // v2.11.0 — «يتبع (خريطة المواقع)».
 }
 
 // v2.7.4 — فتح popup modal لإِضافة موقع جديد (بَدل form-card المضمّن).
@@ -193,6 +214,10 @@ async function editLocation(loc) {
   populateParentSelect(loc.id);
   const parentSel = document.getElementById('loc-parent_id');
   if (parentSel) parentSel.value = loc.parent_id != null ? String(loc.parent_id) : '';
+  // v2.11.0 — «يتبع (خريطة المواقع)» (map_parent_id) — رابط مستقل.
+  populateMapParentSelect(loc.id);
+  const mapParentSel = document.getElementById('loc-map_parent_id');
+  if (mapParentSel) mapParentSel.value = loc.map_parent_id != null ? String(loc.map_parent_id) : '';
   // v2.7.1 — ملء حقل التَرتيب من بيانات الموقع.
   const sortEl = document.getElementById('loc-sort-order');
   if (sortEl) sortEl.value = (loc.sort_order != null) ? String(loc.sort_order) : '';
@@ -230,6 +255,9 @@ async function saveLocation() {
     if (!ok) return;
   }
   const parentId = parentSel && parentSel.value ? Number(parentSel.value) : null;
+  // v2.11.0 — «يتبع (خريطة المواقع)»: قيمة فارغة = null (بطاقة مستقلة في الخريطة).
+  const mapParentSel = document.getElementById('loc-map_parent_id');
+  const mapParentId = mapParentSel && mapParentSel.value ? Number(mapParentSel.value) : null;
   // v2.7.1 — قيمة sort_order: فارغة = نُرسِل '' (الخادم يَضبطها تلقائياً max+1 في POST
   //، أَو يُبقيها في PUT). رقم = نُرسله number.
   const sortOrderRaw = sortEl ? sortEl.value.trim() : '';
@@ -239,7 +267,7 @@ async function saveLocation() {
   const r = await api(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, kind, parent_id: parentId, sort_order: sortOrderVal }),
+    body: JSON.stringify({ name, kind, parent_id: parentId, sort_order: sortOrderVal, map_parent_id: mapParentId }),
   });
   if (r.success) {
     resetLocationForm();

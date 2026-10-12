@@ -151,7 +151,7 @@
         + '<b class="t-nm">' + esc(n.name) + '</b>'
         + '<button class="t-remove" data-id="' + esc(n.id) + '" title="إخراج من اللوحة">✕</button></div>'
         + '<div class="t-ip">' + meta + '</div>'
-        + '<div class="t-parent-row">متصل عبر: <select class="t-parent" data-id="' + esc(n.id) + '">' + opts + '</select></div>';
+        + '<div class="t-parent-row">متصل عبر (السلسلة): <select class="t-parent" data-id="' + esc(n.id) + '">' + opts + '</select></div>';
       if (!isLoc) {
         return '<div class="t-card ' + si.cls + '" data-id="' + esc(n.id) + '" style="left:' + n.pos_x + 'px; top:' + n.pos_y + 'px">'
           + head + '</div>';

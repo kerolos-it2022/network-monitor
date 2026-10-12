@@ -114,11 +114,41 @@
   }
 
   // ═══ render markers ═══
-  // ✅ v2.10.14 — نفس قاعدة «خريطة المواقع» في NOC/لوحة التحكم (بطلب المستخدم):
-  //   الطوابق/الغرف/الخزائن فقط تُعرَض كأقسام داخل بطاقة أقرب مبنى/موقع،
-  //   وأي مبنى/موقع = بطاقة مستقلة في أي عمق.
-  const MAP_NESTED_KINDS = new Set(['floor', 'room', 'rack']);
-  const isMapNestedKind = (n) => MAP_NESTED_KINDS.has((n && n.kind) || '');
+  // ✅ v2.11.0 — «خريطة المواقع» في الصفحة العامة تُبنى من **map_parent_id** («يتبع») — رابط
+  //   مستقل عن parent_id («متصل عبر» في سلسلة الشبكة) — وترتيب الأشقّاء من sort_order.
+  function buildMapTree(list) {
+    const all = [];
+    (function walk(nodes) {
+      for (const n of nodes) {
+        if (!n || n.kind === 'device') continue;
+        all.push(n);
+        walk(Array.isArray(n.children) ? n.children : []);
+      }
+    })(list || []);
+    const byId = new Map(all.map((n) => [String(n.id), n]));
+    const childrenOf = new Map();
+    const roots = [];
+    for (const n of all) {
+      const mp = n.map_parent_id != null ? byId.get(String(n.map_parent_id)) : null;
+      if (mp && mp !== n) {
+        if (!childrenOf.has(String(mp.id))) childrenOf.set(String(mp.id), []);
+        childrenOf.get(String(mp.id)).push(n);
+      } else {
+        roots.push(n);
+      }
+    }
+    const byOrder = (a, b) => (Number(a.sort_order || 0) - Number(b.sort_order || 0))
+      || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+    const sortDeep = (node) => {
+      const devices = (Array.isArray(node.children) ? node.children : []).filter((c) => c && c.kind === 'device');
+      const subs = (childrenOf.get(String(node.id)) || []).slice().sort(byOrder);
+      node.children = devices.concat(subs);
+      subs.forEach(sortDeep);
+      return node;
+    };
+    roots.forEach(sortDeep);
+    return roots.sort(byOrder);
+  }
   // بناء HTML لِـ شَبكة البطاقات مِن الجذر (نَفس منطق admin renderZonesGrid، بِلا فلترة
   // search/status لِـ أَنّ الصَفحة العامة لا تَملِك toolbar فِلترة map مُستقِلّة).
   // v2.6.0 — فصل الأَجهزة المُباشِرة في الجذر (devices في جذر internet بِلا zone) في
@@ -134,17 +164,20 @@
     }
     // v2.7.0 (PD) — aria-posinset/aria-setsize للـ a11y.
     const orphanCardCount = orphanDevices.length > 0 ? 1 : 0;
-    // ✅ v2.10.14 — البطاقات = كل المباني/المواقع (أي عمق) عدا الطوابق/الغرف/الخزائن (أقسام داخل الأب).
-    const flatCards = [];
-    (function walkCards(list) {
-      for (const c of list) {
-        if (!c || c.kind === 'device') continue;
-        if (isMapNestedKind(c)) { walkCards(Array.isArray(c.children) ? c.children : []); continue; }
-        flatCards.push(c);
-        walkCards(Array.isArray(c.children) ? c.children : []);
+    // ✅ v2.11.0 — البطاقات = كل المواقع بلا «يتبع» (map_parent_id = NULL)، وأبناء عقدة internet
+    //   (حسب «يتبع») يصعدون لمستوى البطاقات.
+    const mapRoots = buildMapTree(zoneKids);
+    const topNodes = [];
+    for (const n of mapRoots) {
+      if (String(n.kind) === 'internet') {
+        for (const c of (Array.isArray(n.children) ? n.children : [])) {
+          if (c && c.kind !== 'device') topNodes.push(c);
+        }
+      } else {
+        topNodes.push(n);
       }
-    })(zoneKids);
-    const setSize = flatCards.length + orphanCardCount;
+    }
+    const setSize = topNodes.length + orphanCardCount;
     // v2.7.5 — بطاقة «أَجهزة مَدخل الإنترنت» ثابتة في الأَول دائماً (نَفس منطق admin-map).
     let orphanHtml = '';
     if (orphanDevices.length > 0) {
@@ -163,7 +196,7 @@
     }
     // zones بَعْد البطاقة الصِناعيّة (posinset يَبدأ من 2 لو وُجدت).
     const start = orphanHtml ? 2 : 1;
-    const cards = orphanHtml + flatCards
+    const cards = orphanHtml + topNodes
       .map((c, i) => renderZoneCard(c, { posinset: start + i, setsize: setSize }))
       .join('');
     return cards;
@@ -231,8 +264,8 @@
     const subzones = [];
     for (const c of kids) {
       if (c.kind === 'device') devices.push(c);
-      // ✅ v2.10.14 — الطوابق/الغرف فقط أقسام داخل البطاقة؛ المباني/المواقع الأعمق بطاقات مستقلة.
-      else if (isMapNestedKind(c)) subzones.push(c);
+      // ✅ v2.11.0 — الأقسام الداخلية من شجرة «يتبع» (map_parent_id): أي موقع ابن هنا قسم.
+      else subzones.push(c);
     }
     let html = '';
 

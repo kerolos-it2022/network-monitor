@@ -191,11 +191,42 @@ function findDeviceNode(node, id) {
 // المُباشِرين (zones/internet/unassigned) — الجذر نفسه (root/internet المُصطَنَع which
 // يَتَراص أَبناؤه) لا نُولّد له بطاقة مستَقِلّة، إِنّما نَكشِف أَبناءه. هذا ما يُحوّل
 // الشَجِرة المُتداخِلة (ul/li) إِلى grid مُسطّح لِـ zones الرئيسية.
-// ✅ v2.10.13 — قاعدة الاحتواء (بطلب المستخدم): **الطوابق/الغرف فقط** تُدخَل داخل بطاقة المبنى.
-//   • مبنى/موقع = بطاقة مستقلة في أي عمق (لا يُدخَل داخل بطاقة أبيه).
-//   • طابق/غرفة/خزانة = قسم (sub-zone) داخل بطاقة أقرب مبنى/موقع فوقه.
-const MAP_NESTED_KINDS = new Set(['floor', 'room', 'rack']);
-const isMapNestedKind = (n) => MAP_NESTED_KINDS.has((n && n.kind) || '');
+// ✅ v2.11.0 — «خريطة المواقع» تُبنى من **map_parent_id** («يتبع») — رابط **مستقل تمامًا** عن
+//   parent_id («متصل عبر» في سلسلة الشبكة) — وترتيب الأشقّاء من sort_order (ثم الاسم).
+//   تُعيد قائمة البطاقات العُليا، وتُعيد تشكيل children لكل عقدة: أجهزتها أولًا ثم المواقع التابعة لها.
+function buildMapTree(list) {
+  const all = [];
+  (function walk(nodes) {
+    for (const n of nodes) {
+      if (!n || n.kind === 'device') continue;
+      all.push(n);
+      walk(Array.isArray(n.children) ? n.children : []);
+    }
+  })(list || []);
+  const byId = new Map(all.map((n) => [String(n.id), n]));
+  const childrenOf = new Map();
+  const roots = [];
+  for (const n of all) {
+    const mp = n.map_parent_id != null ? byId.get(String(n.map_parent_id)) : null;
+    if (mp && mp !== n) {
+      if (!childrenOf.has(String(mp.id))) childrenOf.set(String(mp.id), []);
+      childrenOf.get(String(mp.id)).push(n);
+    } else {
+      roots.push(n);
+    }
+  }
+  const byOrder = (a, b) => (Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+  const sortDeep = (node) => {
+    const devices = (Array.isArray(node.children) ? node.children : []).filter((c) => c && c.kind === 'device');
+    const subs = (childrenOf.get(String(node.id)) || []).slice().sort(byOrder);
+    node.children = devices.concat(subs);
+    subs.forEach(sortDeep);
+    return node;
+  };
+  roots.forEach(sortDeep);
+  return roots.sort(byOrder);
+}
 function renderZonesGrid(rootData) {
   if (!rootData) return '';
   // الجذر يَحوي أَبناءً (zones/internet/unassigned) — نُولّد بطاقة لِـ كُلّ وَاحد.
@@ -216,19 +247,23 @@ function renderZonesGrid(rootData) {
   // v2.10.10 — القاعدة النهائية (بطلب المستخدم): **مستويان** —
   //   • المواقع الرئيسية = كروت مستقلة (المستوى الأول).
   //   • الطوابق/الغرف = **داخل** بطاقة المبنى كأقسام مفتوحة دائمًا (renderZoneBody).
-  // ✅ v2.10.12 — تأكيد المستخدم: **خريطة المواقع = احتواء** بينما «سلسلة الشبكة» = كل موقع منفرد.
-  // ✅ v2.10.13 — الاحتواء للطوابق/الغرف **فقط** (بطلب المستخدم): المباني/المواقع بطاقات مستقلة
-  //   في أي عمق (البوفية، الورشة-1/2، عنبر الكتاين/منعم…) بدل إدخالها داخل بطاقة المبنى الأعلى.
-  const flatCards = [];
-  (function walkCards(list, parentName) {
-    for (const c of list) {
-      if (!c || c.kind === 'device') continue;
-      if (isMapNestedKind(c)) { walkCards(Array.isArray(c.children) ? c.children : [], parentName); continue; }
-      flatCards.push({ node: c, parentName: parentName || '' });
-      walkCards(Array.isArray(c.children) ? c.children : [], c.name || '');
+  // ✅ v2.11.0 — البطاقات = كل المواقع التي لا «يتبع» لها (map_parent_id = NULL)،
+  //   وعقدة الجذر internet: أبناؤها (حسب «يتبع») يصعدون لمستوى البطاقات (نفس سلوك السابق).
+  //   الاحتواء الآن **بيانات** (map_parent_id) لا قاعدة نوع — والسلسلة لا علاقة لها بها.
+  const mapRoots = buildMapTree(zoneKids);
+  const topNodes = [];
+  for (const n of mapRoots) {
+    if (String(n.kind) === 'internet') {
+      for (const c of (Array.isArray(n.children) ? n.children : [])) {
+        if (c && c.kind !== 'device') topNodes.push(c);
+      }
+    } else {
+      topNodes.push(n);
     }
-  })(zoneKids, '');
-  const keptFlat = flatCards.filter((e) => !hasActiveFilters() || nodeKeptByFilters(e.node));
+  }
+  const keptFlat = topNodes
+    .filter((c) => !hasActiveFilters() || nodeKeptByFilters(c))
+    .map((c) => ({ node: c, parentName: '' }));
   let orphanCardCount = 0;
   if (orphanDevices.length > 0) {
     const kept = orphanDevices.filter((d) => !hasActiveFilters() || nodeKeptByFilters(d));
@@ -348,9 +383,8 @@ function renderZoneBody(node) {
   const subzones = [];
   for (const c of kids) {
     if (c.kind === 'device') devices.push(c);
-    // ✅ v2.10.13 — الطوابق/الغرف فقط تُعرَض كأقسام داخل البطاقة؛
-    // أي مبنى/موقع أعمق له بطاقته المستقلة (لا يُدخَل هنا).
-    else if (isMapNestedKind(c)) subzones.push(c);
+    // ✅ v2.11.0 — الأقسام الداخلية تأتي من شجرة «يتبع» (map_parent_id): أي موقع ابن هنا قسم داخل البطاقة.
+    else subzones.push(c);
   }
   let html = '';
 

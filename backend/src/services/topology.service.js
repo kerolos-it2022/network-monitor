@@ -14,7 +14,7 @@ const db = require('../db');
 //     الأولوية للأب الجهاز؛ لو فاضي يعلق تحت الموقع؛ لو الاتنين فاضي = جذر.
 function buildTopology() {
   const locs = db.prepare(`
-    SELECT id, name, kind, parent_id, pos_x, pos_y
+    SELECT id, name, kind, parent_id, map_parent_id, pos_x, pos_y
     FROM locations
     ORDER BY sort_order ASC, id ASC
   `).all();
@@ -38,6 +38,8 @@ function buildTopology() {
       kind: l.kind || 'zone',
       status: null,
       parent_id: l.parent_id || null,
+      // v2.11.0 — رابط «خريطة المواقع» المستقل («يتبع»): لا علاقة له بـ parent_id (سلسلة الشبكة).
+      map_parent_id: l.map_parent_id || null,
       pos_x: l.pos_x == null ? null : Number(l.pos_x),
       pos_y: l.pos_y == null ? null : Number(l.pos_y),
       children: [],
