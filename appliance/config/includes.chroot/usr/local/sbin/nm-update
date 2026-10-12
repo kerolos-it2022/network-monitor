@@ -101,9 +101,20 @@ for d in backend frontend database; do
 done
 
 # ── التبعيات ──
+# v2.11.3 — مهلة زمنية إلزامية: كان `npm ci` بلا timeout فيعلّق التحديث بلا نهاية عند تعطّل
+# الشبكة مع npm registry (ظهِر عمليًّا: الشاشة تبقى 70% «تحديث التبعيات» للأبد).
+# `timeout` من coreutils (موجود في دبيان live). الرمز 124 = انتهت المهلة.
+NPM_TIMEOUT="${NM_NPM_TIMEOUT:-900}"
 status in_progress "تحديث التبعيات (npm ci)" "$TAG"
-( cd "$APP_DIR/backend" && npm ci --omit=dev --no-audit --no-fund >>"$LOG_FILE" 2>&1 ) \
-  || fail "فشل تحديث التبعيات (npm ci) — راجع السجل"
+NPM_RC=0
+( cd "$APP_DIR/backend" && timeout "$NPM_TIMEOUT" npm ci --omit=dev --no-audit --no-fund >>"$LOG_FILE" 2>&1 ) || NPM_RC=$?
+if [ "$NPM_RC" -ne 0 ]; then
+  if [ "$NPM_RC" -eq 124 ]; then
+    fail "انتهت مهلة تثبيت التبعيات (${NPM_TIMEOUT}s) — تحقّق من الإنترنت وسرعة الشبكة ثم أعد المحاولة"
+  else
+    fail "فشل تحديث التبعيات (npm ci) — راجع السجل (الرمز: $NPM_RC)"
+  fi
+fi
 
 # ── v2.10.6 — تحديث أدوات النظام نفسها (المساعدون + وحدات systemd) ──
 # سبب الإضافة: تحديث اللوحة كان يُحدّث كود التطبيق فقط (backend/frontend/database)، فبقي مساعد

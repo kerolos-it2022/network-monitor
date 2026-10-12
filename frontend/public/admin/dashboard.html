@@ -596,6 +596,9 @@
         .upd-bar-meta { display:flex; justify-content:space-between; font-size:0.82rem; color:var(--muted); margin-top:0.35rem; }
         .upd-restart-banner { margin-top:0.7rem; padding:0.6rem 0.8rem; border-radius:8px; background:rgba(217,119,6,0.12); border:1px solid rgba(217,119,6,0.35); color:var(--text); font-size:0.9rem; }
         .upd-restart-banner.hidden { display:none; }
+        /* v2.11.3 — تنبيه التعطّل (شاشة واقفة بلا تقدّم) */
+        .upd-stall-banner { margin-top:0.7rem; padding:0.6rem 0.8rem; border-radius:8px; background:rgba(239,68,68,0.10); border:1px solid rgba(239,68,68,0.35); color:var(--text); font-size:0.9rem; }
+        .upd-stall-banner.hidden { display:none; }
         .tab-badge { display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; margin-inline-start:6px; vertical-align:middle; }
       </style>
 
@@ -657,6 +660,14 @@
           </ol>
           <div class="upd-restart-banner hidden" id="upd-restart-banner">
             🔄 <b>إعادة تشغيل الخدمة الآن…</b> ستنقطع الشاشة والقاعدة ثوانٍ ثم تعود تلقائيًّا — لا تغلق الصفحة ولا تفصل الكهرباء.
+          </div>
+          <!-- v2.11.3 — كاشف التعطّل: يظهر لو لم تتحدّث حالة المساعد منذ > 3 دقائق -->
+          <div class="upd-stall-banner hidden" id="upd-stall-banner">
+            ⚠️ <b>لا تقدّم منذ <span id="upd-stall-mins">—</span> دقيقة.</b> التحديث قد يكون بطيئًا (تنزيل أو تثبيت التبعيات) أو متوقفًا — راجع «السجل التفصيلي» بالأسفل، وتأكّد من حالة خدمة <code>nm-update</code> من كونسول الجهاز.
+            <div style="margin-top:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button type="button" class="btn" id="upd-stall-check-btn">🔄 فحص الحالة الآن</button>
+              <button type="button" class="btn" id="upd-stall-copy-btn">📋 نسخ السجل</button>
+            </div>
           </div>
           <div id="upd-progress-text" style="margin-top:0.6rem; color:var(--muted); font-size:0.9rem;"></div>
           <details style="margin-top:0.75rem;">

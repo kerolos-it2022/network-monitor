@@ -82,6 +82,65 @@ function updShowRestartBanner(on) {
   const el = updEl('upd-restart-banner');
   if (el) el.classList.toggle('hidden', !on);
 }
+// v2.11.3 — كاشف التعطّل: لو لم تتحدّث حالة المساعد منذ أكثر من 3 دقائق أثناء «جارٍ»
+// (خطوة npm ci في المساعد بلا مهلة؛ وقد تعلّق عند تعطّل الشبكة مع npm registry) نُظهر
+// تنبيهًا مع زرّي «فحص الحالة الآن» و«نسخ السجل» — بدل شاشة واقفة صامتة.
+const UPD_STALL_MS = 3 * 60 * 1000;
+function updShowStall(on, mins) {
+  const el = updEl('upd-stall-banner');
+  if (!el) return;
+  const m = updEl('upd-stall-mins');
+  if (on && m) m.textContent = String(mins);
+  el.classList.toggle('hidden', !on);
+}
+// قراءة واحدة لحالة التقدّم + رسمها (تُستعمل من المؤقّت ومن زرّ «فحص الحالة الآن»).
+async function updRenderProgress() {
+  let p = null;
+  try { p = await api('/api/appliance-update/progress'); } catch (e) { return; } // الخدمة قد تكون في إعادة تشغيل
+  const st = p && p.state;
+  if (p && typeof p.log === 'string' && p.log) { const el = updEl('upd-log'); if (el) el.textContent = p.log; }
+  if (st && st.message) {
+    updSet('upd-progress-text', st.message);
+    const hit = updStepFromMessage(st.message);
+    if (hit) {
+      updStepsMark(hit.step);
+      updSetBar(hit.pct, st.message);
+      updShowRestartBanner(hit.step === 'restart' && st.state !== 'success');
+    }
+  }
+  // v2.11.3 — كاشف التعطّل حسب طابع الحالة (at) القادم من المساعد.
+  if (st && st.state === 'in_progress' && st.at) {
+    const ts = Date.parse(st.at);
+    const stale = Number.isFinite(ts) ? (Date.now() - ts) : 0;
+    updShowStall(Number.isFinite(ts) && stale > UPD_STALL_MS, Math.floor(stale / 60000));
+  } else if (st) {
+    updShowStall(false);
+  }
+  if (st && st.state === 'success') {
+    clearInterval(updProgressTimer); updProgressTimer = null;
+    if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
+    updStepsAllDone();
+    updSetBar(100, 'اكتمل ✓');
+    updShowRestartBanner(false);
+    updShowStall(false);
+    updSet('upd-progress-text', '✅ ' + st.message);
+    updNote('✅ ' + st.message + ' — النظام يعمل الآن، وجارٍ إعادة تحميل الصفحة…');
+    showToast('✅ ' + st.message, { type: 'success', duration: 6000 });
+    updSetBusy(false);
+    setTimeout(() => location.reload(), 3000);
+    return;
+  }
+  if (st && st.state === 'failed') {
+    clearInterval(updProgressTimer); updProgressTimer = null;
+    if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
+    updShowRestartBanner(false);
+    updShowStall(false);
+    updSetBusy(false);
+    updSet('upd-progress-text', '❌ ' + st.message);
+    updNote('❌ فشل التحديث: ' + st.message + ' — راجع السجل التفصيلي.');
+    showToast('❌ فشل التحديث: ' + st.message, { type: 'error', duration: 10000 });
+  }
+}
 // إضاءة الخطوة الحالية + تعليم ما قبلها مُنجزًا.
 function updStepsMark(step) {
   const list = [...document.querySelectorAll('#upd-steps li')];
@@ -183,46 +242,10 @@ function updFollowAppliance() {
     if (elapsedEl) elapsedEl.textContent = '⏱ منذ ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   }, 1000);
   if (updProgressTimer) clearInterval(updProgressTimer);
+  updRenderProgress(); // قراءة فورية أوّلية
   updProgressTimer = setInterval(async () => {
-    try {
-      const p = await api('/api/appliance-update/progress');
-      const st = p && p.state;
-      if (p && typeof p.log === 'string' && p.log) { const el = updEl('upd-log'); if (el) el.textContent = p.log; }
-      if (st && st.message) {
-        updSet('upd-progress-text', st.message);
-        const hit = updStepFromMessage(st.message);
-        if (hit) {
-          updStepsMark(hit.step);
-          updSetBar(hit.pct, st.message);
-          updShowRestartBanner(hit.step === 'restart' && st.state !== 'success');
-        }
-      }
-      if (st && st.state === 'success') {
-        clearInterval(updProgressTimer); updProgressTimer = null;
-        if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
-        updStepsAllDone();
-        updSetBar(100, 'اكتمل ✓');
-        updShowRestartBanner(false);
-        updSet('upd-progress-text', '✅ ' + st.message);
-        updNote('✅ ' + st.message + ' — النظام يعمل الآن، وجارٍ إعادة تحميل الصفحة…');
-        showToast('✅ ' + st.message, { type: 'success', duration: 6000 });
-        updSetBusy(false);
-        setTimeout(() => location.reload(), 3000);
-        return;
-      }
-      if (st && st.state === 'failed') {
-        clearInterval(updProgressTimer); updProgressTimer = null;
-        if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
-        updShowRestartBanner(false);
-        updSetBusy(false);
-        updSet('upd-progress-text', '❌ ' + st.message);
-        updNote('❌ فشل التحديث: ' + st.message + ' — راجع السجل التفصيلي.');
-        showToast('❌ فشل التحديث: ' + st.message, { type: 'error', duration: 10000 });
-      }
-    } catch (e) {
-      // الخدمة قد تكون في لحظة إعادة تشغيل — نواصل المحاولة
-    }
-    if (Date.now() - started > 20 * 60 * 1000) {
+    await updRenderProgress();
+    if (updProgressTimer && Date.now() - started > 20 * 60 * 1000) {
       clearInterval(updProgressTimer); updProgressTimer = null;
       updSetBusy(false);
       updNote('⏳ انتهت مدة المتابعة — راجع سجل التحديث أو أعد الفحص.');
@@ -476,6 +499,20 @@ async function updInit() {
 
   const copyBtn = updEl('upd-log-copy-btn');
   if (copyBtn) copyBtn.addEventListener('click', updCopyAll);
+
+  // v2.11.3 — زرّا كاشف التعطّل.
+  const stallCheck = updEl('upd-stall-check-btn');
+  if (stallCheck) stallCheck.addEventListener('click', async () => {
+    await updRenderProgress();
+    showToast('🔄 تم فحص الحالة الآن', { type: 'info', duration: 2500 });
+  });
+  const stallCopy = updEl('upd-stall-copy-btn');
+  if (stallCopy) stallCopy.addEventListener('click', async () => {
+    const el = updEl('upd-log');
+    const txt = (el && el.textContent) || '';
+    try { await navigator.clipboard.writeText(txt); showToast('📋 تم نسخ السجل', { type: 'success' }); }
+    catch (e) { showToast('تعذّر النسخ — افتح السجل التفصيلي وانسخه يدويًّا', { type: 'warning', duration: 6000 }); }
+  });
 
   const chBtn = updEl('upd-changelog-btn');
   if (chBtn) chBtn.addEventListener('click', () => {
