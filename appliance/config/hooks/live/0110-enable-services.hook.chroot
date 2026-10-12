@@ -12,6 +12,8 @@ systemctl enable ssh 2>/dev/null || true
 systemctl enable nm-update.path 2>/dev/null || true
 # v2.9.0 — مُراقِب طلبات «الوصول عن بُعد» (ngrok): مساعد root منفصل بنفس النمط.
 systemctl enable nm-remote.path 2>/dev/null || true
+# v2.11.9 — حراسة محرك المراقبة (تُعيد تشغيل الخدمة لو تعطّل المحرك أو علقت العملية).
+systemctl enable nm-healthcheck.timer 2>/dev/null || true
 
 # تفعيل موقع nginx الخاص بالمشروع وتعطيل الافتراضي.
 if [ -d /etc/nginx/sites-enabled ]; then

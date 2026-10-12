@@ -12,6 +12,21 @@ const consecutiveFailures = new Map();
 // آخر وقت تم فيه فحص الجهاز فعلياً (device_id → ms timestamp).
 const lastCheckTime = new Map();
 
+// ═══ v2.11.9 — مراقب المحرك (Engine Watchdog) ═══
+// نبضة الدورة: وقت انتهاء آخر دورة فحص (ms). تُسجَّل دائمًا — حتى لو فشلت الدورة نفسها
+// (فشل دورة ≠ موت المحرك؛ موت المحرك = توقّف الدورات نفسها).
+let lastTickAt = null;
+// عدد الأجهزة النشطة في آخر دورة (للعرض في /api/health).
+let lastActiveCount = 0;
+// حلقة الحراسة: تُنشأ مرة واحدة مع startMonitoring.
+let watchdogTimer = null;
+// حالة الحراسة (لمنع تكرار إشعارات التعطّل): 'ok' | 'stalled'.
+let watchdogState = 'ok';
+// الفحوصات الجارية الآن — لاكتشاف الفحوصات العالقة (Promise لا ينتهي أبدًا).
+const inflightChecks = new Set();
+// حارس التداخل: دورة جديدة لا تبدأ أثناء دورة سابقة لم تنته.
+let tickRunning = false;
+
 // استعلام جلب الأجهزة النشطة مع أسماء النوع والموقع.
 const ACTIVE_DEVICES_SQL = `
   SELECT
@@ -126,23 +141,41 @@ async function checkDevice(device) {
 // startMonitoring(): جدولة فحص كل 10 ثوانٍ، تمر على كل الأجهزة النشطة وتختبر من حان وقته.
 function startMonitoring() {
   cron.schedule('*/10 * * * * *', () => {
+    // v2.11.9 — حارس التداخل: نرفض دورة جديدة أثناء تعليق دورة سابقة (DB مقفولة/IO بطيء).
+    if (tickRunning) {
+      console.warn('[engine] tick skipped — previous tick still running');
+      return;
+    }
+    tickRunning = true;
     try {
       const devices = db.prepare(ACTIVE_DEVICES_SQL).all();
+      lastActiveCount = devices.length;
       const now = Date.now();
       for (const device of devices) {
         const last = lastCheckTime.get(device.id) || 0;
         if (now - last >= device.check_interval_seconds * 1000) {
           lastCheckTime.set(device.id, now);
-          checkDevice(device).catch((e) => console.error('checkDevice error', e));
+          // v2.11.9 — تتبّع الفحص الجاري (لاكتشاف العالق منه في حلقة الحراسة).
+          const entry = { deviceId: device.id, deviceName: device.name, startedAt: Date.now() };
+          inflightChecks.add(entry);
+          checkDevice(device)
+            .catch((e) => console.error('checkDevice error', e))
+            .finally(() => inflightChecks.delete(entry));
         }
       }
       // v2.8.7 — شبكة أمان: تحديث الحالة الحيّة مرة كل دورة (لو تغيّر شيء خارج مسار الفحص).
       live.scheduleRefresh();
     } catch (e) {
       console.error('monitoring tick error', e);
+    } finally {
+      // v2.11.9 — النبضة: تُسجَّل في كل الأحوال (نجاح أو فشل الدورة).
+      lastTickAt = Date.now();
+      tickRunning = false;
     }
   });
   console.log('Monitoring engine started (every 10s tick).');
+  // v2.11.9 — تشغيل حلقة حراسة المحرك (نبضة متوقفة/فحوصات عالقة → تحذير تلجرام).
+  startWatchdog();
 
   // v2.7.x — مَسح آلِي يَوْمِي لِـ status_logs (الجَدول الَّذِي يَنمو بِـ ~354 أَلْف صَف/يَوم).
   // الاحتفاظ بِـ آخر STATUS_LOGS_RETENTION_DAYS أَيام (افتراضِيّاً 7) لِـ الرسوم البيانية/Uptime.
@@ -161,4 +194,75 @@ function startMonitoring() {
   console.log('Daily status_logs auto-cleanup scheduled (03:00 local, retention = ' + (parseInt(process.env.STATUS_LOGS_RETENTION_DAYS, 10) || 7) + ' days).');
 }
 
-module.exports = { startMonitoring };
+// ═══ v2.11.9 — صحّة المحرك (Engine Health) + حلقة الحراسة ═══
+// دالة نقية قابلة للاختبار بلا DB/زمن حقيقي: تُقيّم النبضة + الفحوصات العالقة.
+function evaluateEngineHealth(snap, now, cfg) {
+  const tickAgeMs = snap.lastTickAt == null ? null : (now - snap.lastTickAt);
+  const notStarted = snap.lastTickAt == null;
+  const stalled = !notStarted && tickAgeMs > cfg.stallMs;
+  const stuck = (snap.inflight || []).filter((c) => (now - c.startedAt) > cfg.checkStuckMs);
+  return {
+    lastTickAt: snap.lastTickAt,
+    lastTickAgeMs: tickAgeMs,
+    notStarted,
+    stalled,
+    stuckChecks: stuck.length,
+    stuckDevices: stuck.slice(0, 5).map((c) => c.deviceName || c.deviceId),
+    inflightChecks: (snap.inflight || []).length,
+    activeDevices: snap.activeDevices || 0,
+  };
+}
+
+function engineConfig() {
+  return {
+    stallMs: parseInt(process.env.NM_ENGINE_STALL_MS, 10) || 90000,
+    checkStuckMs: parseInt(process.env.NM_CHECK_STUCK_MS, 10) || 180000,
+  };
+}
+
+// لقطة صحّة حالية — تُخدَم عبر /api/health وتُستعمل في حلقة الحراسة.
+function getEngineHealth() {
+  return evaluateEngineHealth(
+    { lastTickAt, activeDevices: lastActiveCount, inflight: [...inflightChecks] },
+    Date.now(),
+    engineConfig()
+  );
+}
+
+// حلقة الحراسة: كل 30 ثانية. عند انتقال سليم→متعطّل تُرسَل رسالة تلجرام واحدة،
+// وعند العودة رسالة عودة — بلا تكرار أثناء نفس الحالة (منع الإزعاج).
+function startWatchdog() {
+  if (watchdogTimer) return;
+  const everyMs = parseInt(process.env.NM_WATCHDOG_INTERVAL_MS, 10) || 30000;
+  watchdogTimer = setInterval(async () => {
+    try {
+      const h = getEngineHealth();
+      const stalledReason = h.stalled
+        ? `لا نبضة من محرك الفحص منذ ${Math.round((h.lastTickAgeMs || 0) / 1000)} ثانية`
+        : null;
+      const stuckReason = h.stuckChecks > 0
+        ? `${h.stuckChecks} فحص عالق منذ أكثر من ${Math.round(engineConfig().checkStuckMs / 1000)} ثانية (${h.stuckDevices.join('، ')})`
+        : null;
+      const reason = stalledReason || stuckReason;
+      if (reason && watchdogState !== 'stalled') {
+        watchdogState = 'stalled';
+        console.error('[WATCHDOG] محرك المراقبة متعطل —', reason);
+        try {
+          await notifier.sendTelegram(
+            '⚠️ تحذير: محرك المراقبة متعطل!\n' + reason +
+            '\nالبيانات المعروضة قد تكون قديمة — راجع حالة الجهاز.'
+          );
+        } catch (e) { /* فشل الإرسال لا يكسر الحراسة */ }
+      } else if (!reason && watchdogState === 'stalled') {
+        watchdogState = 'ok';
+        console.log('[WATCHDOG] عاد محرك المراقبة للعمل طبيعيًا');
+        try { await notifier.sendTelegram('✅ عاد محرك المراقبة للعمل طبيعيًا.'); } catch (e) { /* تجاهل */ }
+      }
+    } catch (e) {
+      console.error('[WATCHDOG] error:', e.message);
+    }
+  }, everyMs);
+  if (watchdogTimer.unref) watchdogTimer.unref();
+}
+
+module.exports = { startMonitoring, getEngineHealth, evaluateEngineHealth };

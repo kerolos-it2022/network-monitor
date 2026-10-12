@@ -11,7 +11,7 @@ const session = require('express-session');
 const multer = require('multer');
 
 const db = require('./db');
-const { startMonitoring } = require('./services/monitor.service');
+const { startMonitoring, getEngineHealth } = require('./services/monitor.service');
 const scanScheduler = require('./services/scan-scheduler.service');
 
 const authRoutes = require('./routes/auth.routes');
@@ -81,9 +81,11 @@ app.use(
 const publicDir = path.join(__dirname, '../../frontend/public');
 app.use(express.static(publicDir));
 
-// health check.
+// health check. (v2.11.9 — يضم صحّة محرك المراقبة: النبضة + الفحوصات العالقة.)
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, data: 'ok' });
+  let engine = null;
+  try { engine = getEngineHealth(); } catch (e) { engine = { error: e.message }; }
+  res.json({ success: true, data: 'ok', engine });
 });
 
 // API routes.

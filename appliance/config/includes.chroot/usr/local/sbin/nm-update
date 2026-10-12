@@ -16,7 +16,7 @@
 set -uo pipefail
 
 # v2.11.8 — معلومة إصدار للفحص السريع على الجهاز:  /usr/local/sbin/nm-update --version
-if [ "${1:-}" = "--version" ]; then echo "nm-update v2.11.8"; exit 0; fi
+if [ "${1:-}" = "--version" ]; then echo "nm-update v2.11.9"; exit 0; fi
 
 DATA_DIR="/var/lib/network-monitor"
 REQ_FILE="$DATA_DIR/update-request.json"          # يكتبه netmon (مدخل غير موثوق ⇒ تحقّق صارم)
@@ -124,12 +124,12 @@ SRC_APP="$SRC/appliance/config/includes.chroot"
 if [ -d "$SRC_APP" ]; then
   status in_progress "تحديث أدوات النظام (المساعدون والوحدات)" "$TAG"
   UPDATED_TOOLS=0
-  for f in nm-update nm-remote; do
+  for f in nm-update nm-remote nm-healthcheck; do
     if [ -f "$SRC_APP/usr/local/sbin/$f" ]; then
       install -m0755 "$SRC_APP/usr/local/sbin/$f" "/usr/local/sbin/$f" 2>/dev/null && UPDATED_TOOLS=1 || true
     fi
   done
-  for u in nm-update.service nm-update.path nm-remote.service nm-remote.path; do
+  for u in nm-update.service nm-update.path nm-remote.service nm-remote.path nm-healthcheck.service nm-healthcheck.timer; do
     if [ -f "$SRC_APP/etc/systemd/system/$u" ]; then
       install -m0644 "$SRC_APP/etc/systemd/system/$u" "/etc/systemd/system/$u" 2>/dev/null && UPDATED_TOOLS=1 || true
     fi
@@ -138,6 +138,8 @@ if [ -d "$SRC_APP" ]; then
     systemctl daemon-reload 2>/dev/null || true
     systemctl restart nm-update.path 2>/dev/null || true
     systemctl restart nm-remote.path 2>/dev/null || true
+    # v2.11.9 — تفعيل حراسة المحرك على الأجهزة القديمة (أول تحديث يجلبها).
+    systemctl enable --now nm-healthcheck.timer 2>/dev/null || true
     log "أدوات النظام: تم تحديث المساعدين/الوحدات ✓"
   else
     # الحالة المتوقعة عند أول مرة على وحدة قديمة (لا تسمح بالكتابة في /usr/local/sbin):

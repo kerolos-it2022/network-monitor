@@ -1,0 +1,52 @@
+#!/bin/bash
+# nm-healthcheck — حراسة خارجية لمحرك المراقبة (v2.11.9).
+# تُستدعى عبر nm-healthcheck.timer كل دقيقتين. تلتقط ما لا تستطيع العملية التقاطه عن نفسها:
+# تعليق العملية بالكامل أو توقف محرك الفحص — فتعيد تشغيل خدمة network-monitor.
+#   • فشل الاتصال بـ/api/health مرتين متتاليتين   ⇒ إعادة تشغيل
+#   • engine.stalled=true أو engine.stuckChecks>0 ⇒ إعادة تشغيل (بفترة تهدئة ضد الحلقات)
+set -u
+
+PORT="${NM_HEALTH_PORT:-4001}"
+URL="http://127.0.0.1:${PORT}/api/health"
+FAILS_FILE="/run/nm-healthcheck.fails"           # عدّاد محاولات فاشلة (tmpfs — يتصفّر عند الإقلاع)
+LAST_FILE="/run/nm-healthcheck.last-restart"     # آخر إعادة تشغيل — فترة تهدئة ضد حلقات الريستارت
+COOLDOWN="${NM_HEALTH_RESTART_COOLDOWN:-900}"
+
+body="$(curl -fsS -m 10 "$URL" 2>/dev/null)" && ok=1 || ok=0
+
+if [ "$ok" != "1" ]; then
+  fails="$(cat "$FAILS_FILE" 2>/dev/null || echo 0)"
+  fails=$((fails + 1))
+  echo "$fails" > "$FAILS_FILE"
+  logger -t nm-healthcheck "فشل الاتصال بـ/api/health (محاولة $fails/2)"
+  if [ "$fails" -ge 2 ]; then
+    now="$(date +%s)"; last="$(cat "$LAST_FILE" 2>/dev/null || echo 0)"
+    if [ $((now - last)) -ge "$COOLDOWN" ]; then
+      logger -t nm-healthcheck "إعادة تشغيل network-monitor (الخدمة لا تستجيب)"
+      echo "$now" > "$LAST_FILE"
+      systemctl restart network-monitor || true
+    else
+      logger -t nm-healthcheck "إعادة التشغيل مطلوبة لكن فترة التهدئة فعّالة — بانتظار"
+    fi
+    echo 0 > "$FAILS_FILE"
+  fi
+  exit 0
+fi
+
+# الخدمة ردّت — نصفّر عدّاد الفشل.
+echo 0 > "$FAILS_FILE"
+
+stalled="$(printf '%s' "$body" | grep -o '"stalled":[a-z]*' | head -n1 | cut -d: -f2)"
+stuck="$(printf '%s' "$body" | grep -o '"stuckChecks":[0-9]*' | head -n1 | cut -d: -f2)"
+
+if [ "$stalled" = "true" ] || { [ -n "$stuck" ] && [ "$stuck" -gt 0 ]; }; then
+  now="$(date +%s)"; last="$(cat "$LAST_FILE" 2>/dev/null || echo 0)"
+  if [ $((now - last)) -ge "$COOLDOWN" ]; then
+    logger -t nm-healthcheck "محرك المراقبة متعطل (stalled=$stalled stuck=${stuck:-0}) — إعادة تشغيل network-monitor"
+    echo "$now" > "$LAST_FILE"
+    systemctl restart network-monitor || true
+  else
+    logger -t nm-healthcheck "المحرك متعطل لكن فترة التهدئة فعّالة — بانتظار"
+  fi
+fi
+exit 0

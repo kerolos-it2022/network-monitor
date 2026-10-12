@@ -796,6 +796,19 @@
     text-align: center;
     padding: 1.5rem 0.5rem;
   }
+  /* v2.11.9 — بانر تحذير توقف محرك المراقبة (يُحدَّث من /api/health) */
+  .engine-alert {
+    display: none;
+    background: #7f1d1d;
+    color: #fecaca;
+    border: 1px solid #ef4444;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 0 18px 12px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .engine-alert.show { display: block; }
 </style>
 <script>
   // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
@@ -828,6 +841,9 @@
       </button>
     </div>
   </header>
+
+  <!-- v2.11.9 — بانر تحذير توقف محرك المراقبة (يُحدَّث من /api/health) -->
+  <div class="engine-alert" id="engine-alert"></div>
 
   <!-- Counters Bar -->
   <div class="counters">
@@ -2054,14 +2070,47 @@
     },
   };
 
+  // ── v2.11.9 — مؤشر صحّة محرك المراقبة (بانر من /api/health) ──
+  let engineFetchFails = 0;
+  function showEngineAlert(text) {
+    const el = document.getElementById('engine-alert');
+    if (el) { el.textContent = text; el.classList.add('show'); }
+  }
+  function hideEngineAlert() {
+    const el = document.getElementById('engine-alert');
+    if (el) el.classList.remove('show');
+  }
+  async function updateEngineAlertFromHealth(healthRes) {
+    if (!healthRes || !healthRes.ok) {
+      engineFetchFails += 1;
+      if (engineFetchFails >= 2) showEngineAlert('⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.');
+      return;
+    }
+    engineFetchFails = 0;
+    let eng = null;
+    try { eng = (await healthRes.json()).engine; } catch (e) { eng = null; }
+    if (!eng || eng.notStarted) { hideEngineAlert(); return; }
+    const sec = Math.round((eng.lastTickAgeMs || 0) / 1000);
+    const fmt = sec >= 60 ? Math.round(sec / 60) + ' دقيقة' : sec + ' ثانية';
+    if (eng.stalled) {
+      showEngineAlert('⚠️ محرك المراقبة متوقف منذ ' + fmt + ' — البيانات المعروضة قد تكون قديمة!');
+    } else if (eng.stuckChecks > 0) {
+      showEngineAlert('⚠️ يوجد ' + eng.stuckChecks + ' فحص عالق — بعض الأجهزة قد لا تتحدّث حالتها.');
+    } else {
+      hideEngineAlert();
+    }
+  }
+
   // ── Fetch Topology API ──
   async function tick() {
     const updateStatusEl = document.getElementById('update-status');
     try {
       // v2.8.6 — مصدران: السلسلة (للأسماء والأجهزة) + شجرة «خريطة المواقع» العامة (الترتيب والتشكيل).
-      const [topoRes, treeRes] = await Promise.all([
+      const [topoRes, treeRes, healthRes] = await Promise.all([
         fetch('/api/topology', { credentials: 'same-origin' }),
         fetch('/api/map/public/tree', { credentials: 'same-origin' }),
+        // v2.11.9 — صحّة محرك المراقبة (لبانر التحذير).
+        fetch('/api/health', { credentials: 'same-origin' }).catch(() => null),
       ]);
       const json = await topoRes.json();
       let treeJson = null;
@@ -2076,9 +2125,12 @@
         document.getElementById('last-updated-time').textContent = 
           'آخر تحديث: ' + now.toLocaleTimeString('ar-EG');
         if (updateStatusEl) refreshStatusText(true);
+        updateEngineAlertFromHealth(healthRes);
       }
     } catch (err) {
       refreshStatusText(false);
+      engineFetchFails += 1;
+      if (engineFetchFails >= 2) showEngineAlert('⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.');
     }
   }
 
