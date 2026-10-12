@@ -114,6 +114,11 @@
   }
 
   // ═══ render markers ═══
+  // ✅ v2.10.14 — نفس قاعدة «خريطة المواقع» في NOC/لوحة التحكم (بطلب المستخدم):
+  //   الطوابق/الغرف/الخزائن فقط تُعرَض كأقسام داخل بطاقة أقرب مبنى/موقع،
+  //   وأي مبنى/موقع = بطاقة مستقلة في أي عمق.
+  const MAP_NESTED_KINDS = new Set(['floor', 'room', 'rack']);
+  const isMapNestedKind = (n) => MAP_NESTED_KINDS.has((n && n.kind) || '');
   // بناء HTML لِـ شَبكة البطاقات مِن الجذر (نَفس منطق admin renderZonesGrid، بِلا فلترة
   // search/status لِـ أَنّ الصَفحة العامة لا تَملِك toolbar فِلترة map مُستقِلّة).
   // v2.6.0 — فصل الأَجهزة المُباشِرة في الجذر (devices في جذر internet بِلا zone) في
@@ -129,7 +134,17 @@
     }
     // v2.7.0 (PD) — aria-posinset/aria-setsize للـ a11y.
     const orphanCardCount = orphanDevices.length > 0 ? 1 : 0;
-    const setSize = zoneKids.length + orphanCardCount;
+    // ✅ v2.10.14 — البطاقات = كل المباني/المواقع (أي عمق) عدا الطوابق/الغرف/الخزائن (أقسام داخل الأب).
+    const flatCards = [];
+    (function walkCards(list) {
+      for (const c of list) {
+        if (!c || c.kind === 'device') continue;
+        if (isMapNestedKind(c)) { walkCards(Array.isArray(c.children) ? c.children : []); continue; }
+        flatCards.push(c);
+        walkCards(Array.isArray(c.children) ? c.children : []);
+      }
+    })(zoneKids);
+    const setSize = flatCards.length + orphanCardCount;
     // v2.7.5 — بطاقة «أَجهزة مَدخل الإنترنت» ثابتة في الأَول دائماً (نَفس منطق admin-map).
     let orphanHtml = '';
     if (orphanDevices.length > 0) {
@@ -148,7 +163,7 @@
     }
     // zones بَعْد البطاقة الصِناعيّة (posinset يَبدأ من 2 لو وُجدت).
     const start = orphanHtml ? 2 : 1;
-    const cards = orphanHtml + zoneKids
+    const cards = orphanHtml + flatCards
       .map((c, i) => renderZoneCard(c, { posinset: start + i, setsize: setSize }))
       .join('');
     return cards;
@@ -216,7 +231,8 @@
     const subzones = [];
     for (const c of kids) {
       if (c.kind === 'device') devices.push(c);
-      else subzones.push(c);
+      // ✅ v2.10.14 — الطوابق/الغرف فقط أقسام داخل البطاقة؛ المباني/المواقع الأعمق بطاقات مستقلة.
+      else if (isMapNestedKind(c)) subzones.push(c);
     }
     let html = '';
 
