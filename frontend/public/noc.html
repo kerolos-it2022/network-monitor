@@ -812,7 +812,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.11.5</span>
+        <span class="tag">Network Operations Center v2.11.6</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1108,6 +1108,30 @@
     catSec.style.display  = (mode === 'all' || mode === 'grid') ? 'block' : 'none';
     // v2.8.6 — «التخطيط المرسوم» يُعرض عند اختياره فقط (لا يزدحم به «عرض شامل»).
     if (drawSec) drawSec.style.display = (mode === 'draw') ? 'block' : 'none';
+    // v2.11.6 — أدوات الفلترة تظهر فقط في الشاشات التي تعمل فيها فعلًا.
+    applyFilterBarVisibility(mode);
+  };
+
+  // ── v2.11.6 — نطاق عمل أدوات الفلترة حسب الشاشة (طلب المستخدم: «أي زر لا يعمل — اخفيه») ──
+  //   الأجهزة حسب النوع / عرض شامل : البحث ✓ + فلتر الحالة ✓ (كلاهما في قسم «الأجهزة حسب النوع»)
+  //   ✏️ التخطيط المرسوم          : البحث ✓ (يخفي صفوف الأجهزة داخل البطاقات) — فلتر الحالة ✗
+  //   🗺️ خريطة المباني / 🔗 مسار الإنترنت : لا شيء ✗
+  const FILTER_SCOPE = {
+    all:  { search: true,  status: true  },
+    grid: { search: true,  status: true  },
+    draw: { search: true,  status: false },
+    map:  { search: false, status: false },
+    hero: { search: false, status: false },
+  };
+  window.applyFilterBarVisibility = function(mode) {
+    const rule = FILTER_SCOPE[mode] || FILTER_SCOPE.all;
+    const controls = document.querySelector('.filter-controls');
+    if (controls) controls.style.display = (rule.search || rule.status) ? '' : 'none';
+    const box = document.getElementById('search-input');
+    if (box) box.style.display = rule.search ? '' : 'none';
+    document.querySelectorAll('.filter-controls .filter-pill').forEach((p) => {
+      p.style.display = rule.status ? '' : 'none';
+    });
   };
 
   // ── Filter Controls ──
