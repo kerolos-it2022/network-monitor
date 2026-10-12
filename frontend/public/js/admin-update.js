@@ -13,6 +13,7 @@ let updMode = 'plain';          // appliance | plain
 let updBusy = false;
 let updLastCheck = null;        // آخر نتيجة فحص ناجحة
 let updProgressTimer = null;
+let updElapsedTimer = null;   // v2.11.1 — عدّاد الزمن الظاهر أثناء التحديث
 const UPD_LAST_KEY = 'nm.updatesLastCheckAt';
 const UPD_AUTO_MS = 6 * 60 * 60 * 1000;      // فحص تلقائي كل 6 ساعات
 const UPD_FRESH_MS = 15 * 60 * 1000;         // «طازج» = خلال 15 دقيقة (لتجنّب نداءات متكرّرة)
@@ -47,19 +48,49 @@ function updRenderLast(ts) {
   updSet('upd-lastcheck', mins < 1 ? 'الآن' : (mins < 60 ? `قبل ${mins} دقيقة` : `قبل ${Math.round(mins / 60)} ساعة`));
 }
 
-// ── خطوات التقدّم ──
+// ── خطوات التقدّم (v2.11.1) ──
+// نصوص المساعد nm-update العربية حرفيًّا: «بدأ التحديث إلى X» · «تحديث ملفات التطبيق» ·
+// «تحديث التبعيات (npm ci)» · «تحديث أدوات النظام (المساعدون والوحدات)» · «إعادة تشغيل الخدمة» ·
+// «تم التحديث إلى X بنجاح». (قبل v2.11.1 كانت المطابقة بكلمات إنجليزية فلا تُضاء معظم الخطوات.)
 const UPD_STEPS = [
-  [['تنزيل', 'جلب', 'الأرشيف', 'git pull'], 'download'],
-  [['ملفات', 'rsync', 'نسخ ملفات'], 'files'],
-  [['npm', 'تبعيات'], 'deps'],
-  [['تشغيل', 'restart', 'success'], 'restart'],
+  [['بدأ التحديث'], 'start', 10],
+  [['ملفات التطبيق', 'تنزيل', 'الأرشيف'], 'files', 40],
+  [['التبعيات', 'npm'], 'deps', 70],
+  [['أدوات النظام'], 'tools', 85],
+  [['إعادة تشغيل', 'restart'], 'restart', 95],
 ];
 function updStepFromMessage(msg) {
   const m = String(msg || '').toLowerCase();
-  for (const [keys, step] of UPD_STEPS) {
-    if (keys.some((k) => m.includes(String(k).toLowerCase()))) return step;
+  for (const [keys, step, pct] of UPD_STEPS) {
+    if (keys.some((k) => m.includes(String(k).toLowerCase()))) return { step, pct };
   }
+  if (m.includes('تم التحديث') || m.includes('أحدث إصدار')) return { step: 'restart', pct: 100 };
   return null;
+}
+// شريط النسبة + المرحلة الحالية.
+function updSetBar(pct, phase) {
+  const v = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+  const fill = updEl('upd-bar-fill'); const bar = updEl('upd-bar');
+  const pctEl = updEl('upd-bar-pct'); const ph = updEl('upd-phase');
+  if (fill) fill.style.width = v + '%';
+  if (bar) bar.setAttribute('aria-valuenow', String(v));
+  if (pctEl) pctEl.textContent = v + '%';
+  if (ph && phase) ph.textContent = phase;
+}
+// بانر إعادة التشغيل (يظهر عند مرحلة «إعادة تشغيل الخدمة»).
+function updShowRestartBanner(on) {
+  const el = updEl('upd-restart-banner');
+  if (el) el.classList.toggle('hidden', !on);
+}
+// إضاءة الخطوة الحالية + تعليم ما قبلها مُنجزًا.
+function updStepsMark(step) {
+  const list = [...document.querySelectorAll('#upd-steps li')];
+  let reached = false;
+  for (const li of list) {
+    if (li.dataset.step === step) { li.classList.remove('done'); li.classList.add('active'); reached = true; }
+    else if (!reached) { li.classList.remove('active'); li.classList.add('done'); }
+    else { li.classList.remove('active', 'done'); }
+  }
 }
 function updStepsReset() {
   document.querySelectorAll('#upd-steps li').forEach((li) => li.classList.remove('active', 'done'));
@@ -142,7 +173,15 @@ function updFollowAppliance() {
   updSetBusy(true);
   updShow('upd-progress-card', true);
   updStepsReset();
-  updStepSet('download', 'active');
+  updStepsMark('start');
+  updSetBar(5, 'بدء التحديث');
+  updShowRestartBanner(false);
+  const elapsedEl = updEl('upd-elapsed');
+  if (updElapsedTimer) clearInterval(updElapsedTimer);
+  updElapsedTimer = setInterval(() => {
+    const s = Math.round((Date.now() - started) / 1000);
+    if (elapsedEl) elapsedEl.textContent = '⏱ منذ ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }, 1000);
   if (updProgressTimer) clearInterval(updProgressTimer);
   updProgressTimer = setInterval(async () => {
     try {
@@ -151,14 +190,21 @@ function updFollowAppliance() {
       if (p && typeof p.log === 'string' && p.log) { const el = updEl('upd-log'); if (el) el.textContent = p.log; }
       if (st && st.message) {
         updSet('upd-progress-text', st.message);
-        const step = updStepFromMessage(st.message);
-        if (step) updStepSet(step, 'active');
+        const hit = updStepFromMessage(st.message);
+        if (hit) {
+          updStepsMark(hit.step);
+          updSetBar(hit.pct, st.message);
+          updShowRestartBanner(hit.step === 'restart' && st.state !== 'success');
+        }
       }
       if (st && st.state === 'success') {
         clearInterval(updProgressTimer); updProgressTimer = null;
+        if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
         updStepsAllDone();
+        updSetBar(100, 'اكتمل ✓');
+        updShowRestartBanner(false);
         updSet('upd-progress-text', '✅ ' + st.message);
-        updNote('✅ ' + st.message + ' — جارٍ إعادة تحميل الصفحة…');
+        updNote('✅ ' + st.message + ' — النظام يعمل الآن، وجارٍ إعادة تحميل الصفحة…');
         showToast('✅ ' + st.message, { type: 'success', duration: 6000 });
         updSetBusy(false);
         setTimeout(() => location.reload(), 3000);
@@ -166,6 +212,8 @@ function updFollowAppliance() {
       }
       if (st && st.state === 'failed') {
         clearInterval(updProgressTimer); updProgressTimer = null;
+        if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
+        updShowRestartBanner(false);
         updSetBusy(false);
         updSet('upd-progress-text', '❌ ' + st.message);
         updNote('❌ فشل التحديث: ' + st.message + ' — راجع السجل التفصيلي.');
@@ -186,7 +234,7 @@ function updFollowAppliance() {
 async function updSafeRun() {
   const ok = await confirmAction({
     title: '🛡️ نسخة احتياطية + تحديث',
-    message: 'سيتم:\n① إنشاء نسخة احتياطية من قاعدة البيانات\n② تحديث النظام وإعادة تشغيل الخدمة\n\nمتابعة؟',
+    message: 'سيتم:\n① إنشاء نسخة احتياطية من قاعدة البيانات\n② تحديث النظام\n③ ⚠️ إعادة تشغيل خدمة المراقبة — ستنقطع الشاشة والقاعدة ثوانٍ ثم تعود تلقائيًّا\n\nلا تفصل الكهرباء ولا تغلق الصفحة أثناء التنفيذ. متابعة؟',
     confirmText: '🛡️ تنفيذ',
     danger: false,
   });
@@ -271,7 +319,9 @@ async function updPlainDownload() {
   const logEl = updEl('upd-log');
   updShow('upd-progress-card', true);
   updStepsReset();
-  updStepSet('download', 'active');
+  updStepsMark('start');
+  updSetBar(5, 'بدء التنزيل');
+  updShowRestartBanner(false);
   if (dlBtn) dlBtn.disabled = true;
   if (applyBtn) applyBtn.disabled = true;
   if (logEl) logEl.textContent = '⏳ بدء التحميل…\n';
@@ -301,15 +351,16 @@ async function updPlainDownload() {
         const msg = (js && js.message) ? js.message : data;
         if (ev === 'line' || ev === 'start') {
           if (logEl) logEl.textContent += msg + '\n';
-          const step = updStepFromMessage(msg);
-          if (step) updStepSet(step, 'active');
+          const hit = updStepFromMessage(msg);
+          if (hit) { updStepsMark(hit.step); updSetBar(hit.pct, msg); }
           updSet('upd-progress-text', msg);
         } else if (ev === 'progress' && js) {
           updSet('upd-progress-text', `⬇️ ${js.percent}% (${js.downloaded} / ${js.total})`);
         } else if (ev === 'error') {
           throw new Error(msg);
         } else if (ev === 'done') {
-          updStepSet('download', 'done');
+          updStepsMark('files');
+          updSetBar(40, 'تم التنزيل — جاهز للتطبيق');
           updSet('upd-progress-text', msg);
           if (applyBtn) { applyBtn.disabled = false; applyBtn.style.display = 'inline-block'; }
         }

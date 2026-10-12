@@ -590,6 +590,12 @@
         .upd-log { background:#1e293b; color:#e2e8f0; padding:0.8rem; border-radius:6px; font-family:monospace; font-size:0.78rem; white-space:pre-wrap; max-height:220px; overflow:auto; margin:0.5rem 0 0; }
         .upd-row { display:flex; justify-content:space-between; gap:0.75rem; padding:0.45rem 0; border-bottom:1px dashed var(--border); font-size:0.85rem; }
         .upd-row:last-child { border-bottom:none; }
+        /* v2.11.1 — شريط تقدّم فعلي + بانر إعادة التشغيل */
+        .upd-bar { height:12px; background:var(--bg); border:1px solid var(--border); border-radius:999px; overflow:hidden; }
+        .upd-bar-fill { display:block; height:100%; width:0%; background:linear-gradient(90deg,#0284c7,#22c55e); transition:width .4s ease; }
+        .upd-bar-meta { display:flex; justify-content:space-between; font-size:0.82rem; color:var(--muted); margin-top:0.35rem; }
+        .upd-restart-banner { margin-top:0.7rem; padding:0.6rem 0.8rem; border-radius:8px; background:rgba(217,119,6,0.12); border:1px solid rgba(217,119,6,0.35); color:var(--text); font-size:0.9rem; }
+        .upd-restart-banner.hidden { display:none; }
         .tab-badge { display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; margin-inline-start:6px; vertical-align:middle; }
       </style>
 
@@ -635,15 +641,23 @@
 
         <div class="upd-note" id="upd-note"></div>
 
-        <!-- التقدّم: خطوات واضحة بدل السبينر الأعمى -->
+        <!-- v2.11.1 — التقدّم: شريط نسبة + خطوات مطابقة لمراحل المساعد (nm-update) + بانر إعادة التشغيل -->
         <div class="form-card hidden" id="upd-progress-card" style="margin-top:1rem;">
-          <div style="font-weight:600; margin-bottom:0.75rem;">⏳ التحديث جارٍ…</div>
+          <div style="font-weight:600; margin-bottom:0.75rem;">⏳ التحديث جارٍ… <span id="upd-elapsed" style="color:var(--muted); font-weight:400; font-size:0.85rem;"></span></div>
+          <div class="upd-bar" id="upd-bar" role="progressbar" aria-label="نسبة تقدّم التحديث" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span class="upd-bar-fill" id="upd-bar-fill" style="width:0%"></span>
+          </div>
+          <div class="upd-bar-meta"><span id="upd-bar-pct">0%</span><span id="upd-phase">—</span></div>
           <ol class="upd-steps" id="upd-steps">
-            <li data-step="download">تهيئة وتنزيل الإصدار</li>
+            <li data-step="start">بدء التحديث (تنزيل الإصدار)</li>
             <li data-step="files">تحديث ملفات التطبيق</li>
-            <li data-step="deps">تثبيت التبعيات (npm ci)</li>
+            <li data-step="deps">تحديث التبعيات (npm ci)</li>
+            <li data-step="tools">تحديث أدوات النظام</li>
             <li data-step="restart">إعادة تشغيل الخدمة</li>
           </ol>
+          <div class="upd-restart-banner hidden" id="upd-restart-banner">
+            🔄 <b>إعادة تشغيل الخدمة الآن…</b> ستنقطع الشاشة والقاعدة ثوانٍ ثم تعود تلقائيًّا — لا تغلق الصفحة ولا تفصل الكهرباء.
+          </div>
           <div id="upd-progress-text" style="margin-top:0.6rem; color:var(--muted); font-size:0.9rem;"></div>
           <details style="margin-top:0.75rem;">
             <summary style="cursor:pointer; font-size:0.9rem; color:var(--accent);">📋 عرض السجل التفصيلي</summary>
