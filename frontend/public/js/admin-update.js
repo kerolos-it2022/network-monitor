@@ -15,6 +15,8 @@ let updLastCheck = null;        // آخر نتيجة فحص ناجحة
 let updProgressTimer = null;
 let updElapsedTimer = null;   // v2.11.1 — عدّاد الزمن الظاهر أثناء التحديث
 const UPD_LAST_KEY = 'nm.updatesLastCheckAt';
+// v2.11.8 — آخر حالة «إعادة تشغيل الجهاز» شوهدت (لمنع حلقة إعادة تحميل بعد الإقلاع).
+const UPD_REBOOT_KEY = 'nm.updRebootSeenAt';
 const UPD_AUTO_MS = 6 * 60 * 60 * 1000;      // فحص تلقائي كل 6 ساعات
 const UPD_FRESH_MS = 15 * 60 * 1000;         // «طازج» = خلال 15 دقيقة (لتجنّب نداءات متكرّرة)
 
@@ -93,12 +95,61 @@ function updShowStall(on, mins) {
   if (on && m) m.textContent = String(mins);
   el.classList.toggle('hidden', !on);
 }
+// v2.11.8 — بعد اكتمال التحديث يعيد المساعد تشغيل الجهاز كاملًا؛ ننتظر عودة الخادم
+// (فحص كل 5 ثوانٍ) ثم نُحدّث الصفحة تلقائيًا — بدل إعادة تحميل فورية تفشل أثناء الإقلاع.
+function updWaitForReboot() {
+  if (window.__updRebootWait) return;
+  let tries = 0;
+  window.__updRebootWait = setInterval(async () => {
+    tries += 1;
+    let up = false;
+    try {
+      const r = await fetch('/api/appliance-update/progress', { credentials: 'same-origin', cache: 'no-store' });
+      // أي ردّ من الخادم (حتى 401 — الجلسة تُطلب من جديد بعد الإقلاع) يعني أنه عاد.
+      up = !(r.status === 502 || r.status === 503 || r.status === 504);
+    } catch (e) { up = false; }
+    if (up) {
+      clearInterval(window.__updRebootWait); window.__updRebootWait = null;
+      location.reload();
+      return;
+    }
+    if (tries > 120) { // ≈ 10 دقائق حد أقصى
+      clearInterval(window.__updRebootWait); window.__updRebootWait = null;
+      updNote('⏳ لم يعد الجهاز بعد — افتح الصفحة يدويًّا عند جاهزيته.');
+    }
+  }, 5000);
+}
+
 // قراءة واحدة لحالة التقدّم + رسمها (تُستعمل من المؤقّت ومن زرّ «فحص الحالة الآن»).
 async function updRenderProgress() {
   let p = null;
   try { p = await api('/api/appliance-update/progress'); } catch (e) { return; } // الخدمة قد تكون في إعادة تشغيل
   const st = p && p.state;
   if (p && typeof p.log === 'string' && p.log) { const el = updEl('upd-log'); if (el) el.textContent = p.log; }
+  // v2.11.8 — حالة «إعادة تشغيل الجهاز»: نهاية طبيعية للتحديث على الأبلاينس.
+  if (st && st.state === 'rebooting') {
+    clearInterval(updProgressTimer); updProgressTimer = null;
+    if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
+    updStepsAllDone();
+    updSetBar(100, 'اكتمل ✓');
+    updShowStall(false);
+    updShowRestartBanner(true);
+    updSet('upd-progress-text', '🔄 ' + st.message);
+    updSetBusy(false);
+    let seen = '';
+    try { seen = localStorage.getItem(UPD_REBOOT_KEY) || ''; } catch (e) { /* تجاهل */ }
+    const atKey = String(st.at || st.message || 'reboot');
+    if (seen === atKey) {
+      // الصفحة فُتحت بعد عودة الجهاز — رسالة معلوماتية فقط (بلا انتظار أو إعادة تحميل).
+      updNote('✅ ' + st.message);
+    } else {
+      try { localStorage.setItem(UPD_REBOOT_KEY, atKey); } catch (e) { /* تجاهل */ }
+      updNote('🔄 تم التحديث — الجهاز يعيد التشغيل الآن… ستُحدَّث الصفحة تلقائيًا عند عودة النظام (دقيقة تقريبًا).');
+      showToast('🔄 تم التحديث — إعادة تشغيل الجهاز…', { type: 'success', duration: 8000 });
+      updWaitForReboot();
+    }
+    return;
+  }
   if (st && st.message) {
     updSet('upd-progress-text', st.message);
     const hit = updStepFromMessage(st.message);
@@ -257,7 +308,7 @@ function updFollowAppliance() {
 async function updSafeRun() {
   const ok = await confirmAction({
     title: '🛡️ نسخة احتياطية + تحديث',
-    message: 'سيتم:\n① إنشاء نسخة احتياطية من قاعدة البيانات\n② تحديث النظام\n③ ⚠️ إعادة تشغيل خدمة المراقبة — ستنقطع الشاشة والقاعدة ثوانٍ ثم تعود تلقائيًّا\n\nلا تفصل الكهرباء ولا تغلق الصفحة أثناء التنفيذ. متابعة؟',
+    message: 'سيتم:\n① إنشاء نسخة احتياطية من قاعدة البيانات\n② تحديث النظام\n③ 🔄 إعادة تشغيل الجهاز بالكامل بعد اكتمال التحديث — ستنقطع الشاشة دقيقة تقريبًا ثم تعود تلقائيًّا\n\nلا تفصل الكهرباء ولا تغلق الصفحة أثناء التنفيذ. متابعة؟',
     confirmText: '🛡️ تنفيذ',
     danger: false,
   });
@@ -317,7 +368,7 @@ async function updOpenRollback() {
 async function updRollbackTo(tag) {
   const ok = await confirmAction({
     title: 'الرجوع إلى ' + tag,
-    message: 'سيتم تثبيت الإصدار ' + tag + ' وإعادة تشغيل الخدمة.\nيُنصح بعمل نسخة احتياطية أولاً.',
+    message: 'سيتم تثبيت الإصدار ' + tag + ' ثم إعادة تشغيل الجهاز بالكامل.\nيُنصح بعمل نسخة احتياطية أولاً.',
     confirmText: '↩️ رجوع',
     danger: true,
   });

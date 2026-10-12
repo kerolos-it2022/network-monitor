@@ -15,8 +15,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -uo pipefail
 
-# v2.10.6 — معلومة إصدار للفحص السريع على الجهاز:  /usr/local/sbin/nm-update --version
-if [ "${1:-}" = "--version" ]; then echo "nm-update v2.10.6"; exit 0; fi
+# v2.11.8 — معلومة إصدار للفحص السريع على الجهاز:  /usr/local/sbin/nm-update --version
+if [ "${1:-}" = "--version" ]; then echo "nm-update v2.11.8"; exit 0; fi
 
 DATA_DIR="/var/lib/network-monitor"
 REQ_FILE="$DATA_DIR/update-request.json"          # يكتبه netmon (مدخل غير موثوق ⇒ تحقّق صارم)
@@ -153,7 +153,21 @@ sleep 3
 NEW_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$APP_DIR/backend/package.json" | head -n1)"
 if systemctl is-active --quiet "$SERVICE_NAME"; then
   log "=== تم التحديث بنجاح إلى $TAG (الإصدار: ${NEW_VER:-?}) ==="
-  status success "تم التحديث إلى $TAG بنجاح" "$TAG"
+  # v2.11.8 — إعادة تشغيل الجهاز بالكامل بعد اكتمال التحديث (السلوك الافتراضي).
+  # لتعطيله مؤقتًا (اختبار مخبري فقط): NM_NO_REBOOT=1
+  if [ "${NM_NO_REBOOT:-0}" = "1" ]; then
+    status success "تم التحديث إلى $TAG بنجاح" "$TAG"
+    log "تخطّي إعادة تشغيل الجهاز (NM_NO_REBOOT=1)"
+  else
+    # نكتب الحالة أولًا لتلتقطها الواجهة قبل الانقطاع، ثم مهلة قصيرة ثم الإقلاع.
+    status rebooting "تم التحديث إلى $TAG بنجاح — إعادة تشغيل الجهاز خلال ثوانٍ…" "$TAG"
+    log "إعادة تشغيل الجهاز بالكامل خلال ${NM_REBOOT_DELAY:-8} ثانية…"
+    rm -rf "$TMP_ROOT/work"
+    sync
+    sleep "${NM_REBOOT_DELAY:-8}"
+    systemctl reboot || reboot
+    exit 0
+  fi
 else
   fail "الخدمة لم تعمل بعد إعادة التشغيل — راجع: journalctl -u $SERVICE_NAME -n 50"
 fi
