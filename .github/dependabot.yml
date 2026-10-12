@@ -30,6 +30,29 @@ updates:
         patterns:
           - "*"
         dependency-type: "production"
+    # ─────────────────────────────────────────────────────────────
+    # تجاهل القفزات الكبرى (semver-major) لحزم أساسية تحتاج ترحيلًا مُختبَرًا يدويًّا.
+    # السبب: PR #13 (2026-10-13) جمعها دفعة واحدة وكان كاسرًا —
+    #   express 4→5 · multer 1→2 · better-sqlite3 11→13 · bcryptjs 2→3 ·
+    #   dotenv 16→18 · node-cron 3→4 · ping 0.4→1
+    # الترقيات minor/patch (وإصلاحات الأمان فيها) تبقى تصل أسبوعيًّا طبيعيًّا.
+    # لترقية كبرى: فرع مستقل + دليل الترحيل + اختبارات + بناء ISO، ثم ارفع وسمًا.
+    # ─────────────────────────────────────────────────────────────
+    ignore:
+      - dependency-name: "express"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "multer"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "better-sqlite3"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "bcryptjs"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "dotenv"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "node-cron"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "ping"
+        update-types: ["version-update:semver-major"]
 
   # ─────────────────────────────────────────────────────────────
   # تحديثات GitHub Actions المستخدمة في workflows/ (checkout, setup-node, ...)
