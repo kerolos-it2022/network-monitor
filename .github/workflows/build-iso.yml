@@ -71,3 +71,9 @@ jobs:
             appliance/*.iso
             appliance/SHA256SUMS.txt
           generate_release_notes: true
+          # v2.11.6-fix — درسان مستفادتان من v2.11.4 (تشغيل اختفى وترك Release «مسودة» فاضية):
+          #   1) draft: false ⇒ نُصدر الـRelease دائمًا بعد رفع الملفات (بدونها يبقى مسودة لو
+          #      أُنشئ كمسودة سابقًا — فيختفي الـISO عن المستخدمين).
+          #   2) fail_on_unmatched_files: true ⇒ تفشل الخطوة لو الـISO غير موجود بدل نشر Release فاضي.
+          draft: false
+          fail_on_unmatched_files: true
