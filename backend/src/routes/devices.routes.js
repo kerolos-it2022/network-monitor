@@ -331,9 +331,19 @@ router.put('/:id', requireAuth, (req, res) => {
   }
 
   // Topology chain: التحقق من الأب (ليس هو نفسه، موجود، بلا حلقة).
-  const pv = validateParent(parent_id, id);
-  if (!pv.ok) {
-    return res.status(400).json({ success: false, error: pv.error });
+  // v2.11.4 — parent_id مثل parent_location_id: undefined = يُبقي القيمة القديمة.
+  // (نموذج الجهاز لم يعد يُرسل الحقل؛ وقبله كان أي حفظ بلا الحقل يكتب NULL ⇒ يمسح روابط
+  //  الأجهزة القائمة بصمت.)
+  let pvValue;
+  if (parent_id === undefined) {
+    const row = db.prepare('SELECT parent_id FROM devices WHERE id = ?').get(id);
+    pvValue = row ? row.parent_id : null;
+  } else {
+    const pv = validateParent(parent_id, id);
+    if (!pv.ok) {
+      return res.status(400).json({ success: false, error: pv.error });
+    }
+    pvValue = pv.value;
   }
 
   // v2.8.2: الموقع الأب — undefined = يُبقي القيمة القديمة، null/'' = فك، رقم = ربط.
@@ -360,7 +370,7 @@ router.put('/:id', requireAuth, (req, res) => {
     ip,
     device_type_id,
     location_id ?? null,
-    pv.value,
+    pvValue,
     plcValue,
     Number.isFinite(Number(pos_x)) ? Number(pos_x) : null,
     Number.isFinite(Number(pos_y)) ? Number(pos_y) : null,

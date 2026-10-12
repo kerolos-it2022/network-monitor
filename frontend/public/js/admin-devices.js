@@ -181,45 +181,12 @@ function resetDeviceForm() {
   document.getElementById('df-failure_threshold').value = 3;
 }
 
-// Topology chain (v2.8.2): تعبئة قائمة «متصل عبر» — جهاز أو موقع/مبنى.
-// القيمة 'D<id>' = جهاز، 'L<id>' = موقع. القيمة الفارغة = جذر السلسلة.
-// v2.11.2 — الاسم صار خاصًّا بنموذج الجهاز: كان `populateParentSelect` وهو **نفس اسم**
-// دالة في admin-locations-types.js (تعبّئ #loc-parent_id) — والملف يُحمَّل لاحقًا فيلغي
-// هذه الدالة ⇒ كانت قائمة «متصل عبر» في نموذج الجهاز تبقى فارغة (عيب منذ v2.8.2).
-async function populateDeviceParentSelect(selDeviceId, selLocationId, excludeId) {
-  const sel = document.getElementById('df-parent_id');
-  if (!sel) return;
-  const [rDev, rLoc] = await Promise.all([api('/api/devices'), api('/api/locations')]);
-  const devs = (rDev.success && Array.isArray(rDev.data)) ? rDev.data : [];
-  const locs = (rLoc.success && Array.isArray(rLoc.data)) ? rLoc.data : [];
-  const devOpts = devs
-    .filter((d) => !excludeId || Number(d.id) !== Number(excludeId))
-    .map((d) => '<option value="D' + d.id + '">' + esc(d.name) + ' (' + esc(d.ip) + ')</option>')
-    .join('');
-  const locOpts = locs
-    .map((l) => '<option value="L' + l.id + '">' + esc(l.name) + '</option>')
-    .join('');
-  sel.innerHTML = '<option value="">— مدخل إنترنت / جذر السلسلة —</option>'
-    + '<optgroup label="🖥️ جهاز">' + devOpts + '</optgroup>'
-    + '<optgroup label="🏢 موقع / مبنى">' + locOpts + '</optgroup>';
-  // الأولوية للموقع إن وُجد (الاثنين معًا غير مسموح — الجهاز الأب يعلو).
-  if (selLocationId) sel.value = 'L' + selLocationId;
-  else if (selDeviceId) sel.value = 'D' + selDeviceId;
-  else sel.value = '';
-}
-
-// تحويل اختيار القائمة إلى حقول body الصحيحة.
-function parseParentSelectValue(val) {
-  if (!val) return { parent_id: null, parent_location_id: null };
-  if (val[0] === 'D') return { parent_id: Number(val.slice(1)), parent_location_id: null };
-  if (val[0] === 'L') return { parent_id: null, parent_location_id: Number(val.slice(1)) };
-  return { parent_id: null, parent_location_id: null };
-}
-
+// v2.11.4 — حُذفت دالتا قائمة «متصل عبر» في نموذج الجهاز (`populateDeviceParentSelect`
+// و`parseParentSelectValue`): الحقل تكرار لعلاقة «سلسلة الشبكة» (تُدار من بطاقات المواقع)،
+// ومكان الجهاز يُحدَّد من حقل «الموقع». الخادم يُبقي أي ربط قديم عند غياب الحقل.
 function openDeviceForm() {
   resetDeviceForm();
   document.getElementById('device-form-title').textContent = 'إضافة جهاز';
-  populateDeviceParentSelect('', '', null);
   openEditModal(document.getElementById('device-modal'), {
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات قديمة.
     onClose: () => resetDeviceForm(),
@@ -244,7 +211,6 @@ async function startEditDevice(id) {
   document.getElementById('df-failure_threshold').value = d.failure_threshold;
   document.getElementById('df-is_active').checked = !!d.is_active;
   document.getElementById('device-form-title').textContent = 'تعديل جهاز #' + d.id;
-  await populateDeviceParentSelect(d.parent_id || '', d.parent_location_id || '', d.id);
   openEditModal(document.getElementById('device-modal'), {
     focusSelector: '#df-name',
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات التعديل.
@@ -262,7 +228,8 @@ async function submitDeviceForm(e) {
     location_id: document.getElementById('df-location_id').value
       ? Number(document.getElementById('df-location_id').value)
       : null,
-    ...parseParentSelectValue(document.getElementById('df-parent_id').value),
+    // v2.11.4 — لا نُرسل parent_id/parent_location_id أبدًا (لا حقل في النموذج)؛
+    // الخادم يُبقي أي ربط قديم كما هو عند غياب الحقل.
     check_protocol: document.getElementById('df-check_protocol').value,
     port: document.getElementById('df-port').value
       ? Number(document.getElementById('df-port').value)
