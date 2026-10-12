@@ -183,7 +183,10 @@ function resetDeviceForm() {
 
 // Topology chain (v2.8.2): تعبئة قائمة «متصل عبر» — جهاز أو موقع/مبنى.
 // القيمة 'D<id>' = جهاز، 'L<id>' = موقع. القيمة الفارغة = جذر السلسلة.
-async function populateParentSelect(selDeviceId, selLocationId, excludeId) {
+// v2.11.2 — الاسم صار خاصًّا بنموذج الجهاز: كان `populateParentSelect` وهو **نفس اسم**
+// دالة في admin-locations-types.js (تعبّئ #loc-parent_id) — والملف يُحمَّل لاحقًا فيلغي
+// هذه الدالة ⇒ كانت قائمة «متصل عبر» في نموذج الجهاز تبقى فارغة (عيب منذ v2.8.2).
+async function populateDeviceParentSelect(selDeviceId, selLocationId, excludeId) {
   const sel = document.getElementById('df-parent_id');
   if (!sel) return;
   const [rDev, rLoc] = await Promise.all([api('/api/devices'), api('/api/locations')]);
@@ -216,7 +219,7 @@ function parseParentSelectValue(val) {
 function openDeviceForm() {
   resetDeviceForm();
   document.getElementById('device-form-title').textContent = 'إضافة جهاز';
-  populateParentSelect('', '', null);
+  populateDeviceParentSelect('', '', null);
   openEditModal(document.getElementById('device-modal'), {
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات قديمة.
     onClose: () => resetDeviceForm(),
@@ -241,7 +244,7 @@ async function startEditDevice(id) {
   document.getElementById('df-failure_threshold').value = d.failure_threshold;
   document.getElementById('df-is_active').checked = !!d.is_active;
   document.getElementById('device-form-title').textContent = 'تعديل جهاز #' + d.id;
-  await populateParentSelect(d.parent_id || '', d.parent_location_id || '', d.id);
+  await populateDeviceParentSelect(d.parent_id || '', d.parent_location_id || '', d.id);
   openEditModal(document.getElementById('device-modal'), {
     focusSelector: '#df-name',
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات التعديل.
