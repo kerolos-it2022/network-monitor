@@ -809,6 +809,21 @@
     text-align: center;
   }
   .engine-alert.show { display: block; }
+
+  /* v2.12.0 — شريط تنشيط التنبيه الصوتي: المتصفحات تمنع تشغيل الصوت قبل تفاعل المستخدم،
+     فبعد إعادة التحميل (والتنبيه مُفعَّل) نطلب نقرة واحدة لتنشيطه. */
+  .audio-hint {
+    display: none;
+    background: #1e3a8a;
+    color: #dbeafe;
+    border: 1px solid #60a5fa;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin: 0 18px 12px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .audio-hint.show { display: block; }
 </style>
 <script>
   // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
@@ -825,7 +840,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.11.7</span>
+        <span class="tag">Network Operations Center v2.12.0</span>
       </div>
     </div>
     <div class="header-actions">
@@ -844,6 +859,9 @@
 
   <!-- v2.11.9 — بانر تحذير توقف محرك المراقبة (يُحدَّث من /api/health) -->
   <div class="engine-alert" id="engine-alert"></div>
+
+  <!-- v2.12.0 — شريط تنشيط الصوت: يظهر عند استرجاع «تنبيه صوتي مُفعَّل» بعد إعادة التحميل -->
+  <div class="audio-hint" id="audio-hint">🔊 التنبيه الصوتي مُفعَّل — اضغط في أي مكان لتنشيط الصوت</div>
 
   <!-- Counters Bar -->
   <div class="counters">
@@ -1002,6 +1020,9 @@
   // حتى يبقيا كما هما بعد إعادة تحميل الصفحة (كانا في الذاكرة فقط ⇒ العودة لأوّل شاشة).
   const VIEW_STORAGE_KEY = 'nm.nocView';
   const ZOOM_STORAGE_KEY = 'nm.nocZoom';
+
+  // v2.12.0 — حالة «التنبيه الصوتي» تُحفظ مثل التبويب والمقياس (كانت تُفقد مع كل إعادة تحميل).
+  const AUDIO_STORAGE_KEY = 'nm.nocAudioAlert';
   // v2.8.7 — البثّ الحيّ (SSE) + polling تكيفي:
   //   • SSE متصل  ⇒ polling كل 60 ثانية (تحديث البنية فقط) + تحديث لحظي عند أي تغيّر حالة.
   //   • SSE مقطوع ⇒ polling كل 10 ثوانٍ (السلوك القديم) + إعادة اتصال تلقائية من المتصفح.
@@ -1065,37 +1086,110 @@
     return ipm ? parseInt(ipm[1], 10) : 999999;
   }
 
-  // ── Audio Alert System ──
-  window.toggleAudioAlert = function() {
-    audioAlertEnabled = !audioAlertEnabled;
-    const btn = document.getElementById('btn-audio');
-    const icon = document.getElementById('audio-icon');
-    if (audioAlertEnabled) {
-      btn.classList.add('active');
-      icon.textContent = '🔊';
-      playAlertBeep(520, 0.15); // test sound
-    } else {
-      btn.classList.remove('active');
-      icon.textContent = '🔔';
-    }
-  };
 
-  function playAlertBeep(freq = 660, dur = 0.25) {
+  // ── Audio Alert System ──
+  // v2.12.0 — إعادة بناء التنبيه الصوتي (طلب المستخدم: «صوت أوضح وأقوى» · «يفضل مفعّل بعد
+  // الريفريش» · «إصلاح الإنذار الكاذب»). التفاصيل في CHANGELOG [2.12.0].
+  const AUDIO_PEAK = { alert: 0.22, test: 0.13 };   // كان 0.12 ثابتًا على موجة sawtooth حادّة
+
+  // نغمة واحدة: موجة sine + طبقة أوكتاف أوطى «للجسم» + مغلّف ناعم (صعود 12ms يمنع الطقطقة،
+  // وهبوط أُسّي يجعلها «جرسًا» لا «زفيرًا»). الجسم أهدأ (0.35) فيبقى الصوت نقيًّا لا مشوّشًا.
+  function playTone(freq, startAt, dur, peak) {
+    const osc = audioCtx.createOscillator();
+    const body = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    const gBody = audioCtx.createGain();
+    const t1 = startAt + dur;
+    osc.type = 'sine';
+    body.type = 'sine';
+    osc.frequency.setValueAtTime(freq, startAt);
+    body.frequency.setValueAtTime(freq / 2, startAt);
+    gBody.gain.setValueAtTime(0.35, startAt);
+    g.gain.setValueAtTime(0.0001, startAt);
+    g.gain.linearRampToValueAtTime(peak, startAt + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t1);
+    osc.connect(g);
+    body.connect(gBody);
+    gBody.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start(startAt);
+    body.start(startAt);
+    osc.stop(t1 + 0.03);
+    body.stop(t1 + 0.03);
+  }
+
+  // kind: 'alert' = انقطاع جديد (نغمتان صاعدتان 880 ثم 1174Hz) · 'test' = عند تفعيل الزر (نغمة قصيرة).
+  function playAlertBeep(kind = 'alert') {
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + dur);
+      const peak = AUDIO_PEAK[kind] || AUDIO_PEAK.alert;
+      const t0 = audioCtx.currentTime + 0.02;
+      if (kind === 'test') { playTone(660, t0, 0.14, peak); return; }
+      playTone(880, t0, 0.18, peak);
+      playTone(1174, t0 + 0.20, 0.30, peak);
     } catch (_) {}
+    // الصوت لم يُنشَّط بعد (المتصفح يمنع التشغيل قبل تفاعل المستخدم) ⇒ نُعيد شريط التنشيط بدل أن
+    // يبقى التنبيه «صامتًا» ولا يدري أحد.
+    if (audioAlertEnabled && audioCtx && audioCtx.state !== 'running') {
+      setTimeout(() => {
+        if (audioAlertEnabled && audioCtx && audioCtx.state !== 'running') armAudioUnlock();
+      }, 700);
+    }
   }
+
+  // v2.12.0 — مزامنة زر «التنبيه الصوتي» مع الحالة (عند التبديل وعند الاسترجاع بعد إعادة التحميل).
+  function syncAudioButton() {
+    const btn = document.getElementById('btn-audio');
+    const icon = document.getElementById('audio-icon');
+    if (!btn || !icon) return;
+    btn.classList.toggle('active', audioAlertEnabled);
+    icon.textContent = audioAlertEnabled ? '🔊' : '🔔';
+    btn.title = audioAlertEnabled
+      ? 'التنبيه الصوتي مُفعَّل — يصفر عند انقطاع جهاز جديد (يبقى مفعّلًا بعد إعادة التحميل)'
+      : 'تشغيل تنبيه صوتي عند انقطاع أي جهاز';
+  }
+
+  // v2.12.0 — تنشيط الصوت بعد إعادة التحميل: المتصفحات تمنع التشغيل قبل تفاعل المستخدم، فنطلب
+  // نقرة/مفتاحًا واحدًا (عبر شريط أزرق) ثم يعمل التنبيه طبيعيًّا.
+  let audioUnlockArmed = false;
+  function showAudioHint(show) {
+    const hint = document.getElementById('audio-hint');
+    if (hint) hint.classList.toggle('show', !!show);
+  }
+  function unlockAudio() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+    audioUnlockArmed = false;
+    showAudioHint(false);
+  }
+  function armAudioUnlock() {
+    if (!audioAlertEnabled || audioUnlockArmed) return;
+    audioUnlockArmed = true;
+    showAudioHint(true);
+    const once = () => {
+      document.removeEventListener('pointerdown', once, true);
+      document.removeEventListener('keydown', once, true);
+      unlockAudio();
+    };
+    document.addEventListener('pointerdown', once, true);
+    document.addEventListener('keydown', once, true);
+  }
+
+  window.toggleAudioAlert = function() {
+    audioAlertEnabled = !audioAlertEnabled;
+    try { localStorage.setItem(AUDIO_STORAGE_KEY, audioAlertEnabled ? '1' : '0'); } catch (e) {}
+    syncAudioButton();
+    if (!audioAlertEnabled) {
+      audioUnlockArmed = false;
+      showAudioHint(false);
+      return;
+    }
+    unlockAudio();                 // تفاعل المستخدم الحالي كافٍ لتنشيط الصوت فورًا
+    playAlertBeep('test');         // نغمة الاختبار — مميَّزة عن تنبيه الانقطاع الحقيقي
+  };
 
   // ── Fullscreen Toggle ──
   window.toggleFullscreen = function() {
@@ -1263,17 +1357,28 @@
     if (elLocs) elLocs.textContent = allLocations.length;
     if (elTotal) elTotal.textContent = total;
 
-    // Check for new downs and sound alert if enabled
-    if (audioAlertEnabled) {
-      const currentDownIds = new Set(allDevices.filter(d => d.status === 'offline').map(d => d.id));
+    // v2.12.0 — تنبيه «الانقطاع الجديد» بخط أساس دائم — انظر checkNewOutages أدناه.
+    checkNewOutages();
+  }
+
+  // ── v2.12.0 — كشف «الانقطاع الجديد» بخط أساس دائم ──
+  //  العيب القديم: العدّاد previousDownIds كان يُحدَّث **فقط** والصوت مُفعَّل ⇒ أول تفعيل للصوت
+  //  (أو أول دورة بعد إعادة التحميل) كان يصفّر لأجهزة واقعة من الأصل = إنذار كاذب.
+  //  الآن: خط الأساس يُحدَّث دائمًا، وأول لقطة (أو لقطة بلا بيانات) خط أساس بلا تنبيه.
+  //  السياسة القديمة محفوظة: صفارة واحدة مهما انقطع عدة أجهزة معًا (لا تكرار لنفس الانقطاع).
+  let downBaselineReady = false;
+  function checkNewOutages() {
+    const currentDownIds = new Set(allDevices.filter((d) => d.status === 'offline').map((d) => d.id));
+    const baselineOnly = !downBaselineReady || allDevices.length === 0;
+    let hasNewDown = false;
+    if (!baselineOnly) {
       for (const id of currentDownIds) {
-        if (!previousDownIds.has(id)) {
-          playAlertBeep(750, 0.4);
-          break;
-        }
+        if (!previousDownIds.has(id)) { hasNewDown = true; break; }
       }
-      previousDownIds = currentDownIds;
     }
+    previousDownIds = currentDownIds;
+    downBaselineReady = allDevices.length > 0;
+    if (!baselineOnly && hasNewDown && audioAlertEnabled) playAlertBeep('alert');
   }
 
   // ── 1. RENDER HERO BACKBONE UPLINK ──
@@ -2185,6 +2290,15 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDeviceDetails(); });
   })();
   tick();
+  // v2.12.0 — استرجاع حالة «التنبيه الصوتي» المحفوظة (كانت تُفقد مع كل إعادة تحميل ⇒ تفعيل يدوي كل مرة).
+  (function restoreAudioAlert() {
+    let saved = '0';
+    try { saved = localStorage.getItem(AUDIO_STORAGE_KEY) || '0'; } catch (e) {}
+    audioAlertEnabled = (saved === '1');
+    syncAudioButton();
+    if (audioAlertEnabled) armAudioUnlock();   // الصوت يحتاج تفاعلًا واحدًا بعد إعادة التحميل
+  })();
+
   // v2.8.7 — polling أوّلي 10 ثوانٍ + خط بثّ حيّ (SSE) يضبط الإيقاع حسب حالة الاتصال.
   setPollInterval(10000);
   connectLive();
