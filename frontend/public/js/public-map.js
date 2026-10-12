@@ -114,39 +114,83 @@
   }
 
   // ═══ render markers ═══
-  // ✅ v2.11.0 — «خريطة المواقع» في الصفحة العامة تُبنى من **map_parent_id** («يتبع») — رابط
-  //   مستقل عن parent_id («متصل عبر» في سلسلة الشبكة) — وترتيب الأشقّاء من sort_order.
+  // ✅ v2.12.1 — قاعدتان في بناء شجرة الخريطة:
+  //   1) الأب الفعّال لكل موقع: «يتبع» (map_parent_id) صراحةً ⇐ هو · وإلا **طابق/غرفة/خزانة** ⇐
+  //      أب السلسلة (parent_id — العقدة التي تُحويه في شجرة الخادم) · وإلا (مبنى/موقع) ⇐ بطاقة مستقلة.
+  //      السبب: بلا «يتبع» مضبوط كان كل موقع — حتى الطوابق — بطاقة مستقلة، فتبدو الخريطة مسطَّحة
+  //      بينما العدّاد تراكمي على السلسلة.
+  //   2) العدّاد يُعاد حسابه على شجرة الخريطة نفسها ⇒ الرقم فوق البطاقة = بالضبط ما داخلها.
+  //   وترتيب الأشقّاء من sort_order ثم الاسم.
+  const MAP_NESTED_KINDS = { floor: 1, room: 1, rack: 1 };
+
   function buildMapTree(list) {
     const all = [];
-    (function walk(nodes) {
+    // أب السلسلة لكل عقدة (كما هي مُتداخِلة في شجرة الخادم: parent_id) — يلزم لقاعدة الاحتواء الافتراضية.
+    const chainParent = new Map();
+    (function walk(nodes, parent) {
       for (const n of nodes) {
         if (!n || n.kind === 'device') continue;
         all.push(n);
-        walk(Array.isArray(n.children) ? n.children : []);
+        if (parent) chainParent.set(String(n.id), parent);
+        walk(Array.isArray(n.children) ? n.children : [], n);
       }
-    })(list || []);
+    })(list || [], null);
+
     const byId = new Map(all.map((n) => [String(n.id), n]));
+
+    // 1) الأب الفعّال: «يتبع» (map_parent_id) صراحةً ⇐ هو · وإلا **طابق/غرفة/خزانة** ⇐ أب السلسلة
+    //    (فتدخل داخل بطاقة المبنى/الموقع كما كانت) · وإلا (مبنى/موقع…) ⇐ بطاقة مستقلة.
+    const parentOf = new Map();
+    for (const n of all) {
+      const explicit = n.map_parent_id != null ? byId.get(String(n.map_parent_id)) : null;
+      const chain = MAP_NESTED_KINDS[n.kind] ? chainParent.get(String(n.id)) : null;
+      const p = (explicit && explicit !== n) ? explicit : (chain || null);
+      parentOf.set(String(n.id), (p && p.kind !== 'device') ? p : null);
+    }
+    // كسر أي دائرة (موقع معلَّق تحت أحد أبنائه) ⇒ بطاقة مستقلة بدل حلقة لا تنتهي.
+    for (const n of all) {
+      const seen = new Set();
+      let cur = n;
+      while (cur && !seen.has(String(cur.id))) {
+        seen.add(String(cur.id));
+        cur = parentOf.get(String(cur.id)) || null;
+      }
+      if (cur) parentOf.set(String(n.id), null);
+    }
+
+    // 2) التجميع + الترتيب + إعادة حساب العدّادات قاعًا لأعلى: كل عقدة = أجهزتها المباشِرة + عدّادات
+    //    أقسامها ⇒ الرقم فوق أي بطاقة = بالضبط عدد الأجهزة الظاهرة داخلها.
     const childrenOf = new Map();
     const roots = [];
     for (const n of all) {
-      const mp = n.map_parent_id != null ? byId.get(String(n.map_parent_id)) : null;
-      if (mp && mp !== n) {
-        if (!childrenOf.has(String(mp.id))) childrenOf.set(String(mp.id), []);
-        childrenOf.get(String(mp.id)).push(n);
+      const p = parentOf.get(String(n.id));
+      if (p) {
+        if (!childrenOf.has(String(p.id))) childrenOf.set(String(p.id), []);
+        childrenOf.get(String(p.id)).push(n);
       } else {
         roots.push(n);
       }
     }
     const byOrder = (a, b) => (Number(a.sort_order || 0) - Number(b.sort_order || 0))
       || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
-    const sortDeep = (node) => {
+    const layout = (node) => {
       const devices = (Array.isArray(node.children) ? node.children : []).filter((c) => c && c.kind === 'device');
       const subs = (childrenOf.get(String(node.id)) || []).slice().sort(byOrder);
       node.children = devices.concat(subs);
-      subs.forEach(sortDeep);
+      let dc = devices.length, on = 0, off = 0, unk = 0;
+      for (const d of devices) {
+        if (d.status === 'online') on += 1;
+        else if (d.status === 'offline') off += 1;
+        else unk += 1;
+      }
+      for (const s of subs) {
+        const c = layout(s);
+        dc += c.device_count; on += c.online; off += c.offline; unk += c.unknown;
+      }
+      node.device_count = dc; node.online = on; node.offline = off; node.unknown = unk;
       return node;
     };
-    roots.forEach(sortDeep);
+    roots.forEach(layout);
     return roots.sort(byOrder);
   }
   // بناء HTML لِـ شَبكة البطاقات مِن الجذر (نَفس منطق admin renderZonesGrid، بِلا فلترة
