@@ -54,7 +54,7 @@ jobs:
           cat SHA256SUMS.txt
 
       - name: Upload artifact (ISO + checksums)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: appliance-iso
           path: |
