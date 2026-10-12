@@ -225,19 +225,18 @@
     transform-origin: 100% 0; transition: transform 0.15s ease-out;
   }
   #map-board-inner svg.mv-links { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-  .map-controls {
-    position: absolute; bottom: 18px; left: 18px; z-index: 25;
-    display: flex; gap: 6px; background: rgba(15,23,42,0.88); backdrop-filter: blur(10px);
-    border: 1px solid var(--border-color); border-radius: 10px; padding: 6px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  /* v2.11.5 — أزرار العرض (تكبير/تصغير/إرجاع/ملاءمة) انتقلت إلى رأس القسم في الأعلى
+     مثل لوحة التحكم (كانت عائمة أسفل يسار اللوحة: position:absolute; bottom:18px). */
+  .chain-zoom-controls {
+    display: flex; gap: 4px; align-items: center; flex: 0 0 auto;
   }
-  .map-controls.at-right { left: auto; right: 18px; }
   .map-btn {
     background: #1e293b; color: #f8fafc; border: 1px solid #334155;
-    border-radius: 6px; width: 34px; height: 34px; font-size: 1.1rem;
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-    font-weight: 700; transition: all 0.15s ease;
+    border-radius: 6px; min-width: 34px; height: 34px; padding: 0 8px;
+    font-size: 1.05rem; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-weight: 700; transition: all 0.15s ease;
   }
+  .map-btn.wide { width: auto; padding: 0 11px; font-size: 0.88rem; }
   .map-btn:hover { background: #334155; border-color: #38bdf8; }
 
   /* Map Cards */
@@ -463,8 +462,7 @@
     background: repeating-conic-gradient(rgba(15,23,42,0.022) 0% 25%, transparent 0% 50%) 50% / 28px 28px #fbfcfe;
     box-shadow: inset 0 0 30px rgba(15,23,42,0.05);
   }
-  html.noc-day .map-controls { background: rgba(255,255,255,0.92); }
-  html.noc-day .map-btn { background: #ffffff; color: #334155; border-color: #d7e0ee; }
+    html.noc-day .map-btn { background: #ffffff; color: #334155; border-color: #d7e0ee; }
   html.noc-day .map-btn:hover { background: #eef4fc; border-color: #0284c7; }
   html.noc-day .mv-card.loc { background: linear-gradient(180deg, #ffffff, #f7fafd); border-color: #cbd5e1; box-shadow: 0 4px 16px rgba(15,23,42,0.10); }
   html.noc-day .mv-head { background: rgba(15,23,42,0.03); border-bottom-color: rgba(15,23,42,0.08); }
@@ -814,7 +812,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.11.4</span>
+        <span class="tag">Network Operations Center v2.11.5</span>
       </div>
     </div>
     <div class="header-actions">
@@ -921,6 +919,13 @@
         <span>✏️ التخطيط المرسوم (لوحة «وضع الرسم» — كما رسمها الأدمن)</span>
         <span class="badge" id="draw-locs-count">—</span>
         <div class="bar"></div>
+        <!-- v2.11.5 — أزرار العرض في الأعلى مثل لوحة التحكم (كانت عائمة أسفل اللوحة) -->
+        <div class="chain-zoom-controls" role="group" aria-label="تكبير وتصغير وملاءمة اللوحة">
+          <button type="button" class="map-btn" id="draw-zoom-in" title="تكبير" onclick="zoomMap(0.15)">+</button>
+          <button type="button" class="map-btn" id="draw-zoom-out" title="تصغير" onclick="zoomMap(-0.15)">−</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-reset" title="إعادة ضبط 100%" onclick="resetMapZoom()">↺ 100%</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-fit" title="ملاءمة الشاشة" onclick="fitMapToScreen()">⛶ عرض كامل</button>
+        </div>
       </div>
       <div class="map-container">
         <div id="draw-empty-note" class="noc-board-note" hidden>
@@ -931,12 +936,6 @@
             <svg class="mv-links" width="2800" height="1450" xmlns="http://www.w3.org/2000/svg" id="map-svg-links"></svg>
             <div id="map-cards-container"></div>
           </div>
-        </div>
-        <div class="map-controls">
-          <button class="map-btn" onclick="zoomMap(0.15)" title="تكبير">+</button>
-          <button class="map-btn" onclick="zoomMap(-0.15)" title="تصغير">−</button>
-          <button class="map-btn" onclick="resetMapZoom()" title="إعادة ضبط">↺</button>
-          <button class="map-btn" onclick="fitMapToScreen()" title="ملاءمة الشاشة" style="font-size:0.85rem">⛶</button>
         </div>
       </div>
     </section>
