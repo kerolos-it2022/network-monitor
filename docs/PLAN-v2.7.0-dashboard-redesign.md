@@ -341,7 +341,7 @@ bash -n deploy.sh
 - [ ] `confirmAction()` مُستَعمِل بدَل `confirm()` في أَيّ popup تَعديل في كلّ `admin-*.js` المُتَأَثر.
 - [ ] `node --check` PASS على كلّ JS.
 - [ ] الالتزام `feat(ui): v2.7.0 — sidebar + map polish + uptime bar + history cleanup + confirm popups` + tag `v2.7.0`.
-- [ ] تَحديث `HANDOFF.md` + `docs/PLAN-map-grid-view.md` (نَقل باقي نَقاط v2.7.0) + هذا الملف.
+- [ ] تَحديث `docs/sessions/HANDOFF.md` + `docs/PLAN-map-grid-view.md` (نَقل باقي نَقاط v2.7.0) + هذا الملف.
 
 ---
 

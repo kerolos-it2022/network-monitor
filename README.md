@@ -171,7 +171,7 @@ pm2 delete network-monitor    # إزالة من PM2
 | [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي خطوة بخطوة (بدون سكريبت) |
 | [`DEPLOY.md`](./DEPLOY.md) | نشر إنتاجي كامل (Nginx, HTTPS, Firewall, Backup) |
 | [`linux-setup/`](./linux-setup/) | ملفات systemd + Nginx جاهزة (بديل عن PM2) |
-| [`APPLIANCE-HANDOFF.md`](./APPLIANCE-HANDOFF.md) | صورة الأبلاينس (ISO): البناء، التنصيب، والتشخيص |
+| [`docs/sessions/APPLIANCE-HANDOFF.md`](./docs/sessions/APPLIANCE-HANDOFF.md) | صورة الأبلاينس (ISO): البناء، التنصيب، والتشخيص |
 | [`appliance/boot-test/e2e.sh`](./appliance/boot-test/e2e.sh) | اختبار تنصيب كامل آليًّا في QEMU |
 
 ---
@@ -354,12 +354,11 @@ network-monitor/
 │   ├── config/includes.chroot/etc/systemd/system/nm-update.{path,service}
 │   └── boot-test/e2e.sh      # تنصيب آلي كامل في QEMU
 ├── linux-setup/              # ملفات systemd + Nginx (بديل عن PM2)
+├── docs/                     # التوثيق: plans/ (مخططات الميزات) + sessions/ (تقارير الجلسات)
 ├── ecosystem.config.js       # إعدادات PM2
-├── PROGRESS.md               # سجل تقدم البناء
 ├── CHANGELOG.md              # سجل التغييرات (Keep a Changelog)
-├── HANDOFF.md                # حالة المشروع للمتابعة بين الجلسات
-├── APPLIANCE-HANDOFF.md      # حالة الأبلاينس/الـ ISO
 ├── DEPLOY.md                 # دليل النشر المفصل
+├── LICENSE                   # رخصة مغلقة — جميع الحقوق محفوظة
 ├── deploy.sh                 # سكريبت النشر التلقائي
 ├── update.sh                 # سكريبت التحديث التلقائي
 └── .github/
@@ -469,7 +468,7 @@ curl http://localhost:4000/api/health
 | الانتقال إلى PostgreSQL | 📋 مخطط | عند النمو |
 | مهلة هدوء (cooldown) للإشعارات | 📋 مخطط | متوسطة |
 
-> انظر [`PROGRESS.md`](./PROGRESS.md) و [`CHANGELOG.md`](./CHANGELOG.md) لتفاصيل ما تم تنفيذه وما تأجل.
+> انظر [`docs/sessions/PROGRESS.md`](./docs/sessions/PROGRESS.md) و [`CHANGELOG.md`](./CHANGELOG.md) لتفاصيل ما تم تنفيذه وما تأجل.
 
 ---
 
@@ -478,10 +477,10 @@ curl http://localhost:4000/api/health
 | الملف | الوصف |
 |-------|---------|
 | [`CHANGELOG.md`](./CHANGELOG.md) | سجل التغييرات الكامل (Keep a Changelog) |
-| [`HANDOFF.md`](./HANDOFF.md) | حالة المشروع الكاملة + خطوات الجلسة التالية |
-| [`APPLIANCE-HANDOFF.md`](./APPLIANCE-HANDOFF.md) | حالة الأبلاينس/الـ ISO وتشخيصه |
+| [`docs/sessions/`](./docs/sessions/) | تقارير الجلسات (HANDOFF · PROGRESS · APPLIANCE-HANDOFF · دليل الترقية) — ابدأ بـ [`HANDOFF.md`](./docs/sessions/HANDOFF.md) |
+| [`docs/sessions/APPLIANCE-HANDOFF.md`](./docs/sessions/APPLIANCE-HANDOFF.md) | حالة الأبلاينس/الـ ISO وتشخيصه |
 | [`DEPLOY.md`](./DEPLOY.md) | دليل النشر المفصل (Nginx، HTTPS، Firewall، Backup) |
-| [`PROGRESS.md`](./PROGRESS.md) | سجل تقدم البناء |
+| [`docs/sessions/PROGRESS.md`](./docs/sessions/PROGRESS.md) | سجل تقدم البناء |
 | [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي على Linux خطوة بخطوة |
 | [`deploy.sh`](./deploy.sh) | سكريبت النشر التلقائي |
 | [`update.sh`](./update.sh) | سكريبت التحديث التلقائي |
@@ -508,7 +507,9 @@ curl http://localhost:4000/api/health
 
 ## 📄 **الترخيص**
 
-هذا المشروع مرخص تحت رخصة **MIT** - راجع ملف [LICENSE](LICENSE) للتفاصيل.
+هذا المشروع **مملوك — جميع الحقوق محفوظة**. الكود منشور في مستودع عام للاطّلاع والمراجعة فقط،
+ولا يُمنح أي حق في استخدامه أو نسخه أو تعديله أو توزيعه أو بيعه — كليًّا أو جزئيًّا — دون إذن
+كتابي مسبق من صاحب الحقوق. راجع ملف [LICENSE](LICENSE) للنص الكامل.
 
 ---
 

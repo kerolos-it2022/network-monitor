@@ -223,7 +223,7 @@ bash -n deploy.sh
 - [ ] الثيم اللَيلي + RTL + mobile responsive مُختبَرة.
 - [ ] `node --check` PASS على كل JS.
 - [ ] الالتزام `feat(map): v2.6.0 — zones grid view + public map view` + tag `v2.6.0`.
-- [ ] تَحديث `PLAN-map-tab-polish.md` (نَقل نَقاط v2.6.0) + `HANDOFF.md` بِـ صaison v2.6.0.
+- [ ] تَحديث `PLAN-map-tab-polish.md` (نَقل نَقاط v2.6.0) + `docs/sessions/HANDOFF.md` بِـ صaison v2.6.0.
 
 ---
 
