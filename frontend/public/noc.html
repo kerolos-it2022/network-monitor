@@ -840,7 +840,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.12.1</span>
+        <span class="tag">Network Operations Center v2.12.2</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1062,6 +1062,31 @@
     'Printer':      { icon: '🖨️', title: 'الطابعات وماكينات التصوير (Printers & Scanners)', order: 6 },
     'Other':        { icon: '📌', title: 'أجهزة وأنظمة أخرى (Other Devices)', order: 7 }
   };
+
+  // v2.12.2 — تصنيف الأنواع بكلمات مفتاحية (بدل المطابقة الحرفية فقط).
+  // جذر المشكلة: أي نوع غير مذكور حرفيًّا في TYPE_CONFIG يسقط في «أخرى» — ومنها «Router»
+  // الموجود في مخطط المشروع نفسه — فتظهر الراوترات/البوابات في «أجهزة وأنظمة أخرى»
+  // بدل «🛡️ جدار الحماية والبوابات». المطابقة الحرفية لها الأولوية، ثم الكلمات المفتاحية
+  // (تشمل أنواعًا عربية/إنجليزية يضيفها المستخدم: MikroTik · Sophos · بوابة · راوتر…).
+  const TYPE_KEYWORDS = [
+    ['Firewall',     ['firewall', 'gateway', 'router', 'modem', 'sophos', 'mikrotik', 'fortigate', 'pfsense', 'edge router', 'جدار', 'بوابة', 'راوتر', 'موجه', 'موجّه', 'ميكروتيك']],
+    ['Server',       ['server', 'سيرفر', 'خادم', 'synology', 'qnap', 'esxi', 'vmware', 'hypervisor', 'nas', 'domain controller', 'active directory']],
+    ['Switch',       ['switch', 'سويتش', 'موزع', 'موزّع']],
+    ['Access Point', ['access point', 'accesspoint', 'access-point', 'wifi', 'wi-fi', 'واي فاي', 'لاسلكي', 'unifi', 'omada']],
+    ['NVR/DVR',      ['nvr', 'dvr', 'camera', 'كاميرا', 'hikvision', 'dahua', 'تسجيل']],
+    ['Printer',      ['printer', 'scanner', 'plotter', 'طابعة', 'ماسح', 'تصوير']],
+  ];
+
+  function resolveTypeKey(rawName) {
+    if (!rawName) return 'Other';
+    if (TYPE_CONFIG[rawName]) return rawName;   // مطابقة تامة (الأولوية للاسم المعروف)
+    const n = String(rawName).toLowerCase();
+    for (let i = 0; i < TYPE_KEYWORDS.length; i++) {
+      const key = TYPE_KEYWORDS[i][0];
+      if (TYPE_KEYWORDS[i][1].some((w) => n.includes(w))) return key;
+    }
+    return 'Other';
+  }
 
   const KIND_LABELS = {
     'building': '🏢 مبنى إداري',
@@ -2036,8 +2061,9 @@
       if (statusFilter === 'down' && d.status !== 'offline') continue;
       if (statusFilter === 'up' && d.status !== 'online') continue;
 
-      const rawType = d.device_type_name || 'Other';
-      const typeKey = TYPE_CONFIG[rawType] ? rawType : 'Other';
+      // v2.12.2 — تصنيف مرن: مطابقة تامة ثم كلمات مفتاحية (كانت الأنواع غير المذكورة
+      // حرفيًّا — ومنها «Router» — تسقط في «أخرى»).
+      const typeKey = resolveTypeKey(d.device_type_name);
 
       if (!groups.has(typeKey)) groups.set(typeKey, []);
       groups.get(typeKey).push(d);

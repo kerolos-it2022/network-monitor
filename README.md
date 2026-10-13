@@ -1,15 +1,15 @@
 # 📡 نظام مراقبة أجهزة الشبكة المحلية - Network Monitor
 
-[![Version](https://img.shields.io/badge/version-2.12.0-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![Version](https://img.shields.io/badge/version-2.12.2-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
 > **نظام مراقبة احترافي** لأجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات...) مع مراقبة لحظية، إدارة شاملة، وإشعارات فورية عبر **Telegram** و **WhatsApp** و **تطبيق الموبايل (PWA)**.
 
-> 🌟 **الإصدار الحالي: v2.12.0** — **تنبيه صوتي أوضح وأقوى في شاشة NOC**: نغمات نقيّة (880 ثم 1174Hz بموجة sine + جسم) بدل الصفارة الحادّة القديمة، و**التنبيه يبقى مفعّلًا بعد إعادة التحميل** (مع شريط تنشيط بنقرة واحدة لأن المتصفحات تمنع الصوت قبل تفاعل المستخدم)، و**إصلاح إنذار كاذب** كان يصفّر لأجهزة واقعة من الأصل — وسياسة «صفارة واحدة عند الانقطاع الجديد فقط» كما هي.
-> وقبلها: **v2.11.9** (مراقب محرك المراقبة: نبضة لكل دورة + كشف الفحوصات العالقة + حراسة خارجية `nm-healthcheck`) · **v2.11.8** (إعادة تشغيل الجهاز بالكامل بعد اكتمال التحديث + حالة rebooting) · **v2.11.7** (خطة «🔍 اكتشاف الأجهزة» كاملة + إصلاح عيبَي الاعتماد) · **v2.10.0** (صفحة التحديثات المنظّمة + الرجوع لإصدار) · **v2.9.0** (الوصول عن بُعد/ngrok) · **v2.8.9** (إشارة انقطاع متدرّجة) · **v2.8.8** (نقر الجهاز في التخطيط المرسوم) · **v2.8.7** (بثّ SSE + تحديث أبلاينس آمن).
+> 🌟 **الإصدار الحالي: v2.12.2** — **تصنيف الأجهزة في «الأجهزة حسب النوع» بشاشة NOC**: أي نوع يضيفه المستخدم (Router · MikroTik · Gateway-ISP · راوتر-المبنى · NAS-Storage · IP-Camera …) صار يدخل قسمه الصحيح بدل السقوط في «📌 أجهزة وأنظمة أخرى» (كان التصنيف يطابق سبعة أسماء **حرفيًّا** فقط). مثال من بيانات التحقيق: «🛡️ جدار الحماية والبوابات» صار يجمع **5 أجهزة** بدل جهاز واحد، و«أخرى» نزلت من 7 أجهزة إلى جهاز واحد.
+> وقبلها: **v2.12.1** (إصلاح عدّادات «خريطة المباني/المواقع» في NOC والشاشة الرئيسية: الرقم فوق كل بطاقة = عدد الأجهزة داخلها فعلًا) · **v2.12.0** (تنبيه صوتي أوضح وأقوى في شاشة NOC: نغمات نقيّة + يبقى مفعّلًا بعد إعادة التحميل + إصلاح إنذار كاذب) · **v2.11.9** (مراقب محرك المراقبة: نبضة لكل دورة + كشف الفحوصات العالقة + حراسة خارجية `nm-healthcheck`) · **v2.11.8** (إعادة تشغيل الجهاز بالكامل بعد اكتمال التحديث + حالة rebooting) · **v2.11.7** (خطة «🔍 اكتشاف الأجهزة» كاملة + إصلاح عيبَي الاعتماد) · **v2.10.0** (صفحة التحديثات المنظّمة + الرجوع لإصدار) · **v2.9.0** (الوصول عن بُعد/ngrok) · **v2.8.9** (إشارة انقطاع متدرّجة) · **v2.8.8** (نقر الجهاز في التخطيط المرسوم).
 
 ---
 
@@ -179,7 +179,7 @@ pm2 delete network-monitor    # إزالة من PM2
 ## 💿 **صورة الأبلاينس (Appliance ISO)**
 
 - تُبنى تلقائيًّا عبر [`.github/workflows/build-iso.yml`](.github/workflows/build-iso.yml) عند دفع أي **وسم** `v*` (وتُرفَق بالـ Release مع ملف `SHA256SUMS.txt`)، أو يدويًّا.
-- بناء محلي: `cd appliance && NM_VERSION=v2.9.0 bash build.sh` (داخل حاوية `debian:bookworm`).
+- بناء محلي: `cd appliance && NM_VERSION=v2.12.2 bash build.sh` (داخل حاوية `debian:bookworm`).
 - على النظام المثبَّت: خدمة `network-monitor` تعمل كمستخدم `netmon` مع تحصين systemd
   (`ProtectSystem=strict` + `NoNewPrivileges` + `PrivateTmp`)، والتحديث يتم عبر **مساعد root منفصل**:
   لوحة التحكم تكتب **ملف طلب** يحوي وسماً فقط ⇒ `nm-update.path` يُشغّل `nm-update.service` (root) ⇒
