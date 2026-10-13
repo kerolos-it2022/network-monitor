@@ -840,7 +840,7 @@
       <span class="brand-icon">🖥️</span>
       <div>
         <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag">Network Operations Center v2.12.2</span>
+        <span class="tag">Network Operations Center v2.12.3</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1068,8 +1068,11 @@
   // الموجود في مخطط المشروع نفسه — فتظهر الراوترات/البوابات في «أجهزة وأنظمة أخرى»
   // بدل «🛡️ جدار الحماية والبوابات». المطابقة الحرفية لها الأولوية، ثم الكلمات المفتاحية
   // (تشمل أنواعًا عربية/إنجليزية يضيفها المستخدم: MikroTik · Sophos · بوابة · راوتر…).
+  // v2.12.3 — (طلب المستخدم: «أجهزة ISP مش بيدخلو تحت 🛡️ جدار الحماية والبوابات»): كلمات خط
+  // الإنترنت أُضيفت إلى قسم الجدار — وبعضها قصير جدًّا (isp · ont · olt) فتُطابَق الكلمات
+  // اللاتينية عند **بداية الكلمة** فقط (انظر typeKeywordHit) فلا تُصطاد داخل كلمات أخرى.
   const TYPE_KEYWORDS = [
-    ['Firewall',     ['firewall', 'gateway', 'router', 'modem', 'sophos', 'mikrotik', 'fortigate', 'pfsense', 'edge router', 'جدار', 'بوابة', 'راوتر', 'موجه', 'موجّه', 'ميكروتيك']],
+    ['Firewall',     ['firewall', 'gateway', 'router', 'modem', 'isp', 'wan', 'uplink', 'internet', 'fiber', 'fibre', 'gpon', 'ont', 'olt', 'lte', 'sophos', 'mikrotik', 'fortigate', 'pfsense', 'edge router', 'جدار', 'بوابة', 'راوتر', 'موجه', 'موجّه', 'ميكروتيك', 'مودم', 'فايبر', 'ألياف', 'مزود الخدمة', 'خط الإنترنت', 'إنترنت']],
     ['Server',       ['server', 'سيرفر', 'خادم', 'synology', 'qnap', 'esxi', 'vmware', 'hypervisor', 'nas', 'domain controller', 'active directory']],
     ['Switch',       ['switch', 'سويتش', 'موزع', 'موزّع']],
     ['Access Point', ['access point', 'accesspoint', 'access-point', 'wifi', 'wi-fi', 'واي فاي', 'لاسلكي', 'unifi', 'omada']],
@@ -1077,13 +1080,28 @@
     ['Printer',      ['printer', 'scanner', 'plotter', 'طابعة', 'ماسح', 'تصوير']],
   ];
 
+  // مطابقة كلمة مفتاحية واحدة: الكلمات اللاتينية تُطابَق عند **بداية الكلمة** فقط
+  // (‏«isp» ⇒ ISP · ISP-Link · ISP Fiber) لا في وسطها (‏«Display» · «Dispatcher» لا تُطابق
+  // isp، و«Front-Desk PC» لا تُطابق ont)، والكلمات العربية تُطابَق مباشرة («بوابة إنترنت» بها
+  // «بوابة»). السبب: كلمات قصيرة مثل isp · ont · olt بلا هذا القيد كانت ستسحب أجهزة لا علاقة
+  // لها بقسم الجدار.
+  function typeKeywordHit(n, w) {
+    if (!/^[a-z0-9 ._-]+$/.test(w)) return n.includes(w);
+    let at = n.indexOf(w);
+    while (at >= 0) {
+      if (at === 0 || !/[a-z0-9]/.test(n.charAt(at - 1))) return true;
+      at = n.indexOf(w, at + 1);
+    }
+    return false;
+  }
+
   function resolveTypeKey(rawName) {
     if (!rawName) return 'Other';
     if (TYPE_CONFIG[rawName]) return rawName;   // مطابقة تامة (الأولوية للاسم المعروف)
     const n = String(rawName).toLowerCase();
     for (let i = 0; i < TYPE_KEYWORDS.length; i++) {
       const key = TYPE_KEYWORDS[i][0];
-      if (TYPE_KEYWORDS[i][1].some((w) => n.includes(w))) return key;
+      if (TYPE_KEYWORDS[i][1].some((w) => typeKeywordHit(n, w))) return key;
     }
     return 'Other';
   }
