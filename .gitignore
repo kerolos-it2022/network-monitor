@@ -51,6 +51,9 @@ appliance/.build/
 appliance/build.log
 appliance/live-image-*
 appliance/*.iso
+# v2.12.2 — ملف `SHA256SUMS.txt` يتولّد من جديد داخل الـ CI لكل إصدار (`sha256sum *.iso >`)
+# ويُرفق بالـ Release؛ فالنسخة المتعقّبة في المستودع كانت بقايا بناء قديمة (هاش v2.8.7).
+appliance/SHA256SUMS.txt
 
 # GUI test screenshots (local testing artifacts)
 gui-test-screenshots/
