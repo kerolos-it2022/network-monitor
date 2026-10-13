@@ -578,7 +578,10 @@ async function init() {
       try {
         var vRes = await fetchApi("/api/notifications/vapid-public");
         if (!vRes.success || !vRes.data || !vRes.data.publicKey) {
-          alert("⚠️ الإشعارات غير مُهيّأة على الخادم. اطلب من المدير ضبط VAPID keys في .env");
+          // v2.13.0 — الخادم يولّد مفاتيح VAPID ويحفظها تلقائيًّا عند غيابها، فوصل هذه
+          // الرسالة يعني أن التوليد نفسه لم ينجح (صلاحيات ملف الإعدادات/مساحة قرص) —
+          // لِذا نُوجّه المدير إلى سجل الخدمة لا إلى خطوة يدوية مجهولة.
+          alert("⚠️ إشعارات الموبايل غير مُهيّأة على الخادم: لا توجد مفاتيح VAPID ولم يتيسّر توليدها تلقائيًّا.\nاطلب من المدير مراجعة سجل الخدمة ثم إضافة VAPID_PUBLIC_KEY و VAPID_PRIVATE_KEY إلى ملف إعدادات الخدمة وإعادة التشغيل.");
           updateNotifyBtnState();
           return;
         }

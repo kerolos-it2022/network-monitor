@@ -3,7 +3,9 @@
 //   1) تركيب مسار البثّ الحيّ SSE: /api/live/status  (سطران: require + app.use).
 //   2) سطر مفتاح الجلسة: إزالة القيمة الافتراضية النصّية (سرّ معروف للجميع) واستعمال
 //      SESSION_SECRET من .env، ولو غير مُعرَّف يُولَّد مفتاح عشوائي عند الإقلاع.
-require('dotenv').config();
+// v2.13.0 — تحميل .env عبر config/env: المسار محسوب نسبةً إلى الكود (backend/.env)
+// بدل الاعتماد على مجلد العمل الحالي (كان تشغيل الخادم من جذر المستودع يُبقيه بلا .env).
+require('./config/env');
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
@@ -135,6 +137,15 @@ try {
   console.error('Database connection FAILED:', e.message);
   console.error('تأكد من تنفيذ database/schema.sql وتعيين DB_PATH في .env');
   process.exit(1);
+}
+
+// v2.13.0 — ضمان مفاتيح Web Push (VAPID) قبل قبول أي طلب: تُولَّد تلقائيًّا وتُحفظ
+// في ملف إعدادات الخدمة عند غيابها، فلا تظهر رسالة «الإشعارات غير مُهيّأة على الخادم»
+// على الأجهزة التي لم يولّد مثبّتها مفاتيح (الأبلاينس).
+try {
+  require('./services/vapid.service').ensureVapidKeys();
+} catch (e) {
+  console.error('[vapid] فشل ضمان مفاتيح Web Push:', e.message);
 }
 
 app.listen(PORT, () => {

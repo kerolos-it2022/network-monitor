@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS notification_logs (
     channel TEXT NOT NULL,        -- 'telegram' | 'whatsapp' | 'mobile'
     message TEXT NOT NULL,
     status TEXT NOT NULL,         -- 'sent' | 'failed'
+    error TEXT,                   -- v2.13.0 — سبب الفشل كما ردّه المزوّد (NULL عند النجاح)
     sent_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE SET NULL
 );

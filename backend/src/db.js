@@ -1,5 +1,6 @@
 // db.js: يفتح اتصال better-sqlite3 ويُفعّل مفاتيح أجنبية، ويُصدّره لباقي الوحدات.
-require('dotenv').config();
+// v2.13.0 — تحميل .env عبر config/env (مسار محدَّد نسبةً للكود لا لمجلد العمل).
+require('./config/env');
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
@@ -67,6 +68,9 @@ try {
       // v2.11.7: مصدر المسح (source) في scan_runs — 'scheduled' (المجدول، الافتراضي) أو 'manual'
       // (المسح اليدوي من شاشة «🔍 اكتشاف الأجهزة») ⇒ يَظهر تاريخ المسحات اليدوية في «⏱️ المسح الدوري».
       "ALTER TABLE scan_runs ADD COLUMN source TEXT NOT NULL DEFAULT 'scheduled'",
+      // v2.13.0: سبب فشل الإرسال في notification_logs — بدونه كان الفشل يظهر في
+      // السجل كـ «فشل» بلا تفسير (مثال تلجرام: «chat not found» / «bot was blocked»).
+      "ALTER TABLE notification_logs ADD COLUMN error TEXT",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

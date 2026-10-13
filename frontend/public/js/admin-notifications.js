@@ -6,20 +6,35 @@ async function loadNotificationSettings() {
   const r = await api('/api/notifications/settings');
   if (!r.success) return;
   const d = r.data;
+  const src = d.sources || {};
+  // v2.13.0 — placeholder واعٍ بالمصدر: لو الحقل فارغ في القاعدة لكن الاعتماد يعمل
+  // من .env فلا نقول «غير مضبوط» بل نوضّح من أين يُقرأ (لأن sendTelegram/WhatsApp
+  // يقبلان الرجوع إلى متغيّرات البيئة الآن).
+  const placeholderFor = (masked, from, envName) => {
+    if (masked) return masked;
+    if (from === 'env') return 'يُقرأ من ' + envName + ' في .env — اكتب قيمة هنا لاستبداله';
+    return 'غير مضبوط';
+  };
   document.getElementById('ntf-telegram_enabled').checked = !!d.telegram_enabled;
   // نعرض المفتاح المقنّع فقط كـ placeholder؛ المستخدم يمكنه إدخال قيمة جديدة.
-  document.getElementById('ntf-telegram_bot_token').placeholder = d.telegram_bot_token || 'غير مضبوط';
+  document.getElementById('ntf-telegram_bot_token').placeholder = placeholderFor(d.telegram_bot_token, src.telegram_bot_token, 'TELEGRAM_BOT_TOKEN');
   document.getElementById('ntf-telegram_bot_token').value = '';
   document.getElementById('ntf-telegram_chat_id').value = d.telegram_chat_id || '';
   document.getElementById('ntf-whatsapp_enabled').checked = !!d.whatsapp_enabled;
   document.getElementById('ntf-whatsapp_api_url').value = d.whatsapp_api_url || '';
-  document.getElementById('ntf-whatsapp_api_token').placeholder = d.whatsapp_api_token || 'غير مضبوط';
+  document.getElementById('ntf-whatsapp_api_token').placeholder = placeholderFor(d.whatsapp_api_token, src.whatsapp_api_token, 'WHATSAPP_API_TOKEN');
   document.getElementById('ntf-whatsapp_api_token').value = '';
   document.getElementById('ntf-whatsapp_to_number').value = d.whatsapp_to_number || '';
   // إعدادات الموبايل/FCM
   document.getElementById('ntf-mobile_enabled').checked = !!d.mobile_enabled;
   document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
   document.getElementById('ntf-fcm_server_key').value = '';
+  // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
+  const vapidEl = document.getElementById('ntf-status');
+  if (vapidEl && d.vapid_public_key_ready === false) {
+    vapidEl.style.color = 'var(--offline)';
+    vapidEl.textContent = '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.';
+  }
 }
 
 async function saveNotificationSettings() {
@@ -58,23 +73,45 @@ async function saveNotificationSettings() {
   }
 }
 
-// إرسال إشعار تجريبي للتسجيلات النشطة
+// إرسال إشعار تجريبي عبر القنوات المفعّلة
+// v2.13.0 — الردّ صار يحمل نتيجة كل قناة بسببها، فنعرض سبب كل قناة بدل «فشل الإرسال»
+// المبهم (مع دعم خادم أقدم يردّ { sent } فقط — تراجُع آمن). والتفصيل يُعرض حتى عندما
+// تكون success=false (القنوات مفعّلة لكن الإرسال فشل) فلا نستبدله برسالة عامة.
 async function testNotification() {
   const statusEl = document.getElementById('ntf-status');
   statusEl.style.color = 'var(--online)';
-  statusEl.textContent = '🔔 جارٍ إرسال إشعار تجريبي…';
+  statusEl.textContent = '🔔 جارٍ إرسال إشعار تجريبي عبر القنوات المفعّلة…';
   try {
     const r = await fetch('/api/notifications/test', {
       method: 'POST',
       credentials: 'include',
     });
     const data = await r.json();
-    if (data.success) {
-      statusEl.textContent = '✅ تم الإرسال (افتح هاتفك للتأكد)';
-    } else {
-      statusEl.style.color = 'var(--offline)';
-      statusEl.textContent = '❌ ' + (data.error || 'فشل الإرسال — تأكد من FCM Key و وجود تسجيلات نشطة');
+    const results = data.data && Array.isArray(data.data.results) ? data.data.results : null;
+    if (!results) {
+      // خادم لم يُحدَّث بعد (يردّ { success, sent } فقط بلا تفصيل لكل قناة).
+      if (data.success) {
+        const okSent = !!(data.data && data.data.sent);
+        statusEl.textContent = okSent
+          ? '✅ تم الإرسال (افتح هاتفك للتأكد)'
+          : '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة';
+        if (!okSent) statusEl.style.color = 'var(--offline)';
+      } else {
+        statusEl.style.color = 'var(--offline)';
+        statusEl.textContent = '❌ ' + (data.error || 'فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة');
+      }
+      return;
     }
+    const labels = { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف (PWA)' };
+    const lines = results.map((res) => {
+      const name = labels[res.channel] || res.channel;
+      if (res.ok) return name + ': ✅ تم الإرسال';
+      if (res.skipped) return name + ': ⏭️ لم يُرسل — ' + (res.reason || 'متخطّاة');
+      return name + ': ❌ فشل — ' + (res.error || 'بلا تفصيل');
+    });
+    const anyOk = results.some((res) => res.ok);
+    statusEl.style.color = anyOk ? 'var(--online)' : 'var(--offline)';
+    statusEl.innerHTML = lines.map(esc).join('<br>');
   } catch (e) {
     statusEl.style.color = 'var(--offline)';
     statusEl.textContent = '❌ خطأ في الاتصال بالخادم';
@@ -134,6 +171,7 @@ async function loadNotificationLogs() {
       <td>${esc(channelText(l.channel))}</td>
       <td>${esc(l.status === 'sent' ? 'تم الإرسال' : 'فشل')}</td>
       <td>${esc(l.message)}</td>
+      <td>${esc(l.error || '-')}</td>
     `;
     tbody.appendChild(tr);
   }
