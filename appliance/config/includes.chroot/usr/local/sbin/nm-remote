@@ -74,7 +74,7 @@ VALUE="$(sed -n 's/.*"value"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REQ_F
 rm -f "$REQ_FILE"
 [ -n "$ACTION" ] || fail "ملف الطلب لا يحوي فعلًا صالحًا"
 case "$ACTION" in
-  start|stop|restart|autostart-on|autostart-off|install|set-domain|clear-domain|set-authtoken|set-api-key|list-domains) ;;
+  start|stop|restart|autostart-on|autostart-off|install|update-ngrok|set-domain|clear-domain|set-authtoken|set-api-key|list-domains) ;;
   *) fail "فعل غير مسموح: $ACTION" ;;
 esac
 
@@ -179,6 +179,23 @@ case "$ACTION" in
     chmod +x "$NGROK_BIN" || fail "تعذّر ضبط صلاحية التنفيذ"
     rm -f "$TMP_ROOT/ngrok.tgz"
     [ -x "$NGROK_BIN" ] || fail "الملف التنفيذي غير موجود بعد التثبيت"
+    ;;
+  update-ngrok)
+    # v2.18.0 — تنزيل أحدث إصدار stable واستبدال الثنائي ثم إعادة تشغيل النفق إن كان يعمل
+    WAS_TUNNEL_ACTIVE=0
+    systemctl is-active --quiet "$NGROK_UNIT" 2>/dev/null && WAS_TUNNEL_ACTIVE=1
+    log "تنزيل أحدث إصدار stable من ngrok…"
+    curl -fL --retry 2 -m 300 -o "$TMP_ROOT/ngrok-stable.tgz" "$NGROK_PKG_URL" >>"$LOG_FILE" 2>&1 || fail "فشل تنزيل حزمة ngrok (تحقّق من الإنترنت)"
+    tar xzf "$TMP_ROOT/ngrok-stable.tgz" -C /usr/local/bin ngrok || fail "فشل فكّ الحزمة"
+    chmod +x "$NGROK_BIN" || fail "تعذّر ضبط صلاحية التنفيذ"
+    rm -f "$TMP_ROOT/ngrok-stable.tgz"
+    [ -x "$NGROK_BIN" ] || fail "الملف التنفيذي غير موجود بعد التحديث"
+    if [ "$WAS_TUNNEL_ACTIVE" = 1 ]; then
+      systemctl try-restart "$NGROK_UNIT" 2>/dev/null || true
+      status success update-ngrok "تم تحديث ngrok إلى ($($NGROK_BIN --version 2>/dev/null)) — النفق أُعيد تشغيله"
+    else
+      status success update-ngrok "تم تحديث ngrok إلى ($($NGROK_BIN --version 2>/dev/null)) — النفق كان متوقفًا"
+    fi
     ;;
   set-authtoken)
     require_value

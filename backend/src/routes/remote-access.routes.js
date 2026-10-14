@@ -44,10 +44,11 @@ const F_TWO_OUT = 'api' + 'key';
 const ACT_A = 'set-' + 'authtoken';
 const ACT_B = 'set-api-key';
 const ACT_INSTALL = 'install';
+const ACT_UPDATE_NGROK = 'update-ngrok';
 const ACT_SET_DOMAIN = 'set-domain';
 const ACT_CLEAR_DOMAIN = 'clear-domain';
 const ACT_LIST_DOMAINS = 'list-domains';
-const ACTIONS_NO_VALUE = ['start', 'stop', 'restart', 'autostart-on', 'autostart-off', ACT_INSTALL, ACT_CLEAR_DOMAIN, ACT_LIST_DOMAINS];
+const ACTIONS_NO_VALUE = ['start', 'stop', 'restart', 'autostart-on', 'autostart-off', ACT_INSTALL, ACT_UPDATE_NGROK, ACT_CLEAR_DOMAIN, ACT_LIST_DOMAINS];
 const ACTIONS_WITH_VALUE = [ACT_A, ACT_B, ACT_SET_DOMAIN];
 const ALLOWED_ACTIONS = ACTIONS_NO_VALUE.concat(ACTIONS_WITH_VALUE);
 
@@ -64,6 +65,7 @@ const ACTION_LABELS = {
   'autostart-on': 'تفعيل التشغيل التلقائي عند الإقلاع',
   'autostart-off': 'تعطيل التشغيل التلقائي',
   [ACT_INSTALL]: 'تثبيت ngrok',
+  [ACT_UPDATE_NGROK]: 'تحديث ngrok إلى أحدث إصدار (تنزيل stable + إعادة تشغيل النفق إن كان يعمل)',
   [ACT_SET_DOMAIN]: 'تعيين الدومين الثابت',
   [ACT_CLEAR_DOMAIN]: 'الرجوع للدومين الديناميكي',
   [ACT_LIST_DOMAINS]: 'جلب الدومينات من حساب ngrok',
