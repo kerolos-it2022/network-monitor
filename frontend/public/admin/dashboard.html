@@ -159,6 +159,9 @@
           </label>
           <div style="display:flex; gap:0.5rem; height:fit-content;">
             <button type="button" class="btn btn-primary" id="discovery-start-btn">🚀 بدء المسح</button>
+            <button type="button" class="btn" id="discovery-name-diag-btn" title="فحص طرق استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS عكسي)">🧪 اختبار استخراج الاسم</button>
+            <input type="text" id="discovery-name-diag-ip" placeholder="IP للاختبار مثل 192.168.88.3" style="max-width:230px; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
+            <span id="discovery-name-diag-out" style="font-size:0.85rem; color:var(--muted);"></span>
             <button type="button" class="btn" id="discovery-last-btn" title="عرض آخر نتيجة مسح محفوظة على الخادم (تبقى بعد إعادة تحميل الصفحة)">📄 آخر نتيجة مسح</button>
           </div>
         </div>

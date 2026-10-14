@@ -27,6 +27,29 @@ function isValidCIDR(cidr) {
   return true;
 }
 
+// v2.16.1 — تشخيص الاسم لجهاز مفرد: يجرب الطرق الثلاث ويعيد النتائج الخام.
+router.get('/name-diag', async (req, res) => {
+  const ip = String(req.query.ip || '').trim();
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+    return res.status(400).json({ success: false, error: 'IP غير صالح' });
+  }
+  const out = {};
+  const t0 = Date.now();
+  out.nbns = await getNetBIOSName(ip, 1500);
+  out.nbns_ms = Date.now() - t0;
+  const t1 = Date.now();
+  out.smb = await getSMBName(ip);
+  out.smb_ms = Date.now() - t1;
+  const t2 = Date.now();
+  try {
+    const hosts = await new Promise((resolve) => dns.reverse(ip, (err, h) => resolve(err ? null : h)));
+    out.reverse_dns = hosts && hosts.length ? hosts[0] : null;
+  } catch (e) { out.reverse_dns = null; }
+  out.reverse_dns_ms = Date.now() - t2;
+  out.resolved = out.nbns || out.smb || out.reverse_dns || null;
+  res.json({ success: true, ip, ...out });
+});
+
 // تحويل CIDR إلى مصفوفة عناوين IP
 function cidrToIPs(cidr) {
   const [ip, mask] = cidr.split('/');

@@ -717,3 +717,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 });
+
+// ── v2.16.1 — اختبار استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS عكسي) ──
+(function bindNameDiag() {
+  const btn = document.getElementById('discovery-name-diag-btn');
+  const ipIn = document.getElementById('discovery-name-diag-ip');
+  const out = document.getElementById('discovery-name-diag-out');
+  if (!btn || !ipIn || !out) return;
+  btn.addEventListener('click', async () => {
+    const ip = (ipIn.value || '').trim();
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) { out.textContent = '✗ أدخل IP صالحًا مثل 192.168.88.3'; out.style.color = 'var(--offline)'; return; }
+    out.textContent = '⏳ جارٍ اختبار الطرق الثلاث على ' + ip + ' … (حتى ~4 ثوانٍ)';
+    out.style.color = 'var(--muted)';
+    try {
+      const r = await api('/api/scan/name-diag?ip=' + encodeURIComponent(ip));
+      if (!r || !r.success) throw new Error((r && r.error) || 'فشل');
+      const d = r;
+      const parts = [
+        'NBNS: ' + (d.nbns ? '✅ ' + d.nbns : '✗ (' + d.nbns_ms + 'ms)'),
+        'SMB: ' + (d.smb ? '✅ ' + d.smb : '✗'),
+        'DNS عكسي: ' + (d.reverse_dns ? '✅ ' + d.reverse_dns : '✗'),
+      ];
+      out.textContent = (d.resolved ? '✅ الاسم: ' + d.resolved + ' ← [مسار ' + (d.nbns ? 'NBNS' : d.smb ? 'SMB' : 'DNS') + '] · ' : '') + parts.join(' · ');
+      out.style.color = d.resolved ? 'var(--online)' : 'var(--offline)';
+    } catch (e) {
+      out.textContent = '✗ فشل الاتصال: ' + (e.message || e);
+      out.style.color = 'var(--offline)';
+    }
+  });
+})();
