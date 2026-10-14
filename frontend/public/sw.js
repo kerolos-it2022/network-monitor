@@ -1,6 +1,51 @@
-// sw.js: Service Worker — يدعم تثبيت PWA + استقبال إشعارات FCM Push.
-const CACHE_NAME = 'network-monitor-v1';
-const PRECACHE_URLS = ['/', '/index.html', '/css/style.css', '/manifest.json'];
+// sw.js: Service Worker — يدعم تثبيت PWA + استقبال إشعارات FCM Push + كاش وقت التشغيل (v2.13.6).
+// تاريخ الاسم مهم: يُترك كما هو، وترقيته (v2→v3…) مع كل تغيير بنيوي في الملفات المُسبقة
+// هو ما يجبر العملاء على التخلص من الكاش القديم عند activate.
+const CACHE_NAME = 'network-monitor-v2';
+const PRECACHE_URLS = [
+  '/', '/index.html', '/css/style.css', '/manifest.json',
+  '/js/public-dashboard.js', '/js/charts.js', '/js/public-map.js', '/js/public-speedtest.js',
+];
+
+// === v2.13.6 — fetch: سياسة كاش ذكية بدل غيابه التام (كان الجهاز يفحص الشبكة لكل ملف) ===
+//   • /api/** (بما فيها SSE): تمرير مباشر — البيانات الحية لا تُكاش أبدًا.
+//   • HTML: شبكة أولًا (تحديث دائم) مع سقوط على الكاش عند انقطاع الشبكة (أوفلاين PWA).
+//   • ثوابت (js/css/png/svg/…): من الكاش فورًا + تحديث خلفي (stale-while-revalidate)
+//     ⇒ فتح أسرع للصفحة على شبكة ضعيفة، وبعد أول زيارة يعمل أوفلاين.
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  let url;
+  try { url = new URL(req.url); } catch (e) { return; }
+  if (url.origin !== self.location.origin) return;      // مراجع خارجية (CDN) — تمرير
+  if (url.pathname.startsWith('/api/')) return;         // حيّ — بلا كاش
+  const isHtml = req.headers.get('accept') === 'text/html'
+    || url.pathname === '/' || url.pathname.endsWith('.html');
+
+  if (isHtml) {
+    event.respondWith(
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req).then((m) => m || caches.match('/')))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      const refresh = fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => cached);
+      return cached || refresh;
+    })
+  );
+});
 
 // === install: تخزين مؤقت للأصول الأساسية + تفعيل فوري ===
 self.addEventListener('install', (event) => {

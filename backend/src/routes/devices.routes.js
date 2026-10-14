@@ -67,8 +67,37 @@ function validateParentLocation(locationId) {
   return { ok: true, value: lid };
 }
 // GET /api/devices  (عام)
+// v2.13.6 — آخر انقطاع مغلق لكل جهاز (عمود «آخر انقطاع» في جدول الصفحة العامة):
+//   last_outage_ended_at (ISO نصًّا) · last_outage_seconds (مدة ذلك الانقطاع بالثواني).
+//   NULL = لا انقطاع مسجَّل. MAX(ended_at) آمن لأن الأزمنة تُخزَّن ISO نصًّا.
+function lastOutageByDevice() {
+  const out = new Map();
+  const rows = db.prepare(`
+    SELECT device_id, MAX(ended_at) AS last_ended
+    FROM downtime_events
+    WHERE ended_at IS NOT NULL
+    GROUP BY device_id
+  `).all();
+  const startedOf = db.prepare(
+    'SELECT started_at FROM downtime_events WHERE device_id = ? AND ended_at = ? LIMIT 1'
+  );
+  for (const r of rows) {
+    const s = startedOf.get(r.device_id, r.last_ended);
+    out.set(r.device_id, { endedAt: r.last_ended, startedAt: s ? s.started_at : null });
+  }
+  return out;
+}
+
 router.get('/', (req, res) => {
   const devices = db.prepare(`${DEVICE_SELECT} ORDER BY d.id ASC`).all();
+  const last = lastOutageByDevice();
+  for (const d of devices) {
+    const l = last.get(d.id) || null;
+    d.last_outage_ended_at = l ? l.endedAt : null;
+    d.last_outage_seconds = (l && l.startedAt)
+      ? Math.max(0, Math.round((new Date(l.endedAt) - new Date(l.startedAt)) / 1000))
+      : null;
+  }
   return res.json({ success: true, data: devices });
 });
 

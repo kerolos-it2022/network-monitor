@@ -137,11 +137,33 @@ function renderDevices(devicesList) {
 }
 
 // ====== \u0646\u0645\u0637 \u0627\u0644\u062c\u062f\u0648\u0644 ======
+// v2.13.6 — نصّ خلية «آخر انقطاع»: «منذ 2 س 5 د · دام 45 د» أو «—» لو لا انقطاع مسجل.
+// المصدر: last_outage_ended_at / last_outage_seconds من GET /api/devices (downtime_events).
+function fmtLastOutage(d) {
+  if (!d.last_outage_ended_at) return '\u2014';
+  const started = new Date(d.last_outage_ended_at).getTime();
+  if (isNaN(started)) return '\u2014';
+  const mins = Math.max(0, Math.floor((Date.now() - started) / 60000));
+  let ago;
+  if (mins < 1) ago = '\u0627\u0644\u0622\u0646';
+  else if (mins < 60) ago = '\u0645\u0646\u0630 ' + mins + ' \u062f';
+  else if (mins < 1440) ago = '\u0645\u0646\u0630 ' + Math.floor(mins / 60) + ' \u0633 ' + (mins % 60) + ' \u062f';
+  else ago = '\u0645\u0646\u0630 ' + Math.floor(mins / 1440) + ' \u064a\u0648\u0645';
+  let dur = '';
+  const s = d.last_outage_seconds;
+  if (s != null && s >= 0) {
+    dur = ' \u00b7 \u062f\u0627\u0645 ' + (s < 60 ? s + ' \u062b'
+      : s < 3600 ? Math.floor(s / 60) + ' \u062f'
+      : Math.floor(s / 3600) + ' \u0633 ' + Math.floor((s % 3600) / 60) + ' \u062f');
+  }
+  return ago + dur;
+}
+
 function renderTable(devicesList) {
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
   if (!devicesList || devicesList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:1rem;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u062c\u0647\u0632\u0629 \u0645\u0637\u0627\u0628\u0642\u0629.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:1rem;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u062c\u0647\u0632\u0629 \u0645\u0637\u0627\u0628\u0642\u0629.</td></tr>';
     return;
   }
   for (const d of devicesList) {
@@ -166,6 +188,7 @@ function renderTable(devicesList) {
       '<td>' + escapeHtml(d.device_type_name || '-') + '</td>' +
       '<td>' + escapeHtml(d.location_name || '-') + '</td>' +
       '<td style="font-size:0.85rem;color:var(--muted);">' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '-') + '</td>' +
+      '<td style="font-size:0.85rem;color:var(--muted);">' + fmtLastOutage(d) + '</td>' +
       '<td>' + (openBtnHtml || '') + '</td>' +
       '<td><button class="btn" data-detail="' + d.id + '">\u062a\u0641\u0627\u0635\u064a\u0644</button></td>';
     // إضافة مستمع للزر التفاصيل
