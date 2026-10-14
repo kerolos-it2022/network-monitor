@@ -45,6 +45,9 @@ router.get('/settings', requireAuth, async (req, res) => {
       maintenance_window: s.maintenance_window || '',
       daily_report_enabled: s.daily_report_enabled ? 1 : 0,
       daily_report_hour: s.daily_report_hour || '08:00',
+      bot_commands_enabled: s.bot_commands_enabled === undefined ? 1 : (s.bot_commands_enabled ? 1 : 0),
+      storm_digest_enabled: s.storm_digest_enabled === undefined ? 1 : (s.storm_digest_enabled ? 1 : 0),
+      storm_window_seconds: Number(s.storm_window_seconds) || 90,
       fcm_server_key: maskToken(s.fcm_server_key),
       fcm_server_key_masked: maskToken(s.fcm_server_key),
       sources: s._sources || {},
@@ -71,6 +74,9 @@ router.put('/settings', requireAuth, (req, res) => {
     maintenance_window,
     daily_report_enabled,
     daily_report_hour,
+    bot_commands_enabled,
+    storm_digest_enabled,
+    storm_window_seconds,
   } = req.body || {};
 
   // ضمان وجود الصف قبل التحديث.
@@ -103,6 +109,9 @@ router.put('/settings', requireAuth, (req, res) => {
     'maintenance_window',
     'daily_report_enabled',
     'daily_report_hour',
+    'bot_commands_enabled',
+    'storm_digest_enabled',
+    'storm_window_seconds',
   ];
   db.prepare(
     'UPDATE notification_settings SET ' + COLUMNS.map((c) => c + ' = ?').join(', ') + ' WHERE id = 1'
@@ -120,6 +129,9 @@ router.put('/settings', requireAuth, (req, res) => {
     maintenance_window || null,
     daily_report_enabled ? 1 : 0,
     daily_report_hour || '08:00',
+    bot_commands_enabled === undefined ? 1 : (bot_commands_enabled ? 1 : 0),
+    storm_digest_enabled === undefined ? 1 : (storm_digest_enabled ? 1 : 0),
+    Math.min(600, Math.max(15, Number(storm_window_seconds) || 90)),
   );
 
   return res.json({ success: true, data: null });

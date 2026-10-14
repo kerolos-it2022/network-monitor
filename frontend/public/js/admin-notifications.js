@@ -31,6 +31,9 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-maintenance_window').value = d.maintenance_window || '';
   document.getElementById('ntf-daily_report_enabled').checked = d.daily_report_enabled === undefined ? true : !!d.daily_report_enabled;
   document.getElementById('ntf-daily_report_hour').value = d.daily_report_hour || '08:00';
+  document.getElementById('ntf-bot_commands_enabled').checked = d.bot_commands_enabled === undefined ? true : !!d.bot_commands_enabled;
+  document.getElementById('ntf-storm_digest_enabled').checked = d.storm_digest_enabled === undefined ? true : !!d.storm_digest_enabled;
+  document.getElementById('ntf-storm_window_seconds').value = Number(d.storm_window_seconds) || 90;
   document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
   document.getElementById('ntf-fcm_server_key').value = '';
   // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
@@ -66,6 +69,9 @@ async function saveNotificationSettings() {
     maintenance_window: document.getElementById('ntf-maintenance_window').value.trim(),
     daily_report_enabled: document.getElementById('ntf-daily_report_enabled').checked,
     daily_report_hour: document.getElementById('ntf-daily_report_hour').value || '08:00',
+    bot_commands_enabled: document.getElementById('ntf-bot_commands_enabled').checked,
+    storm_digest_enabled: document.getElementById('ntf-storm_digest_enabled').checked,
+    storm_window_seconds: Number(document.getElementById('ntf-storm_window_seconds').value) || 90,
   };
   const r = await api('/api/notifications/settings', {
     method: 'PUT',

@@ -24,9 +24,21 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// v2.14.2 — proxyTelegram(): توكيل اختياري من .env (TELEGRAM_PROXY=http://host:port)
+// لشبكات تمنع/تبطئ api.telegram.org — axios يدعم http/https proxy بلا مكتبات إضافية.
+function proxyConfig() {
+  const raw = (process.env.TELEGRAM_PROXY || '').trim();
+  if (!raw) return undefined;
+  try {
+    const u = new URL(raw);
+    if (u.protocol.startsWith('http')) return { protocol: u.protocol.replace(':', ''), host: u.hostname, port: Number(u.port) || 8080 };
+  } catch (e) { /* راجع صيغة TELEGRAM_PROXY */ }
+  return undefined;
+}
+
 // api(method, payload): نداء موحد لواجهة البوت.
 async function api(token, method, payload, timeoutMs = 35000) {
-  const res = await axios.post(`https://api.telegram.org/bot${token}/${method}`, payload, { timeout: timeoutMs });
+  const res = await axios.post(`https://api.telegram.org/bot${token}/${method}`, payload, { timeout: timeoutMs, proxy: proxyConfig() });
   if (!res.data || !res.data.ok) throw new Error(`Telegram ${method}: ${(res.data && res.data.description) || 'رد غير متوقع'}`);
   return res.data;
 }
@@ -177,19 +189,44 @@ async function startTelegramBot() {
   try { s = await getSettings(); } catch (e) { console.warn('[tg-bot] تعذّر قراءة الإعدادات:', e.message); return; }
   const token = s.telegram_bot_token;
   const chatId = s.telegram_chat_id;
-  if (!s.telegram_enabled) { console.log('[tg-bot] القناة معطّلة من لوحة التحكم — الاستقبال متوقف.'); return; }
-  if (!token || !chatId) { console.log('[tg-bot] توكن/chat_id غير مضبوطين — الاستقبال متوقف.'); return; }
+  if (!s.telegram_enabled || !token || !chatId) {
+    console.log('[tg-bot] بدء متوقف مؤقتًا (القناة معطلة أو اعتمادات ناقصة) — الحلقة ستفحص كل دورة وتُشغّل ذاتها تلقائيًا عند التفعيل.');
+    // نبدأ الحلقة بوضع خامل: تفحص المفاتيح كل دورة دون استهلاك تحديثات.
+    token = token || ''; chatId = chatId || '';
+    running = true;
+    (async () => {
+      while (running) {
+        try {
+          const cs = await getSettings();
+          if (!cs.telegram_enabled || !cs.telegram_bot_token || !cs.telegram_chat_id ||
+              !Number(cs.bot_commands_enabled === undefined ? 1 : cs.bot_commands_enabled)) {
+            await new Promise((r) => setTimeout(r, 10000));
+            continue;
+          }
+          token = cs.telegram_bot_token; chatId = cs.telegram_chat_id;
+          break;
+        } catch (e) { await new Promise((r) => setTimeout(r, 10000)); }
+      }
+      try { await api(token, 'deleteWebhook', { drop_pending_updates: false }, 10000); } catch (e) {}
+      console.log('[tg-bot] البوت بدأ الاستماع (Long Polling) للأوامر: /status /down /recent /help');
+      loop(token, chatId).catch((e) => { console.error('[tg-bot] توقفت الحلقة:', e.message); });
+    })();
+    return;
+  }
 
   // تلجرام يرفض getUpdates لو webhook مفعّل — نلغيه بحذر (بلا انفجار لو مفيش webhook).
   try { await api(token, 'deleteWebhook', { drop_pending_updates: false }, 10000); } catch (e) { /* تجاهل */ }
 
-  running = true;
-  console.log('[tg-bot] البوت بدأ الاستماع (Long Polling) للأوامر: /status /down /recent /help');
-
-  const loop = async () => {
+  const loop = async (tk, chId) => {
     while (running) {
       try {
-        const data = await api(token, 'getUpdates', {
+        // v2.14.2 — مفتاح البوت التفاعلي يُقرأ حيًا كل دورة: إطفاؤه من اللوحة يوقف الردود
+        // خلال ~10 ثوانٍ بلا إعادة تشغيل (ولا يستهلك updates أثناء التعطيل).
+        try {
+          const r = db.prepare('SELECT bot_commands_enabled FROM notification_settings WHERE id = 1').get();
+          if (r && !Number(r.bot_commands_enabled)) { await new Promise((res) => setTimeout(res, 10000)); continue; }
+        } catch (e) { /* جدول/عمود غير جاهز بعد ⇒ نكمل */ }
+        const data = await api(tk, 'getUpdates', {
           offset,
           timeout: 25,
           allowed_updates: ['message', 'callback_query'],
@@ -197,7 +234,7 @@ async function startTelegramBot() {
         const updates = data.result || [];
         for (const u of updates) {
           offset = Math.max(offset, Number(u.update_id || 0) + 1);
-          try { await handleUpdate(u, token, chatId); }
+          try { await handleUpdate(u, tk, chId); }
           catch (e) { console.error('[tg-bot] خطأ معالجة تحديث:', e.message); }
         }
       } catch (e) {
@@ -208,7 +245,10 @@ async function startTelegramBot() {
       }
     }
   };
-  loop().catch((e) => { running = false; console.error('[tg-bot] توقفت الحلقة:', e.message); });
+  // v2.14.2 — مسار البدء المباشر: القناة مفعّلة والاعتمادات جاهزة عند الإقلاع.
+  running = true;
+  console.log('[tg-bot] البوت بدأ الاستماع (Long Polling) للأوامر: /status /down /recent /help');
+  loop(token, chatId).catch((e) => { console.error('[tg-bot] توقفت الحلقة:', e.message); });
 }
 
 module.exports = { startTelegramBot, handleCommand, tgButtons };

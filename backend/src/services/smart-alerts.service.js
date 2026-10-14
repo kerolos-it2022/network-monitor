@@ -9,7 +9,14 @@
 const db = require('../db');
 const { isMaintenanceNow } = require('./maintenance.service');
 
-const STORM_MS = 90 * 1000;  // نافذة تجميع العاصفة بعد أول إنذار
+// v2.14.2 — إعدادات العاصفة من قاعدة البيانات (مفتاح + المدة بالثواني، افتراضي 1/90).
+function stormSettings() {
+  try {
+    const r = db.prepare('SELECT storm_digest_enabled e, storm_window_seconds w FROM notification_settings WHERE id = 1').get();
+    if (r) return { enabled: !!Number(r.e), ms: Math.min(600, Math.max(15, Number(r.w) || 90)) * 1000 };
+  } catch (e) { /* أعمدة غير مرحّلة بعد ⇒ الافتراضي */ }
+  return { enabled: true, ms: 90 * 1000 };
+}
 
 // حالة نافذة العاصفة الجارية.
 let storm = { active: false, timer: null, buffered: [] };
@@ -53,10 +60,12 @@ function deepestCommonAncestor(deviceIds) {
 //   'send'   ⇒ أرسل فرديًّا (أول حدث — يستحق السرعة الكاملة)
 //   'buffer' ⇒ انقطاع متلاحق داخل النافذة — يُجمَّع (لا رسالة فردية)
 function consumeDownEvent(device) {
+  const cfg = stormSettings();
+  if (!cfg.enabled) return 'send';   // v2.14.2 — مفتاح الإيقاف ⇒ رسائل فردية زي السابق
   if (!storm.active) {
     storm.active = true;
     storm.buffered = [{ name: device.name, ip: device.ip, id: device.id, at: Date.now() }];
-    storm.timer = setTimeout(() => { flushStorm().catch(() => {}); }, STORM_MS);
+    storm.timer = setTimeout(() => { flushStorm().catch(() => {}); }, (stormSettings().ms));
     if (storm.timer && storm.timer.unref) storm.timer.unref();
     return 'send';
   }

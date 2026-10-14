@@ -76,6 +76,10 @@ try {
       "ALTER TABLE notification_settings ADD COLUMN maintenance_window TEXT DEFAULT ''",
       "ALTER TABLE notification_settings ADD COLUMN daily_report_enabled INTEGER DEFAULT 1",
       "ALTER TABLE notification_settings ADD COLUMN daily_report_hour TEXT DEFAULT '08:00'",
+      // v2.14.2: مفاتيح تحكم ذكاء الإشعارات (البوت التفاعلي · تجميع العواصف · مدتها).
+      "ALTER TABLE notification_settings ADD COLUMN bot_commands_enabled INTEGER DEFAULT 1",
+      "ALTER TABLE notification_settings ADD COLUMN storm_digest_enabled INTEGER DEFAULT 1",
+      "ALTER TABLE notification_settings ADD COLUMN storm_window_seconds INTEGER DEFAULT 90",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }
