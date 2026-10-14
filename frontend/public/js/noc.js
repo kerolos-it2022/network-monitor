@@ -982,8 +982,21 @@
           <div class="details-field"><span class="df-label">آخر فحص</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
         `;
       }
+      // v2.15.3 — أزرار فتح واجهة الجهاز (نفس منطق الصفحة العامة):
+      //   HTTPS لو الجهاز أجاب على HTTPS · HTTP لو أجاب على HTTP · ببورت الويب المخصص إن وُجد.
+      const acts = document.getElementById('noc-modal-actions');
+      if (acts) {
+        const portSuffix = d.web_port ? ':' + d.web_port : '';
+        const ip = String(d.ip || '');
+        let ah = '';
+        if (d.https_accessible == 1 && ip) ah += `<a class="da-https" href="https://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🔒 فتح HTTPS</a>`;
+        if (d.http_accessible == 1 && ip) ah += `<a class="da-http" href="http://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🌐 فتح HTTP</a>`;
+        acts.innerHTML = ah || '<small class="da-none">لا توجد واجهة ويب مكتشفة لهذا الجهاز (فحص PING فقط).</small>';
+      }
     } catch (e) {
       if (fieldsEl) fieldsEl.innerHTML = '<p class="details-placeholder">⚠️ تعذّر جلب تفاصيل الجهاز.</p>';
+      const acts = document.getElementById('noc-modal-actions');
+      if (acts) acts.innerHTML = '';
     }
   }
   function closeDeviceDetails() {

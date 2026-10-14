@@ -867,3 +867,18 @@
   #noc-main-content.noc-split #map-section,
   #noc-main-content.noc-split #categories-section { flex: 1 1 100%; max-width: 100%; }
 }
+
+/* ── v2.15.3 — أزرار فتح HTTPS/HTTP في نافذة تفاصيل الجهاز ── */
+.details-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.9rem; }
+.details-actions a {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.5rem 0.95rem; border-radius: 8px;
+  font-weight: 700; font-size: 0.9rem; text-decoration: none !important;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.details-actions a:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.details-actions .da-https { background: #0d9668; color: #fff; border: 1px solid #0b7d56; }
+.details-actions .da-http  { background: #2563eb; color: #fff; border: 1px solid #1d4ed8; }
+html.noc-day .details-actions .da-https { background: #16a34a; }
+html.noc-day .details-actions .da-http  { background: #2563eb; }
+.details-actions .da-none { color: var(--muted); font-size: 0.8rem; }
