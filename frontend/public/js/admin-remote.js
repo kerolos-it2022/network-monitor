@@ -181,9 +181,14 @@ function renderRemoteStatus(s) {
   const last = s.control && s.control.last;
   if (last && last.at) lastRemoteAt = last.at;
   if (last && last.message) {
+    // v2.14.7 — سجل «آخر إجراء» أقدم من 24 ساعة يُعرض كأرشيف محايد (🗂️) — لا يُعرض
+    // بحُلي النجاح الحديث الذي جعل المستخدم يظن أن الضغطة الأخيرة نجحت (كان يعرض 11/10).
     const when = last.at ? new Date(last.at).toLocaleString('ar-EG') : '';
-    const icon = last.state === 'success' ? '✅ ' : (last.state === 'failed' ? '❌ ' : '⏳ ');
-    rStatus(icon + last.message + (when ? ' — ' + when : ''), last.state === 'failed');
+    const ageMs = last.at ? Date.now() - new Date(last.at).getTime() : 0;
+    const stale = ageMs > 24 * 3600 * 1000;
+    const icon = stale ? '🗂️ ' : (last.state === 'success' ? '✅ ' : (last.state === 'failed' ? '❌ ' : '⏳ '));
+    const prefix = stale ? 'آخر إجراء مسجل (قديم): ' : '';
+    rStatus(icon + prefix + last.message + (when ? ' — ' + when : ''), last.state === 'failed' && !stale);
   }
 
   // 10) السجلات
