@@ -207,10 +207,15 @@ router.get('/public/tree', (req, res) => {
       .prepare(
         `SELECT d.id, d.ip, d.current_status, dt.name AS device_type, d.location_id
          FROM devices d
-         LEFT JOIN device_types dt ON dt.id = d.device_type_id
-         ORDER BY d.ip ASC`
+         LEFT JOIN device_types dt ON dt.id = d.device_type_id`
       )
       .all();
+    // v2.13.1 — ترتيب IP رقمي بالأوكتِتات (كان ORDER BY d.ip ASC نصّيًّا في SQLite
+    // فتتقدّم 10.0.0.10 على 10.0.0.2 داخل بطاقات خريطة المواقع).
+    const ipKey = (ip) => String(ip || '')
+      .split('.')
+      .reduce((acc, p) => acc * 256 + (parseInt(p, 10) || 0), 0);
+    devices.sort((a, b) => ipKey(a.ip) - ipKey(b.ip));
 
     const nodeById = new Map();
     for (const loc of locations) {

@@ -20,6 +20,12 @@ let currentLocationFilter = (() => {
 
 const ad = {}; // مساحة أسماء صغيرة لتفادي التضارب.
 
+// v2.13.1 — مفتاح ترتيب IP رقمي بالأوكتِتات (كان يُقارَن كنص فتتقدم 10.0.0.10 على 10.0.0.2).
+// الضرب بدل الإزاحة البتية: << 24 ينتج أعدادًا سالبة لعناوين 128+ مثل 192.168.x.x.
+function ipSortKey(ip) {
+  return String(ip || '').split('.').reduce((acc, p) => acc * 256 + (parseInt(p, 10) || 0), 0);
+}
+
 function statusText(status) {
   if (status === 'online') return 'متصل';
   if (status === 'offline') return 'متوقف';
@@ -48,9 +54,7 @@ async function loadDevices() {
         valB = (b.name || '').toLowerCase();
         break;
       case 'ip':
-        valA = a.ip || '';
-        valB = b.ip || '';
-        break;
+        return ipSortKey(a.ip) - ipSortKey(b.ip);
       case 'status':
         valA = a.current_status || '';
         valB = b.current_status || '';

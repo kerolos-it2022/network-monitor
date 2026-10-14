@@ -1129,6 +1129,18 @@
     return ipm ? parseInt(ipm[1], 10) : 999999;
   }
 
+  // v2.13.1 — مُقارِنة طبيعية كاملة: عدد لاحق في الاسم أولًا، وإلا IP بالأوكتِتات كاملة
+  // (كان البديل يعتمد آخر أوكتِت فقط فتتقدّم 10.0.4.2 على 10.0.3.100).
+  function natCmp(a, b) {
+    const ma = String(a.name || '').match(/(\d+)\s*$/);
+    const mb = String(b.name || '').match(/(\d+)\s*$/);
+    if (ma && mb && ma[1] !== mb[1]) return parseInt(ma[1], 10) - parseInt(mb[1], 10);
+    const ipToNum = (ip) => String(ip || '').split('.').reduce((acc, p) => acc * 256 + (parseInt(p, 10) || 0), 0);
+    const d = ipToNum(a.ip) - ipToNum(b.ip);
+    if (d) return d;
+    return natKey(a) - natKey(b);
+  }
+
 
   // ── Audio Alert System ──
   // v2.12.0 — إعادة بناء التنبيه الصوتي (طلب المستخدم: «صوت أوضح وأقوى» · «يفضل مفعّل بعد
@@ -2114,7 +2126,7 @@
     let html = '';
     for (const key of sortedKeys) {
       const cfg = TYPE_CONFIG[key] || { icon: '📌', title: key };
-      const list = groups.get(key).sort((a, b) => natKey(a) - natKey(b));
+      const list = groups.get(key).sort(natCmp);
       const up = list.filter(d => d.status === 'online').length;
       const down = list.filter(d => d.status === 'offline').length;
 
