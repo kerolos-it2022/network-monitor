@@ -84,10 +84,14 @@ const publicDir = path.join(__dirname, '../../frontend/public');
 app.use(express.static(publicDir));
 
 // health check. (v2.11.9 — يضم صحّة محرك المراقبة: النبضة + الفحوصات العالقة.)
+// v2.13.8 — يضم رقم الإصدار (من backend/package.json) — شاشة NOC تعرضه في رأسها
+// بدل نصّ ثابت قديم كان يُسكَت عند كل إصدار جديد (ظهر «v2.13.0» شهورًا بعد رحيله).
 app.get('/api/health', (req, res) => {
   let engine = null;
   try { engine = getEngineHealth(); } catch (e) { engine = { error: e.message }; }
-  res.json({ success: true, data: 'ok', engine });
+  let version = null;
+  try { version = JSON.parse(require('fs').readFileSync(path.join(__dirname, '../package.json'), 'utf8')).version || null; } catch (e) { version = null; }
+  res.json({ success: true, data: 'ok', version, engine });
 });
 
 // API routes.
