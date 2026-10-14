@@ -398,59 +398,113 @@
     <section id="section-notifications" class="hidden">
       <div class="form-card">
         <h3>إعدادات الإشعارات</h3>
-        <div class="form-grid">
-          <fieldset style="grid-column:1/-1; display:flex; flex-direction:column; gap:0.5rem; padding:0.75rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); margin:0;">
-            <label class="checkbox-label" style="font-weight:600;">
-              <input type="checkbox" id="ntf-telegram_enabled" />
-              <span>Telegram مفعّل</span>
+
+        <fieldset style="display:flex; flex-direction:column; gap:0.6rem; padding:1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); margin:0 0 1rem 0;">
+          <legend style="font-weight:700; padding:0 0.4rem;">📨 تلجرام</legend>
+          <label class="checkbox-label">
+            <input type="checkbox" id="ntf-telegram_enabled" />
+            <span style="font-weight:600;">القناة مفعّلة</span>
+          </label>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:0.6rem;">
+            <label>توكن البوت <small style="color:var(--muted);">(Bot Token)</small>
+              <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" />
             </label>
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:0.25rem;">
-              <label>Bot Token <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" /></label>
-              <label>Chat ID <input type="text" id="ntf-telegram_chat_id" /></label>
-            </div>
-          </fieldset>
-          <fieldset style="grid-column:1/-1; display:flex; flex-direction:column; gap:0.5rem; padding:0.75rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); margin:0;">
-            <label class="checkbox-label" style="font-weight:600;">
-              <input type="checkbox" id="ntf-whatsapp_enabled" />
-              <span>WhatsApp مفعّل</span>
+            <label>معرّف المحادثة <small style="color:var(--muted);">(Chat ID)</small>
+              <input type="text" id="ntf-telegram_chat_id" />
             </label>
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:0.5rem; margin-top:0.25rem;">
-              <label>WhatsApp API URL <input type="text" id="ntf-whatsapp_api_url" /></label>
-              <label>WhatsApp API Token <input type="text" id="ntf-whatsapp_api_token" /></label>
-              <label>WhatsApp To Number <input type="text" id="ntf-whatsapp_to_number" /></label>
+          </div>
+        </fieldset>
+
+        <fieldset style="display:flex; flex-direction:column; gap:0.6rem; padding:1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); margin:0 0 1rem 0;">
+          <legend style="font-weight:700; padding:0 0.4rem;">📟 واتساب</legend>
+          <label class="checkbox-label">
+            <input type="checkbox" id="ntf-whatsapp_enabled" />
+            <span style="font-weight:600;">القناة مفعّلة</span>
+          </label>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:0.6rem;">
+            <label>رابط الـ API <small style="color:var(--muted);">(URL)</small>
+              <input type="text" id="ntf-whatsapp_api_url" />
+            </label>
+            <label>التوكن <small style="color:var(--muted);">(API Token)</small>
+              <input type="text" id="ntf-whatsapp_api_token" />
+            </label>
+            <label>رقم المستلم <small style="color:var(--muted);">(To Number)</small>
+              <input type="text" id="ntf-whatsapp_to_number" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset style="display:flex; flex-direction:column; gap:0.6rem; padding:1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); margin:0 0 1rem 0;">
+          <legend style="font-weight:700; padding:0 0.4rem;">📱 إشعارات الهاتف (PWA)</legend>
+          <label class="checkbox-label">
+            <input type="checkbox" id="ntf-mobile_enabled" />
+            <span style="font-weight:600;">القناة مفعّلة</span>
+          </label>
+          <label>مفتاح FCM Server Key
+            <input type="password" id="ntf-fcm_server_key" placeholder="AAAA…" autocomplete="off" />
+          </label>
+          <p style="font-size:0.8rem; color:var(--muted); margin:0;">
+            💡 للحصول على المفتاح: <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a> → Project Settings → Cloud Messaging → Legacy Server Key.
+            ولتفعيلها على هاتفك: افتح <a href="../index.html" target="_blank">الصفحة العامة</a> من Chrome واضغط «🔔 تفعيل الإشعارات» ثم ثبّت التطبيق (Add to Home Screen).
+          </p>
+        </fieldset>
+
+        <fieldset style="display:flex; flex-direction:column; gap:0.75rem; padding:1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); margin:0 0 0.75rem 0;">
+          <legend style="font-weight:700; padding:0 0.4rem;">🧠 ذكاء الإشعارات</legend>
+          <p style="font-size:0.8rem; color:var(--muted); margin:0;">كل ميزة مستقلة — شغّلها أو أوقفها بحرية (يُحفظ بزر «💾 حفظ الإعدادات» بالأسفل).</p>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:0.75rem;">
+            <label class="checkbox-label" style="align-items:flex-start; gap:0.6rem; padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <input type="checkbox" id="ntf-bot_commands_enabled" />
+              <span style="display:block;">
+                <b>🤖 بوت تلجرام التفاعلي</b><br>
+                <small style="color:var(--muted);">أوامر /status و /down وأزرار الاستعلام تحت رسائل الانقطاع — يحتاج تلجرام مفعّلًا بالأعلى</small>
+              </span>
+            </label>
+            <label class="checkbox-label" style="align-items:flex-start; gap:0.6rem; padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <input type="checkbox" id="ntf-storm_digest_enabled" />
+              <span style="display:block;">
+                <b>⚡ تجميع عواصف الانقطاع</b><br>
+                <small style="color:var(--muted);">عند انقطاع عدة أجهزة معًا: رسالة واحدة بدل إغراق الهاتف + السبب المشترك من سلسلة الشبكة</small>
+              </span>
+            </label>
+            <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <b>⏱️ مدة تجميع العاصفة (ثواني)</b>
+              <div><input type="number" id="ntf-storm_window_seconds" min="15" max="600" defaultValue="90" style="max-width:140px; margin-top:0.35rem;" /></div>
+              <small style="display:block; color:var(--muted); margin-top:0.2rem;">بين 15 و600 — خلالها تتجمّع الانقطاعات المتلاحقة</small>
             </div>
-          </fieldset>
-        </div>
-        <!-- ===== قسم إشعارات الموبايل (PWA + FCM) ===== -->
-        <h3 style="margin-top:1.5rem;">📱 إشعارات الموبايل (PWA)</h3>
-        <div class="form-grid">
-          <label>إشعارات الهاتف مفعّلة <input type="checkbox" id="ntf-mobile_enabled" /></label>
-          <label>FCM Server Key <input type="password" id="ntf-fcm_server_key" placeholder="AAAA…" autocomplete="off" /></label>
-          <label>💾 تقرير يومي مجدول <input type="checkbox" id="ntf-daily_report_enabled" /></label>
-          <label>ساعة التقرير <input type="time" id="ntf-daily_report_hour" defaultValue="08:00" /></label>
-          <label>🛠️ كتم أثناء الصيانة <input type="checkbox" id="ntf-maintenance_enabled" /></label>
-          <label>نافذة الصيانة <input type="text" id="ntf-maintenance_window" placeholder="02:00-04:00" title="HH:MM-HH:MM — تدعم عبور منتصف الليل" /></label>
-          <label>🤖 بوت تلجرام التفاعلي <input type="checkbox" id="ntf-bot_commands_enabled" /></label>
-          <label>⚡ تجميع عواصف الانقطاع <input type="checkbox" id="ntf-storm_digest_enabled" /></label>
-          <label>مدة التجميع (ثواني) <input type="number" id="ntf-storm_window_seconds" min="15" max="600" defaultValue="90" /></label>
-        </div>
-        <p style="font-size:0.85rem; color:var(--muted); margin:0.5rem 0;">
-          للحصول على المفتاح: أنشئ مشروعاً في <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>
-          → Project Settings → Cloud Messaging → Legacy Server Key.
-        </p>
-        <div class="form-actions">
+            <label class="checkbox-label" style="align-items:flex-start; gap:0.6rem; padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <input type="checkbox" id="ntf-daily_report_enabled" />
+              <span style="display:block;">
+                <b>📊 تقرير يومي مجدول</b><br>
+                <small style="color:var(--muted);">ملخص 24 ساعة كل صباح: الانقطاعات وأطولها وأسوأ جهاز</small>
+              </span>
+            </label>
+            <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <b>⏰ ساعة التقرير اليومي</b>
+              <div><input type="time" id="ntf-daily_report_hour" defaultValue="08:00" style="max-width:160px; margin-top:0.35rem;" /></div>
+            </div>
+            <label class="checkbox-label" style="align-items:flex-start; gap:0.6rem; padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <input type="checkbox" id="ntf-maintenance_enabled" />
+              <span style="display:block;">
+                <b>🛠️ كتم الإشعارات أثناء الصيانة</b><br>
+                <small style="color:var(--muted);">خلال النافذة تُسجَّل الأحداث بهدوء في السجل بدل إنذار الهاتف</small>
+              </span>
+            </label>
+            <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <b>🗓️ نافذة الصيانة</b>
+              <div><input type="text" id="ntf-maintenance_window" placeholder="02:00-04:00" title="HH:MM-HH:MM — تدعم عبور منتصف الليل" style="max-width:180px; direction:ltr; text-align:center; margin-top:0.35rem;" /></div>
+              <small style="display:block; color:var(--muted); margin-top:0.2rem;">الصيغة: HH:MM-HH:MM — تدعم النوافذ العابرة لمنتصف الليل</small>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions" style="margin-top:1rem;">
           <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات">💾 حفظ الإعدادات</button>
           <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)">🔔 اختبار الإشعار</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
-        <p style="font-size:0.8rem; color:var(--muted); margin-top:0.75rem;">
-          💡 لإضافة إشعارات على هاتفك: افتح الصفحة العامة
-          (<a href="../index.html" target="_blank">هنا</a>) من Chrome على الهاتف،
-          اضغط زر "🔔 تفعيل الإشعارات" ثم ثبّت التطبيق (Add to Home Screen).
-        </p>
       </div>
     </section>
-
     <!-- ============ قسم السجل ============ -->
     <section id="section-logs" class="hidden">
       <!-- v2.7.x — زرّ مَسح سجل الإِشعارات وحده هنا (يُفَرِّغ الجدول المَعْرُوض).

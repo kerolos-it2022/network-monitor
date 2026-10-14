@@ -1,6 +1,6 @@
 {
   "name": "network-monitor-backend",
-  "version": "2.14.5",
+  "version": "2.14.6",
   "description": "نظام مراقبة أجهزة الشبكة المحلية - الخادم",
   "license": "UNLICENSED",
   "main": "src/server.js",
