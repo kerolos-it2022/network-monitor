@@ -328,6 +328,58 @@ function resolveHostname(ip) {
 }
 
 // محاولة الحصول على اسم SMB/NetBIOS
+// ── v2.16.0 — استعلام NBNS مباشر (UDP 137) للحصول على الاسم الحقيقي من الجهاز نفسه ──
+// لا يحتاج nbtstat/nmblookup ولا SMB مفتوحًا — يشتغل على أي جهاز ويندوز/سامبا تقريبًا.
+const dgram = require('dgram');
+function getNetBIOSName(ip, timeoutMs = 700) {
+  return new Promise((resolve) => {
+    const sock = dgram.createSocket('udp4');
+    let done = false;
+    const finish = (name) => { if (!done) { done = true; try { sock.close(); } catch (e) {} resolve(name); } };
+    // بناء Node Status Query: اسم '*' مرمَّز بصيغة NetBIOS (كل نصف بايت + 'A')
+    const hdr = Buffer.alloc(12);
+    hdr.writeUInt16BE(Math.floor(Math.random() * 65535), 0);
+    hdr.writeUInt16BE(0x0010, 2);   // flags: recursion desired
+    hdr.writeUInt16BE(1, 4);        // QDCOUNT=1
+    const nm = Buffer.alloc(16, 0x20); nm.write('*');
+    let qname = '';
+    for (const b of nm) {
+      qname += String.fromCharCode(0x41 + ((b >> 4) & 0xF)) + String.fromCharCode(0x41 + (b & 0xF));
+    }
+    const qtail = Buffer.from([0x00, 0x00, 0x21, 0x00, 0x01]);   // null + QTYPE NBSTAT + IN
+    const pkt = Buffer.concat([hdr, Buffer.from([32]), Buffer.from(qname, 'ascii'), qtail]);
+    sock.on('message', (msg) => {
+      try {
+        if (msg.length < 60) return;
+        // الإجابة: ... ptr(2) + TYPE 0x21 + CLASS 1 + TTL(4) + RDLEN(2) + RDATA(count=1 + 18 بايت للاسم)
+        // نجد آخر تواجد لمؤشر النمط (TYPE NBSTAT = 00 21 00 01) ثم نقرأ RDATA منه.
+        const pat = Buffer.from([0x00, 0x21, 0x00, 0x01]);
+        let j = -1;
+        for (let i = msg.length - 6; i >= 20; i--) {
+          if (msg[i] === pat[0] && msg[i + 1] === pat[1] && msg[i + 2] === pat[2] && msg[i + 3] === pat[3]) { j = i; break; }
+        }
+        if (j === -1) return finish(null);
+        const rdlen = msg.readUInt16BE(j + 8);
+        const rdata = msg.slice(j + 10);
+        const count = rdata[0];
+        if (!count || rdlen < 19) return finish(null);
+        // أول اسم نظام (suffix 0x00 = Workstation) وإلا الأول
+        let chosen = null;
+        for (let k = 0; k < count && (11 + k * 18 + 15) <= rdata.length; k++) {
+          const raw = rdata.slice(11 + k * 18, 11 + k * 18 + 15).toString('ascii').replace(/[\s ]+$/g, '');
+          const suffix = rdata[11 + k * 18 + 15];
+          if (suffix === 0x00 && raw) { chosen = raw; break; }
+          if (!chosen && raw) chosen = raw;
+        }
+        finish(chosen || null);
+      } catch (e) { /* تجاهل — المهلة ستغلق */ }
+    });
+    sock.on('error', () => finish(null));
+    sock.send(pkt, 137, ip, () => {});
+    setTimeout(() => finish(null), timeoutMs);
+  });
+}
+
 async function getSMBName(ip) {
   try {
     const isWin = process.platform === 'win32';
@@ -639,12 +691,17 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
       // التحقق من وجود الجهاز في قاعدة البيانات
       const existing = db.prepare('SELECT * FROM devices WHERE ip = ?').get(host.ip);
       
-      // الحصول على اسم SMB/NetBIOS (أولوية عالية)
+      // الحصول على الاسم الحقيقي: NBNS مباشر (v2.16.0) ثم SMB ثم DNS عكسي
+      const netbiosName = await getNetBIOSName(host.ip);
       const smbName = await getSMBName(host.ip);
       
       // دالة ذكية لتوليد اسم الجهاز
       function generateDeviceName() {
-        // 1. الأولوية الأولى: اسم SMB/NetBIOS (الأكثر دقة للأجهزة ويندوز)
+        // 0. v2.16.0 — الأولوية الأولى: الاسم الحقيقي من الجهاز نفسه عبر NBNS (UDP 137)
+        if (netbiosName && netbiosName.length > 1) {
+          return netbiosName;
+        }
+        // 1. الأولوية الثانية: اسم SMB/NetBIOS من الأداتين (nbtstat/nmblookup)
         if (smbName && smbName.length > 1) {
           return smbName;
         }
