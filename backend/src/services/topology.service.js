@@ -27,6 +27,15 @@ function buildTopology() {
     ORDER BY d.name COLLATE NOCASE
   `).all();
 
+  // v2.13.3 — لحظة بدء الانقطاع المفتوح لكل جهاز (من downtime_events): تُستخدم في شاشة NOC
+  // لشارة «منقطع منذ …» وتنبيه الشاشة الكاملة. لقطة واحدة بسيطة — مفتوحة فقط (ended_at IS NULL).
+  const openDown = new Map();
+  for (const row of db.prepare(
+    'SELECT device_id, started_at FROM downtime_events WHERE ended_at IS NULL'
+  ).all()) {
+    openDown.set(row.device_id, row.started_at);
+  }
+
   // عقد المواقع — مع سلسلة المباني عبر parent_id.
   const locById = new Map();
   for (const l of locs) {
@@ -56,6 +65,10 @@ function buildTopology() {
       ip: d.ip,
       device_type_name: d.device_type_name || null,
       status: d.is_active ? (d.current_status || 'unknown') : 'paused',
+      // v2.13.3 — بداية الانقطاع المفتوح (ISO) — null لو متصل أو بلا حدث مفتوح.
+      offline_since: d.current_status === 'offline' && openDown.has(d.id)
+        ? new Date(openDown.get(d.id)).toISOString()
+        : null,
       parent_id: d.parent_id || null,
       location_id: d.location_id || null,
       pos_x: d.pos_x == null ? null : Number(d.pos_x),

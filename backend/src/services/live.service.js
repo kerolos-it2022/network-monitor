@@ -16,13 +16,19 @@ bus.setMaxListeners(0); // عدد الشاشات غير محدود عمليًّ�
 let lastState = null;   // { devices:[{id,status,pathDown}], totals:{...} }
 let pendingTimer = null;
 
-// تسطيح الشجرة إلى قائمة أجهزة (id/status/pathDown) — نفس ما تعرضه الشاشات.
+// تسطيح الشجرة إلى قائمة أجهزة (id/status/pathDown/offlineSince) — نفس ما تعرضه الشاشات.
+// v2.13.3: offlineSince = بداية الانقطاع المفتوح (ISO) — تصل للشاشات عبر snapshot/updates.
 function flattenDevices(roots) {
   const out = [];
   (function walk(list) {
     for (const n of list) {
       if (n.type === 'device') {
-        out.push({ id: Number(n.id), status: n.status, pathDown: !!n.pathDown });
+        out.push({
+          id: Number(n.id),
+          status: n.status,
+          pathDown: !!n.pathDown,
+          offlineSince: n.offline_since || null,
+        });
       }
       if (n.children && n.children.length) walk(n.children);
     }
@@ -60,7 +66,7 @@ function refreshLive() {
   const changed = [];
   for (const d of next.devices) {
     const p = prevMap.get(d.id);
-    if (!p || p.status !== d.status || p.pathDown !== d.pathDown) changed.push(d);
+    if (!p || p.status !== d.status || p.pathDown !== d.pathDown || p.offlineSince !== d.offlineSince) changed.push(d);
   }
   const totalsChanged = JSON.stringify(next.totals) !== JSON.stringify(lastState.totals);
   lastState = next;

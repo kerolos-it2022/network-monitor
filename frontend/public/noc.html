@@ -824,6 +824,44 @@
     text-align: center;
   }
   .audio-hint.show { display: block; }
+
+  /* ── v2.13.3 — غطاء إنذار الانقطاع (شاشة كاملة) ── */
+  .outage-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(153, 27, 27, 0.97);
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 32px;
+    text-align: center; direction: rtl;
+  }
+  .outage-overlay.show { display: flex; }
+  .outage-overlay .oo-title {
+    font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; color: #fff;
+    animation: oo-blink 1s steps(2, start) infinite;
+  }
+  @keyframes oo-blink { 50% { opacity: 0.35; } }
+  .outage-overlay .oo-list { display: flex; flex-direction: column; gap: 10px; }
+  .outage-overlay .oo-device {
+    background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 14px 28px;
+    font-size: clamp(1.3rem, 2.6vw, 2.2rem); font-weight: 800; color: #fff;
+    font-family: monospace; direction: ltr;
+  }
+  .outage-overlay .oo-device .oo-age { display: block; font-size: 0.65em; font-weight: 600; color: #fecaca; direction: rtl; }
+  .outage-overlay .oo-close {
+    margin-top: 14px; background: #fff; color: #991b1b;
+    border: none; border-radius: 10px; padding: 14px 42px;
+    font-size: 1.3rem; font-weight: 800; cursor: pointer;
+    font-family: inherit;
+  }
+  .outage-overlay .oo-close:hover { background: #fecaca; }
+
+  /* شارة «منقطع منذ …» على بطاقات NOC (v2.13.3) */
+  .dev-downtime { font-size: 0.78rem; font-weight: 700; color: #f87171; margin-top: 4px; direction: rtl; }
+  .map-zone-device .map-device-downtime,
+  .mv-inner-row .mv-downtime { font-size: 0.72em; color: #f87171; font-weight: 700; white-space: nowrap; }
+  html.noc-day .dev-downtime,
+  html.noc-day .map-zone-device .map-device-downtime,
+  html.noc-day .mv-inner-row .mv-downtime { color: #b91c1c; }
 </style>
 <script>
   // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
@@ -862,6 +900,13 @@
 
   <!-- v2.12.0 — شريط تنشيط الصوت: يظهر عند استرجاع «تنبيه صوتي مُفعَّل» بعد إعادة التحميل -->
   <div class="audio-hint" id="audio-hint">🔊 التنبيه الصوتي مُفعَّل — اضغط في أي مكان لتنشيط الصوت</div>
+
+  <!-- v2.13.3 — غطاء إنذار الانقطاع: شاشة حمراء كاملة بأسماء الأجهزة المتوقفة — يُخفى بزر فقط -->
+  <div class="outage-overlay" id="outage-overlay" role="alert" aria-live="assertive">
+    <div class="oo-title">⚠️ انقطاع جهاز</div>
+    <div class="oo-list" id="outage-overlay-list"></div>
+    <button type="button" class="oo-close" id="outage-overlay-close">أعرف — إخفاء التنبيه</button>
+  </div>
 
   <!-- Counters Bar -->
   <div class="counters">
@@ -1129,7 +1174,45 @@
     return ipm ? parseInt(ipm[1], 10) : 999999;
   }
 
-  // v2.13.1 — مُقارِنة طبيعية كاملة: عدد لاحق في الاسم أولًا، وإلا IP بالأوكتِتات كاملة
+  // ── v2.13.3 — غطاء إنذار الانقطاع + شارات «منقطع منذ …» ──
+  // المصدر: offline_since يأتي من الخادم (downtime_events مفتوحة) عبر /api/topology وSSE.
+  // offlineSinceById: خريطة جهاز → بداية الانقطاع — لأن أشجار الخريطة/الرسم لا تحمل الحقل.
+  let offlineSinceById = new Map();   // Number(id) → ISO string|null
+  let overlayDevices = [];            // أجهزة الغطاء الحالي (نضيف الجديد دون فقد القديم)
+
+  function fmtDowntime(iso) {
+    const t = Date.now() - new Date(iso).getTime();
+    if (!isFinite(t) || t < 0) return 'الآن';
+    const s = Math.floor(t / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+    if (d) return d + ' يوم ' + (h % 24) + ' ساعة';
+    if (h) return h + ' ساعة ' + (m % 60) + ' دقيقة';
+    if (m) return m + ' دقيقة ' + (s % 60) + ' ثانية';
+    return 'لحظة — ' + s + ' ثانية';
+  }
+  function downtimeAge(iso) { return iso ? fmtDowntime(iso) : 'الآن'; }
+
+  function showOutageOverlay(devs) {
+    for (const d of devs || []) {
+      if (!d) continue;
+      if (!overlayDevices.some((x) => Number(x.id) === Number(d.id))) overlayDevices.push(d);
+    }
+    const list = document.getElementById('outage-overlay-list');
+    if (!list) return;
+    list.innerHTML = overlayDevices.map((d) => `
+      <div class="oo-device">${esc((d.name || 'جهاز') + ' · ' + (d.ip || '—'))}
+        <span class="oo-age">منقطع منذ ${esc(downtimeAge(d.offline_since))}</span>
+      </div>`).join('');
+    const ov = document.getElementById('outage-overlay');
+    if (ov) ov.classList.add('show');
+  }
+  function hideOutageOverlay() {
+    overlayDevices = [];   // الإخفاء يفرّغ القائمة: انقطاع لاحق جديد يظهر وحده
+    const ov = document.getElementById('outage-overlay');
+    if (ov) ov.classList.remove('show');
+  }
+  window.hideOutageOverlay = hideOutageOverlay;
+
+  // مُقارِنة طبيعية كاملة: عدد لاحق في الاسم أولًا، وإلا IP بالأوكتِتات كاملة
   // (كان البديل يعتمد آخر أوكتِت فقط فتتقدّم 10.0.4.2 على 10.0.3.100).
   function natCmp(a, b) {
     const ma = String(a.name || '').match(/(\d+)\s*$/);
@@ -1383,6 +1466,8 @@
         } else if (n.type === 'device') {
           allDevices.push(n);
           devById.set(Number(n.id), n);
+          // v2.13.3 — خريطة بدايات الانقطاع (تغذي بطاقات الخريطة/الرسم التي لا تحمل الحقل).
+          offlineSinceById.set(Number(n.id), n.offline_since || null);
         }
         if (n.children && n.children.length) walk(n.children);
       }
@@ -1425,15 +1510,22 @@
   function checkNewOutages() {
     const currentDownIds = new Set(allDevices.filter((d) => d.status === 'offline').map((d) => d.id));
     const baselineOnly = !downBaselineReady || allDevices.length === 0;
-    let hasNewDown = false;
+    // v2.13.3 — نجمع كل الأجهزة الجديدة في الانقطاع (وليس أول واحد فقط) لعرضها على الغطاء.
+    const freshDownDevices = [];
     if (!baselineOnly) {
       for (const id of currentDownIds) {
-        if (!previousDownIds.has(id)) { hasNewDown = true; break; }
+        if (!previousDownIds.has(id)) {
+          freshDownDevices.push(devById.get(id));
+        }
       }
     }
     previousDownIds = currentDownIds;
     downBaselineReady = allDevices.length > 0;
-    if (!baselineOnly && hasNewDown && audioAlertEnabled) playAlertBeep('alert');
+    if (!baselineOnly && freshDownDevices.length > 0) {
+      // الغطاء البصري مستقل عن مفتاح الصوت: انقطاع = شاشة حمراء كاملة حتى «إخفاء التنبيه».
+      showOutageOverlay(freshDownDevices);
+      if (audioAlertEnabled) playAlertBeep('alert');
+    }
   }
 
   // ── 1. RENDER HERO BACKBONE UPLINK ──
@@ -1606,12 +1698,17 @@
   function renderZoneDevice(node) {
     const status = node.status || 'unknown';
     const icon = deviceIconByType(node.device_type);
+    // v2.13.3 — شارة عمر الانقطاع لصفوف بطاقات خريطة المباني (من offlineSinceById).
+    const devNum = mapDevNum(node);
+    const dtBadge = (status === 'offline' && devNum != null && offlineSinceById.get(devNum))
+      ? `<span class="map-device-downtime">⏱ ${esc(downtimeAge(offlineSinceById.get(devNum)))}</span>` : '';
     return `
     <button type="button" class="map-zone-device" data-kind="device" data-status="${esc(status)}" data-id="${esc(String(node.id))}" title="${esc(zoneTooltip(node))}">
       <span class="map-device-dot" aria-hidden="true"></span>
       <span class="map-device-ic">${icon}</span>
       <span class="map-device-name">${esc(mapDevLabel(node))}</span>
       <span class="map-device-meta">${esc(node.device_type || 'جهاز')}</span>
+      ${dtBadge}
     </button>`;
   }
 
@@ -2009,6 +2106,8 @@
       const rowsHtml = visibleDevices.map(d => {
         const isDown = d.status === 'offline';
         const isPath = !!d.pathDown;
+        // v2.13.3 — شارة عمر الانقطاع في صفوف «التخطيط المرسوم».
+        const dtBadge = (isDown && d.offline_since) ? `<span class="mv-downtime">⏱ ${esc(fmtDowntime(d.offline_since))}</span>` : '';
         // v2.8.5 — لون النقطة صار صنفًا (يتبدّل مع الوضع النهاري/الليلي) بدل ستايل مضمّن.
         const dotCls = isDown ? 'down' : isPath ? 'path' : (d.status === 'paused' ? 'paused' : 'up');
         // v2.8.8 — الصف قابل للنقر: يفتح نفس نافذة تفاصيل الجهاز (كما في «خريطة المباني»).
@@ -2019,6 +2118,7 @@
             <span class="mv-inner-type">${esc(d.device_type_name || 'جهاز')}</span>
             <span class="mv-inner-nm" title="${esc(d.name)}">${esc(d.name)}</span>
             <span class="mv-inner-ip">${esc(d.ip)}</span>
+            ${dtBadge}
           </div>
         `;
       }).join('');
@@ -2160,6 +2260,7 @@
                     <span class="ip">${esc(d.ip)}</span>
                     <span class="loc-tag" title="الموقع: ${esc(locName)}">📍 ${esc(locName)}</span>
                   </div>
+                  ${d.status === 'offline' ? `<div class="dev-downtime">⏱ منقطع منذ ${esc(downtimeAge(d.offline_since))}</div>` : ''}
                   ${parentDev ? `<div class="parent-info">🔗 متصل عبر: <b>${esc(parentDev.name)}</b></div>` : ''}
                 </div>
               `;
@@ -2214,10 +2315,13 @@
     let changed = 0;
     for (const d of msg.devices) {
       const dev = devById.get(Number(d.id));
+      // v2.13.3 — مزامنة خريطة بدايات الانقطاع من SSE (offlineSince) لأي جهاز معروف.
+      offlineSinceById.set(Number(d.id), d.offlineSince || null);
       if (!dev) continue;
       if (dev.status !== d.status || !!dev.pathDown !== !!d.pathDown) changed++;
       dev.status = d.status;
       dev.pathDown = !!d.pathDown;
+      dev.offline_since = d.offlineSince || null;
     }
 
     // 2) شجرة خريطة المباني (عُقد الأجهزة id = 'dev-<رقم>').
@@ -2388,6 +2492,11 @@
     if (closeBtn) closeBtn.addEventListener('click', closeDeviceDetails);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeDeviceDetails(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDeviceDetails(); });
+  })();
+  // v2.13.3 — زر إخفاء غطاء إنذار الانقطاع (الإخفاء به فقط — لا زر Escape ولا نقر خارج).
+  (function bindOutageOverlay() {
+    const btn = document.getElementById('outage-overlay-close');
+    if (btn) btn.addEventListener('click', hideOutageOverlay);
   })();
   tick();
   // v2.12.0 — استرجاع حالة «التنبيه الصوتي» المحفوظة (كانت تُفقد مع كل إعادة تحميل ⇒ تفعيل يدوي كل مرة).
