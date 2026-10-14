@@ -53,11 +53,11 @@
   const TYPE_CONFIG = {
     'Firewall':     { icon: '🛡️', title: 'جدار الحماية والبوابات (Firewall & Gateways)', order: 1 },
     'Server':       { icon: '🖥️', title: 'الخوادم والأنظمة المركزية (Core Servers)', order: 2 },
-    'Switch':       { icon: '🔀', title: 'السويتشات وموزعات الشبكة (Switches)', order: 3 },
-    'Access Point': { icon: '📶', title: 'نقاط الواي فاي والشبكة اللاسلكية (Access Points)', order: 4 },
+    'Switch':       { icon: '🔌', title: 'السويتشات وموزعات الشبكة (Switches)', order: 3 },
+    'Access Point': { icon: '📡', title: 'نقاط الواي فاي والشبكة اللاسلكية (Access Points)', order: 4 },
     'NVR/DVR':      { icon: '📹', title: 'كاميرات المراقبة وأجهزة التسجيل (NVR & DVR)', order: 5 },
     'Printer':      { icon: '🖨️', title: 'الطابعات وماكينات التصوير (Printers & Scanners)', order: 6 },
-    'Other':        { icon: '📌', title: 'أجهزة وأنظمة أخرى (Other Devices)', order: 7 }
+    'Other':        { icon: '🧩', title: 'أجهزة وأنظمة أخرى (Other Devices)', order: 7 }
   };
 
   // v2.12.2 — تصنيف الأنواع بكلمات مفتاحية (بدل المطابقة الحرفية فقط).
@@ -594,12 +594,17 @@
     if (!deviceType) return '🖥️';
     const t = String(deviceType).toLowerCase();
     if (t.includes('router')) return '📶';
-    if (t.includes('switch')) return '🔗';
-    if (t.includes('firewall')) return '🧱';
+    if (t.includes('switch')) return '🔌';
+    if (t.includes('firewall')) return '🛡️';
+    if (t.includes('gateway') || t.includes('isp') || t.includes('fiber') || t.includes('gpon') || t.includes('ont') || t.includes('olt')) return '🌐';
     if (t.includes('printer')) return '🖨️';
-    if (t.includes('server')) return '🖥️';
-    if (t.includes('camera') || t.includes('nvr') || t.includes('dvr')) return '📹';
-    if (t.includes('ap') || t.includes('wifi')) return '📡';
+    if (t.includes('server') || t.includes('nas') || t.includes('synology') || t.includes('qnap') || t.includes('esxi') || t.includes('vmware')) return '🖥️';
+    if (t.includes('camera')) return '📷';
+    if (t.includes('nvr') || t.includes('dvr') || t.includes('recorder')) return '📹';
+    if (t.includes('access point') || t.includes('ap') || t.includes('wifi') || t.includes('wi-fi') || t.includes('unifi')) return '📡';
+    if (t.includes('scanner')) return '📠';
+    if (t.includes('ups')) return '🔋';
+    if (t.includes('pc') || t.includes('computer') || t.includes('workstation')) return '💻';
     return '🖥️';
   }
 
