@@ -181,8 +181,8 @@ function resetDeviceForm() {
   document.getElementById('device-form-title').textContent = 'إضافة جهاز';
   document.getElementById('df-is_active').checked = true;
   document.getElementById('df-check_protocol').value = 'ping';
-  document.getElementById('df-check_interval_seconds').value = 30;
-  document.getElementById('df-failure_threshold').value = 3;
+  document.getElementById('df-check_interval_seconds').value = 10;
+  document.getElementById('df-failure_threshold').value = 2;
 }
 
 // v2.11.4 — حُذفت دالتا قائمة «متصل عبر» في نموذج الجهاز (`populateDeviceParentSelect`

@@ -76,6 +76,23 @@ try {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // v2.13.4: تسريع الفحص للمشروع كله (شكوى: «الجهاز الجديد بيُفحص كل 30 ثانية
+    // وتغيّر الحالة بياخد وقت أوي»). الأجهزة ما زالت على الافتراضات القديمة
+    // (فحص 30 ثانية / حد فشل 3 ⇒ «متوقف» قد يتأخر ≤90 ثانية) تُرقّى إلى
+    // (10 ثوانٍ / 2 ⇒ ≤20 ثانية). القيم المخصّصة لأجهزة بعينها (أي قيمة غير
+    // القديم تمامًا) لا تُمَسّ — الهجرة لا تعيد ضبط الاختيارات اليدوية.
+    // ─────────────────────────────────────────────────────────────
+    try {
+      const iv = db.prepare("UPDATE devices SET check_interval_seconds = 10 WHERE check_interval_seconds = 30").run();
+      const th = db.prepare("UPDATE devices SET failure_threshold = 2 WHERE failure_threshold = 3").run();
+      if (iv.changes || th.changes) {
+        console.log(`[db] v2.13.4 migration: check_interval 30→10 on ${iv.changes} device(s), threshold 3→2 on ${th.changes} device(s).`);
+      }
+    } catch (e) {
+      console.warn('[db] interval/threshold migration skipped:', e.message);
+    }
+
     // WAL mode لِأَداء أَفضل + تَزامن آمن لِـ concurrent reads في الـ background scheduler.
     db.pragma('journal_mode = WAL');
     // v2.7.x — busy_timeout لِـ تَفادي SQLITE_BUSY عِند تَزاحُم كِتاَبٍ وَرَاء كَوال (WAL)

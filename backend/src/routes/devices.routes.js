@@ -269,8 +269,8 @@ router.post('/', requireAuth, (req, res) => {
     check_protocol || 'ping',
     port ?? null,
     web_port ?? null,
-    check_interval_seconds ?? 30,
-    failure_threshold ?? 3,
+    check_interval_seconds ?? 10,
+    failure_threshold ?? 2,
     is_active == null ? 1 : is_active
   );
 
@@ -377,8 +377,8 @@ router.put('/:id', requireAuth, (req, res) => {
     check_protocol || 'ping',
     port ?? null,
     web_port ?? null,
-    check_interval_seconds ?? 30,
-    failure_threshold ?? 3,
+    check_interval_seconds ?? 10,
+    failure_threshold ?? 2,
     is_active == null ? 1 : is_active,
     id
   );
@@ -512,8 +512,8 @@ router.post('/import/excel', requireAuth, upload.single('file'), (req, res) => {
       const locName = String(row['الموقع'] || row.location || '').trim();
       const protocol = String(row['طريقة الفحص'] || row.protocol || row.check_protocol || 'ping').trim() || 'ping';
       const port = row['المنفذ'] || row.port || null;
-      const interval = Number(row['فترة الفحص (ثانية)'] || row.interval || row.check_interval_seconds || 30);
-      const threshold = Number(row['حد التنبيه'] || row.threshold || row.failure_threshold || 3);
+      const interval = Number(row['فترة الفحص (ثانية)'] || row.interval || row.check_interval_seconds || 10);
+      const threshold = Number(row['حد التنبيه'] || row.threshold || row.failure_threshold || 2);
       const activeRaw = String(row['مفعّل'] || row.is_active || 'نعم').trim();
       const isActive = /^(1|true|نعم|yes|y)$/i.test(activeRaw) ? 1 : 0;
 
