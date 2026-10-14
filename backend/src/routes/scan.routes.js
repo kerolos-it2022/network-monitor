@@ -691,6 +691,14 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
     // 2. لكل مضيف حي: مسح المنافذ، الحصول على MAC، تحديد النوع
     const detailedResults = [];
     
+    // v2.17.0 — الاستماع لقنوات الإعلان (mDNS/WSD/SSDP) مرة واحدة قبل التحليل
+    let annNames = new Map();
+    try {
+      const { collectAnnouncementNames } = require('../services/net-announce.service');
+    annNames = (await collectAnnouncementNames(6000)).ipToName;
+      if (annNames.size) console.log('[SCAN] إعلانات مستلمة لـ', annNames.size, 'جهازًا');
+    } catch (e) { console.error('[SCAN] announcements error:', e.message); }
+
     for (let i = 0; i < aliveHosts.length; i++) {
       // v2.11.7 — الإلغاء يُفحص لكل جهاز ⇒ يتوقف خلال ثوانٍ ويُحفظ ما اكتُشف قبل الإلغاء.
       if (isCancelled()) { finalize(detailedResults, 'cancelled'); return; }
@@ -715,11 +723,18 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
       const existing = db.prepare('SELECT * FROM devices WHERE ip = ?').get(host.ip);
       
       // الحصول على الاسم الحقيقي: NBNS مباشر (v2.16.0) ثم SMB ثم DNS عكسي
+      // v2.17.0 — الأولوية القصوى: أسماء الإعلانات (mDNS/WSD/SSDP)
+      const announced = annNames.get(host.ip);
       const netbiosName = await getNetBIOSName(host.ip);
       const smbName = await getSMBName(host.ip);
       
       // دالة ذكية لتوليد اسم الجهاز
       function generateDeviceName() {
+    // -1. v2.17.0 — الأولوية القصوى: الاسم المُعلن ذاتيًا (mDNS/WSD/SSDP)
+    if (announced && String(announced).length > 1) {
+      return announced;
+    }
+
         // 0. v2.16.0 — الأولوية الأولى: الاسم الحقيقي من الجهاز نفسه عبر NBNS (UDP 137)
         // v2.16.2 — تصحيح: اسم NBNS قد يعود بمسافات/فارغ (كما حصل على 192.168.88.7)
         // ⇒ اشتراط حرف حقيقي incl A-Z, a-z, 0-9 وأي غير لاتيني (طرف من نوع صيني/عربي).
