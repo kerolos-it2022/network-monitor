@@ -71,6 +71,11 @@ try {
       // v2.13.0: سبب فشل الإرسال في notification_logs — بدونه كان الفشل يظهر في
       // السجل كـ «فشل» بلا تفسير (مثال تلجرام: «chat not found» / «bot was blocked»).
       "ALTER TABLE notification_logs ADD COLUMN error TEXT",
+      // v2.14.1: نافذة الصيانة + التقرير اليومي (سمات إعدادات الإشعارات).
+      "ALTER TABLE notification_settings ADD COLUMN maintenance_enabled INTEGER DEFAULT 0",
+      "ALTER TABLE notification_settings ADD COLUMN maintenance_window TEXT DEFAULT ''",
+      "ALTER TABLE notification_settings ADD COLUMN daily_report_enabled INTEGER DEFAULT 1",
+      "ALTER TABLE notification_settings ADD COLUMN daily_report_hour TEXT DEFAULT '08:00'",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

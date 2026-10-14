@@ -41,6 +41,10 @@ router.get('/settings', requireAuth, async (req, res) => {
       whatsapp_api_token_masked: maskToken(s.whatsapp_api_token),
       whatsapp_to_number: s.whatsapp_to_number || '',
       mobile_enabled: s.mobile_enabled ? 1 : 0,
+      maintenance_enabled: s.maintenance_enabled ? 1 : 0,
+      maintenance_window: s.maintenance_window || '',
+      daily_report_enabled: s.daily_report_enabled ? 1 : 0,
+      daily_report_hour: s.daily_report_hour || '08:00',
       fcm_server_key: maskToken(s.fcm_server_key),
       fcm_server_key_masked: maskToken(s.fcm_server_key),
       sources: s._sources || {},
@@ -63,6 +67,10 @@ router.put('/settings', requireAuth, (req, res) => {
     whatsapp_to_number,
     mobile_enabled,
     fcm_server_key,
+    maintenance_enabled,
+    maintenance_window,
+    daily_report_enabled,
+    daily_report_hour,
   } = req.body || {};
 
   // ضمان وجود الصف قبل التحديث.
@@ -91,6 +99,10 @@ router.put('/settings', requireAuth, (req, res) => {
     'whatsapp_to_number',
     'mobile_enabled',
     'fcm_server_key',
+    'maintenance_enabled',
+    'maintenance_window',
+    'daily_report_enabled',
+    'daily_report_hour',
   ];
   db.prepare(
     'UPDATE notification_settings SET ' + COLUMNS.map((c) => c + ' = ?').join(', ') + ' WHERE id = 1'
@@ -103,7 +115,11 @@ router.put('/settings', requireAuth, (req, res) => {
     keepOrNew(whatsapp_api_token, current.whatsapp_api_token),
     whatsapp_to_number || null,
     mobile_enabled ? 1 : 0,
-    keepOrNew(fcm_server_key, current.fcm_server_key)
+    keepOrNew(fcm_server_key, current.fcm_server_key),
+    maintenance_enabled ? 1 : 0,
+    maintenance_window || null,
+    daily_report_enabled ? 1 : 0,
+    daily_report_hour || '08:00',
   );
 
   return res.json({ success: true, data: null });

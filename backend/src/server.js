@@ -169,4 +169,10 @@ app.listen(PORT, () => {
   } catch (e) {
     console.error('[TG-BOT] Failed to start telegram bot:', e.message);
   }
+  // v2.14.1 — التقرير اليومي المجدول (ساعة قابلة للضبط من إعدادات الإشعارات).
+  try {
+    require('./services/smart-alerts.service').startDailyReport();
+  } catch (e) {
+    console.error('[SMART-ALERTS] Failed to start daily report:', e.message);
+  }
 });

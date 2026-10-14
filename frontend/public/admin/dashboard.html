@@ -426,6 +426,10 @@
         <div class="form-grid">
           <label>إشعارات الهاتف مفعّلة <input type="checkbox" id="ntf-mobile_enabled" /></label>
           <label>FCM Server Key <input type="password" id="ntf-fcm_server_key" placeholder="AAAA…" autocomplete="off" /></label>
+          <label>💾 تقرير يومي مجدول <input type="checkbox" id="ntf-daily_report_enabled" /></label>
+          <label>ساعة التقرير <input type="time" id="ntf-daily_report_hour" defaultValue="08:00" /></label>
+          <label>🛠️ كتم أثناء الصيانة <input type="checkbox" id="ntf-maintenance_enabled" /></label>
+          <label>نافذة الصيانة <input type="text" id="ntf-maintenance_window" placeholder="02:00-04:00" title="HH:MM-HH:MM — تدعم عبور منتصف الليل" /></label>
         </div>
         <p style="font-size:0.85rem; color:var(--muted); margin:0.5rem 0;">
           للحصول على المفتاح: أنشئ مشروعاً في <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>

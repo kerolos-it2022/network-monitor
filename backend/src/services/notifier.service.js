@@ -329,7 +329,24 @@ async function testAllChannels(message = '🔔 إشعار تجريبي من نظ
 
 // notifyDeviceDown(device): إشعار انقطاع جهاز للقنوات المفعّلة (متوازي).
 // v2.14.0 — رسالة تلجرام تأتي بأزرار مضمّنة (الحالة/المنقطعون/آخر الانقطاعات).
+// v2.14.1 — ذكاء الإشعارات:
+//   • نافذة الصيانة: أثناءها تُكتم الإشعارات وتُسجَّل بحالة 'maintenance' في السجل.
+//   • تجميع العواصف: أول انقطاع يُرسل فوريًّا، والمتلاحق خلال 90ث تُجمَّع برسالة
+//     واحدة (انظر smart-alerts.service).
 async function notifyDeviceDown(device) {
+  try {
+    const { isMaintenanceNow } = require('./maintenance.service');
+    if (await isMaintenanceNow()) {
+      const timeStr = new Date().toLocaleString('ar');
+      const message = `🛠️ [صيانة] انقطع الجهاز: ${device.name} (IP: ${device.ip}) — الوقت: ${timeStr}`;
+      logNotification('telegram', device.id, message, 'maintenance', null);
+      logNotification('whatsapp', device.id, message, 'maintenance', null);
+      logNotification('mobile', device.id, message, 'maintenance', null);
+      console.log(`[notify] نافذة صيانة — كتم إشعار انقطاع: ${device.name}`);
+      return;
+    }
+  } catch (e) { console.error('[notify] فحص الصيانة فشل — سنكمل الإرسال الطبيعي:', e.message); }
+
   const timeStr = new Date().toLocaleString('ar');
   const message =
     `🔴 انقطع الجهاز: ${device.name}\n` +
@@ -339,6 +356,17 @@ async function notifyDeviceDown(device) {
     `الوقت: ${timeStr}`;
   let tgMarkup = null;
   try { tgMarkup = require('./telegram-bot.service').tgButtons(); } catch (e) { tgMarkup = null; }
+
+  // تجميع العواصف: 'buffer' ⇒ لا إرسال فردي، ستُرسل رسالة مجمّعة بعد نافذة 90ث.
+  let decision = 'send';
+  try { decision = require('./smart-alerts.service').consumeDownEvent(device); }
+  catch (e) { console.error('[notify] منطق العاصفة فشل — سنرسل فرديًّا:', e.message); }
+
+  if (decision === 'buffer') {
+    logNotification('telegram', device.id, message, 'maintenance', 'مجمَّع في تنبيه العاصفة (سيصدر خلال دقيقتين)');
+    return;
+  }
+
   // إرسال متوازي لكل القنوات (لا ننتظر تلجرام قبل واتساب)
   await Promise.all([
     sendTelegram(message, device.id, tgMarkup),
@@ -348,8 +376,20 @@ async function notifyDeviceDown(device) {
 }
 
 // notifyDeviceRecovered(device, downtimeDurationSeconds): إشعار عودة جهاز (متوازي).
-// v2.14.0 — بنفس أزرار الاستعلام السريع على تلجرام.
+// v2.14.0 — بنفس أزرار الاستعلام السريع على تلجرام. v2.14.1 — كتم أثناء نافذة الصيانة.
 async function notifyDeviceRecovered(device, downtimeDurationSeconds) {
+  try {
+    const { isMaintenanceNow } = require('./maintenance.service');
+    if (await isMaintenanceNow()) {
+      const timeStr = new Date().toLocaleString('ar');
+      const message = `🛠️ [صيانة] عاد الجهاز: ${device.name} (IP: ${device.ip}) — الوقت: ${timeStr}`;
+      logNotification('telegram', device.id, message, 'maintenance', null);
+      logNotification('whatsapp', device.id, message, 'maintenance', null);
+      logNotification('mobile', device.id, message, 'maintenance', null);
+      return;
+    }
+  } catch (e) { /* فشل الفحص ⇒ إرسال طبيعي */ }
+
   const dur = formatDuration(downtimeDurationSeconds);
   const message =
     `🟢 عاد الجهاز للعمل: ${device.name}\n` +

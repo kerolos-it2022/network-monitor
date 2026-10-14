@@ -27,6 +27,10 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-whatsapp_to_number').value = d.whatsapp_to_number || '';
   // إعدادات الموبايل/FCM
   document.getElementById('ntf-mobile_enabled').checked = !!d.mobile_enabled;
+  document.getElementById('ntf-maintenance_enabled').checked = !!d.maintenance_enabled;
+  document.getElementById('ntf-maintenance_window').value = d.maintenance_window || '';
+  document.getElementById('ntf-daily_report_enabled').checked = d.daily_report_enabled === undefined ? true : !!d.daily_report_enabled;
+  document.getElementById('ntf-daily_report_hour').value = d.daily_report_hour || '08:00';
   document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
   document.getElementById('ntf-fcm_server_key').value = '';
   // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
@@ -58,6 +62,10 @@ async function saveNotificationSettings() {
     whatsapp_to_number: document.getElementById('ntf-whatsapp_to_number').value.trim(),
     mobile_enabled: document.getElementById('ntf-mobile_enabled').checked,
     fcm_server_key: document.getElementById('ntf-fcm_server_key').value.trim(),
+    maintenance_enabled: document.getElementById('ntf-maintenance_enabled').checked,
+    maintenance_window: document.getElementById('ntf-maintenance_window').value.trim(),
+    daily_report_enabled: document.getElementById('ntf-daily_report_enabled').checked,
+    daily_report_hour: document.getElementById('ntf-daily_report_hour').value || '08:00',
   };
   const r = await api('/api/notifications/settings', {
     method: 'PUT',
