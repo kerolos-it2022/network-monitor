@@ -98,7 +98,11 @@ function performUpdateArchive(tag) {
       { name: 'فك الأرشيف', cmd: `rm -rf ${TMP_SRC} && mkdir -p ${TMP_SRC} && unzip -q -o ${TMP_ZIP} -d ${TMP_SRC}` },
       { name: 'تحديث ملفات التطبيق', cmd: `cd ${TMP_SRC} && SRC=$(ls -d */ | head -n1) && cp -a "$SRC/backend" ${REPO_DIR}/ && cp -a "$SRC/frontend" ${REPO_DIR}/ && mkdir -p ${REPO_DIR}/database && cp -a "$SRC"/database/. ${REPO_DIR}/database/` },
       { name: 'تحديث التبعيات', cmd: `cd ${REPO_DIR}/backend && npm ci --omit=dev` },
-      { name: 'إعادة تشغيل الخدمة', cmd: `if systemctl is-active --quiet network-monitor 2>/dev/null; then systemctl restart network-monitor; else pm2 restart network-monitor --update-env 2>/dev/null || true; fi` }
+      { name: 'إعادة تشغيل الخدمة', cmd: `if systemctl is-active --quiet network-monitor 2>/dev/null; then systemctl restart network-monitor; else pm2 restart network-monitor --update-env 2>/dev/null || true; fi` },
+      // v2.14.8 — إصلاح ذاتي: كل تحديث يعيد تنشيط مراقب طلبات الوصول عن بُعد (كان يموت
+      // بعد أول إعادة تشغيل للجهاز لأن الوحدة غير مفعّلة إقلاعيًا). `; true` يضمن ألا
+      // تفشل هذه الخطوة أبدًا على المنصات بلا systemd (pm2 فقط) — صمت تام هناك.
+      { name: 'تنشيط مساعد الوصول عن بُعد (تلقائي)', cmd: `systemctl enable --now nm-remote.path 2>/dev/null; systemctl try-restart nm-remote.service 2>/dev/null; true` }
     ];
     let i = 0;
     const results = [];
