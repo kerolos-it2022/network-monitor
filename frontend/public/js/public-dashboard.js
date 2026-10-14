@@ -1,7 +1,7 @@
 // public-dashboard.js: \u062c\u0644\u0628/\u0639\u0631\u0636 \u0627\u0644\u0623\u062c\u0647\u0632\u0629\u060c \u0627\u0644\u0641\u0644\u062a\u0631\u0629\u060c \u0627\u0644\u062a\u0631\u062a\u064a\u0628\u060c \u0627\u0644\u062a\u0628\u062f\u064a\u0644 \u0628\u064a\u0646 \u0646\u0645\u0637 \u0627\u0644\u0628\u0637\u0627\u0642\u0627\u062a \u0648\u0627\u0644\u062c\u062f\u0648\u0644\u060c \u0627\u0644\u062a\u062d\u062f\u064a\u062b \u0627\u0644\u062f\u0648\u0631\u064a\u060c \u062a\u0628\u062f\u064a\u0644 \u0627\u0644\u0648\u0636\u0639 \u0627\u0644\u0644\u064a\u0644\u064a.
 let allDevices = [];
 let currentChart = null;
-let currentView = 'cards'; // 'cards' | 'table'
+let currentView = 'cards'; // v2.13.11 — 'cards' | 'table' (أُزيل 'map' — الخريطة في NOC)
 let currentSort = 'ip';  // v2.13.5 — الافتراضي حسب IP (طلبت)؛ الاختيار اليدوي يُحفظ في المتصفح. // 'name' | 'ip' | 'status' | 'type' | 'location' | 'last_checked'
 const VIEW_STORAGE_KEY = 'nm.publicView';
 const SORT_STORAGE_KEY = 'nm.publicSort';
@@ -250,29 +250,20 @@ function switchView(view) {
   var cardsWrap = document.getElementById('devices-grid');
   var cardsBar = document.getElementById('cards-uptime-bar');
   var tableWrap = document.getElementById('devices-table-view');
-  var mapWrap = document.getElementById('map-view');
   var cardsBtn = document.getElementById('view-cards-btn');
   var tableBtn = document.getElementById('view-table-btn');
-  var mapBtn = document.getElementById('view-map-btn');
 
   // v2.6.0: إِخفاء كُلّ الأَنماط أَوّلًا، ثُمّ إِظهار المُحدَّد.
   if (cardsWrap) cardsWrap.classList.add('hidden');
   if (cardsBar) cardsBar.classList.add('hidden');
   if (tableWrap) tableWrap.classList.add('hidden');
-  if (mapWrap) mapWrap.classList.add('hidden');
   if (cardsBtn) cardsBtn.classList.remove('active');
   if (tableBtn) tableBtn.classList.remove('active');
-  if (mapBtn) mapBtn.classList.remove('active');
 
   if (view === 'table') {
     if (tableWrap) tableWrap.classList.remove('hidden');
     if (tableBtn) tableBtn.classList.add('active');
     applyFilters();
-    if (window.PublicMapView) window.PublicMapView.deactivate();
-  } else if (view === 'map') {
-    if (mapWrap) mapWrap.classList.remove('hidden');
-    if (mapBtn) mapBtn.classList.add('active');
-    if (window.PublicMapView) window.PublicMapView.activate();
   } else {
     if (cardsWrap) cardsWrap.classList.remove('hidden');
     if (cardsBar) cardsBar.classList.remove('hidden');
@@ -379,7 +370,7 @@ async function init() {
 
   try {
     var savedView = localStorage.getItem(VIEW_STORAGE_KEY);
-    if (savedView === 'table' || savedView === 'cards' || savedView === 'map') currentView = savedView;
+    if (savedView === 'table' || savedView === 'cards') currentView = savedView; // 'map' أُزيل في v2.13.11
     var savedSort = localStorage.getItem(SORT_STORAGE_KEY);
     if (savedSort) {
       currentSort = savedSort;
@@ -400,8 +391,6 @@ async function init() {
 
   document.getElementById('view-cards-btn').addEventListener('click', function () { switchView('cards'); });
   document.getElementById('view-table-btn').addEventListener('click', function () { switchView('table'); });
-  var viewMapBtnEl = document.getElementById('view-map-btn');
-  if (viewMapBtnEl) viewMapBtnEl.addEventListener('click', function () { switchView('map'); });
 
   document.getElementById('modal-close-btn').addEventListener('click', function () {
     document.getElementById('device-modal').classList.add('hidden');

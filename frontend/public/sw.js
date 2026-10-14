@@ -1,10 +1,10 @@
 // sw.js: Service Worker — يدعم تثبيت PWA + استقبال إشعارات FCM Push + كاش وقت التشغيل (v2.13.6).
 // تاريخ الاسم مهم: يُترك كما هو، وترقيته (v2→v3…) مع كل تغيير بنيوي في الملفات المُسبقة
 // هو ما يجبر العملاء على التخلص من الكاش القديم عند activate.
-const CACHE_NAME = 'network-monitor-v3';   // v2.13.9 — noc.html فُصلت إلى css/noc.css + js/noc.js
+const CACHE_NAME = 'network-monitor-v4';   // v2.13.11 — أُزيلت خريطة الصفحة العامة (public-map.js)
 const PRECACHE_URLS = [
   '/', '/index.html', '/css/style.css', '/manifest.json',
-  '/js/public-dashboard.js', '/js/charts.js', '/js/public-map.js', '/js/public-speedtest.js',
+  '/js/public-dashboard.js', '/js/charts.js', '/js/public-speedtest.js',
   '/css/noc.css', '/js/noc.js',
 ];
 
