@@ -162,4 +162,11 @@ app.listen(PORT, () => {
   } catch (e) {
     console.error('[SCHEDULER] Failed to start scan scheduler:', e.message);
   }
+  // v2.14.0 — بوت تلجرام السامع (Long Polling): أوامر /status /down /recent + الأزرار
+  // المضمّنة تحت رسائل الانقطاع. صامت تمامًا لو التوكن/chat_id غير مضبوطين أو القناة معطّلة.
+  try {
+    require('./services/telegram-bot.service').startTelegramBot();
+  } catch (e) {
+    console.error('[TG-BOT] Failed to start telegram bot:', e.message);
+  }
 });

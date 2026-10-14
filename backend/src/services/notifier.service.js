@@ -120,8 +120,9 @@ function logNotification(channel, deviceId, message, status, errorText = null) {
 }
 
 // ─────────────────────────────── تلجرام ───────────────────────────────
-// deliverTelegram(message, deviceId): إرسال فعلي + نتيجة مفصّلة (بلا اختصار للسبب).
-async function deliverTelegram(message, deviceId = null) {
+// deliverTelegram(message, deviceId, replyMarkup): إرسال فعلي + نتيجة مفصّلة.
+// v2.14.0 — replyMarkup اختياري (أزرار مضمّنة: /status · /down · /recent).
+async function deliverTelegram(message, deviceId = null, replyMarkup = null) {
   const s = await getSettings();
   if (!s.telegram_enabled) {
     return { channel: 'telegram', ok: false, skipped: true, reason: 'القناة معطّلة من لوحة التحكم (Telegram مفعّل = لا)' };
@@ -139,8 +140,10 @@ async function deliverTelegram(message, deviceId = null) {
     };
   }
   const url = `https://api.telegram.org/bot${s.telegram_bot_token}/sendMessage`;
+  const payload = { chat_id: s.telegram_chat_id, text: message };
+  if (replyMarkup) payload.reply_markup = replyMarkup;
   try {
-    await axios.post(url, { chat_id: s.telegram_chat_id, text: message }, { timeout: 10000 });
+    await axios.post(url, payload, { timeout: 10000 });
     logNotification('telegram', deviceId, message, 'sent');
     return { channel: 'telegram', ok: true };
   } catch (e) {
@@ -152,8 +155,8 @@ async function deliverTelegram(message, deviceId = null) {
 }
 
 // sendTelegram(message, deviceId): يبقى يُرجع true/false (توافقًا مع المستدعين الحاليين).
-async function sendTelegram(message, deviceId = null) {
-  return (await deliverTelegram(message, deviceId)).ok;
+async function sendTelegram(message, deviceId = null, replyMarkup = null) {
+  return (await deliverTelegram(message, deviceId, replyMarkup)).ok;
 }
 
 // ─────────────────────────────── واتساب ───────────────────────────────
@@ -325,6 +328,7 @@ async function testAllChannels(message = '🔔 إشعار تجريبي من نظ
 }
 
 // notifyDeviceDown(device): إشعار انقطاع جهاز للقنوات المفعّلة (متوازي).
+// v2.14.0 — رسالة تلجرام تأتي بأزرار مضمّنة (الحالة/المنقطعون/آخر الانقطاعات).
 async function notifyDeviceDown(device) {
   const timeStr = new Date().toLocaleString('ar');
   const message =
@@ -333,23 +337,28 @@ async function notifyDeviceDown(device) {
     `النوع: ${device.device_type_name || '-'}\n` +
     `الموقع: ${device.location_name || '-'}\n` +
     `الوقت: ${timeStr}`;
+  let tgMarkup = null;
+  try { tgMarkup = require('./telegram-bot.service').tgButtons(); } catch (e) { tgMarkup = null; }
   // إرسال متوازي لكل القنوات (لا ننتظر تلجرام قبل واتساب)
   await Promise.all([
-    sendTelegram(message, device.id),
+    sendTelegram(message, device.id, tgMarkup),
     sendWhatsapp(message, device.id),
     sendMobile(message, device.id),
   ]);
 }
 
 // notifyDeviceRecovered(device, downtimeDurationSeconds): إشعار عودة جهاز (متوازي).
+// v2.14.0 — بنفس أزرار الاستعلام السريع على تلجرام.
 async function notifyDeviceRecovered(device, downtimeDurationSeconds) {
   const dur = formatDuration(downtimeDurationSeconds);
   const message =
     `🟢 عاد الجهاز للعمل: ${device.name}\n` +
     `IP: ${device.ip}\n` +
     `مدة الانقطاع: ${dur}`;
+  let tgMarkup = null;
+  try { tgMarkup = require('./telegram-bot.service').tgButtons(); } catch (e) { tgMarkup = null; }
   await Promise.all([
-    sendTelegram(message, device.id),
+    sendTelegram(message, device.id, tgMarkup),
     sendWhatsapp(message, device.id),
     sendMobile(message, device.id),
   ]);

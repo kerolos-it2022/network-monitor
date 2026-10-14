@@ -1,0 +1,214 @@
+// telegram-bot.service.js (v2.14.0) — «البوت اللي بيسمع».
+// ─────────────────────────────────────────────────────────────
+// حتى الآن البوت كان يرسل فقط (sendMessage عبر notifier). هذه الخدمة تضيف الاستقبال:
+//   • حلقة Long Polling على getUpdates — تعمل خلف أي جدار ناري بلا IP عام أو webhook
+//     (القرار: webhook هش على الأبلاينس لأنه يتعلق بدومين عام قابل للتغير).
+//   • أوامر نصية: /status · /down · /recent · /help — وأزرار مضمّنة (Inline Keyboard)
+//     تُضاف تحت رسائل الانقطاع/الاسترجاع (callback_data بقسمة 'cmd:...') في notifier.
+//   • أمان: يرد **فقط** على chat_id المصرَّح به في إعدادات الإشعارات (قاعدة ثم .env) —
+//     أي حساب آخر يتجاهل تمامًا (البوت يبحث عنه بالاسم فهي حماية أساسية المطلوبة).
+//   • خصوصية التشغيل: تعمل فقط لو TELEGRAM token + chat_id موجودان وtelegram_enabled=1؛
+//     أي فشل شبكي = تراجع زمني (3 ثوانٍ) بلا توقف للخادم.
+//   • ملاحظة تشغيلية: عميل واحد فقط لكل توكن (طبيعة getUpdates — لو جهازان على نفس
+//     البوت تتقاسمان الرسائل بالتناوب) — البوت مخصص لجهاز المنشأة الواحد.
+const axios = require('axios');
+const db = require('../db');
+const { getSettings } = require('./notifier.service');
+
+let running = false;
+let offset = 0;
+let unauthorizedWarnedAt = 0;
+
+// esc(s): ترميز HTML لأسماء الأجهزة (وضع parse_mode:'HTML' في تلجرام).
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// api(method, payload): نداء موحد لواجهة البوت.
+async function api(token, method, payload, timeoutMs = 35000) {
+  const res = await axios.post(`https://api.telegram.org/bot${token}/${method}`, payload, { timeout: timeoutMs });
+  if (!res.data || !res.data.ok) throw new Error(`Telegram ${method}: ${(res.data && res.data.description) || 'رد غير متوقع'}`);
+  return res.data;
+}
+
+// tgButtons(): لوحة الأزرار المضمّنة القياسية لأوامر الاستعلام.
+function tgButtons() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '🌐 الحالة الآن', callback_data: 'cmd:status' },
+        { text: '🔴 المنقطعون', callback_data: 'cmd:down' },
+      ],
+      [
+        { text: '📊 آخر الانقطاعات', callback_data: 'cmd:recent' },
+        { text: '❓ الجدول', callback_data: 'cmd:help' },
+      ],
+    ],
+  };
+}
+
+// cmdStatus(): ملخص الحالة الآن (نفس أرقام NOC).
+function cmdStatus() {
+  const d = db.prepare(
+    "SELECT current_status s, COUNT(*) n FROM devices WHERE is_active = 1 GROUP BY current_status"
+  ).all();
+  const m = Object.fromEntries(d.map((r) => [r.s, r.n]));
+  const up = m.online || 0, down = m.offline || 0, unk = m.unknown || 0, paused = m.paused || 0;
+  const total = up + down + unk + paused;
+  return `🌐 <b>حالة الشبكة الآن</b>\n` +
+    `الإجمالي: <b>${total}</b> جهاز\n` +
+    `🟢 متصل: <b>${up}</b>\n` +
+    `🔴 متوقف: <b>${down}</b>\n` +
+    `⚪ غير معروف: ${unk}${paused ? `\n⏸️ موقوف: ${paused}` : ''}`;
+}
+
+// cmdDown(): قائمة الأجهزة المتوقفة الآن مع بداية الانقطاع المفتوح.
+function cmdDown() {
+  const rows = db.prepare(`
+    SELECT d.name, d.ip, de.started_at
+    FROM devices d
+    LEFT JOIN downtime_events de ON de.device_id = d.id AND de.ended_at IS NULL
+    WHERE d.is_active = 1 AND d.current_status = 'offline'
+    ORDER BY de.started_at IS NULL, de.started_at ASC
+  `).all();
+  if (rows.length === 0) return '🟢 مفيش أي جهاز متوقف — الشبكة كاملة!';
+  const lines = rows.map((r) => {
+    let age = '';
+    if (r.started_at) {
+      const mins = Math.max(0, Math.floor((Date.now() - new Date(r.started_at).getTime()) / 60000));
+      age = mins < 1 ? ' (لحظات)'
+        : mins < 60 ? ` (${mins} دقيقة)`
+        : mins < 1440 ? ` (${Math.floor(mins / 60)} س ${mins % 60} د)`
+        : ` (${Math.floor(mins / 1440)} يوم ${Math.floor((mins % 1440) / 60)} س)`;
+    }
+    return `🔴 <b>${esc(r.name)}</b> — <code>${esc(r.ip)}</code>${age}`;
+  });
+  return `🔴 <b>الأجهزة المتوقفة (${rows.length}):</b>\n` + lines.join('\n');
+}
+
+// cmdRecent(): آخر 10 انقطاعات مغلقة من downtime_events.
+function cmdRecent() {
+  const rows = db.prepare(`
+    SELECT d.name, d.ip, de.started_at, de.ended_at
+    FROM downtime_events de
+    LEFT JOIN devices d ON d.id = de.device_id
+    WHERE de.ended_at IS NOT NULL
+    ORDER BY de.ended_at DESC
+    LIMIT 10
+  `).all();
+  if (rows.length === 0) return '📊 لا توجد انقطاعات مسجلة بعد.';
+  const mins = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000));
+  const lines = rows.map((r) =>
+    `<b>${esc((r && r.name) || 'جهاز محذوف')}</b> — ${esc((r && r.ip) || '?')} · ` +
+    `${new Date(r.ended_at).toLocaleString('ar')} · دام ${mins(r.started_at, r.ended_at)} د`
+  );
+  return `📊 <b>آخر 10 انقطاعات:</b>\n` + lines.join('\n');
+}
+
+// cmdHelp(): جدول الأوامر.
+function cmdHelp() {
+  return '🤖 <b>أوامر بوت المراقبة:</b>\n' +
+    '/status — الحالة الآن\n' +
+    '/down — الأجهزة المتوقفة\n' +
+    '/recent — آخر 10 انقطاعات\n' +
+    '/help — هذا الجدول\n\n' +
+    'الأزرار تحت رسائل الانقطاع تنفّذ نفس الأوامر بضغطة واحدة.';
+}
+
+// handleCommand(cmd): يربط الأمر/الزر بالدالة المناسبة.
+function handleCommand(cmd) {
+  switch (String(cmd || '').trim().toLowerCase().replace(/^\//, '').split('@')[0]) {
+    case 'status': return cmdStatus();
+    case 'down': return cmdDown();
+    case 'recent': return cmdRecent();
+    case 'help': case 'start': return cmdHelp();
+    default: return null;
+  }
+}
+
+// handleUpdate(u): معالجة تحديث واحد (رسالة أو زر) بصلاحيات المحادثة المصرحة.
+async function handleUpdate(u, token, chatId) {
+  const msg = u.message;
+  const cb = u.callback_query;
+  let text = null, chatIdIn = null;
+
+  if (cb) {
+    chatIdIn = cb.message && cb.message.chat && cb.message.chat.id;
+    text = cb.data; // 'cmd:status' مثلاً
+    // إقرار الضغط (يوقف الساعة الدوارة في تلجرام) — لا يوقف المسار لو فشل.
+    try { await api(token, 'answerCallbackQuery', { callback_query_id: cb.id }, 8000); } catch (e) {}
+  } else if (msg) {
+    chatIdIn = msg.chat && msg.chat.id;
+    text = msg.text || '';
+  }
+  if (text == null || chatIdIn == null) return;
+
+  // الصلاحية: chat_id المصرح فقط — الباقي يُتجاهل (سجل تحذير كل 10 دقائق كحد أقصى).
+  if (String(chatIdIn) !== String(chatId)) {
+    const now = Date.now();
+    if (now - unauthorizedWarnedAt > 10 * 60000) {
+      unauthorizedWarnedAt = now;
+      console.warn(`[tg-bot] تجاهل محاولة من chat_id=${chatIdIn} (غير مصرح)`);
+    }
+    return;
+  }
+
+  const cmd = String(text).replace(/^cmd:/, '').trim();
+  if (/^\//.test(cmd) || cb) {
+    const reply = handleCommand(cmd);
+    if (reply) {
+      await api(token, 'sendMessage', {
+        chat_id: chatIdIn, text: reply, parse_mode: 'HTML',
+        reply_markup: tgButtons(), disable_web_page_preview: true,
+      }, 10000);
+    } else if (msg && /^\//.test(String(msg.text || '').trim())) {
+      await api(token, 'sendMessage', {
+        chat_id: chatIdIn, text: '🤖 أمر غير معروف — اكتب /help', parse_mode: 'HTML',
+      }, 10000);
+    }
+  }
+}
+
+// startTelegramBot(): يُستدعى مرة عند بدء الخادم — حلقة استمرار طويلة تلقائية.
+// شروط العمل: توكن + chat_id (قاعدة أو .env) + telegram_enabled من لوحة التحكم.
+async function startTelegramBot() {
+  if (running) return;
+  let s;
+  try { s = await getSettings(); } catch (e) { console.warn('[tg-bot] تعذّر قراءة الإعدادات:', e.message); return; }
+  const token = s.telegram_bot_token;
+  const chatId = s.telegram_chat_id;
+  if (!s.telegram_enabled) { console.log('[tg-bot] القناة معطّلة من لوحة التحكم — الاستقبال متوقف.'); return; }
+  if (!token || !chatId) { console.log('[tg-bot] توكن/chat_id غير مضبوطين — الاستقبال متوقف.'); return; }
+
+  // تلجرام يرفض getUpdates لو webhook مفعّل — نلغيه بحذر (بلا انفجار لو مفيش webhook).
+  try { await api(token, 'deleteWebhook', { drop_pending_updates: false }, 10000); } catch (e) { /* تجاهل */ }
+
+  running = true;
+  console.log('[tg-bot] البوت بدأ الاستماع (Long Polling) للأوامر: /status /down /recent /help');
+
+  const loop = async () => {
+    while (running) {
+      try {
+        const data = await api(token, 'getUpdates', {
+          offset,
+          timeout: 25,
+          allowed_updates: ['message', 'callback_query'],
+        }, 35000);
+        const updates = data.result || [];
+        for (const u of updates) {
+          offset = Math.max(offset, Number(u.update_id || 0) + 1);
+          try { await handleUpdate(u, token, chatId); }
+          catch (e) { console.error('[tg-bot] خطأ معالجة تحديث:', e.message); }
+        }
+      } catch (e) {
+        // انقطاع شبكة/سهم مؤقت ⇒ تراجع قصير (أطول لو 409: عميل آخر على نفس التوكن).
+        const conflict = /409/.test(String(e.message));
+        console.error('[tg-bot]', conflict ? 'توكن مستخدم من عميل آخر — تأخير أطول' : 'خطأ شبكة — إعادة محاولة', e.message);
+        await new Promise((r) => setTimeout(r, conflict ? 30000 : 5000));
+      }
+    }
+  };
+  loop().catch((e) => { running = false; console.error('[tg-bot] توقفت الحلقة:', e.message); });
+}
+
+module.exports = { startTelegramBot, handleCommand, tgButtons };
