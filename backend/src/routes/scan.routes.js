@@ -721,8 +721,10 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
       // دالة ذكية لتوليد اسم الجهاز
       function generateDeviceName() {
         // 0. v2.16.0 — الأولوية الأولى: الاسم الحقيقي من الجهاز نفسه عبر NBNS (UDP 137)
-        if (netbiosName && netbiosName.length > 1) {
-          return netbiosName;
+        // v2.16.2 — تصحيح: اسم NBNS قد يعود بمسافات/فارغ (كما حصل على 192.168.88.7)
+        // ⇒ اشتراط حرف حقيقي incl A-Z, a-z, 0-9 وأي غير لاتيني (طرف من نوع صيني/عربي).
+        if (netbiosName && /[-￿A-Za-z0-9]/.test(netbiosName.trim())) {
+          return netbiosName.trim();
         }
         // 1. الأولوية الثانية: اسم SMB/NetBIOS من الأداتين (nbtstat/nmblookup)
         if (smbName && smbName.length > 1) {
