@@ -440,7 +440,9 @@
       elDown.classList.toggle('has-bad', down > 0);
     }
     if (elPath) elPath.textContent = path;
-    if (elLocs) elLocs.textContent = allLocations.length;
+    // v2.13.10 — «إجمالي المواقع والمباني» يستبعد عقدة الإنترنت الرئيسية (kind=internet):
+    // هي عقدة بنية تحتية وهمية (مُدخل الشبكة) وليست موقعًا/مبنى — كانت ترفع العدّ عددًا زائفًا.
+    if (elLocs) elLocs.textContent = allLocations.filter((l) => l.kind !== 'internet').length;
     if (elTotal) elTotal.textContent = total;
 
     // v2.12.0 — تنبيه «الانقطاع الجديد» بخط أساس دائم — انظر checkNewOutages أدناه.
