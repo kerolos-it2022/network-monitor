@@ -112,6 +112,11 @@ router.get('/progress', requireAuth, (req, res) => {
     let state = null;
     let log = '';
     try { state = JSON.parse(fs.readFileSync(p.statusFile, 'utf8')); } catch (e) {}
+    try {
+      // v2.17.1 — دمج سجل مسار تحديث الويب (performUpdateArchive): الأحدث زمنيًا يفوز
+      const webRec = JSON.parse(fs.readFileSync(path.join(__dirname, '../../database', 'update-web-status.json'), 'utf8'));
+      if (webRec && webRec.at && (!state || !state.at || String(webRec.at) > String(state.at))) state = webRec;
+    } catch (e) { /* لا سجل ويب — لا بأس */ }
     try { log = fs.readFileSync(p.logFile, 'utf8').split('\n').slice(-40).join('\n'); } catch (e) {}
     res.json({ success: true, appliance: isAppliance(), state, log });
   } catch (e) {

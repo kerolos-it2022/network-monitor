@@ -85,7 +85,25 @@ async function getLatestTagFromApi() {
   }
 }
 
+// v2.17.1 — سجل حالة لمسار تحديث الويب (يُدمج في /progress ليه يظهر في «آخر عملية»):
+//   سابقًا مسار الويب كتب نتيجته في الذاكرة فقط ⇒ ظلّ التذييل يعرض رسالة قديمة
+//   («تم التحديث إلى v2.14.0») بعدما تجاوزها النظام بإصدارات عدّة.
+function webUpdateStatusPath() {
+  return path.join(__dirname, '../../database', 'update-web-status.json');
+}
+function writeWebUpdateStatus(rec) {
+  try {
+    rec.at = new Date().toISOString();
+    fs.mkdirSync(path.dirname(webUpdateStatusPath()), { recursive: true });
+    fs.writeFileSync(webUpdateStatusPath(), JSON.stringify(rec, null, 2));
+  } catch (e) {}
+}
+function readWebUpdateStatus() {
+  try { return JSON.parse(fs.readFileSync(webUpdateStatusPath(), 'utf8')); } catch (e) { return null; }
+}
 function performUpdateArchive(tag) {
+    // v2.17.1 — سجل «قيد التحديث» فور البدء.
+    writeWebUpdateStatus({ state: 'running', message: '⏳ جارٍ التحديث إلى ' + tag + '…' });
   return new Promise((resolve) => {
     const TMP_ZIP = `/tmp/nm-update-${tag}.zip`;
     const TMP_SRC = '/tmp/nm-update-src';
@@ -108,12 +126,14 @@ function performUpdateArchive(tag) {
     const results = [];
     function next() {
       if (i >= steps.length) {
+        try { writeWebUpdateStatus({ state: 'success', message: '✅ تم التحديث إلى ' + tag.replace(/^v/i, '') + ' بنجاح' }); } catch (e) {}
         resolve({ success: true, message: 'تم التحديث عبر أرشيف الإصدار وإعادة التشغيل بنجاح', steps: results, viaArchive: true });
         return;
       }
       const st = steps[i];
       exec(st.cmd, { cwd: REPO_DIR, timeout: 600000 }, (err, stdout, stderr) => {
         if (err) {
+          try { writeWebUpdateStatus({ state: 'failed', message: '❌ فشل التحديث («' + st.name + '»): ' + (err.message || '') }); } catch (e) {}
           resolve({ success: false, error: `فشل في خطوة "${st.name}": ${err.message}\n${stderr}`, steps: results });
           return;
         }
@@ -441,11 +461,24 @@ router.get('/status', requireAuth, async (req, res) => {
     const isRepo = await isGitRepo();
     
     if (!isRepo) {
-      return res.json({ 
-        success: false, 
-        error: 'ليس مستودع Git',
-        isGitRepo: false 
-      });
+      // v2.17.1 — على الأبلاينس (بلا git) كانت الحالة ترجع success:false
+      // («ليس مستودع Git») فتظهر بطاقات الإصدار مشوشة؛ الآن نفس منطق الأرشيف:
+      const currentVersion = getCurrentVersion();
+      const sortedTags = await getLatestTagFromApi();
+      const latestTagV = sortedTags[0] || null;
+      const latestVersion = latestTagV ? latestTagV.replace(/^v/i, '') : currentVersion;
+      const updateAvailable = latestTagV ? isNewerVersion(latestTagV, currentVersion) : false;
+      const viaArchiveResult = {
+        success: true,
+        isGitRepo: false,
+        viaArchive: true,
+        hasUpdate: updateAvailable,
+        currentVersion,
+        latestVersion,
+        updateAvailable,
+        changelog: updateAvailable ? 'تحديث متاح (' + latestVersion + ') — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)' : 'أنت على أحدث إصدار أو أحدث من المتاح',
+      };
+      return res.json(viaArchiveResult);
     }
 
     const [currentVersion, currentBranch, updateInfo] = await Promise.all([
