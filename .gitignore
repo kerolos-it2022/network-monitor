@@ -79,3 +79,6 @@ appliance/noc-*.html
 
 # ZCode tool config (نسخة محليّة من قواعد التجاهل — ليست جزءًا من المنتج)
 .zcodeignore
+
+# ذاكرة ZCode — نسخة محليّة فقط (تحتوي قواعد العمل والدروس — لا تُرفع لـ GitHub و قد تضم اعتمادات)
+/memory-backup/
