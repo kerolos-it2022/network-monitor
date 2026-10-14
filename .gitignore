@@ -82,3 +82,20 @@ appliance/noc-*.html
 
 # ذاكرة ZCode — نسخة محليّة فقط (تحتوي قواعد العمل والدروس — لا تُرفع لـ GitHub و قد تضم اعتمادات)
 /memory-backup/
+
+# v2.14.5 — تنظيف GitHub: مستندات التطوير الداخلية تبقى محليّة فقط
+/docs/
+/_*.scratch.*
+/cdp-*.js
+/cdp-*.txt
+/commit-msg*.txt
+/PLAN-*.md
+/verify-*.js
+/*[ ][1]*.png
+/all-locs.png
+/auto-nest.png
+/cards-final.png
+/clean-board.png
+/cmp*.png
+/diag-board.png
+/*-capture*.png
