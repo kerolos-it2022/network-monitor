@@ -2,7 +2,7 @@
 let allDevices = [];
 let currentChart = null;
 let currentView = 'cards'; // 'cards' | 'table'
-let currentSort = 'name';  // 'name' | 'ip' | 'status' | 'type' | 'location' | 'last_checked'
+let currentSort = 'ip';  // v2.13.5 — الافتراضي حسب IP (طلبت)؛ الاختيار اليدوي يُحفظ في المتصفح. // 'name' | 'ip' | 'status' | 'type' | 'location' | 'last_checked'
 const VIEW_STORAGE_KEY = 'nm.publicView';
 const SORT_STORAGE_KEY = 'nm.publicSort';
 const THEME_STORAGE_KEY = 'nm.publicTheme'; // 'dark' | 'light'

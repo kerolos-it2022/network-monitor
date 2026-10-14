@@ -1167,13 +1167,6 @@
     }[c]));
   }
 
-  function natKey(n) {
-    const m = String(n.name || '').match(/(\d+)\s*$/);
-    if (m) return parseInt(m[1], 10);
-    const ipm = String(n.ip || '').match(/(\d+)\s*$/);
-    return ipm ? parseInt(ipm[1], 10) : 999999;
-  }
-
   // ── v2.13.3 — غطاء إنذار الانقطاع + شارات «منقطع منذ …» ──
   // المصدر: offline_since يأتي من الخادم (downtime_events مفتوحة) عبر /api/topology وSSE.
   // offlineSinceById: خريطة جهاز → بداية الانقطاع — لأن أشجار الخريطة/الرسم لا تحمل الحقل.
@@ -1212,16 +1205,14 @@
   }
   window.hideOutageOverlay = hideOutageOverlay;
 
-  // مُقارِنة طبيعية كاملة: عدد لاحق في الاسم أولًا، وإلا IP بالأوكتِتات كاملة
-  // (كان البديل يعتمد آخر أوكتِت فقط فتتقدّم 10.0.4.2 على 10.0.3.100).
+  // ── v2.13.5 — مُقارِنة IP خالصة (طلب المستخدم: ترتيب موحّد بالـIP في NOC كلها). ──
+  // كانت natCmp تُرجّح «رقم لاحق في الاسم» أولًا — صارت الآن بالأوكتِتات كاملة دائمًا،
+  // والاسم يُستعمل كفاصل تعادل فقط (مثلاً جهازان يشتركان في IP خاطئ).
+  const ipToNum = (ip) => String(ip || '').split('.').reduce((acc, p) => acc * 256 + (parseInt(p, 10) || 0), 0);
   function natCmp(a, b) {
-    const ma = String(a.name || '').match(/(\d+)\s*$/);
-    const mb = String(b.name || '').match(/(\d+)\s*$/);
-    if (ma && mb && ma[1] !== mb[1]) return parseInt(ma[1], 10) - parseInt(mb[1], 10);
-    const ipToNum = (ip) => String(ip || '').split('.').reduce((acc, p) => acc * 256 + (parseInt(p, 10) || 0), 0);
     const d = ipToNum(a.ip) - ipToNum(b.ip);
     if (d) return d;
-    return natKey(a) - natKey(b);
+    return String(a.name || '').localeCompare(String(b.name || ''), 'ar');
   }
 
 
@@ -1353,7 +1344,9 @@
 
     heroSec.style.display = (mode === 'all' || mode === 'hero') ? 'block' : 'none';
     mapSec.style.display  = (mode === 'all' || mode === 'map')  ? 'block' : 'none';
-    catSec.style.display  = (mode === 'all' || mode === 'grid') ? 'block' : 'none';
+    // v2.13.5 — قسم «الأجهزة حسب النوع» شُذ من «عرض شامل» (طلب المستخدم: «أشياء مكررة»).
+    // كان يُعرض مع الخريطة فيظهر كل جهاز مرتين في نفس الشاشة؛ صار تبويبًا مستقلًا فقط.
+    catSec.style.display  = (mode === 'grid') ? 'block' : 'none';
     // v2.8.6 — «التخطيط المرسوم» يُعرض عند اختياره فقط (لا يزدحم به «عرض شامل»).
     if (drawSec) drawSec.style.display = (mode === 'draw') ? 'block' : 'none';
     // v2.11.6 — أدوات الفلترة تظهر فقط في الشاشات التي تعمل فيها فعلًا.
@@ -1364,8 +1357,9 @@
   //   الأجهزة حسب النوع / عرض شامل : البحث ✓ + فلتر الحالة ✓ (كلاهما في قسم «الأجهزة حسب النوع»)
   //   ✏️ التخطيط المرسوم          : البحث ✓ (يخفي صفوف الأجهزة داخل البطاقات) — فلتر الحالة ✗
   //   🗺️ خريطة المباني / 🔗 مسار الإنترنت : لا شيء ✗
+  //   v2.13.5 — «عرض شامل» بلا قسم «حسب النوع» ⇒ لا أدوات فلترة له (لم تعد تُؤثّر على شيئ يُعرض).
   const FILTER_SCOPE = {
-    all:  { search: true,  status: true  },
+    all:  { search: false, status: false },
     grid: { search: true,  status: true  },
     draw: { search: true,  status: false },
     map:  { search: false, status: false },
@@ -1665,11 +1659,9 @@
     if (name && ip) return `${name} (${ip})`;
     return name || ip || 'جهاز';
   }
-  // مفتاح ترتيب صفوف الأجهزة = الاسم (نفس ORDER BY d.name في مسار لوحة التحكم).
+  // مفتاح ترتيب صفوف الأجهزة = IP رقمي بالأوكتِتات (v2.13.5 — كان بالاسم واحدة).
   function mapDevSortKey(node) {
-    const id = mapDevNum(node);
-    const dev = id != null ? devById.get(id) : null;
-    return String((dev && dev.name) || node.ip || '');
+    return ipToNum(node.ip);
   }
 
   function zoneCardColor(kind) {
