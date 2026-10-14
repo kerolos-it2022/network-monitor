@@ -181,6 +181,17 @@ router.get('/status', requireAuth, async (req, res) => {
     const helperStatus = readJsonSafe(p.statusFile) || {};
     const autostart = fs.existsSync(NGROK_ENABLED_LINK);
     const domainsInfo = readJsonSafe(p.domainsFile) || null;
+    // v2.14.3 — ملف الدومين root-only وقد تفشل قراءته: نستنتج الدومين الثابت من الرابط الحي
+    // لو hostname النفق الحالي ∈ دومينات الحساب المجلوبة (domains.json) — بدل إظهار «ديناميكي" زائف.
+    let inferredDomain = null;
+    try {
+      if (tunnel && tunnel.public_url) {
+        const host = new URL(tunnel.public_url).hostname;
+        const doms = domainsInfo && Array.isArray(domainsInfo.domains) ? domainsInfo.domains : [];
+        const names = doms.map((d) => (typeof d === 'string' ? d : ((d && (d.name || d.domain)) || '')));
+        if (names.includes(host)) inferredDomain = host;
+      }
+    } catch (e) { inferredDomain = null; }
 
     // حالة القيم السرّية: من ملف حالة المساعد (حالة فقط)، وإلا استنتاج آمن، وإلا «غير معروفة».
     let stateA = helperStatus[F_ONE];
@@ -219,8 +230,8 @@ router.get('/status', requireAuth, async (req, res) => {
       publicUrl: tunnel ? String(tunnel.public_url || '') || null : null,
       protocol: tunnel ? String(tunnel.proto || '') || null : null,
       addr: tunnel && tunnel.config && tunnel.config.addr ? String(tunnel.config.addr) : null,
-      domain,
-      expectedUrl: domain ? 'https://' + domain : null,
+      domain: domain || inferredDomain,
+      expectedUrl: (domain || inferredDomain) ? 'https://' + (domain || inferredDomain) : null,
       autostart,
       domains: domainsInfo && Array.isArray(domainsInfo.domains) ? domainsInfo.domains : [],
       domainsAt: domainsInfo && domainsInfo.at ? domainsInfo.at : null,

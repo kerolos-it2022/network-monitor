@@ -243,7 +243,15 @@ async function remoteAction(action, label, value) {
         break;
       }
     }
-    if (!changed) showToast('⚠️ لم تصل نتيجة بعد — راجع السجل في الأسفل', { type: 'warning', duration: 7000 });
+    if (!changed) {
+      // v2.14.3 — الطلب مكتوب والمساعد لم يستهلكه: الرسالة القديمة كانت تعرض
+      // «نجاح» قديمًا (بتاريخ قديم) فتبدو الصفحة كاذبة. الآن: تشخيص صريح + الحل.
+      const diag = '⚠️ الطلب مكتوب لكن مساعد الجهاز (nm-remote) لم ينفّذه — غالبًا وحدة المراقبة متوقفة.\n'
+        + 'من كونسول الجهاز أو SSH (sysadmin): sudo systemctl enable --now nm-remote.path && sudo systemctl restart nm-remote.service';
+      rStatus('⚠️ لم يُنفَّذ بعد ' + (Math.round(25)) + ' ثانية — مساعد الجهاز لا يستهلك الطلبات (انظر التشخيص بالسجل)', true);
+      showToast('⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path', { type: 'warning', duration: 10000 });
+      console.warn('[remote] ' + diag);
+    }
   } finally {
     remoteBusy = false;
     const s = await loadRemoteStatus();
