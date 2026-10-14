@@ -294,11 +294,14 @@
     const catSec = document.getElementById('categories-section');
     const drawSec = document.getElementById('draw-section');
 
+    // v2.15.0 — وضع «🪟 مقسّوم»: خريطة المباني + الأجهزة حسب النوع جنباً إلى جنب.
+    const mainEl = document.getElementById('noc-main-content');
+    if (mainEl) mainEl.classList.toggle('noc-split', mode === 'split');
     heroSec.style.display = (mode === 'all' || mode === 'hero') ? 'block' : 'none';
-    mapSec.style.display  = (mode === 'all' || mode === 'map')  ? 'block' : 'none';
+    mapSec.style.display  = (mode === 'all' || mode === 'map' || mode === 'split') ? 'block' : 'none';
     // v2.13.5 — قسم «الأجهزة حسب النوع» شُذ من «عرض شامل» (طلب المستخدم: «أشياء مكررة»).
     // كان يُعرض مع الخريطة فيظهر كل جهاز مرتين في نفس الشاشة؛ صار تبويبًا مستقلًا فقط.
-    catSec.style.display  = (mode === 'grid') ? 'block' : 'none';
+    catSec.style.display  = (mode === 'grid' || mode === 'split') ? 'block' : 'none';
     // v2.8.6 — «التخطيط المرسوم» يُعرض عند اختياره فقط (لا يزدحم به «عرض شامل»).
     if (drawSec) drawSec.style.display = (mode === 'draw') ? 'block' : 'none';
     // v2.11.6 — أدوات الفلترة تظهر فقط في الشاشات التي تعمل فيها فعلًا.
@@ -312,6 +315,7 @@
   //   v2.13.5 — «عرض شامل» بلا قسم «حسب النوع» ⇒ لا أدوات فلترة له (لم تعد تُؤثّر على شيئ يُعرض).
   const FILTER_SCOPE = {
     all:  { search: false, status: false },
+    split:{ search: true,  status: true  },   // v2.15.0 — الفئات ظاهرة في المقسوم
     grid: { search: true,  status: true  },
     draw: { search: true,  status: false },
     map:  { search: false, status: false },
@@ -1425,7 +1429,7 @@
   (function restoreSavedView() {
     let savedView = 'all';
     try { savedView = localStorage.getItem(VIEW_STORAGE_KEY) || 'all'; } catch (e) {}
-    if (['all', 'hero', 'map', 'grid', 'draw'].indexOf(savedView) === -1) savedView = 'all';
+    if (['all', 'hero', 'map', 'grid', 'draw', 'split'].indexOf(savedView) === -1) savedView = 'all';
     setViewMode(savedView);
     let savedZoom = 1.0;
     try { savedZoom = parseFloat(localStorage.getItem(ZOOM_STORAGE_KEY)); } catch (e) {}

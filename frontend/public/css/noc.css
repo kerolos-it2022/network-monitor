@@ -856,3 +856,14 @@
   html.noc-day .dev-downtime,
   html.noc-day .map-zone-device .map-device-downtime,
   html.noc-day .mv-inner-row .mv-downtime { color: #b91c1c; }
+
+/* ── v2.15.0 — وضع «🪟 مقسّوم»: خريطة المباني + الأجهزة حسب النوع جنباً إلى جنب ── */
+#noc-main-content.noc-split { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; }
+#noc-main-content.noc-split > section { display: none; }
+#noc-main-content.noc-split #map-section,
+#noc-main-content.noc-split #categories-section { display: block !important; flex: 1 1 calc(50% - 0.75rem); min-width: 380px; max-width: none; overflow: visible; }
+/* الدور أثناء التخطيط: main يفقد الطبيعة العائمة القديمة */
+@media (max-width: 1100px) {
+  #noc-main-content.noc-split #map-section,
+  #noc-main-content.noc-split #categories-section { flex: 1 1 100%; max-width: 100%; }
+}
