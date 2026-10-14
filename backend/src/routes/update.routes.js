@@ -60,13 +60,24 @@ function isNewerVersion(a, b) {
 async function getLatestTagFromApi() {
   try {
     const { owner, repo } = getRepoConfig();
-    const res = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/tags?per_page=30`,
-      { headers: githubApiHeaders(), signal: AbortSignal.timeout(20000) }
-    );
-    if (!res.ok) return [];
-    const tags = await res.json();
-    const vTags = Array.isArray(tags) ? tags.map((t) => t.name).filter((n) => /^v/i.test(n)) : [];
+    // v2.13.7 — إصلاح عيب حرج: كان يُجلب أول 30 وسمًا فقط (per_page=30) والمستودع فيه
+    // 57 وسمًا ⇒ أحدث الوسوم (v2.13.x) كانا خارج النافذة والمُحدِّث يعرض/يثبّت إصدارًا
+    // قديمًا (كان آخر ما يُرى v2.13.0). الآن: ترقيم صفحات حتى نفاد القائمة ثم ترتيب semver.
+    const collected = [];
+    let page = 1;
+    while (page <= 5) {   // سقف حماية: 5×100 = 500 وسم — أكبر من أي توقع
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/tags?per_page=100&page=${page}`,
+        { headers: githubApiHeaders(), signal: AbortSignal.timeout(20000) }
+      );
+      if (!res.ok) break;
+      const batch = await res.json();
+      if (!Array.isArray(batch) || batch.length === 0) break;
+      collected.push(...batch);
+      if (batch.length < 100) break;   // آخر صفحة
+      page++;
+    }
+    const vTags = collected.map((t) => t && t.name).filter((n) => typeof n === 'string' && /^v/i.test(n));
     // GitHub لا يرتب semver — نرتب تنازليًا بأنفسنا
     return vTags.sort((a, b) => (isNewerVersion(b, a) ? 1 : isNewerVersion(a, b) ? -1 : 0));
   } catch {
@@ -227,7 +238,7 @@ function classifyGitError(error) {
     return {
       category: 'network',
       message: 'تعذّر الوصول إلى المستودع البعيد — تحقق من اتصال الخادم بالإنترنت/GitHub.',
-      hint: 'حاول مجددًا لاحقًا؛ تحقق من DNS/防火墙： nslookup github.com',
+      hint: 'حاول مجددًا لاحقًا؛ تحقق من DNS/الجدار الناري： nslookup github.com',
     };
   }
   // مصادقة (مستودع خاص بدون token، أو token منتهٍ)
