@@ -108,7 +108,12 @@
 
     <!-- ============ قسم الأنواع ============ -->
     <section id="section-types" class="hidden">
-      <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+      <div class="form-card">
+        <h3>🏷️ أنواع الأجهزة</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.75rem 0;">
+          الأنواع هنا تُصنّف الأجهزة تلقائيًا في شاشة NOC (أقسام «أنواع الأجهزة») وفي الفلاتر — الأيقونة الظاهرة إلى جوار كل نوع تُستنتج من اسمه تلقائيًا إن لم تُحدَّد يدويًا.
+        </p>
+        <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
         <button id="add-type-btn" type="button" class="btn btn-primary" title="إضافة نوع جهاز جديد">➕ إضافة نوع</button>
         <div style="flex:1;"></div>
         <label style="font-size:0.9rem; color:var(--muted);">ترتيب:</label>
@@ -121,6 +126,7 @@
         <thead><tr><th>المعرّف</th><th>الاسم</th><th>الأيقونة</th><th>إجراءات</th></tr></thead>
         <tbody id="types-table-body"></tbody>
       </table>
+      </div>
     </section>
 
     <!-- ============ قسم اكتشاف الأجهزة ============ -->

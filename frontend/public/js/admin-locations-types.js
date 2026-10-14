@@ -4,60 +4,40 @@ let currentLocationsSort = 'name'; // متغير عام لتخزين الترت�
 let currentTypesSort = 'name'; // متغير عام لتخزين الترتيب الحالي للأنواع
 
 // دالة لتحويل اسم الأيقونة إلى إيموجي
+// v2.15.2 — إصدار محسّن:
+//   • لو القيمة المحفوظة إيموجي مباشرة تُعرض كما هي (كانت تتحول ❓ خطأً).
+//   • لو الاسم غير معروف ⇒ استنتاج من **اسم النوع** نفسه (عربي/إنجليزي) ثم 🏷️ عامة — لا ❓.
 function getIconEmoji(iconName) {
-  if (!iconName) return '❓';
-  const iconMap = {
-    'server': '🖥️',
-    'router': '🌐',
-    'switch': '🔀',
-    'firewall': '🛡️',
-    'printer': '🖨️',
-    'camera': '📷',
-    'nvr': '📹',
-    'dvr': '📼',
-    'access-point': '📡',
-    'ap': '📡',
-    'nas': '💾',
-    'ups': '🔋',
-    'sensor': '📟',
-    'phone': '📞',
-    'pc': '💻',
-    'laptop': '💻',
-    'workstation': '🖥️',
-    'vm': '☁️',
-    'cloud': '☁️',
-    'database': '🗄️',
-    'web': '🌐',
-    'mail': '📧',
-    'dns': '🔍',
-    'dhcp': '🔢',
-    'vpn': '🔐',
-    'load-balancer': '⚖️',
-    'proxy': '🔀',
-    'gateway': '🚪',
-    'modem': '📡',
-    'bridge': '🌉',
-    'repeater': '📶',
-    'extender': '📶',
-    'controller': '🎮',
-    'iot': '🏠',
-    'smart-home': '🏠',
-    'tv': '📺',
-    'display': '🖥️',
-    'projector': '📽️',
-    'scanner': '📄',
-    'fax': '📠',
-    'pos': '💳',
-    'atm': '🏧',
-    'kiosk': '🏪',
-    'default': '📦',
-    'network': '🌐',
-    'wifi': '📶',
-    'wireless': '📶',
-    'shield': '🛡️',
+  if (!iconName) return '';
+  const v = String(iconName).trim();
+  if (v && !/^[a-z0-9 _-]+$/i.test(v)) return v;   // إيموجي محفوظ مباشرة
+  const key = v.toLowerCase().replace(/[_\s-]+/g, '');
+  const map = {
+    server: '🖥️', router: '📶', switch: '🔌', firewall: '🛡️', printer: '🖨️',
+    camera: '📷', nvr: '📹', dvr: '📹', 'accesspoint': '📡', ap: '📡', wifi: '📡',
+    nas: '💾', ups: '🔋', sensor: '📟', phone: '📞', pc: '💻', laptop: '💻',
+    workstation: '🖥️', vm: '☁️', cloud: '☁️', database: '🗄️', web: '🌐',
+    scanner: '📠', gateway: '🌐', isp: '🌐', modem: '📶', tv: '📺',
   };
-  const key = iconName.toLowerCase().trim();
-  return iconMap[key] || iconMap['default'];
+  if (map[key]) return map[key];
+  return '';   // v2.15.2 — غير معروف ⇒ يُستنتج من اسم النوع في الاستدعاء
+}
+// v2.15.2 — استنتاج الأيقونة من اسم النوع (يُستعمل كذلك عند غياب أيقونة محفوظة).
+function inferByName(typeName) {
+  const n = String(typeName || '').toLowerCase();
+  const has = (arr) => arr.some((w) => n.includes(w));
+  if (has(['طابعة', 'طباعه', 'printer', 'ماسح', 'scanner', 'تصوير', 'plotter'])) return '🖨️';
+  if (has(['كاميرا', 'camera', 'مراقبة', 'hikvision', 'dahua'])) return '📷';
+  if (has(['nvr', 'dvr', 'تسجيل', 'recorder'])) return '📹';
+  if (has(['سويتش', 'switch', 'موزع', 'موزّع'])) return '🔌';
+  if (has(['راوتر', 'راوتر', 'رorter', 'router', 'مودم', 'modem'])) return '📶';
+  if (has(['جدار', 'firewall', 'حماية', 'بوابة', 'gateway', 'sophos', 'ميكروتيك', 'mikrotik'])) return '🛡️';
+  if (has(['واي فاي', 'واي-فاي', 'wifi', 'wi-fi', 'access point', 'نقطة', 'unifi', 'اكسس'])) return '📡';
+  if (has(['سيرفر', 'سرفر', 'server', 'nas', 'خادم', 'synology', 'qnap', 'esxi', 'vmware'])) return '🖥️';
+  if (has(['ups'])) return '🔋';
+  if (has(['كمبيوتر', 'حاسب', 'pc', 'laptop', 'لاب'])) return '💻';
+  if (has(['isp', 'خط', 'فايبر', 'fiber', 'gpon', 'ont', 'olt', 'إنترنت', 'انترنت'])) return '🌐';
+  return '🏷️';
 }
 
 // ============ المواقع ============
@@ -330,7 +310,7 @@ async function loadTypes() {
   
   for (const t of sortedData) {
     const tr = document.createElement('tr');
-    const iconEmoji = getIconEmoji(t.icon);
+    const iconEmoji = getIconEmoji(t.icon) || inferByName(t.name);
     tr.innerHTML = `
       <td>${t.id}</td>
       <td>${esc(t.name)}</td>
