@@ -781,27 +781,10 @@
           <button type="button" class="btn" id="remote-auto-off-btn">🔓 تعطيل التشغيل التلقائي</button>
         </div>
 
-        <!-- ═══ الدومين الثابت (مُجلب من حساب ngrok) ═══ -->
-        <div class="form-card" style="margin:1rem 0;">
-          <div style="font-weight:600; margin-bottom:0.5rem;">🌐 الدومين الثابت</div>
-          <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.6rem;">
-            نجلب الدومينات المحجوزة في حسابك من ngrok تلقائيًا (تحتاج مفتاح API). الدومين الثابت يجعل الرابط لا يتغيّر.
-          </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem;">
-            <select id="remote-domains-select" style="flex:1; min-width:220px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); direction:ltr;">
-              <option value="">— لم يتم الجلب بعد —</option>
-            </select>
-            <button type="button" class="btn" id="remote-domains-fetch-btn">🔄 جلب الدومينات</button>
-            <button type="button" class="btn btn-primary" id="remote-domain-set-btn">✅ تعيين المحدَّد</button>
-            <button type="button" class="btn" id="remote-domain-clear-btn">↩️ العودة للديناميكي</button>
-          </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-            <input id="remote-domain-input" type="text" placeholder="أو اكتب الدومين يدويًا: myname.ngrok-free.app" style="flex:1; min-width:240px; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); direction:ltr;" />
-            <button type="button" class="btn" id="remote-domain-manual-btn">تعيين اليدوي</button>
-          </div>
-          <div id="remote-domain-status" style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);"></div>
-        </div>
-
+        <!-- v2.14.5 — قسم إدارة الدومين الثابت مُخفى بقرار المستخدم (الرأي: غير ضروري — الدومين الثابت مُعيَّن بالفعل
+     والنفق شغال به؛ تغيير الدومين متاح من كونسول الجهاز [9]). الانكماش مقصود: زر ‏جلب الدومينات‏ وزملاؤه
+     كانوا يستهلكون انتباهاً بلا حاجة. الكود السابق أُزيل من العرض لكن كل الواجهات الخلفية
+     (/api/remote-access/*) تعمل كما هي. -->
         <!-- ═══ المفاتيح (حقول مخفية — لا تُعرض القيم ولا تُسجَّل) ═══ -->
         <div class="form-card" style="margin-bottom:1rem;">
           <div style="font-weight:600; margin-bottom:0.5rem;">🔑 المفاتيح (تُكتب بصلاحية root وتُخزَّن محليًّا فقط)</div>
