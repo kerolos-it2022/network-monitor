@@ -187,8 +187,8 @@ async function startTelegramBot() {
   if (running) return;
   let s;
   try { s = await getSettings(); } catch (e) { console.warn('[tg-bot] تعذّر قراءة الإعدادات:', e.message); return; }
-  const token = s.telegram_bot_token;
-  const chatId = s.telegram_chat_id;
+  let token = s.telegram_bot_token;
+  let chatId = s.telegram_chat_id;
   if (!s.telegram_enabled || !token || !chatId) {
     console.log('[tg-bot] بدء متوقف مؤقتًا (القناة معطلة أو اعتمادات ناقصة) — الحلقة ستفحص كل دورة وتُشغّل ذاتها تلقائيًا عند التفعيل.');
     // نبدأ الحلقة بوضع خامل: تفحص المفاتيح كل دورة دون استهلاك تحديثات.
