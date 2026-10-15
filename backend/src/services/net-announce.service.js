@@ -241,6 +241,34 @@ function startPersistentListener() {
   } catch (e) {
     console.error('[net-announce] تعذّر بدء المستمع الدائم (mDNS):', e.message);
   }
+  // ── v2.29.0 — NetBIOS (UDP 137) استماع سلبي: ويندوز يبث تسجيل/تحديث اسْمه
+  // على هذا المنفذ دوريًّا — نفس المصدر الذي تعرض منه «الشبكة» وAdvanced IP Scanner.
+  // الحزمة تحتوي الاسم المرمَّز (32 حرفًا من A–P بعد باكت طول 0x20) — نفكّه ونخزّنه.
+  try {
+    const nbt = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+    nbt.on('error', () => { try { nbt.close(); } catch (_) {} });
+    nbt.on('message', (msg, rinfo) => {
+      try {
+        for (let i = 0; i + 34 <= msg.length; i++) {
+          if (msg[i] !== 0x20) continue;
+          let ok = true;
+          const raw = [];
+          for (let k = 0; k < 32; k += 2) {
+            const hi = msg[i + 1 + k], lo = msg[i + 2 + k];
+            if (hi < 0x41 || hi > 0x50 || lo < 0x41 || lo > 0x50) { ok = false; break; }
+            raw.push(((hi - 0x41) << 4) | (lo - 0x41));
+          }
+          if (!ok) continue;
+          let name = Buffer.from(raw).toString('latin1').split(String.fromCharCode(0))[0].replace(/ +/g, ' ').trim();
+          if (name && name.length >= 2 && !/^[0-9.]+$/.test(name)) {
+            recordName(rinfo.address, name, 'nbns');
+            break;
+          }
+        }
+      } catch (_) {}
+    });
+    nbt.bind(137, () => {}); // بثّ الشبكة المحلية يصل أي واجهة
+  } catch (e) { /* NBNS اختياري — لا يُفشل المستمع */ }
   // ── SSDP (UDP 1900) — إشعارات NOTIFY السلبية من أجهزة UPnP ──
   try {
     const ssdp = dgram.createSocket({ type: 'udp4', reuseAddr: true });
