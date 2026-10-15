@@ -40,6 +40,8 @@ const applianceUpdateRoutes = require('./routes/appliance-update.routes');
 const remoteAccessRoutes = require('./routes/remote-access.routes');
 // v2.21.0 — 🤖 شات AI: محادثة عربية بسياق من القاعدة (بمفتاح المستخدم — اختياري بالكامل).
 const aiRoutes = require('./routes/ai.routes');
+// v2.23.0 — 🖥️ حالة النظام: رام/معالج/هارد/شبكة + تفاصيل الجهاز (قراءة فقط).
+const systemRoutes = require('./routes/system.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -130,6 +132,7 @@ app.use('/api/appliance-update', applianceUpdateRoutes);
 // v2.9.0 — الوصول عن بُعد (ngrok): قراءة الحالة + كتابة ملف طلب فقط (التنفيذ بمصدر root).
 app.use('/api/remote-access', remoteAccessRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/system', systemRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {

@@ -35,8 +35,10 @@
       <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label">السجل</span></button></li>
       <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
       <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
-      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
       <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label">الوصول عن بُعد</span></button></li>
+      <li><button class="tab-btn" id="tab-system" type="button" title="حالة النظام: رام/معالج/هارد/شبكة"><span class="tab-btn-icon">🖥️</span><span class="tab-btn-label">حالة النظام</span></button></li>
+      <!-- v2.23.0 — «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة في حافة القائمة). -->
+      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
     </ul>
   </aside>
 
@@ -761,6 +763,66 @@
       </div>
     </section>
 
+    <!-- ============ قسم حالة النظام (v2.23.0) ============ -->
+    <section id="section-system" class="hidden">
+      <div class="form-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+          <h3 style="margin:0;">🖥️ حالة النظام — الاستهلاك الحي</h3>
+          <label class="checkbox-label" style="margin:0; gap:0.4rem;">
+            <input type="checkbox" id="sys-auto-refresh" checked />
+            <span style="font-size:0.85rem;">تحديث ذاتي (كل 5 ثوانٍ)</span>
+          </label>
+        </div>
+
+        <!-- شبكة بطاقات المقاييس -->
+        <div id="sys-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:0.75rem;">
+
+          <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg);">
+            <b>🧠 ذاكرة الجهاز (RAM)</b>
+            <div id="sys-memory-bar" style="height:10px; border-radius:6px; background:rgba(125,125,125,0.25); margin:0.5rem 0; overflow:hidden;"><div style="height:100%; width:0%; background:var(--online, #16a34a); transition:width 0.4s;"></div></div>
+            <div id="sys-memory-text" style="font-size:0.85rem; color:var(--muted);">—</div>
+            <div id="sys-process" style="font-size:0.8rem; color:var(--muted); margin-top:0.4rem;">—</div>
+          </div>
+
+          <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg);">
+            <b>⚡ المعالج (CPU)</b>
+            <div id="sys-cpu-bar" style="height:10px; border-radius:6px; background:rgba(125,125,125,0.25); margin:0.5rem 0; overflow:hidden;"><div style="height:100%; width:0%; background:var(--online, #16a34a); transition:width 0.4s;"></div></div>
+            <div id="sys-cpu-text" style="font-size:0.85rem; color:var(--muted);">—</div>
+            <div id="sys-loadavg" style="font-size:0.8rem; color:var(--muted); margin-top:0.4rem;">—</div>
+          </div>
+
+          <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg);">
+            <b>💾 القرص (الهارد)</b>
+            <div id="sys-disk-bar" style="height:10px; border-radius:6px; background:rgba(125,125,125,0.25); margin:0.5rem 0; overflow:hidden;"><div style="height:100%; width:0%; background:var(--online, #16a34a); transition:width 0.4s;"></div></div>
+            <div id="sys-disk-text" style="font-size:0.85rem; color:var(--muted);">—</div>
+            <div id="sys-db-size" style="font-size:0.8rem; color:var(--muted); margin-top:0.4rem;">—</div>
+          </div>
+
+          <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg);" id="sys-network-card">
+            <b>🌐 الشبكة</b>
+            <div style="font-size:0.85rem; margin-top:0.5rem;">⬇️ كثب: <b id="sys-net-rx-rate">—</b> <small style="color:var(--muted);">منذ الإقلاع: <span id="sys-net-rx-total">—</span></small></div>
+            <div style="font-size:0.85rem; margin-top:0.25rem;">⬆️ رفع: <b id="sys-net-tx-rate">—</b> <small style="color:var(--muted);">منذ الإقلاع: <span id="sys-net-tx-total">—</span></small></div>
+            <div id="sys-net-ifaces" style="font-size:0.8rem; color:var(--muted); margin-top:0.4rem;">—</div>
+          </div>
+
+        </div>
+
+        <!-- تفاصيل النظام -->
+        <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg); margin-top:0.75rem;">
+          <b>📋 تفاصيل النظام</b>
+          <div id="sys-details" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.4rem 1rem; margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">—</div>
+        </div>
+
+        <!-- صحة المحرك -->
+        <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg); margin-top:0.75rem;">
+          <b>⏱️ صحة محرك المراقبة</b>
+          <div id="sys-engine" style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">—</div>
+        </div>
+
+        <div id="sys-status" style="font-size:0.85rem; margin-top:0.6rem;"></div>
+      </div>
+    </section>
+
     <!-- ============ قسم التحديثات ============ -->
     <section id="section-updates" class="hidden">
       <style>
@@ -1175,6 +1237,7 @@
   <script src="../js/admin-locations-types.js"></script>
   <script src="../js/admin-notifications.js"></script>
   <script src="../js/admin-ai.js"></script>
+  <script src="../js/admin-system.js"></script>
   <script src="../js/admin-tabs.js"></script>
   <script src="../js/admin-profile.js"></script>
   <script src="../js/admin-theme.js"></script>

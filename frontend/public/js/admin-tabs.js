@@ -13,8 +13,10 @@ const TAB_TO_SECTION = {
   'tab-logs': 'section-logs',
   'tab-profile': 'section-profile',
   'tab-backup': 'section-backup',
-  'tab-updates': 'section-updates',
+  // v2.23.0 — «حالة النظام» ثم «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة).
   'tab-remote': 'section-remote',
+  'tab-system': 'section-system',
+  'tab-updates': 'section-updates',
 };
 
 function showSection(tabId) {
