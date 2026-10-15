@@ -85,6 +85,7 @@
     border: 1px solid var(--border-color); font-weight: 600;
   }
   .btn-action {
+    text-decoration: none; /* v2.29.2 */
     background: #16223b; color: #e2e8f0; border: 1px solid #2b3d63;
     border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem;
     font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
