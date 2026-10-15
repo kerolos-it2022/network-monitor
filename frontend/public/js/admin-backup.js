@@ -414,3 +414,28 @@ document.addEventListener('DOMContentLoaded', initBackupTab);
   const sb = document.getElementById("bk-sched-save");
   if (sb) sb.addEventListener("click", saveSchedule);
 })();
+
+// ── v2.20.1 — تصدير الانقطاعات CSV (downtime_events) ──
+(function bindDowntimesExport() {
+  const btn = document.getElementById("downtimes-export-btn");
+  const daysSel = document.getElementById("downtimes-export-days");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    const days = daysSel ? daysSel.value : "90";
+    btn.disabled = true;
+    try {
+      const r = await fetch("/api/backup/export-downtimes?days=" + days, { credentials: "same-origin" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "downtimes-" + new Date().toISOString().slice(0, 10) + ".csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      alert("فشل التصدير: " + (e.message || e));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();

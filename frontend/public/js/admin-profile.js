@@ -76,3 +76,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('change-password-form').addEventListener('submit', changePassword);
 });
+
+// ── v2.20.1 — إدارة المستخدمين (admin فقط؛ لأدوار أخرى تُخفى البطاقة) ──
+(function bindUsersManagement() {
+  const card = document.getElementById("users-card");
+  const list = document.getElementById("usr-list");
+  const status = document.getElementById("usr-status");
+  function escName(v) { return String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;" }[c] || "&quot;")); }
+  async function loadUsers() {
+    if (!card) return;
+    let r;
+    try { r = await api("/api/auth/users"); } catch (e) { card.style.display = "none"; return; }
+    if (!r || !r.success) { card.style.display = "none"; return; }
+    card.style.display = "";
+    const meR = await api("/api/auth/me").catch(() => null);
+    const me = (meR && meR.success && meR.data && meR.data.username) || "";
+    const rows = r.users || [];
+    list.innerHTML = rows.map((u) =>
+      "<div style=\"display:flex; justify-content:space-between; align-items:center; gap:0.6rem; padding:0.45rem 0.2rem; border-bottom:1px solid var(--border);\">" +
+      "<span><b>" + escName(u.username) + "</b> <small style=\"color:var(--muted);\">(" + (u.role === 'admin' ? "مدير" : "عرض فقط") + ")</small></span>" +
+      (u.username === me ? "<small style=\"color:var(--muted);\">(حسابك)</small>" : "<button class=\"btn btn-danger\" data-del-user=\"" + escName(u.username) + "\">🗑️</button>") +
+      "</div>").join("");
+    list.querySelectorAll("[data-del-user]").forEach((b) => b.addEventListener("click", () => deleteUser(b.getAttribute("data-del-user"))));
+  }
+  async function deleteUser(username) {
+    if (!confirm("حذف المستخدم " + username + "؟")) return;
+    const r = await api("/api/auth/users/" + encodeURIComponent(username), { method: "DELETE" });
+    const st = document.getElementById("usr-status");
+    if (st) { st.textContent = (r && r.success) ? "✅ تم الحذف" : "✗ " + ((r && r.error) || "فشل"); st.style.color = (r && r.success) ? "var(--online)" : "var(--offline)"; }
+    loadUsers();
+  }
+  const addB = document.getElementById("usr-add-btn");
+  if (addB) addB.addEventListener("click", async () => {
+    const u = document.getElementById("usr-new-username").value.trim();
+    const pw = document.getElementById("usr-new-password").value;
+    const role = document.getElementById("usr-new-role").value;
+    const st = document.getElementById("usr-status");
+    const r = await api("/api/auth/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: u, password: pw, role }) });
+    if (r && r.success) { document.getElementById("usr-new-username").value = ""; document.getElementById("usr-new-password").value = ""; }
+    if (st) { st.textContent = (r && r.success) ? "✅ أُضيف " + u : "✗ " + ((r && r.error) || "فشل الإضافة"); st.style.color = (r && r.success) ? "var(--online)" : "var(--offline)"; }
+    loadUsers();
+  });
+  loadUsers();
+})();
