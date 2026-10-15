@@ -96,6 +96,16 @@ app.get('/api/health', (req, res) => {
 
 // API routes.
 app.use('/api/auth', authRoutes);
+
+// v2.20.0 — فرض الأدوار مركزيًا: حساب «viewer» يقرأ فقط (GET/HEAD/OPTIONS)، مع سماح
+// بمسارات الحساب الشخصي (خروج/تغيير كلمة المرور). كل تعديل آخر ⇒ 403 برسالة عربية.
+app.use((req, res, next) => {
+  const user = req.session && req.session.user;
+  if (!user || user.role !== 'viewer') return next();
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (req.path.startsWith('/api/auth/')) return next();
+  return res.status(403).json({ success: false, error: 'حسابك (عرض فقط) لا يسمح بالتعديلات — تواصل مع المدير' });
+});
 app.use('/api/devices', devicesRoutes);
 app.use('/api/topology', topologyRoutes);
 app.use('/api/locations', locationsRoutes);

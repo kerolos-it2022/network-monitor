@@ -317,6 +317,32 @@ router.post('/create', requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/backup/export-downtimes?days=N  🔒 — تصدير الانقطاعات CSV (v2.20.0)
+// ============================================================
+router.get('/export-downtimes', requireAuth, (req, res) => {
+  try {
+    let days = Number(req.query.days);
+    if (!Number.isFinite(days) || days <= 0) days = 90;
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+    const rows = db.prepare(
+      'SELECT d.name AS device_name, d.ip AS ip, de.started_at, de.ended_at ' +
+      'FROM downtime_events de LEFT JOIN devices d ON d.id = de.device_id ' +
+      'WHERE de.started_at >= ? ORDER BY de.started_at DESC'
+    ).all(cutoff);
+    const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const dur = (a, b) => (!a || !b) ? '' : (Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000)) + ' دقيقة');
+    const lines = ['اسم الجهاز,IP,بداية الانقطاع,نهاية الانقطاع,المدة'].concat(
+      rows.map((r) => [esc(r.device_name || '—'), esc(r.ip || '—'), esc(r.started_at), esc(r.ended_at), esc(dur(r.started_at, r.ended_at))].join(','))
+    );
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="downtimes-' + new Date().toISOString().slice(0, 10) + '.csv"');
+    res.send('\ufeff' + lines.join('\r\n'));
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 router.post('/restore', requireAuth, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {

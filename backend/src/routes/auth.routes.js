@@ -91,3 +91,45 @@ router.put('/change-password', requireAuth, (req, res) => {
 });
 
 module.exports = router;
+
+// ── v2.20.0 — حسابات متعددة بصلاحيات (admin فقط): قائمة · إضافة · حذف ──
+function requireAdmin(req, res, next) {
+  if (req.session && req.session.user && req.session.user.role === 'admin') return next();
+  return res.status(403).json({ success: false, error: 'هذه العملية للمدير (admin) فقط' });
+}
+
+router.get('/users', requireAuth, requireAdmin, (req, res) => {
+  const rows = db.prepare('SELECT id, username, role, created_at FROM users ORDER BY id').all();
+  res.json({ success: true, users: rows });
+});
+
+router.post('/users', requireAuth, requireAdmin, (req, res) => {
+  const u = String((req.body || {}).username || '').trim();
+  const pw = String((req.body || {}).password || '');
+  const role = ((req.body || {}).role === 'viewer') ? 'viewer' : 'admin';
+  if (!/^[A-Za-z0-9_.-]{3,32}$/.test(u)) {
+    return res.status(400).json({ success: false, error: 'اسم المستخدم: 3-32 حرفًا (أحرف/أرقام/._-)' });
+  }
+  if (pw.length < 6) {
+    return res.status(400).json({ success: false, error: 'كلمة المرور 6 أحرف على الأقل' });
+  }
+  if (db.prepare('SELECT id FROM users WHERE username = ?').get(u)) {
+    return res.status(409).json({ success: false, error: 'اسم المستخدم موجود بالفعل' });
+  }
+  db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run(u, bcrypt.hashSync(pw, 10), role);
+  res.json({ success: true, data: { username: u, role } });
+});
+
+router.delete('/users/:username', requireAuth, requireAdmin, (req, res) => {
+  const target = String(req.params.username || '');
+  if (target === req.session.user.username) {
+    return res.status(400).json({ success: false, error: 'لا يمكنك حذف حسابك الحالي' });
+  }
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(target);
+  if (!user) return res.status(404).json({ success: false, error: 'المستخدم غير موجود' });
+  if (user.role === 'admin' && db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n <= 1) {
+    return res.status(400).json({ success: false, error: 'لا يمكن حذف آخر مدير في النظام' });
+  }
+  db.prepare('DELETE FROM users WHERE username = ?').run(target);
+  res.json({ success: true });
+});

@@ -553,6 +553,27 @@
 
     <!-- ============ قسم الملف الشخصي ============ -->
     <section id="section-profile" class="hidden">
+
+      <!-- v2.20.0 — إدارة المستخدمين (admin فقط؛ يظهر فارغًا/مخفيًا للحسابات الأخرى) -->
+      <div class="form-card" id="users-card" style="display:none;">
+        <h3>👥 إدارة المستخدمين</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.75rem 0;">
+          «مدير»: كل الصلاحيات · «عرض فقط»: يتصفح ويستقبل الإشعارات لكن كل التعديلات ترفض (403).
+        </p>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr auto auto; gap:0.6rem; align-items:end;">
+          <label>اسم المستخدم <input type="text" id="usr-new-username" placeholder="user1" autocomplete="off" /></label>
+          <label>كلمة المرور <input type="password" id="usr-new-password" placeholder="6 أحرف على الأقل" autocomplete="new-password" /></label>
+          <label>الدور
+            <select id="usr-new-role">
+              <option value="viewer">عرض فقط</option>
+              <option value="admin">مدير</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" id="usr-add-btn">➕ إضافة مستخدم</button>
+        </div>
+        <div id="usr-list" style="margin-top:0.9rem;"></div>
+        <div id="usr-status" style="font-size:0.85rem; color:var(--muted); margin-top:0.4rem;"></div>
+      </div>
       <div class="form-card">
         <h3>تغيير كلمة المرور</h3>
         <form id="change-password-form">
@@ -587,6 +608,12 @@
         </div>
         <div style="margin-top:0.75rem;">
           <button type="button" class="btn btn-primary" id="bk-sched-save">💾 حفظ الجدولة</button>
+          <button type="button" class="btn" id="downtimes-export-btn" title="تصدير آخر 30/90/365 يومًا من الانقطاعات">📊 تصدير الانقطاعات (CSV)</button>
+          <select id="downtimes-export-days" style="padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);">
+            <option value="30">آخر 30 يومًا</option>
+            <option value="90" selected>آخر 90 يومًا</option>
+            <option value="365">آخر سنة</option>
+          </select>
           <span id="bk-sched-status" style="font-size:0.85rem; color:var(--muted); margin-inline-start:0.75rem;"></span>
         </div>
         <p style="font-size:0.8rem; color:var(--muted); margin:0.5rem 0 0;">
