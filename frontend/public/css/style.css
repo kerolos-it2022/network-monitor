@@ -17,9 +17,9 @@
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   /* v2.7.1 — خلفيات بطاقات zones في خريطة المواقع (نَهاري). تَستَعملها kindColor()
      في admin-map.js + public-map.js بدَل rgba ثابت لِـ تَناسُق الوَضع الليلي. */
-  --zone-internet-bg: rgba(37, 99, 235, 0.10);     /* أَزرق خَفيف */
-  --zone-bg: rgba(234, 179, 8, 0.10);             /* أَصفر/برتقالي خَفيف */
-  --zone-unassigned-bg: rgba(156, 163, 175, 0.10); /* رمادي خَفيف */
+  --zone-internet-bg: rgba(37, 99, 235, 0.16);     /* أَزرق خَفيف */
+  --zone-bg: rgba(148, 163, 184, 0.10);             /* أَصفر/برتقالي خَفيف */
+  --zone-unassigned-bg: rgba(148, 163, 184, 0.10); /* رمادي خَفيف */
 }
 
 body.dark {
@@ -41,9 +41,9 @@ body.dark {
   --partial-offline-glow: rgba(245, 158, 11, 0.40); /* v2.8.9 */
   --unknown-glow: rgba(156, 163, 175, 0.20);
   /* v2.7.1 — خلفيات بطاقات zones ليلية: أَكثر تَباينًا على الخلفية الداكنة #1e293b */
-  --zone-internet-bg: rgba(59, 130, 246, 0.16);   /* أَزرق أَوضح */
-  --zone-bg: rgba(234, 179, 8, 0.14);            /* أَصفر خَفيف على داكن */
-  --zone-unassigned-bg: rgba(148, 163, 184, 0.14); /* رمادي على داكن */
+  --zone-internet-bg: rgba(37, 99, 235, 0.16);   /* أَزرق أَوضح */
+  --zone-bg: rgba(148, 163, 184, 0.10);            /* أَصفر خَفيف على داكن */
+  --zone-unassigned-bg: rgba(148, 163, 184, 0.10); /* رمادي على داكن */
 }
 
 * { box-sizing: border-box; }
@@ -1764,3 +1764,18 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 .t-node.loc-bad  { border-inline-start: 4px solid #ef4444; background: rgba(239,68,68,.10); }
 .t-node.loc-neutral { border-inline-start: 4px solid #a78bfa; background: rgba(167,139,250,.07); }
 .t-loc-stats { font-size: .85em; opacity: .9; margin-inline-start: 6px; }
+
+/* ═══ v2.29.3 — بطاقات المباني/المواقع بهوية NOC (خلفية كحلي + حدود #2b3d63) ═══ */
+.map-grid > .map-zone-card {
+  background: linear-gradient(180deg, #0f1a33, #101a30) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+  color: var(--text) !important;
+}
+.map-grid > .map-zone-card .map-zone-header {
+  background: rgba(59, 130, 246, 0.14) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+/* v2.29.3 — الوضعان متطابقان (هوية NOC الوحيدة) ⇒ مبدّل الوضع مخفي بلا كسر الـ JS */
+#theme-toggle { display: none !important; }
