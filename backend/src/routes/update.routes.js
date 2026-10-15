@@ -515,10 +515,42 @@ router.post('/check', requireAuth, async (req, res) => {
   }
 });
 
+// v2.24.0 — قفل التزامن عبر كل مسارات التشغيل: إن كانت هناك عمليتا تحديد جارية قريبتان
+// (سجل nm-update أو سجل الويب، ≤30 دقيقة) نرفض بدل تشغيل ثانٍ يتقاطع مع الأول.
+function recentActiveUpdateCrossPath() {
+  // سجل مسار الجذر (nm-update): نفس منطق appliance-update.routes — dataDir من cwd+DB_PATH.
+  const nmStatus = path.join(
+    path.dirname(path.resolve(process.cwd(), process.env.DB_PATH || '../database/monitoring.db')),
+    'update', 'status.json'
+  );
+  const cands = [];
+  try { cands.push(JSON.parse(fs.readFileSync(nmStatus, 'utf8'))); } catch (e) {}
+  try { cands.push(JSON.parse(fs.readFileSync(webUpdateStatusPath(), 'utf8'))); } catch (e) {}
+  const now = Date.now();
+  let newest = null;
+  for (const c of cands) {
+    if (!c || !['in_progress', 'running', 'rebooting'].includes(String(c.state || ''))) continue;
+    const ts = Date.parse(c.at || '');
+    if (!Number.isFinite(ts) || now - ts > 1000 * 60 * 30) continue;
+    if (!newest || ts > newest.ts) newest = { ts, rec: c };
+  }
+  return newest;
+}
+
 // POST /api/update/perform - تنفيذ التحديث (🔒 يعدّل النظام)
 router.post('/perform', requireAuth, async (req, res) => {
   try {
     const branch = req.body.branch || 'main';
+    // v2.24.0 — قفل التزامن: تشغيل واحد في كل مرة عبر أي مسار.
+    const crossPathActive = recentActiveUpdateCrossPath();
+    if (crossPathActive) {
+      const mins = Math.max(1, Math.round((Date.now() - crossPathActive.ts) / 60000));
+      return res.status(409).json({
+        success: false,
+        error: 'التحديث جارٍ بالفعل (بدأ منذ ' + mins + ' دقيقة — ' + String(crossPathActive.rec.message || crossPathActive.rec.state) + ') — انتظر اكتماله ثم أعد المحاولة إن لزم.',
+        update_in_progress: true,
+      });
+    }
     
     // التحقق من وجود تحديث أولاً
     const check = await checkForUpdates(branch);

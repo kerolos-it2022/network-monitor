@@ -74,11 +74,42 @@ router.get('/mode', requireAuth, (req, res) => {
   res.json({ success: true, appliance: isAppliance(), helper: APPLIANCE_HELPER, dataDir: dataDirPath() });
 });
 
+// v2.24.0 — قفل تزامن التشغيلين (مسار الويب + مسار الجذر): وقع فعليًّا أن يُطلق
+// تحديثان توأمان في نفس الدقيقة فتتقاطع رسائل النتيجة وتُخطئ الشاشة. قبل كتابة أي
+// طلب: إن وُجدت عملية جارية (in_progress/running/rebooting) بطابع أحدث من 30 دقيقة نرفض.
+const ACTIVE_UPDATE_STATES = new Set(['in_progress', 'running', 'rebooting']);
+const ACTIVE_UPDATE_WINDOW_MS = 1000 * 60 * 30;
+function recentActiveUpdate() {
+  const p = paths();
+  const cands = [];
+  try { cands.push(JSON.parse(fs.readFileSync(p.statusFile, 'utf8'))); } catch (e) {}
+  try { cands.push(JSON.parse(fs.readFileSync(path.join(__dirname, '../../database', 'update-web-status.json'), 'utf8'))); } catch (e) {}
+  const now = Date.now();
+  let newest = null;
+  for (const c of cands) {
+    if (!c || !ACTIVE_UPDATE_STATES.has(String(c.state || ''))) continue;
+    const ts = Date.parse(c.at || '');
+    if (!Number.isFinite(ts) || now - ts > ACTIVE_UPDATE_WINDOW_MS) continue;
+    if (!newest || ts > newest.ts) newest = { ts, rec: c };
+  }
+  return newest;
+}
+
 // POST /request — كتابة ملف طلب التحديث (وسم صريح أو «latest» — والأداة الجذرية هي التي تحلّها).
 router.post('/request', requireAuth, (req, res) => {
   try {
     if (!isAppliance()) {
       return res.status(400).json({ success: false, error: 'وضع الأبلاينس غير مُفعَّل على هذا التثبيت.' });
+    }
+    // v2.24.0 — لا تشغيل ثانٍ فوق عملية قائمة.
+    const active = recentActiveUpdate();
+    if (active) {
+      const mins = Math.max(1, Math.round((Date.now() - active.ts) / 60000));
+      return res.status(409).json({
+        success: false,
+        error: 'التحديث جارٍ بالفعل (بدأ منذ ' + mins + ' دقيقة — ' + String(active.rec.message || active.rec.state) + ') — انتظر اكتماله ثم أعد المحاولة إن لزم.',
+        update_in_progress: true,
+      });
     }
     const raw = String((req.body && req.body.tag) || '').trim();
     const tag = raw || 'latest';
@@ -111,11 +142,17 @@ router.get('/progress', requireAuth, (req, res) => {
     const p = paths();
     let state = null;
     let log = '';
-    try { state = JSON.parse(fs.readFileSync(p.statusFile, 'utf8')); } catch (e) {}
+    try { state = JSON.parse(fs.readFileSync(p.statusFile, 'utf8')); if (state) state.source = 'appliance'; } catch (e) {}
+    // v2.24.0 — دمج صحيح: المقارنة النصية القديمة (String(at)) بين صيغتين مختلفتين
+    // (توقيت الجهاز +00:00 وتوقيت الويب UTC .mmmZ) كانت تعطي الفوز لسجل قديم بالصدفة
+    // فتعرض رسالة «تم التحديث إلى <إصدار أقدم>». الآن: Date.parse حقيقي والأحدث فعليًا يفوز.
     try {
-      // v2.17.1 — دمج سجل مسار تحديث الويب (performUpdateArchive): الأحدث زمنيًا يفوز
       const webRec = JSON.parse(fs.readFileSync(path.join(__dirname, '../../database', 'update-web-status.json'), 'utf8'));
-      if (webRec && webRec.at && (!state || !state.at || String(webRec.at) > String(state.at))) state = webRec;
+      if (webRec) webRec.source = 'web';
+      const tsNm = state && state.at ? Date.parse(state.at) : NaN;
+      const tsWeb = webRec && webRec.at ? Date.parse(webRec.at) : NaN;
+      const webWins = webRec && Number.isFinite(tsWeb) && (!state || !Number.isFinite(tsNm) || tsWeb > tsNm);
+      if (webWins) state = webRec;
     } catch (e) { /* لا سجل ويب — لا بأس */ }
     try { log = fs.readFileSync(p.logFile, 'utf8').split('\n').slice(-40).join('\n'); } catch (e) {}
     res.json({ success: true, appliance: isAppliance(), state, log });
