@@ -1,6 +1,6 @@
 {
   "name": "network-monitor-backend",
-  "version": "2.24.0",
+  "version": "2.24.1",
   "description": "نظام مراقبة أجهزة الشبكة المحلية - الخادم",
   "license": "UNLICENSED",
   "main": "src/server.js",
@@ -24,7 +24,7 @@
     "portscanner": "^2.2.0",
     "snmp-native": "^1.2.0",
     "web-push": "^3.6.7",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "overrides": {
     "uuid": "^11.1.1"
