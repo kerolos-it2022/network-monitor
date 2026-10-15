@@ -268,7 +268,7 @@ function startPersistentListener() {
       } catch (_) {}
     });
     nbt.bind(137, () => {}); // بثّ الشبكة المحلية يصل أي واجهة
-  } catch (e) { /* NBNS اختياري — لا يُفشل المستمع */ }
+  } catch (e) { console.error('[net-announce] NBNS bind failed:', e.message); }
   // ── SSDP (UDP 1900) — إشعارات NOTIFY السلبية من أجهزة UPnP ──
   try {
     const ssdp = dgram.createSocket({ type: 'udp4', reuseAddr: true });

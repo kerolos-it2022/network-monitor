@@ -16,7 +16,9 @@ EnvironmentFile=-/var/lib/network-monitor/env
 Restart=always
 RestartSec=3
 # ping/traceroute need raw sockets — grant to the service (works with NoNewPrivileges).
-AmbientCapabilities=CAP_NET_RAW
+# v2.30.2 — CAP_NET_BIND_SERVICE: المستمع الدائم للأسماء (mDNS 5353 / NBNS 137)
+# منافذ مميزة <1024 — بدونها يفشل الربط بصمت وتنعكس بالنتيجة «أسماء الجهاز مش بتظهر».
+AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE
 # basic service hardening.
 NoNewPrivileges=true
 ProtectSystem=strict
