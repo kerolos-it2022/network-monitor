@@ -38,6 +38,7 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-escalation_enabled').checked = !!d.escalation_enabled;
   document.getElementById('ntf-escalation_after_minutes').value = Number(d.escalation_after_minutes) || 30;
   document.getElementById('ntf-escalation_repeat_minutes').value = Number(d.escalation_repeat_minutes) || 0;
+  document.getElementById('ntf-noc_alert_screen').checked = (d.noc_alert_screen_enabled === undefined || d.noc_alert_screen_enabled === null) ? true : !!d.noc_alert_screen_enabled;
   document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
   document.getElementById('ntf-fcm_server_key').value = '';
   // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
@@ -80,6 +81,7 @@ async function saveNotificationSettings() {
     escalation_enabled: document.getElementById('ntf-escalation_enabled').checked ? 1 : 0,
     escalation_after_minutes: Number(document.getElementById('ntf-escalation_after_minutes').value) || 30,
     escalation_repeat_minutes: Number(document.getElementById('ntf-escalation_repeat_minutes').value) || 0,
+    noc_alert_screen_enabled: document.getElementById('ntf-noc_alert_screen').checked ? 1 : 0,
   };
   const r = await api('/api/notifications/settings', {
     method: 'PUT',

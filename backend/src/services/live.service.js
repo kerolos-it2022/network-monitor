@@ -9,6 +9,7 @@
 // التجميع (debounce) يمنع تكرار إعادة البناء عند فحص عشرات الأجهزة في نفس اللحظة.
 const EventEmitter = require('events');
 const { buildTopology } = require('./topology.service');
+const db = require('../db');
 
 const bus = new EventEmitter();
 bus.setMaxListeners(0); // عدد الشاشات غير محدود عمليًّا (شاشة لكل قسم/تلفزيون)
@@ -55,7 +56,12 @@ function computeState() {
 function snapshot() {
   const s = computeState();
   lastState = s;
-  return { type: 'snapshot', devices: s.devices, totals: s.totals, at: new Date().toISOString() };
+  let nocAlert = true;
+  try {
+    const r = db.prepare('SELECT noc_alert_screen_enabled AS f FROM notification_settings WHERE id = 1').get();
+    if (r && r.f !== undefined && r.f !== null) nocAlert = !!Number(r.f);
+  } catch (e) { /* الافتراضي مفعل */ }
+  return { type: 'snapshot', devices: s.devices, totals: s.totals, at: new Date().toISOString(), settings: { noc_alert_screen: nocAlert } };
 }
 
 // إعادة بناء + مقارنة + بثّ التغييرات فقط.

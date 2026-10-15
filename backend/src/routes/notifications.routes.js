@@ -52,6 +52,7 @@ router.get('/settings', requireAuth, async (req, res) => {
       escalation_enabled: s.escalation_enabled ? 1 : 0,
       escalation_after_minutes: Number(s.escalation_after_minutes) || 30,
       escalation_repeat_minutes: Number(s.escalation_repeat_minutes) || 0,
+      noc_alert_screen_enabled: (s.noc_alert_screen_enabled === undefined || s.noc_alert_screen_enabled === null) ? 1 : (s.noc_alert_screen_enabled ? 1 : 0),
       fcm_server_key: maskToken(s.fcm_server_key),
       fcm_server_key_masked: maskToken(s.fcm_server_key),
       sources: s._sources || {},
@@ -84,6 +85,7 @@ router.put('/settings', requireAuth, (req, res) => {
     escalation_enabled,
     escalation_after_minutes,
     escalation_repeat_minutes,
+    noc_alert_screen_enabled,
   } = req.body || {};
 
   // ضمان وجود الصف قبل التحديث.
@@ -122,6 +124,7 @@ router.put('/settings', requireAuth, (req, res) => {
     'escalation_enabled',
     'escalation_after_minutes',
     'escalation_repeat_minutes',
+    'noc_alert_screen_enabled',
   ];
   db.prepare(
     'UPDATE notification_settings SET ' + COLUMNS.map((c) => c + ' = ?').join(', ') + ' WHERE id = 1'
@@ -145,6 +148,7 @@ router.put('/settings', requireAuth, (req, res) => {
     escalation_enabled ? 1 : 0,
     Math.max(1, Math.min(1440, Number(escalation_after_minutes) || 30)),
     Math.max(0, Math.min(1440, Number(escalation_repeat_minutes) || 0)),
+    (noc_alert_screen_enabled === undefined || noc_alert_screen_enabled === null) ? 1 : (noc_alert_screen_enabled ? 1 : 0),
   );
 
   return res.json({ success: true, data: null });

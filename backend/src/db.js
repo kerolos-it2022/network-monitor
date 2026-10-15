@@ -84,6 +84,8 @@ try {
       "ALTER TABLE notification_settings ADD COLUMN escalation_enabled INTEGER DEFAULT 0",
       "ALTER TABLE notification_settings ADD COLUMN escalation_after_minutes INTEGER DEFAULT 30",
       "ALTER TABLE notification_settings ADD COLUMN escalation_repeat_minutes INTEGER DEFAULT 0",
+      // v2.29.1: مفتاح غطاء الإنذار الأحمر في شاشة NOC (تشغيل/إيقاف من الإشعارات).
+      "ALTER TABLE notification_settings ADD COLUMN noc_alert_screen_enabled INTEGER DEFAULT 1",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

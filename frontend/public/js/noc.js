@@ -123,7 +123,8 @@
   // المصدر: offline_since يأتي من الخادم (downtime_events مفتوحة) عبر /api/topology وSSE.
   // offlineSinceById: خريطة جهاز → بداية الانقطاع — لأن أشجار الخريطة/الرسم لا تحمل الحقل.
   let offlineSinceById = new Map();   // Number(id) → ISO string|null
-  let overlayDevices = [];            // أجهزة الغطاء الحالي (نضيف الجديد دون فقد القديم)
+  let overlayDevices = [];
+let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإنذار الأحمر (من إعدادات الإشعارات — يصل مع لقطة SSE).            // أجهزة الغطاء الحالي (نضيف الجديد دون فقد القديم)
 
   function fmtDowntime(iso) {
     const t = Date.now() - new Date(iso).getTime();
@@ -499,7 +500,7 @@
     downBaselineReady = allDevices.length > 0;
     if (!baselineOnly && freshDownDevices.length > 0) {
       // الغطاء البصري مستقل عن مفتاح الصوت: انقطاع = شاشة حمراء كاملة حتى «إخفاء التنبيه».
-      showOutageOverlay(freshDownDevices);
+      if (nocAlertScreenEnabled) showOutageOverlay(freshDownDevices); // v2.29.1 — يُمنع لو المفتاح مغلق
       if (audioAlertEnabled) playAlertBeep('alert');
     }
   }
@@ -1299,6 +1300,8 @@
   //   1) شجرة /api/topology (devById) — للعدّادات ومسار الإنترنت وبطاقات الأجهزة.
   //   2) شجرة «خريطة المباني» (mapRootData) — لصفوف الأجهزة داخل البطاقات.
   function applyLiveUpdate(msg) {
+    // v2.29.1 — حالة غطاء الإنذار تصل ضمن لقطة الإعدادات.
+    if (msg.settings && typeof msg.settings.noc_alert_screen === 'boolean') nocAlertScreenEnabled = msg.settings.noc_alert_screen;
     if (!msg || !Array.isArray(msg.devices)) return;
     const statusMap = {};
     for (const d of msg.devices) statusMap[Number(d.id)] = d.status;
