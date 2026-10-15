@@ -110,19 +110,21 @@ router.get('/stats', requireAuth, (req, res) => {
   const memFree = os.freemem();
   const procMem = process.memoryUsage();
 
-  // الأقراص: جذر النظام + مجلد قاعدة البيانات
-  // (db.js يحل DB_PATH نسبةً لمجلد التشغيل backend/ — فالافتراضي '../database/monitoring.db'
-  //  يشير إلى <repo>/database/monitoring.db، أي أعلى بمستوٍ من بُنية src/routes.)
-  const dbDir = path.join(__dirname, '../../../database');
-  const dbFileName = (process.env.DB_PATH || '../database/monitoring.db').replace(/^.*[\\/]/, '') || 'monitoring.db';
-  const dbFile = path.join(dbDir, dbFileName);
+  // الأقراص: جذر النظام + مجلد قاعدة البيانات.
+  // ⚠️ علة v2.23.0: DB_PATH يُحل نسبيًّا من مجلد التشغيل (cwd = backend/)
+  // لا من مجلد الكود — ونسخة 2.23.0 كانت تُشتق المسار من __dirname فاختلف على الخادم
+  // وأظهرت «قاعدة البيانات: —» و«النسخ الاحتياطية: 0 B». الإصلاح: المسار المعتمد
+  // الوحيد هو db.name (الملف المفتوح فعليًّا بـ better-sqlite3).
+  const dbFile = db.name || path.resolve(process.cwd(), process.env.DB_PATH || '../database/monitoring.db');
+  const dbDir = path.dirname(dbFile);
   const diskRoot = diskStat('/');
   const diskData = diskStat(dbDir) || diskRoot;
 
-  // قاعدة البيانات: حجم ملفها المعتمد + مجلد النسخ الاحتياطية
+  // قاعدة البيانات: حجم ملفها المعتمد + مجلدا النسخ الاحتياطية (backups القياسي
+  // وsvc-backups البديل — نفس منطق v2.19.0: أول مجلد يقبل الكتابة هو المعتمد).
   const dbSize = fileSizeSafe(dbFile);
-  const backupsDir = path.join(dbDir, 'backups');
-  const backupsSize = dirSizeSafe(backupsDir);
+  const backupsSize = dirSizeSafe(path.join(dbDir, 'backups'))
+    + dirSizeSafe(path.join(dbDir, 'svc-backups'));
 
   // عدد الأجهزة المراقبة (نفس مصباح اللوحة)
   let devicesCount = null;
