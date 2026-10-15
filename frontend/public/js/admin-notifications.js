@@ -28,7 +28,7 @@ async function loadNotificationSettings() {
   // إعدادات الموبايل/FCM
   document.getElementById('ntf-mobile_enabled').checked = !!d.mobile_enabled;
   document.getElementById('ntf-maintenance_enabled').checked = !!d.maintenance_enabled;
-  document.getElementById('ntf-maintenance_window').value = d.maintenance_window || '';
+  (function () { const w = String(d.maintenance_window || '02:00-04:00').split('-'); const fromEl = document.getElementById('ntf-maintenance_from'); const toEl = document.getElementById('ntf-maintenance_to'); if (fromEl) fromEl.value = (w[0] || '02:00').trim(); if (toEl) toEl.value = (w[1] || '04:00').trim(); })();
   document.getElementById('ntf-daily_report_enabled').checked = d.daily_report_enabled === undefined ? true : !!d.daily_report_enabled;
   document.getElementById('ntf-daily_report_hour').value = d.daily_report_hour || '08:00';
   document.getElementById('ntf-bot_commands_enabled').checked = d.bot_commands_enabled === undefined ? true : !!d.bot_commands_enabled;
@@ -66,7 +66,7 @@ async function saveNotificationSettings() {
     mobile_enabled: document.getElementById('ntf-mobile_enabled').checked,
     fcm_server_key: document.getElementById('ntf-fcm_server_key').value.trim(),
     maintenance_enabled: document.getElementById('ntf-maintenance_enabled').checked,
-    maintenance_window: document.getElementById('ntf-maintenance_window').value.trim(),
+    maintenance_window: (document.getElementById('ntf-maintenance_from').value || '02:00') + '-' + (document.getElementById('ntf-maintenance_to').value || '04:00'),
     daily_report_enabled: document.getElementById('ntf-daily_report_enabled').checked,
     daily_report_hour: document.getElementById('ntf-daily_report_hour').value || '08:00',
     bot_commands_enabled: document.getElementById('ntf-bot_commands_enabled').checked,

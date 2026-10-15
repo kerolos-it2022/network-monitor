@@ -492,17 +492,23 @@
               <b>⏰ ساعة التقرير اليومي</b>
               <div><input type="time" id="ntf-daily_report_hour" defaultValue="08:00" style="max-width:160px; margin-top:0.35rem;" /></div>
             </div>
-            <label class="checkbox-label" style="align-items:flex-start; gap:0.6rem; padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
-              <input type="checkbox" id="ntf-maintenance_enabled" />
-              <span style="display:block;">
-                <b>🛠️ كتم الإشعارات أثناء الصيانة</b><br>
-                <small style="color:var(--muted);">خلال النافذة تُسجَّل الأحداث بهدوء في السجل بدل إنذار الهاتف</small>
-              </span>
-            </label>
-            <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
-              <b>🗓️ نافذة الصيانة</b>
-              <div><input type="text" id="ntf-maintenance_window" placeholder="02:00-04:00" title="HH:MM-HH:MM — تدعم عبور منتصف الليل" style="max-width:180px; direction:ltr; text-align:center; margin-top:0.35rem;" /></div>
-              <small style="display:block; color:var(--muted); margin-top:0.2rem;">الصيغة: HH:MM-HH:MM — تدعم النوافذ العابرة لمنتصف الليل</small>
+            <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); display:flex; flex-direction:column; gap:0.5rem;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="ntf-maintenance_enabled" />
+                <span style="display:block;">
+                  <b>🛠️ كتم الإشعارات أثناء الصيانة</b><br>
+                  <small style="color:var(--muted);">خلال النافذة تُسجَّل الأحداث بهدوء في السجل بدل إنذار الهاتف</small>
+                </span>
+              </label>
+              <div style="display:flex; gap:0.6rem; align-items:end; flex-wrap:wrap;">
+                <label style="display:block;"><b>🗓️ من</b>
+                  <div><input type="time" id="ntf-maintenance_from" value="02:00" style="margin-top:0.35rem;" /></div>
+                </label>
+                <label style="display:block;"><b>🗓️ إلى</b>
+                  <div><input type="time" id="ntf-maintenance_to" value="04:00" style="margin-top:0.35rem;" /></div>
+                </label>
+                <small style="color:var(--muted);">تدعم عبور منتصف الليل (مثل 23:00 إلى 06:00)</small>
+              </div>
             </div>
           </div>
         </fieldset>
