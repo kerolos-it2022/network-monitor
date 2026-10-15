@@ -380,3 +380,37 @@ function initBackupTab() {
 }
 
 document.addEventListener('DOMContentLoaded', initBackupTab);
+
+// ── v2.19.0 — النسخ الاحتياطي التلقائي المجدول (تحميل/حفظ الإعدادات) ──
+(function bindBackupSchedule() {
+  async function loadSchedule() {
+    try {
+      const r = await backupApi("/api/backup/schedule");
+      const sc = (r && r.schedule) || {};
+      const en = document.getElementById("bk-sched-enabled");
+      const hr = document.getElementById("bk-sched-hour");
+      const kp = document.getElementById("bk-sched-keep");
+      if (en) en.checked = sc.enabled === undefined ? true : !!sc.enabled;
+      if (hr) hr.value = sc.hour || "03:30";
+      if (kp) kp.value = Number(sc.keep) || 7;
+    } catch (e) { /* صامت — اللوحة تعمل بلا جدولة */ }
+  }
+  async function saveSchedule() {
+    const st = document.getElementById("bk-sched-status");
+    try {
+      const payload = {
+        enabled: !!document.getElementById("bk-sched-enabled").checked,
+        hour: document.getElementById("bk-sched-hour").value || "03:30",
+        keep: Number(document.getElementById("bk-sched-keep").value) || 7,
+      };
+      const r = await backupApi("/api/backup/schedule", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!r || !r.success) throw new Error((r && r.error) || "فشل الحفظ");
+      if (st) { st.textContent = "✅ تم حفظ جدولة النسخ الاحتياطي"; st.style.color = "var(--online)"; }
+    } catch (e) {
+      if (st) { st.textContent = "✗ " + (e.message || e); st.style.color = "var(--offline)"; }
+    }
+  }
+  loadSchedule();
+  const sb = document.getElementById("bk-sched-save");
+  if (sb) sb.addEventListener("click", saveSchedule);
+})();

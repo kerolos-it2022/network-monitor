@@ -31,6 +31,28 @@ const BACKUPS_DIR = path.join(DB_DIR, 'backups');
 const FALLBACK_BACKUPS_DIR = path.join(DB_DIR, 'svc-backups');
 const WRITE_DIRS = [BACKUPS_DIR, FALLBACK_BACKUPS_DIR];
 
+// ============================================================
+// GET /api/backup/schedule  🔒 — إعدادات النسخ التلقائي المجدول (v2.19.0)
+// ============================================================
+const scheduleSvc = require('../services/backup-schedule.service');
+
+router.get('/schedule', requireAuth, (req, res) => {
+  res.json({ success: true, schedule: scheduleSvc.readSchedule() });
+});
+
+router.put('/schedule', requireAuth, (req, res) => {
+  try {
+    const { enabled, hour, keep } = req.body || {};
+    if (!/^\d{2}:\d{2}$/.test(String(hour || ''))) {
+      return res.status(400).json({ success: false, error: 'الساعة يجب أن تكون بصيغة HH:MM' });
+    }
+    scheduleSvc.writeSchedule({ enabled: !!enabled, hour, keep: Math.min(30, Math.max(1, Number(keep) || 7)) });
+    res.json({ success: true, schedule: scheduleSvc.readSchedule() });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // يختار أول مجلد قابل للكتابة فعلًا (اختبار كتابة/حذف حقيقي) — وإلا يعيد سبب الفشل.
 function pickWritableBackupDir() {
   let lastErr = null;

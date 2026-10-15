@@ -166,6 +166,8 @@ app.listen(PORT, () => {
   // المضمّنة تحت رسائل الانقطاع. صامت تمامًا لو التوكن/chat_id غير مضبوطين أو القناة معطّلة.
   try {
     require('./services/telegram-bot.service').startTelegramBot();
+    // v2.19.0 — النسخ الاحتياطي المجدول (الإعداد من لوحة النسخ الاحتياطي).
+    require('./services/backup-schedule.service').startBackupSchedule();
   } catch (e) {
     console.error('[TG-BOT] Failed to start telegram bot:', e.message);
   }

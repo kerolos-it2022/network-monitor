@@ -90,6 +90,21 @@ async function flushStorm() {
   } catch (e) { /* فشل تحليل السلسلة لا يمنع الرسالة */ }
 
   try {
+    // v2.19.0 — تصنيف الانقطاع: أجهزة المواقع ذات kind='internet' = خط/مدخل الإنترنت الخارجي.
+    const anchors = db.prepare(
+      "SELECT d.name, d.ip, d.current_status FROM devices d " +
+      "LEFT JOIN locations l ON l.id = d.location_id " +
+      "WHERE l.kind = 'internet' AND d.is_active = 1"
+    ).all();
+    const downA = anchors.filter((a) => a.current_status === 'offline');
+    if (anchors.length > 0 && downA.length > 0) {
+      msg += "\n🌐 <b>الخط الخارجي واقع أيضًا</b> (" + esc(downA.map((a) => a.ip).join(', ')) + ")" +
+             " — الأرجح: عطل من مزود الإنترنت/الراوتر الرئيسي وليس داخل شبكتك";
+    } else if (anchors.length > 0) {
+      msg += "\n✅ خط الإنترنت الخارجي يعمل — الانقطاع <b>داخلي</b> (سويتش/كابل/توصيلات)";
+    }
+  } catch (e) { /* فشل التصنيف لا يمنع الرسالة */ }
+  try {
     const { tgButtons } = require('./telegram-bot.service');
     await notifier.sendTelegram(msg, null, tgButtons(), 'HTML');
     await notifier.sendWhatsapp(msg.replace(/<\/?(b|code)>/g, ''), null);

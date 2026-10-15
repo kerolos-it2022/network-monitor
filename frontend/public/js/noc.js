@@ -448,6 +448,30 @@
     // هي عقدة بنية تحتية وهمية (مُدخل الشبكة) وليست موقعًا/مبنى — كانت ترفع العدّ عددًا زائفًا.
     if (elLocs) elLocs.textContent = allLocations.filter((l) => l.kind !== 'internet').length;
     if (elTotal) elTotal.textContent = total;
+    // v2.19.0 — شارة «🌐 الخط الخارجي» من أجهزة مواقع kind='internet' (DNS/ISP)
+    try {
+      let chip = document.getElementById('wan-chip');
+      if (!chip && typeof document !== 'undefined') {
+        const countersHost = (document.querySelector('.counters') || document.body);
+        chip = document.createElement('div');
+        chip.className = 'counter c-info';
+        chip.id = 'wan-chip';
+        countersHost.appendChild(chip);
+      }
+      const intLocIds = new Set((allLocations || []).filter((x) => x.kind === 'internet').map((x) => Number(x.location_id)));
+      const anchors = (allDevices || []).filter((d) => intLocIds.has(Number(d.location_id)));
+      if (chip) {
+        if (anchors.length === 0) { chip.style.display = 'none'; }
+        else {
+          chip.style.display = '';
+          const offline = anchors.filter((a) => a.status === 'offline').length;
+          const up = anchors.length - anchors.filter((a) => a.status === 'offline' || a.status === 'unknown').length;
+          chip.innerHTML = offline === 0 && up > 0
+            ? '<div class="num">🌐</div><div class="lbl">الخط الخارجي يعمل</div>'
+            : '<div class="num">🔴</div><div class="lbl">الخط الخارجي منقطع — عطل مزود/خط</div>';
+        }
+      }
+    } catch (e) {}
 
     // v2.12.0 — تنبيه «الانقطاع الجديد» بخط أساس دائم — انظر checkNewOutages أدناه.
     checkNewOutages();

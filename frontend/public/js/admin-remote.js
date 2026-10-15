@@ -42,7 +42,7 @@ function rSecretsStatus(message, isError = false) {
 function rNote(msg) { const el = rEl('remote-note'); if (el) el.textContent = msg || ''; }
 
 function rSetButtonsEnabled(enabled) {
-  ['remote-install-btn', 'remote-start-btn', 'remote-restart-btn', 'remote-stop-btn',
+  ['remote-install-btn', 'remote-update-btn', 'remote-start-btn', 'remote-restart-btn', 'remote-stop-btn',
     'remote-auto-on-btn', 'remote-auto-off-btn', 'remote-domains-fetch-btn',
     'remote-domain-set-btn', 'remote-domain-clear-btn', 'remote-domain-manual-btn',
     'remote-key-save-btn', 'remote-apikey-save-btn'].forEach((id) => {
@@ -173,6 +173,8 @@ function renderRemoteStatus(s) {
   const canControl = !!(s.control && s.control.available);
   rSetButtonsEnabled(canControl && !remoteBusy);
   rShow('remote-install-btn', !s.installed);
+  // v2.18.0 — زر التحديث يظهر فقط والثنائي مثبّت (يعيد تنزيل أحدث stable)
+  rShow('remote-update-btn', !!s.installed);
   rNote(canControl
     ? 'التحكّم متاح ✓ (ينفّذه مساعد root عبر ملف طلب — الويب لا تنفّذ أوامر).'
     : 'التحكّم غير متاح على هذا التثبيت (مساعد nm-remote غير مثبّت) — العرض للقراءة يعمل طبيعيًّا.');
@@ -332,6 +334,9 @@ function initRemoteTab() {
 
   on('remote-install-btn', () => remoteConfirmed('install', 'تثبيت ngrok',
     'سيُنزَّل ملف ngrok الرسمي من المصدر الثابت ويُثبَّت في /usr/local/bin. متابعة؟'));
+  // v2.18.0 — «تحديث ngrok»: نفس القناة الآمنة لكن بفعل يسمح بالاستبدال فوق نسخة موجودة
+  on('remote-update-btn', () => remoteConfirmed('update-ngrok', 'تحديث ngrok',
+    'سيُنزَّل أحدث إصدار stable من ngrok ويستبدل الثنائي الحالي، ثم يُعاد تشغيل النفق إن كان يعمل. متابعة؟'));
   on('remote-start-btn', () => remoteAction('start', 'تشغيل النفق'));
   on('remote-restart-btn', () => remoteConfirmed('restart', 'إعادة تشغيل النفق',
     'سيتم إيقاف النفق وتشغيله من جديد — الرابط العام سينقطع لدقائق. متابعة؟'));
