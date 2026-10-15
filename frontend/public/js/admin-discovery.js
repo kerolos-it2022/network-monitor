@@ -746,3 +746,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 })();
+
+// ═══ v2.27.2 — الشرائح الموحّدة (فحص الآن · بانتظار الاعتماد · الجدولة) ═══
+let currentDiscSub = 'scan';
+const SUB_SECTIONS = { scan: 'section-discovery', discovered: 'section-discovered', sched: 'section-scheduler' };
+function showDiscSub(sub) {
+  currentDiscSub = sub;
+  for (const [key, secId] of Object.entries(SUB_SECTIONS)) {
+    const sec = document.getElementById(secId);
+    if (sec) sec.classList.toggle('hidden', key !== sub);
+  }
+  for (const btn of document.querySelectorAll('#disc-segments button')) {
+    const active = btn.dataset.sub === sub;
+    btn.classList.toggle('btn-primary', active);
+  }
+  // تحميل ذكي مرة عند أول فتح لكل شريحة.
+  if (sub === 'discovered' && typeof loadDiscovered === 'function') loadDiscovered();
+  if (sub === 'sched' && typeof loadSchedulerSettings === 'function') {
+    try { loadSchedulerSettings(); loadSchedulerStatus(); loadSchedulerRuns(); } catch (e) {}
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const bar = document.getElementById('disc-segments');
+  if (!bar) return;
+  bar.querySelectorAll('button[data-sub]').forEach((b) => b.addEventListener('click', () => showDiscSub(b.dataset.sub)));
+  // عند فتح تبويب الاكتشاف: اعرض شريحة الفحص وأخفِ الأخريين (admin-tabs لا يدير أخريها بعد الدمج).
+  const tabBtn = document.getElementById('tab-discovery');
+  if (tabBtn) tabBtn.addEventListener('click', () => showDiscSub('scan'));
+});

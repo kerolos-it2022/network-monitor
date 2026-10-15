@@ -26,8 +26,6 @@
       <li><button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع"><span class="tab-btn-icon">📍</span><span class="tab-btn-label">المواقع</span></button></li>
       <li><button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة"><span class="tab-btn-icon">🏷️</span><span class="tab-btn-label">أنواع الأجهزة</span></button></li>
       <li><button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً"><span class="tab-btn-icon">🔍</span><span class="tab-btn-label">اِكتشاف الأَجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-discovered" type="button" title="الأجهزة الجديدة المُكتشَفة من المسح الدوري"><span class="tab-btn-icon">📥</span><span class="tab-btn-label">الأَجهزة المُكتشَفة</span><span id="disc-tab-badge" class="hidden" style="display:none; min-width:18px; height:18px; border-radius:9px; background:#dc2626; color:#fff; font-size:0.7rem; font-weight:700; text-align:center; line-height:18px; padding:0 5px; margin-inline-start:6px;"></span></button></li>
-      <li><button class="tab-btn" id="tab-scheduler" type="button" title="المسح الدوري التلقائي"><span class="tab-btn-icon">⏱️</span><span class="tab-btn-label">المسح الدوري</span></button></li>
       <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label">خريطة المواقع</span></button></li>
       <li><button class="tab-btn" id="tab-topology" type="button" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label">سلسلة الشبكة</span></button></li>
       <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label">الإِشعارات</span></button></li>
@@ -133,6 +131,16 @@
     </section>
 
     <!-- ============ قسم اكتشاف الأجهزة ============ -->
+
+    <!-- ============ قسم اكتشاف الأجهزة (موحد v2.27.2: فحص + بانتظار الاعتماد + جدولة) ============ -->
+    <section id="section-discovery" class="hidden">
+      <!-- v2.27.2 — شريط الشرائح: الثلاثة أنظمة في تبويب واحد (بنمط Advanced IP Scanner) -->
+      <div id="disc-segments" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; border:1px solid var(--border); border-radius:10px; padding:0.5rem; background:var(--bg);">
+        <button type="button" class="btn btn-primary" id="seg-scan" data-sub="scan" style="flex:1; min-width:150px;">🔍 فحص الآن</button>
+        <button type="button" class="btn" id="seg-discovered" data-sub="discovered" style="flex:1; min-width:150px;">📥 بانتظار الاعتماد <span id="seg-disc-count" style="background:#dc2626; color:#fff; border-radius:9px; padding:0 6px; font-size:0.75rem; display:none;">0</span></button>
+        <button type="button" class="btn" id="seg-sched" data-sub="sched" style="flex:1; min-width:150px;">⏱️ الجدولة التلقائية</button>
+      </div>
+
     <section id="section-discovery" class="hidden">
       <div class="form-card">
         <h3>🔍 اكتشاف الأجهزة في الشبكة</h3>

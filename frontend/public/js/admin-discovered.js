@@ -368,7 +368,7 @@ async function updateDiscoveredBadge() {
   try {
     const r = await api('/api/discovered?is_approved=0&limit=1');
     const total = r && r.success ? Number(r.total || 0) : 0;
-    const badge = document.getElementById('disc-tab-badge');
+    const badge = (document.getElementById('seg-disc-count') || document.getElementById('disc-tab-badge'));
     if (!badge) return;
     if (total > 0) { badge.textContent = String(total); badge.style.display = 'inline-block'; }
     else badge.style.display = 'none';
