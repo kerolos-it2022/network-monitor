@@ -10,6 +10,35 @@ const router = express.Router();
 // نُمدّد عمرها إلى 30 يومًا لِـ إبقاء تسجيل الدخول بين الزيارات.
 const REMEMBER_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 يومًا
 
+// ─────────────────────────────────────────────────────────────
+// v2.22.0 — 🔐 قفل محاولات الدخول (الوصول معتمد على رابط عام عبر ngrok، فاللوحة
+// مكشوفة لكسر كلمة المرور بالتخمين). 5 محاولات فاشلة (لكل مستخدم+IP) خلال نافذة
+// 15 دقيقة ⇒ قفل 15 دقيقة. في الذاكرة فقط (لا قاعدة) — إعادة تشغيل الخدمة تنظّفه،
+// وهذا مقبول: الهدف إبطاء التخمين لا محاسبة تاريخية.
+// ملاحظة: نفس رسالة الخطأ العامة «بيانات الدخول غير صحيحة» لبقية الحالات؛ رسالة
+// القفل هي وحدها الوحيدة التي تفصح (لا تكشف للمهاجم هل المستخدم موجود).
+// ─────────────────────────────────────────────────────────────
+const LOCK_MAX_FAILURES = 5;
+const LOCK_WINDOW_MS = 1000 * 60 * 15;      // نافذة عدّ المحاولات الفاشلة
+const LOCK_DURATION_MS = 1000 * 60 * 15;    // مدة القفل بعد بلوغ الحد
+const loginFailures = new Map();            // '${username}|${ip}' → { count, firstAt, lockedUntil }
+
+// IP الحقيقي خلف ngrok/بروكسي: X-Forwarded-For أول قيمة؛ وإلا عنوان الاتصال مباشرة.
+function clientIp(req) {
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return xff || (req.socket && req.socket.remoteAddress) || 'unknown';
+}
+function lockKey(req, username) {
+  return String(username || '').toLowerCase() + '|' + clientIp(req);
+}
+// تنظيف كسول: لا يبقى مفتاح قديم بلا نافذة نشطة.
+function pruneLocks(now) {
+  for (const [k, st] of loginFailures) {
+    if (st.lockedUntil && st.lockedUntil <= now) { loginFailures.delete(k); continue; }
+    if (!st.lockedUntil && now - st.firstAt > LOCK_WINDOW_MS) loginFailures.delete(k);
+  }
+}
+
 // POST /api/auth/login
 // Body: { username, password, remember? }
 router.post('/login', (req, res) => {
@@ -20,19 +49,44 @@ router.post('/login', (req, res) => {
       .json({ success: false, error: 'بيانات الدخول غير صحيحة' });
   }
 
+  const now = Date.now();
+  pruneLocks(now);
+  const key = lockKey(req, username);
+  const st = loginFailures.get(key);
+  // حالة القفل النشط: رفض مباشر قبل أي فحص اعتمادات (بقية الوقت بالدقائق، أقلها 1).
+  if (st && st.lockedUntil && st.lockedUntil > now) {
+    const mins = Math.max(1, Math.ceil((st.lockedUntil - now) / 60000));
+    return res.status(429).json({
+      success: false,
+      error: 'تم إيقاف تسجيل الدخول مؤقتًا بعد محاولات فاشلة متكررة — حاول بعد ' + mins + ' دقيقة',
+      locked_minutes: mins,
+    });
+  }
+
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user) {
+  const ok = user && bcrypt.compareSync(password, user.password_hash);
+  if (!ok) {
+    // عدّ المحاولات الفاشلة (للمستخدم الموجود وغير الموجود على السواء — الرسالة واحدة).
+    const cur = loginFailures.get(key) || { count: 0, firstAt: now, lockedUntil: null };
+    if (now - cur.firstAt > LOCK_WINDOW_MS) { cur.count = 0; cur.firstAt = now; }
+    cur.count += 1;
+    if (cur.count >= LOCK_MAX_FAILURES) {
+      cur.lockedUntil = now + LOCK_DURATION_MS;
+      loginFailures.set(key, cur);
+      return res.status(429).json({
+        success: false,
+        error: 'تم إيقاف تسجيل الدخول مؤقتًا بعد ' + LOCK_MAX_FAILURES + ' محاولات فاشلة — حاول بعد ' + Math.ceil(LOCK_DURATION_MS / 60000) + ' دقيقة',
+        locked_minutes: Math.ceil(LOCK_DURATION_MS / 60000),
+      });
+    }
+    loginFailures.set(key, cur);
     return res
       .status(401)
       .json({ success: false, error: 'بيانات الدخول غير صحيحة' });
   }
 
-  const ok = bcrypt.compareSync(password, user.password_hash);
-  if (!ok) {
-    return res
-      .status(401)
-      .json({ success: false, error: 'بيانات الدخول غير صحيحة' });
-  }
+  // نجاح الدخول: صفّر عدّاد هذا المستخدم+IP.
+  loginFailures.delete(key);
 
   req.session.user = { username: user.username, role: user.role };
 

@@ -10,6 +10,25 @@
 > الإصدار `2.6.0` (المصادر الخارجية: MikroTik/Sophos/SNMP/LLDP) **لم يُنفَّذ بعد** — لا قسم له.
 > الإصداران `2.8.1` و `2.8.2/2.8.3` لم يُوسَما بـ git tag؛ توثيقهما من رسائل الـ commits وتعليقات الكود.
 
+## [2.22.0] - 2026-10-15
+
+### 🔐 Security release (user approval: «implement login lockout + upgrade dependencies»)
+
+- **Login lockout**: 5 failed attempts (per username+IP) within a 15-minute window ⇒ full login lockout for **15 minutes**
+  with an Arabic message stating the remaining time (`HTTP 429`). Even **the correct password is rejected while the lock is active**, and the counter is reset upon successful login.
+- The real IP behind ngrok via `X-Forwarded-For` (each visitor from the internet is counted with their own address — they do not
+  block each other). The counter is in-memory (server restart clears it — the goal is to slow down brute-forcing, not historical tracking), and
+  for non-existent usernames, failures are counted exactly the same way (the general message remains unchanged so nothing is leaked whether the user exists or not).
+- **Dependency upgrades**:
+  - `multer` 1.4.5-lts (known security vulnerabilities) → **2.4.0** — memoryStorage/single API identical and verified locally.
+  - `uuid` (transitive via node-cron) → **11.1.1** via npm `overrides` — without breaking node-cron, and daily cron scheduling (reports/
+    backups) verified to work after the upgrade.
+  - `npm audit fix` for axios / proxy-addr / qs (critical IP forgery vulnerability in proxy-addr, etc.).
+- **Out-of-scope note**: the `xlsx` package (SheetJS Community) still has 2 published vulnerabilities with no official fix — the import/export of
+  Excel devices depends on it and follows its official repository for a future fix.
+- Local testing: 4 failed attempts (all 401) → 5th locks (429 15 min) → the correct password rejected during the lock → user
+  with another name is not affected → successful login works after a restart. The `node --check`/load/cron/xlsx tests above are in memory.
+
 ## [2.21.1] - 2026-10-15
 
 ### 🎨 تحسين واجهة (طلب المستخدم: «اجعل اسم النموذج وعنوان الخدمة مملوءين بقيمة افتراضية»)
