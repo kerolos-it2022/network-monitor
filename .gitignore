@@ -84,7 +84,8 @@ appliance/noc-*.html
 /memory-backup/
 
 # v2.14.5 — تنظيف GitHub: مستندات التطوير الداخلية تبقى محليّة فقط
-/docs/
+/docs/*
+!/docs/screenshots/
 /_*.scratch.*
 /cdp-*.js
 /cdp-*.txt
@@ -99,3 +100,12 @@ appliance/noc-*.html
 /cmp*.png
 /diag-board.png
 /*-capture*.png
+
+# ═══ v2.30.7 — منع عودة ملفات العمل المؤقتة (جرد 2026-10-15) ═══
+_classify-probe.scratch.js
+_db-probe.scratch.py
+*.scratch.js
+*.scratch.py
+cdp-*.js
+# لقطات ومقارنات اختبار في جذر المشروع (الموثوقة فقط داخل docs/screenshots)
+/*.png
