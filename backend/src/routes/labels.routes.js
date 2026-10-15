@@ -72,7 +72,7 @@ function buildLabelsHtml(origin) {
 }
 
 // GET /labels/devices — صفحة طباعة ملصقات QR (🔒 جلسة — غير مسجل يُحوَّل للدخول).
-router.get('/', (req, res) => {
+router.get(['/', '/devices', '/labels/devices'], (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/admin/login.html');
   try {
     // بناء URL الملصقات من عنوان الوصول نفسه (يعمل عبر النفق وعبر الشبكة المحلية)
