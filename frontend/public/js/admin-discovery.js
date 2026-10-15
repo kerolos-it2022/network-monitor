@@ -133,7 +133,7 @@ function renderDiscoveryTable(devices) {
 
   if (discoveryDevices.length === 0) {
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="10" style="text-align:center; color:var(--muted); padding:1rem;">' +
+    tr.innerHTML = '<td colspan="6" style="text-align:center; color:var(--muted); padding:1rem;">' +
       'لم يُعثر على أجهزة مستجيبة في هذا النطاق.</td>';
     tbody.appendChild(tr);
     applyDiscoveryView();
@@ -158,32 +158,33 @@ function renderDiscoveryTable(devices) {
 
     tr.innerHTML = `
       <td><input type="checkbox" class="discovery-checkbox" data-ip="${esc(d.ip)}" ${d.existsInDB ? 'disabled' : ''} /></td>
-      <td>
-        <b style="font-size:0.95rem;">${esc(d.suggestedName || d.ip)}</b><br>
+      <td class="dsc-name-cell">
+        <input type="text" class="discovery-name-input disco-name-input" value="${esc(d.suggestedName || d.ip || '')}" placeholder="اسم الجهاز" />
         <small>${badge}</small>
-        <input type="text" class="discovery-name-input" value="${esc(d.suggestedName || '')}" style="${cellInputStyle} margin-top:0.25rem;" />
       </td>
-      <td><code style="font-size:0.85rem;" dir="ltr">${esc(d.ip)}</code><br><small style="color:var(--muted);">${d.responseTime != null ? d.responseTime.toFixed(1) + ' ms' : ''}</small></td>
-      <td>
-        <select class="discovery-type-select" style="${cellInputStyle}">
-          <option value="">— اختر النوع —</option>
-        </select>
+      <td class="dsc-ip-cell">
+        <b dir="ltr">${esc(d.ip)}</b>
+        <small style="color:var(--muted); display:block;">${d.responseTime != null ? d.responseTime.toFixed(1) + ' ms' : '—'}</small>
       </td>
-      <td>
-        <select class="discovery-location-select" style="${cellInputStyle}" title="الموقع في «خريطة المواقع»"></select>
+      <td class="dsc-vendor-cell">
+        ${esc(d.macVendor || 'غير معروف')}
+        ${d.mac ? '<small style="color:var(--muted); display:block;" dir="ltr">' + esc(d.mac) + '</small>' : ''}
       </td>
-      <td style="white-space:nowrap;">
-        <select class="discovery-proto-select" style="${cellInputStyle} width:auto; display:inline-block;" title="طريقة الفحص المقترحة من المنافذ المفتوحة">
-          <option value="ping">ping</option>
-          <option value="http">http</option>
-          <option value="https">https</option>
-          <option value="port">port (TCP)</option>
-        </select>
-        <input type="number" min="1" max="65535" class="discovery-port-input" value="${suggest.port || ''}"
-               style="${cellInputStyle} width:74px; display:inline-block;" title="المنفذ" ${suggest.protocol === 'ping' ? 'disabled' : ''} />
+      <td class="dsc-adv">
+        <select class="discovery-type-select" title="النوع"></select>
+        <select class="discovery-location-select" title="الموقع"></select>
+        <details><summary>فحص</summary>
+          <div class="adv-row">
+            <select class="discovery-proto-select" title="طريقة الفحص المقترحة">
+              <option value="ping">ping</option>
+              <option value="http">http</option>
+              <option value="https">https</option>
+              <option value="port">port (TCP)</option>
+            </select>
+            <input type="number" min="1" max="65535" class="discovery-port-input" value="${suggest.port || ''}" title="المنفذ" ${suggest.protocol === 'ping' ? 'disabled' : ''} />
+          </div>
+        </details>
       </td>
-      <td>${esc(d.macVendor || '')} ${d.mac ? '<br><small style="color:var(--muted);">' + esc(d.mac) + '</small>' : ''}</td>
-      <td>${formatPorts(d.openPorts)}</td>
     `;
     tbody.appendChild(tr);
 

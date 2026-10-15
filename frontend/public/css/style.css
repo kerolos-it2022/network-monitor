@@ -1779,3 +1779,22 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 }
 /* v2.29.3 — الوضعان متطابقان (هوية NOC الوحيدة) ⇒ مبدّل الوضع مخفي بلا كسر الـ JS */
 #theme-toggle { display: none !important; }
+
+/* ═══ v2.30.1 — جدول الاكتشاف بأسلوب Advanced IP Scanner ═══ */
+#discovery-results .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+#discovery-results thead th { font-size: 0.78rem; color: var(--muted); font-weight: 600; padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--border); }
+#discovery-results tbody td { padding: 0.5rem 0.55rem; vertical-align: middle; border-bottom: 1px solid var(--border); }
+#discovery-results tbody tr { transition: background 0.15s ease; }
+#discovery-results tbody tr:hover { background: rgba(59, 130, 246, 0.10); }
+.disco-name-input {
+  width: 100%; background: transparent; border: 1px solid transparent;
+  color: var(--text); font-weight: 700; font-size: 0.98rem;
+  padding: 0.2rem 0.3rem; border-radius: 6px;
+}
+.disco-name-input:focus { outline: none; border-color: var(--accent); background: var(--card-bg); }
+.dsc-name-cell small { opacity: 0.85; }
+.dsc-vendor-cell { font-size: 0.82rem; color: var(--muted); }
+.dsc-adv select, .dsc-adv input { width: 100%; margin-top: 0.25rem; padding: 0.28rem 0.4rem; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); }
+.dsc-adv details summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); }
+.dsc-adv .adv-row { display: flex; gap: 0.3rem; margin-top: 0.3rem; }
+#discovery-results tbody td code { background: transparent; }
