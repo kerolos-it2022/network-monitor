@@ -3,6 +3,7 @@
 // ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
 const SYS_REFRESH_KEY = 'nm.systemAutoRefresh';
 let sysTimer = null;
+let sysDrawSkip = 0;
 const SYS_INTERVAL_MS = 5000;
 
 function sysFmtBytes(b) {
@@ -114,6 +115,8 @@ async function loadSystemStats() {
        : '✅ سليم — آخر دورة فحص قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية · أجهزة نشطة: ' + (d.devices_active !== null ? d.devices_active : (e.active_devices || '—')) + ' · فحوص جارية: ' + (e.inflight_checks || 0));
 
   sysSetStatus('آخر تحديث: ' + new Date(d.ts).toLocaleTimeString('ar-EG'), false);
+  // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
+  loadAndDrawHistory();
 }
 
 function sysStartAuto() {
@@ -123,6 +126,50 @@ function sysStartAuto() {
 }
 function sysStopAuto() {
   if (sysTimer) { clearInterval(sysTimer); sysTimer = null; }
+}
+
+
+// ── v2.26.0 — الرسم الزمني (canvas خام بلا مكتبات): خطان — المعالج والرام ──
+async function loadAndDrawHistory() {
+  if (sysDrawSkip++ % 10 !== 0) return; // كل 50 ثانية (10 دورات × 5ث)
+  const cv = document.getElementById('sys-history-canvas');
+  if (!cv) return;
+  try {
+    const r = await fetch('/api/system/history', { credentials: 'same-origin', cache: 'no-store' });
+    const j = await r.json();
+    if (!j.success || !Array.isArray(j.data) || j.data.length < 2) return;
+    const pts = j.data.slice(-120); // آخر 10 دقائق تقريبًا كافية لاتجاه واضح
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+    const maxT = new Date(pts[pts.length - 1].ts).getTime();
+    const minT = new Date(pts[0].ts).getTime() || (maxT - 1);
+    const xOf = (ts) => ((new Date(ts).getTime() - minT) / Math.max(1, maxT - minT)) * (W - 24) + 12;
+    const yOf = (v) => H - 16 - (Math.max(0, Math.min(100, v)) / 100) * (H - 28);
+    // شبكة أفقية 25/50/75%
+    ctx.strokeStyle = 'rgba(125,125,125,0.2)';
+    ctx.setLineDash([3, 4]);
+    for (const yv of [25, 50, 75]) {
+      ctx.beginPath(); ctx.moveTo(12, yOf(yv)); ctx.lineTo(W - 12, yOf(yv)); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    const drawLine = (key, color) => {
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+      let started = false;
+      for (const p of pts) {
+        const v = p[key];
+        if (v === null || v === undefined) { started = false; continue; }
+        const x = xOf(p.ts), y = yOf(v);
+        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    };
+    drawLine('mem_percent', '#3b82f6');
+    drawLine('cpu_percent', '#a855f7');
+    // تسميات المحور
+    ctx.fillStyle = 'var(--muted, #888)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('100%', 8, yOf(100) + 4); ctx.fillText('50%', 10, yOf(50) + 4); ctx.fillText('0%', 8, yOf(0) + 4);
+  } catch (e) { /* فشل الرسم لا يضر الباقي */ }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

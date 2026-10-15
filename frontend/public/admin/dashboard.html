@@ -826,9 +826,23 @@
 
         </div>
 
+        <!-- v2.26.0 — الرسم الزمني (آخر ساعة تقريبًا من عينات شاشة الحالة) -->
+        <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg); margin-top:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
+            <b>📈 الاتجاه الزمني (طالما هذه الشاشة مفتوحة — حتى ~ساعة)</b>
+            <small style="color:var(--muted);">🟣 معالج % · 🔵 رام %</small>
+          </div>
+          <canvas id="sys-history-canvas" width="900" height="190" style="width:100%; height:190px; margin-top:0.5rem; border:1px dashed var(--border); border-radius:8px; background:var(--bg);"></canvas>
+          <small style="color:var(--muted);">معدل الشبكة لا يُرسم هنا (تقلّبه كبير) — الأرقام الحية فوق تكفي؛ هذا الرسم للرام والمعالج لرصد التدهور/التسريب.</small>
+        </div>
+
         <!-- تفاصيل النظام -->
         <div style="border:1px solid var(--border); border-radius:10px; padding:0.85rem; background:var(--bg); margin-top:0.75rem;">
-          <b>📋 تفاصيل النظام</b>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <b>📋 تفاصيل النظام</b>
+            <!-- v2.26.0 — تقرير أسبوعي جاهز للطباعة/حفظ PDF (للإدارة) -->
+            <a class="btn" href="../reports/weekly" target="_blank" style="text-decoration:none; padding:0.35rem 0.8rem; font-size:0.85rem;">📄 التقرير الأسبوعي (إدارة)</a>
+          </div>
           <div id="sys-details" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.4rem 1rem; margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">—</div>
         </div>
 

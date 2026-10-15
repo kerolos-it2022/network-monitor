@@ -13,6 +13,21 @@ const { getEngineHealth } = require('../services/monitor.service');
 
 const router = express.Router();
 
+// ── v2.26.0 — سجل زمني في الذاكرة للرسوم البيانية: كل استدعاء /stats يضيف عينة
+// (حتى 720 عينة ≈ ساعة بالتحديث الذاتي 5 ثوانٍ). /history يعيدها للرسم.
+const historyRing = [];
+const HISTORY_CAP = 720;
+function pushHistory(sample) {
+  historyRing.push({
+    ts: sample.ts,
+    cpu_percent: sample.cpu.usage_percent,
+    mem_percent: sample.memory.used_percent,
+    rx_rate_bps: sample.network ? sample.network.rx_rate_bps : null,
+    tx_rate_bps: sample.network ? sample.network.tx_rate_bps : null,
+  });
+  if (historyRing.length > HISTORY_CAP) historyRing.splice(0, historyRing.length - HISTORY_CAP);
+}
+
 // ── CPU: نسبة الاستخدام الحية = الفرق بين لقطات أوقات المعالجة بين استدعائين ──
 let lastCpuSample = null; // { idle, total }
 function cpuUsagePercent() {
@@ -135,10 +150,8 @@ router.get('/stats', requireAuth, (req, res) => {
 
   const cpuPercent = cpuUsagePercent(); // أول نداء null — النداء التالي كل 5ث يعطي قيمة حية
 
-  res.json({
-    success: true,
-    data: {
-      ts: new Date().toISOString(),
+  const snapshot = {
+    ts: new Date().toISOString(),
       cpu: {
         cores: os.cpus().length,
         model: (os.cpus()[0] && os.cpus()[0].model) || null,
@@ -182,8 +195,15 @@ router.get('/stats', requireAuth, (req, res) => {
         app_uptime_seconds: Math.round(process.uptime()),
         os_uptime_seconds: Math.round(os.uptime ? os.uptime() : 0),
       },
-    },
-  });
+  };
+  res.json({ success: true, data: snapshot });
+  pushHistory(snapshot);
+});
+
+// GET /api/system/history 🔒 — عينات الرسم الزمني (v2.26.0): آخر ≤720 عينة
+// (cpu% · mem% · معدل الشبكة) كما رصدها استدعاء /stats المتكرر من شاشة الحالة.
+router.get('/history', requireAuth, (req, res) => {
+  return res.json({ success: true, data: historyRing });
 });
 
 module.exports = router;

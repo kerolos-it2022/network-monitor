@@ -42,6 +42,8 @@ const remoteAccessRoutes = require('./routes/remote-access.routes');
 const aiRoutes = require('./routes/ai.routes');
 // v2.23.0 — 🖥️ حالة النظام: رام/معالج/هارد/شبكة + تفاصيل الجهاز (قراءة فقط).
 const systemRoutes = require('./routes/system.routes');
+// v2.26.0 — 📄 التقرير الأسبوعي (JSON + صفحة طباعة) و 🧹 تنظيف سجل الانقطاعات.
+const reportsRoutes = require('./routes/reports.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -133,6 +135,9 @@ app.use('/api/appliance-update', applianceUpdateRoutes);
 app.use('/api/remote-access', remoteAccessRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/reports', reportsRoutes.router);
+// صفحة التقرير الأسبوعي المزوّدة (تفتح في تبويب جديد مع جلسة الأدمن).
+app.get('/reports/weekly', reportsRoutes.weeklyPage);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {
@@ -204,5 +209,11 @@ app.listen(PORT, () => {
     require('./services/auto-update.service').startAutoUpdate();
   } catch (e) {
     console.error('[AUTO-UPDATE] Failed to start auto-update:', e.message);
+  }
+  // v2.26.0 — 🧹 تنظيف سجل الانقطاعات (أرشفة CSV + حذف >90 يومًا — يوميًا 03:10).
+  try {
+    require('./services/downtime-retention.service').startDowntimeRetention();
+  } catch (e) {
+    console.error('[RETENTION] Failed to start downtime retention:', e.message);
   }
 });
