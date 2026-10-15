@@ -38,6 +38,8 @@ const liveRoutes = require('./routes/live.routes');
 const applianceUpdateRoutes = require('./routes/appliance-update.routes');
 // v2.9.0 — قسم «الوصول عن بُعد» (ngrok): قراءة الحالة + طلب تحكم عبر مساعد root منفصل.
 const remoteAccessRoutes = require('./routes/remote-access.routes');
+// v2.21.0 — 🤖 شات AI: محادثة عربية بسياق من القاعدة (بمفتاح المستخدم — اختياري بالكامل).
+const aiRoutes = require('./routes/ai.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -127,6 +129,7 @@ app.use('/api/live', liveRoutes);
 app.use('/api/appliance-update', applianceUpdateRoutes);
 // v2.9.0 — الوصول عن بُعد (ngrok): قراءة الحالة + كتابة ملف طلب فقط (التنفيذ بمصدر root).
 app.use('/api/remote-access', remoteAccessRoutes);
+app.use('/api/ai', aiRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {

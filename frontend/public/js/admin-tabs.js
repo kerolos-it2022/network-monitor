@@ -9,6 +9,7 @@ const TAB_TO_SECTION = {
   'tab-map': 'section-map',
   'tab-topology': 'section-topology',
   'tab-notifications': 'section-notifications',
+  'tab-ai': 'section-ai',
   'tab-logs': 'section-logs',
   'tab-profile': 'section-profile',
   'tab-backup': 'section-backup',

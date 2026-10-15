@@ -31,6 +31,7 @@
       <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label">خريطة المواقع</span></button></li>
       <li><button class="tab-btn" id="tab-topology" type="button" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label">سلسلة الشبكة</span></button></li>
       <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label">الإِشعارات</span></button></li>
+      <li><button class="tab-btn" id="tab-ai" type="button" title="شات AI: اسأل عن الشبكة بالعربية"><span class="tab-btn-icon">🤖</span><span class="tab-btn-label">شات AI</span></button></li>
       <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label">السجل</span></button></li>
       <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
       <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
@@ -518,6 +519,57 @@
           <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)">🔔 اختبار الإشعار</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
+      </div>
+    </section>
+    <!-- ============ قسم شات AI (v2.21.0) ============ -->
+    <section id="section-ai" class="hidden">
+      <div class="form-card">
+        <h3>🤖 شات AI — اسأل عن شبكتك بالعربية</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.75rem 0;">
+          يجيب المساعد من بياناتك المحلية (الأجهزة، الحالات، سجل الانقطاعات، سلسلة الشبكة) لحظة سؤالك.
+          الميزة اختيارية: بلا مفتاح API تبقى معطّلة والنظام يعمل كالمعتاد. الاستشارة فقط — التنفيذ يبقى بأيدٍ بشرية.
+        </p>
+
+        <!-- نافذة المحادثة -->
+        <div id="ai-chat-box" style="height:380px; overflow-y:auto; border:1px solid var(--border); border-radius:10px; padding:0.75rem; background:var(--bg); display:flex; flex-direction:column; gap:0.6rem; margin-bottom:0.75rem;">
+          <div id="ai-chat-empty" style="margin:auto; text-align:center; color:var(--muted); font-size:0.9rem;">
+            <div style="font-size:2rem;">🤖</div>
+            اكتب سؤالك أسفل… مثل: «إيه اللي واقع دلوقتي؟» أو «جنّاح الكاميرات طايح؟» أو «أكثر جهاز بيقع؟»
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; align-items:flex-start;">
+          <textarea id="ai-input" rows="2" placeholder="اكتب سؤالك عن الشبكة… (Enter للإرسال · Shift+Enter سطر جديد)" style="flex:1; resize:vertical;"></textarea>
+          <button type="button" class="btn btn-primary" id="ai-send-btn" title="إرسال السؤال">➤ إرسال</button>
+          <button type="button" class="btn" id="ai-clear-btn" title="محو المحادثة الحالية">🧹 محو</button>
+        </div>
+        <div id="ai-status" style="font-size:0.85rem; margin-top:0.5rem;"></div>
+      </div>
+
+      <div class="form-card" style="margin-top:1rem;">
+        <h3>⚙️ إعدادات شات AI</h3>
+        <label class="checkbox-label" style="margin-bottom:0.75rem;">
+          <input type="checkbox" id="ai-enabled" />
+          <span style="font-weight:600;">شات AI مفعّل</span>
+        </label>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:0.6rem;">
+          <label>مفتاح API <small style="color:var(--muted);">(يُحفظ ولا يُعرض — اكتب قيمة جديدة لاستبداله)</small>
+            <input type="password" id="ai-api-key" autocomplete="off" placeholder="غير مضبوط" />
+          </label>
+          <label>اسم النموذج <small style="color:var(--muted);">(Model)</small>
+            <input type="text" id="ai-model" placeholder="glm-4-flash" />
+          </label>
+        </div>
+        <label style="display:block; margin-top:0.6rem;">عنوان الخدمة <small style="color:var(--muted);">(أي endpoint متوافق OpenAI — يشمل /chat/completions تلقائيًّا)</small>
+          <input type="text" id="ai-base-url" placeholder="https://api.z.ai/api/paas/v4" dir="ltr" style="text-align:left;" />
+        </label>
+        <div class="form-actions" style="margin-top:1rem;">
+          <button type="button" class="btn btn-primary" id="ai-save-btn" title="حفظ الإعدادات">💾 حفظ الإعدادات</button>
+        </div>
+        <div id="ai-settings-status" style="font-size:0.85rem; margin-top:0.5rem;"></div>
+        <p style="font-size:0.78rem; color:var(--muted); margin:0.75rem 0 0 0;">
+          🔐 الخصوصية: مع كل سؤال يُرسل موجز من بيانات الشبكة (الأسماء <b>والعناوين IP</b> — باقرارك) إلى مزوّد النموذج المختار فقط، ولا يُرسل شيء لأي طرف آخر. حذف المفتاح يوقف الإرسال فورًا.
+        </p>
       </div>
     </section>
     <!-- ============ قسم السجل ============ -->
@@ -1122,6 +1174,7 @@
   <script src="../js/admin-topology-view.js"></script>
   <script src="../js/admin-locations-types.js"></script>
   <script src="../js/admin-notifications.js"></script>
+  <script src="../js/admin-ai.js"></script>
   <script src="../js/admin-tabs.js"></script>
   <script src="../js/admin-profile.js"></script>
   <script src="../js/admin-theme.js"></script>

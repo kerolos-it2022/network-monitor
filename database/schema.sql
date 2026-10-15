@@ -110,6 +110,18 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 );
 INSERT OR IGNORE INTO notification_settings (id) VALUES (1);
 
+-- v2.21.0 — إعدادات شات AI (صف واحد فقط). api_key سري (يُقنَّع عند القراءة).
+-- base_url: أي endpoint متوافق مع OpenAI Chat Completions (افتراضي z.ai / GLM).
+-- بلا مفتاح = الشات معطّل والنظام يبقى يعمل كالمعتاد.
+CREATE TABLE IF NOT EXISTS ai_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    api_key TEXT,
+    base_url TEXT NOT NULL DEFAULT 'https://api.z.ai/api/paas/v4',
+    model TEXT NOT NULL DEFAULT 'glm-4-flash'
+);
+INSERT OR IGNORE INTO ai_settings (id) VALUES (1);
+
 -- تسجيلات تطبيق الموبايل (PWA) — كل متصفح/هاتف يُسجّل مرة واحدة
 CREATE TABLE IF NOT EXISTS mobile_registrations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
