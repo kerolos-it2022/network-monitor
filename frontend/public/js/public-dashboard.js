@@ -303,56 +303,90 @@ function applyFilters() {
 // ====== \u0641\u062a\u062d \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632 (\u0627\u0644\u0645\u0648\u062f\u0627\u0644) ======
 window.openDeviceModal = async function (deviceId) {
   var modal = document.getElementById('device-modal');
-  // إغلاق أي مودال/رسم سابق أولاً.
   if (currentChart && typeof currentChart.destroy === 'function') {
     try { currentChart.destroy(); } catch (e) {}
     currentChart = null;
   }
   try {
     var devRes = await fetchApi('/api/devices/' + deviceId);
-    if (!devRes || !devRes.success) {
-      alert(devRes && devRes.error ? devRes.error : '\u062a\u0639\u0630\u0631 \u062c\u0644\u0628 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062c\u0647\u0627\u0632');
-      return;
-    }
-    document.getElementById('modal-device-name').textContent = devRes.data.name;
+    if (!devRes || !devRes.success) { alert(devRes && devRes.error ? devRes.error : 'تعذّر جلب بيانات الجهاز'); return; }
+    var dev = devRes.data;
+    document.getElementById('modal-device-name').textContent = dev.name;
 
-    var histRes = await fetchApi('/api/devices/' + deviceId + '/history?range=24h');
-    if (!histRes || !histRes.success) {
-      alert(histRes && histRes.error ? histRes.error : '\u062a\u0639\u0630\u0631 \u062c\u0644\u0628 \u0633\u062c\u0644 \u0627\u0644\u062c\u0647\u0627\u0632');
-      return;
-    }
-    var data = histRes.data;
-
-    document.getElementById('modal-uptime').textContent =
-      '\u0646\u0633\u0628\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644: ' + data.uptime_percentage + '%';
-
-    var canvas = document.getElementById('modal-chart-canvas');
-    if (typeof window.renderDeviceChart === 'function') {
-      try {
-        currentChart = window.renderDeviceChart(canvas, data.status_points);
-      } catch (e) {
-        console.error('chart render error', e);
-      }
-    }
-
-    var list = document.getElementById('modal-downtime-list');
-    list.innerHTML = '';
-    if (!data.downtime_events || data.downtime_events.length === 0) {
-      list.innerHTML = '<li>\u0644\u0627 \u062a\u0648\u062c\u062f \u0627\u0646\u0642\u0637\u0627\u0639\u0627\u062a \u062e\u0644\u0627\u0644 \u0622\u062e\u0631 24 \u0633\u0627\u0639\u0629.</li>';
+    // ── حالة الاتصال بالاستدلال (v2.31.0):
+    //    الارتكاز = الأجهزة المبثوقة على موقع «إنترنت» (مثل DNS 1.1.1.1) —
+    //    إن سقطت ⇒ الخط الخارجي واقع (محلي فقط)؛ إن شغالت ⇒ النفاذ متوقع.
+    var list = allDevices || [];
+    var anchors = list.filter(function (x) { return x.location_kind === 'internet' && x.ip && x.ip.indexOf('192.168.') !== 0; });
+    var lineDown = anchors.length > 0 && anchors.every(function (a) { return a.current_status !== 'online'; });
+    var chip = {
+      badge: '', color: ''
+    };
+    if (dev.current_status === 'online') {
+      if (lineDown) { chip.badge = '🟡 متصل بالشبكة المحلية فقط — الخط الخارجي منقطع'; chip.color = '#f59e0b'; }
+      else { chip.badge = '🟢 متصل — النفاذ للإنترنت متوقع (الخط الخارجي يعمل)'; chip.color = '#22c55e'; }
     } else {
-      for (var i = 0; i < data.downtime_events.length; i++) {
-        var ev = data.downtime_events[i];
-        var li = document.createElement('li');
-        var ended = ev.ended_at ? new Date(ev.ended_at).toLocaleString('ar') : '\u0645\u0633\u062a\u0645\u0631 \u0627\u0644\u0622\u0646';
-        li.textContent = '\u0645\u0646 ' + new Date(ev.started_at).toLocaleString('ar') + ' \u0625\u0644\u0649 ' + ended + ' \u2014 \u0627\u0644\u0645\u062f\u0629: ' + formatDuration(ev.duration_seconds);
-        list.appendChild(li);
+      if (lineDown) { chip.badge = '🔴 منقطع — والخط الخارجي منقطع أيضًا (عطل خارجي رجّع الشبكة)'; chip.color = '#ef4444'; }
+      else { chip.badge = '🔴 منقطع محليًّا — الخط الخارجي يعمل فالعطل بالجهاز/توصيله'; chip.color = '#ef4444'; }
+    }
+    var chipEl = document.getElementById('device-connect-chip');
+    chipEl.textContent = chip.badge;
+    chipEl.style.color = chip.color;
+
+    // ── المودال يعرض نافذة افتراضية 7 أيام + أزرار تبديل (24/7/30) ──
+    var currentRange = '7d';
+    var loadRange = async function (range) {
+      var his = await fetchApi('/api/devices/' + deviceId + '/history?range=' + range);
+      if (!his || !his.success) { alert(his && his.error ? his.error : 'تعذّر جلب سجل الجهاز'); return; }
+      var data = his.data;
+      var rangeNames = { '24h': 'آخر 24 ساعة', '7d': 'آخر 7 أيام', '30d': 'آخر 30 يوم' };
+      document.getElementById('modal-uptime').textContent = 'نسبة التشغيل (' + rangeNames[range] + '): ' + data.uptime_percentage + '%';
+      var canvas = document.getElementById('modal-chart-canvas');
+      if (typeof window.renderDeviceChart === 'function') {
+        try { currentChart = window.renderDeviceChart(canvas, data.status_points); } catch (e) { console.error(e); }
       }
+      var listEl = document.getElementById('modal-downtime-list');
+      listEl.innerHTML = '';
+      if (!data.downtime_events || data.downtime_events.length === 0) {
+        listEl.innerHTML = '<li>لا توجد انقطاعات خلال الفترة.</li>';
+      } else {
+        for (var i = 0; i < data.downtime_events.length; i++) {
+          var ev = data.downtime_events[i];
+          var li = document.createElement('li');
+          var ended = ev.ended_at ? new Date(ev.ended_at).toLocaleString('ar') : 'مستمرة الآن';
+          li.textContent = 'من ' + new Date(ev.started_at).toLocaleString('ar') + ' إلى ' + ended + ' — المدة: ' + formatDuration(ev.duration_seconds);
+          listEl.appendChild(li);
+        }
+      }
+    };
+    await loadRange('7d');
+
+    // أزرار الفترة المدمجة داخل المودال (يُنشأن مرة واحدة).
+    var chipEl0 = document.getElementById('device-connect-chip');
+    var rangesRow = document.getElementById('modal-ranges-row');
+    if (!rangesRow) {
+      rangesRow = document.createElement('div');
+      rangesRow.id = 'modal-ranges-row';
+      rangesRow.style.cssText = 'display:flex; gap:0.4rem; flex-wrap:wrap; margin:0.4rem 0;';
+      rangesRow.innerHTML = '<button data-r="24h" type="button">24 ساعة</button>' +
+        '<button data-r="7d" type="button">7 أيام</button>' +
+        '<button data-r="30d" type="button">30 يوم</button>';
+      chipEl0.insertAdjacentElement('afterend', rangesRow);
+      rangesRow.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-r]');
+        if (!b || String(b.dataset.r) === String(currentRange)) return;
+        currentRange = b.dataset.r;
+        loadRange(currentRange);
+      });
+    }
+    if (dev.web_port) {
+      chipEl0.insertAdjacentHTML('beforeend', '<span style="font-size:0.7rem; color:var(--muted);"> · ويب بورت: ' + dev.web_port + '</span>');
     }
 
     modal.classList.remove('hidden');
   } catch (e) {
     console.error('openDeviceModal error', e);
-    alert('\u062e\u0637\u0623 \u0641\u064a \u062c\u0644\u0628 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632: ' + (e && e.message ? e.message : ''));
+    alert('خطأ في جلب تفاصيل الجهاز: ' + (e && e.message ? e.message : ''));
   }
 };
 

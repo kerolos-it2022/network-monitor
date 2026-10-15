@@ -19,6 +19,7 @@ const DEVICE_SELECT = `
     dt.name AS device_type_name,
     d.location_id,
     l.name AS location_name,
+    l.kind AS location_kind,
     d.parent_id,
     d.parent_location_id,
     d.pos_x, d.pos_y,

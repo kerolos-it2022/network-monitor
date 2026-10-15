@@ -1801,3 +1801,12 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
 .dsc-adv details summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); }
 .dsc-adv .adv-row { display: flex; gap: 0.3rem; margin-top: 0.3rem; }
 #discovery-results tbody td code { background: transparent; }
+
+/* ═══ v2.31.0 — شريحة حالة الاتصال (استدلال: إنترنت خارجي أم محلي فقط) ═══ */
+.connect-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.9rem; font-weight: 700; line-height: 1.5;
+  padding: 0.45rem 0.75rem; border-radius: 8px;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid var(--border);
+}
