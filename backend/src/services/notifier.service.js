@@ -122,7 +122,8 @@ function logNotification(channel, deviceId, message, status, errorText = null) {
 // ─────────────────────────────── تلجرام ───────────────────────────────
 // deliverTelegram(message, deviceId, replyMarkup): إرسال فعلي + نتيجة مفصّلة.
 // v2.14.0 — replyMarkup اختياري (أزرار مضمّنة: /status · /down · /recent).
-async function deliverTelegram(message, deviceId = null, replyMarkup = null) {
+async function deliverTelegram(message, deviceId = null, replyMarkup = null, parseMode = null) {
+  // v2.18.3 — parseMode اختياري ('HTML') للرسائل المبنية بوسوم (التجميع والتقارير).
   const s = await getSettings();
   if (!s.telegram_enabled) {
     return { channel: 'telegram', ok: false, skipped: true, reason: 'القناة معطّلة من لوحة التحكم (Telegram مفعّل = لا)' };
@@ -142,6 +143,7 @@ async function deliverTelegram(message, deviceId = null, replyMarkup = null) {
   const url = `https://api.telegram.org/bot${s.telegram_bot_token}/sendMessage`;
   const payload = { chat_id: s.telegram_chat_id, text: message };
   if (replyMarkup) payload.reply_markup = replyMarkup;
+  if (parseMode) payload.parse_mode = parseMode;
   try {
     await axios.post(url, payload, { timeout: 10000 });
     logNotification('telegram', deviceId, message, 'sent');
@@ -155,8 +157,8 @@ async function deliverTelegram(message, deviceId = null, replyMarkup = null) {
 }
 
 // sendTelegram(message, deviceId): يبقى يُرجع true/false (توافقًا مع المستدعين الحاليين).
-async function sendTelegram(message, deviceId = null, replyMarkup = null) {
-  return (await deliverTelegram(message, deviceId, replyMarkup)).ok;
+async function sendTelegram(message, deviceId = null, replyMarkup = null, parseMode = null) {
+  return (await deliverTelegram(message, deviceId, replyMarkup, parseMode)).ok;
 }
 
 // ─────────────────────────────── واتساب ───────────────────────────────

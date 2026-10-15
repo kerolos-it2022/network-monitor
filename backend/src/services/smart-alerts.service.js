@@ -91,7 +91,7 @@ async function flushStorm() {
 
   try {
     const { tgButtons } = require('./telegram-bot.service');
-    await notifier.sendTelegram(msg, null, tgButtons());
+    await notifier.sendTelegram(msg, null, tgButtons(), 'HTML');
     await notifier.sendWhatsapp(msg.replace(/<\/?(b|code)>/g, ''), null);
     await notifier.sendMobile(msg.replace(/<\/?(b|code)>/g, ''), null);
   } catch (e) {
@@ -155,7 +155,7 @@ function startDailyReport() {
       const msg = buildDailyReport();
       let markup = null;
       try { markup = require('./telegram-bot.service').tgButtons(); } catch (e) {}
-      await notifier.sendTelegram(msg, null, markup);
+      await notifier.sendTelegram(msg, null, markup, 'HTML');
       await notifier.sendWhatsapp(msg.replace(/<\/?(b|code)>/g, ''), null);
       await notifier.sendMobile(msg.replace(/<\/?(b|code)>/g, ''), null);
       console.log('[smart-alerts] التقرير اليومي أُرسل');
