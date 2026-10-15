@@ -154,6 +154,17 @@ router.get('/progress', requireAuth, (req, res) => {
       const webWins = webRec && Number.isFinite(tsWeb) && (!state || !Number.isFinite(tsNm) || tsWeb > tsNm);
       if (webWins) state = webRec;
     } catch (e) { /* لا سجل ويب — لا بأس */ }
+    // v2.28.3 — الحقيقة المقاسة من الجذر: رسالة النجاح تُبنى من إصدار package.json
+    // العامَل فعليًّا (يُقاس الآن) — مصادر السجل (الجذر+الويب) قد تتداخل فتعرض رسالة قديمة؛
+    // الرسالة القديمة تُحفظ في raw_message للسجل التفصيلي فقط.
+    try {
+      const appVersion = (JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), 'utf8')).version) || null;
+      if (state && state.state === 'success' && appVersion) {
+        state.raw_message = state.message;
+        state.running_version = appVersion;
+        state.message = '✅ التحديث اكتمل — النسخة العاملة الآن: v' + appVersion;
+      }
+    } catch (e) { /* لا نُفشل الحالة لو فشلت قراءة الإصدار */ }
     try { log = fs.readFileSync(p.logFile, 'utf8').split('\n').slice(-40).join('\n'); } catch (e) {}
     res.json({ success: true, appliance: isAppliance(), state, log });
   } catch (e) {
