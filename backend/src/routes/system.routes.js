@@ -30,7 +30,7 @@ function cpuUsagePercent() {
   return Math.round((1 - dIdle / dTotal) * 1000) / 10; // نسبة مئوية بخانة عشرية
 }
 
-// ── الشبكة: مجموع كثب/كثب مرتفع من /proc/net/dev (بلا loopback) + المعدل الحي ──
+// ── الشبكة: مجموع التنزيل/الرفع من /proc/net/dev (بلا loopback) + المعدل الحي ──
 let lastNetSample = null; // { at, rxTotal, txTotal }
 function networkSample() {
   // لينكس فقط — على غير لينكس ترد null والواجهة تخفي البطاقة.
