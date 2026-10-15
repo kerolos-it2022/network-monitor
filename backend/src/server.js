@@ -43,6 +43,8 @@ const aiRoutes = require('./routes/ai.routes');
 const systemRoutes = require('./routes/system.routes');
 // v2.26.0 — 📄 التقرير الأسبوعي (JSON + صفحة طباعة) و 🧹 تنظيف سجل الانقطاعات.
 const reportsRoutes = require('./routes/reports.routes');
+// v2.30.0 — 🏷️ ملصقات QR للأجهزة (صفحة طباعة بجلسة الأدمن).
+const labelsRoutes = require('./routes/labels.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -136,6 +138,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/reports', reportsRoutes.router);
 // صفحة التقرير الأسبوعي المزوّدة (تفتح في تبويب جديد مع جلسة الأدمن).
 app.get('/reports/weekly', reportsRoutes.weeklyPage);
+app.get('/labels/devices', labelsRoutes);
 
 // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
 app.get('*', (req, res, next) => {

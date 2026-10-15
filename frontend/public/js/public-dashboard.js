@@ -111,6 +111,7 @@ function renderDevices(devicesList) {
 
     const card = document.createElement('div');
     card.className = 'device-card ' + statusClass;
+    card.dataset.id = d.id;   // v2.30.0 — لدعم بصمات QR (فتح الجهاز من الملصق)
     card.innerHTML =
       '<div class="name">' + escapeHtml(d.name) + '</div>' +
       '<div class="ip">' + escapeHtml(d.ip) + '</div>' +
@@ -709,3 +710,22 @@ function escapeHtml(s) {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ═══ v2.30.0 — ملصقات QR: الرابط الممسوح من الملصق (/#dev=ID أو /?dev=ID)
+// يفتح تفاصيل الجهاز ويبرز بطاقته على الصفحة العامة ═══
+function openFromHash() {
+  const m = (location.hash || location.search).match(/dev=(\d+)/);
+  if (!m) return;
+  const id = Number(m[1]);
+  const t = setInterval(() => {
+    const card = document.querySelector('.device-card[data-id="' + id + '"]');
+    if (card) {
+      clearInterval(t);
+      card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      card.style.boxShadow = '0 0 0 3px var(--accent)';
+      if (typeof window.openDeviceModal === 'function') window.openDeviceModal(id);
+    }
+  }, 300);
+  setTimeout(() => clearInterval(t), 20000);
+}
+document.addEventListener('DOMContentLoaded', openFromHash);
