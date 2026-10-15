@@ -51,11 +51,25 @@ rm -f "$REQ_FILE"
 # ── حلّ «latest» عبر GitHub API (المستودع ثابت في الأداة؛ بلا توكن — المستودع عام) ──
 if [ "$TAG" = "latest" ]; then
   log "حلّ «latest» عبر GitHub API…"
-  TAGS_JSON="$(curl -fsSL -m 60 -H 'User-Agent: nm-update' \
-      "https://api.github.com/repos/$REPO/tags?per_page=50" 2>>"$LOG_FILE" || true)"
-  TAG="$(printf '%s' "$TAGS_JSON" \
-      | grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' \
-      | sed 's/.*"\([^"]*\)"$/\1/' \
+  # v2.18.1 — إصلاح الجذر نفسه بلمسة أخيرة: كان يجلب أول 50 وسمًا فقط والمستودع فيه 60+
+  # ⇒ «الأحدث» داخل النافذة كان إصدارًا قديمًا (نفس علة performUpdateArchive). الآن:
+  # جلب كل الصفحات (تصف 100 لكل صفحة، حتى 5 صفحات) ثم ترتيب semver.
+  ALL_NAMES=""
+  PAGE=1
+  while [ "$PAGE" -le 5 ]; do
+    PAGE_JSON="$(curl -fsSL -m 60 -H 'User-Agent: nm-update' \
+        "https://api.github.com/repos/$REPO/tags?per_page=100&page=$PAGE" 2>>"$LOG_FILE" || true)"
+    PAGE_NAMES="$(printf '%s' "$PAGE_JSON" \
+        | grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' \
+        | sed 's/.*"\([^"]*\)"$/\1/')"
+    [ -n "$PAGE_NAMES" ] || break
+    ALL_NAMES="$ALL_NAMES
+$PAGE_NAMES"
+    PAGE_COUNT="$(printf '%s\n' "$PAGE_JSON" | grep -c '"name"' || true)"
+    [ "$PAGE_COUNT" -lt 100 ] && break
+    PAGE=$((PAGE + 1))
+  done
+  TAG="$(printf '%s' "$ALL_NAMES" \
       | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n1)"
   [ -n "$TAG" ] || fail "تعذّر تحديد أحدث إصدار من GitHub (تحقّق من الإنترنت/المستودع)"
   log "أحدث إصدار متاح: $TAG"

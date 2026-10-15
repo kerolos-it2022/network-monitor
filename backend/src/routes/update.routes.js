@@ -114,7 +114,9 @@ function performUpdateArchive(tag) {
     const steps = [
       { name: `تحميل أرشيف الإصدار ${tag}`, cmd: `curl -fL --retry 2 -m 300 ${authHdr}-o ${TMP_ZIP} "${archiveUrl}"` },
       { name: 'فك الأرشيف', cmd: `rm -rf ${TMP_SRC} && mkdir -p ${TMP_SRC} && unzip -q -o ${TMP_ZIP} -d ${TMP_SRC}` },
-      { name: 'تحديث ملفات التطبيق', cmd: `cd ${TMP_SRC} && SRC=$(ls -d */ | head -n1) && cp -a "$SRC/backend" ${REPO_DIR}/ && cp -a "$SRC/frontend" ${REPO_DIR}/ && mkdir -p ${REPO_DIR}/database && cp -a "$SRC"/database/. ${REPO_DIR}/database/` },
+      { name: 'تحديث ملفات التطبيق', cmd: `cd ${TMP_SRC} && SRC=$(ls -d */ | head -n1) && cp -a "$SRC/backend" ${REPO_DIR}/ && cp -a "$SRC/frontend" ${REPO_DIR}/ && mkdir -p ${REPO_DIR}/database && cp -a "$SRC"/database/. ${REPO_DIR}/database/`
+      + `; if [ -f "$SRC/appliance/config/includes.chroot/usr/local/sbin/nm-remote" ]; then install -m 0755 "$SRC/appliance/config/includes.chroot/usr/local/sbin/nm-remote" /usr/local/sbin/nm-remote && echo 'nm-remote helper updated'; fi`
+      + `; if [ -f "$TMP_SRC/appliance/config/includes.chroot/usr/local/sbin/nm-update" ]; then install -m 0755 "$TMP_SRC/appliance/config/includes.chroot/usr/local/sbin/nm-update" /usr/local/sbin/nm-update && echo 'nm-update helper updated'; fi` },
       { name: 'تحديث التبعيات', cmd: `cd ${REPO_DIR}/backend && npm ci --omit=dev` },
       { name: 'إعادة تشغيل الخدمة', cmd: `if systemctl is-active --quiet network-monitor 2>/dev/null; then systemctl restart network-monitor; else pm2 restart network-monitor --update-env 2>/dev/null || true; fi` },
       // v2.14.8 — إصلاح ذاتي: كل تحديث يعيد تنشيط مراقب طلبات الوصول عن بُعد (كان يموت
