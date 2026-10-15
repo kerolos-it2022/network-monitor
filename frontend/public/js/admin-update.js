@@ -43,6 +43,13 @@ function updSetBusy(on) {
 
 // ── آخر فحص (يُحفظ محليًّا) ──
 function updReadLast() { try { return Number(localStorage.getItem(UPD_LAST_KEY)) || 0; } catch (e) { return 0; } }
+
+// v2.30.6 — عرض التوقيت بالعربية بدل الصيغة الخام
+function updFmtWhen(at) {
+  const ts = Date.parse(at);
+  if (!Number.isFinite(ts)) return String(at || '');
+  return new Date(ts).toLocaleString('ar-EG');
+}
 function updRenderLast(ts) {
   const t = ts || updReadLast();
   if (!t) { updSet('upd-lastcheck', '—'); return; }
@@ -490,7 +497,7 @@ async function updLoadHistory() {
     const p = (updMode === 'appliance') ? await api('/api/appliance-update/progress') : null;
     const st = p && p.state;
     el.innerHTML = (st && st.message)
-      ? '<div class="upd-row"><span>آخر عملية (مساعد الأبلاينس)</span><span>' + esc(st.message) + (st.at ? ' — ' + esc(st.at) : '') + '</span></div>'
+      ? '<div class="upd-row"><span>آخر عملية (مساعد الأبلاينس)</span><span>' + esc(String(st.message || '').replace(/✅\s*/g, '').trim()) + (st.at ? ' — ' + updFmtWhen(st.at) : '') + '</span></div>'
       : '<span style="color:var(--muted);">لا توجد عمليات مسجّلة بعد.</span>';
     return;
   }
