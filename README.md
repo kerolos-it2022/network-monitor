@@ -1,6 +1,6 @@
 # 📡 نظام مراقبة أجهزة الشبكة المحلية - Network Monitor
 
-[![Version](https://img.shields.io/badge/version-2.30.3-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![Version](https://img.shields.io/badge/version-2.30.4-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)

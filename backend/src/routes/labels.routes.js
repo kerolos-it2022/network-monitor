@@ -1,10 +1,9 @@
-// labels.routes.js (v2.30.0) — 🏷️ ملصقات QR لكل جهاز: صفحة طباعة داخل اللوحة.
-// كل ملصق: QR يشير لصفحة الجهاز في الشبكة/النفق الحالي (يُبنى من Host الوصول)
-// + الاسم + IP + النوع/الموقع. الطباعة عبر حوار المتصفح (حفظ PDF أو ملصقات حقيقية).
-// بلا أي اعتمادات جديدة: كود QR يُرسم عبر صيغة URL API مجاني (api.qrserver.com).
+// labels.routes.js (v2.30.0 — مُنسَّقة v2.30.4) — 🏷️ ملصقات QR لكل جهاز: صفحة طباعة
+// داخل اللوحة بهوية NOC (شاشة كحلية) + طباعة على أوراق بيضاء تلقائيًّا (@media print).
+// كل ملصق: QR يشير لصفحة الجهاز (يُبنى من Host الوصول — النفق أو الشبكة المحلية)
+// + الاسم + IP + النوع/الموقع. بلا أي اعتمادات: QR عبر api.qrserver.com.
 const express = require('express');
 const db = require('../db');
-const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
 
@@ -16,7 +15,7 @@ function baseUrlOf(req) {
 
 function buildLabelsHtml(origin) {
   const rows = db.prepare(`
-    SELECT d.id, d.name, d.ip, d.web_port, t.name AS type_name, l.name AS loc_name
+    SELECT d.id, d.name, d.ip, t.name AS type_name, l.name AS loc_name
     FROM devices d
     LEFT JOIN device_types t ON t.id = d.device_type_id
     LEFT JOIN locations l ON l.id = d.location_id
@@ -45,41 +44,61 @@ function buildLabelsHtml(origin) {
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>🏷️ ملصقات QR — الأجهزة (${rows.length})</title>
 <style>
-  body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 1rem; background: #fff; color: #111; }
-  .toolbar { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
-  button { padding: 0.5rem 1rem; border: 1px solid #999; border-radius: 8px; background: #fff; cursor: pointer; font-family: inherit; }
-  button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.6rem; }
-  .label { display: flex; gap: 0.6rem; align-items: center; border: 1px dashed #9ca3af; border-radius: 10px; padding: 0.6rem; page-break-inside: avoid; }
-  .label img { width: 92px; height: 92px; }
+  body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background: #0a1122; color: #e2e8f0; }
+  .topbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.8rem 1rem;
+            background: #0d1730; border-bottom: 1px solid #2b3d63; position: sticky; top: 0; z-index: 5; }
+  .topbar b { font-size: 1.05rem; }
+  .topbar .hint { font-size: 0.8rem; color: #94a3b8; flex: 1; min-width: 240px; }
+  button, a.noclink { text-decoration: none !important; padding: 0.5rem 1rem; border-radius: 8px;
+            border: 1px solid #2b3d63; background: #16223b; color: #e2e8f0; cursor: pointer;
+            font-family: inherit; font-weight: 600; font-size: 0.85rem; }
+  button.primary { background: #1d4ed8; border-color: #1d4ed8; }
+  button:hover, a.noclink:hover { background: #223459; }
+  .wrap { padding: 1rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.7rem; }
+  .label { display: flex; gap: 0.7rem; align-items: center; background: #101a30; border: 1px solid #2b3d63;
+           border-radius: 12px; padding: 0.7rem; page-break-inside: avoid; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+  .label img { width: 92px; height: 92px; background: #fff; border: 4px solid #fff; border-radius: 6px; }
   .info { flex: 1; min-width: 0; }
-  .nm { font-weight: 700; font-size: 0.95rem; }
-  .ip { font-family: monospace; font-size: 0.85rem; }
-  .mt { font-size: 0.72rem; color: #555; }
-  @media print { .toolbar { display: none; } body { margin: 0.4cm; } .label { border-color: #333; } }
+  .nm { font-weight: 700; font-size: 0.95rem; color: #e2e8f0; }
+  .ip { font-family: Consolas, monospace; font-size: 0.85rem; color: #93c5fd; }
+  .mt { font-size: 0.72rem; color: #94a3b8; }
+  @media print {
+    body { background: #fff; color: #111; }
+    .topbar { display: none; }
+    .wrap { padding: 0.3cm; }
+    .label { background: #fff; border: 1px solid #333; box-shadow: none; }
+    .nm { color: #111; } .ip { color: #333; } .mt { color: #555; }
+    .label img { border-width: 2px; }
+  }
 </style>
 </head>
 <body>
-<div class="toolbar">
-  <button class="primary" onclick="window.print()">🖨️ طباعة الملصقات</button>
-  <span style="font-size:0.85rem;color:#555;">المسح بموبايل يفتح تفاصيل الجهاز — الملصقات بجميع الأجهزة المفعّلة (${rows.length})</span>
+<div class="topbar">
+  <b>🏷️ ملصقات QR للأجهزة</b>
+  <span class="hint">المسح بموبايل يفتح تفاصيل الجهاز في النظام — الملصقات لجميع الأجهزة المفعّلة (${rows.length})</span>
+  <a class="noclink" href="/admin/dashboard.html">← العودة للوحة التحكم</a>
+  <button class="primary" onclick="window.print()">🖨️ حفظ PDF / طباعة</button>
 </div>
-<div class="grid">${cards}</div>
+<div class="wrap">
+  <div class="grid">${cards}</div>
+</div>
 </body>
 </html>`;
 }
 
-// GET /labels/devices — صفحة طباعة ملصقات QR (🔒 جلسة — غير مسجل يُحوَّل للدخول).
-router.get(['/', '/devices', '/labels/devices'], (req, res) => {
+// GET /labels/devices — صفحة الملصقات (🔒 جلسة — غير مسجل يُحوَّل للدخول).
+// ملاحظة v2.30.2: Router مُستخدَم كمعالج مباشر في app.get('/labels/devices') ⇒
+// المسار الداخلي يجب أن يطابق المسار الكامل (درس مُوثَّق).
+router.get(['/devices', '/labels/devices'], (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/admin/login.html');
   try {
-    // بناء URL الملصقات من عنوان الوصول نفسه (يعمل عبر النفق وعبر الشبكة المحلية)
     const origin = baseUrlOf(req);
-    const html = buildLabelsHtml(origin);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
+    res.send(buildLabelsHtml(origin));
   } catch (e) {
     res.status(500).send('خطأ: ' + e.message);
   }
