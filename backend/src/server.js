@@ -193,4 +193,16 @@ app.listen(PORT, () => {
   } catch (e) {
     console.error('[SMART-ALERTS] Failed to start daily report:', e.message);
   }
+  // v2.25.0 — 🚨 تصعيد الانقطاعات (تنبيه ثانٍ/تذكير للانقطاع المديد — إعداد من الإشعارات).
+  try {
+    require('./services/escalation.service').startEscalation();
+  } catch (e) {
+    console.error('[ESCALATION] Failed to start escalation:', e.message);
+  }
+  // v2.25.0 — ⏰ التحديث التلقائي المجدول (معطّل افتراضيًّا — إعداد من تبويب التحديثات).
+  try {
+    require('./services/auto-update.service').startAutoUpdate();
+  } catch (e) {
+    console.error('[AUTO-UPDATE] Failed to start auto-update:', e.message);
+  }
 });

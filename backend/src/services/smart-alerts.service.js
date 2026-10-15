@@ -167,12 +167,25 @@ function startDailyReport() {
     lastSentDay = today;
     try {
       const notifier = require('./notifier.service');
-      const msg = buildDailyReport();
+      let msg = buildDailyReport();
       let markup = null;
       try { markup = require('./telegram-bot.service').tgButtons(); } catch (e) {}
+      // v2.25.0 — تحليل AI مُرفق (اختياري): لو شات AI مفعّل بمفتاح، يُضاف تحليل قصير
+      // («ملاحظة + توصية») بعد التقرير. أي فشل ⇒ التقرير العادي يُرسل كما هو.
+      let plain = msg.replace(/<[^>]+>/g, '');
+      try {
+        const ai = require('./ai.service');
+        if (ai.isReady()) {
+          const analysis = await ai.analyzeDailyReport(plain);
+          if (analysis) {
+            msg += '\n\n🧠 <b>تحليل AI:</b>\n' + analysis.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            plain += '\n\n🧠 تحليل AI:\n' + analysis;
+          }
+        }
+      } catch (e) { /* التحليل لم يجئ — التقرير وحده يكفي */ }
       await notifier.sendTelegram(msg, null, markup, 'HTML');
-      await notifier.sendWhatsapp(msg.replace(/<\/?(b|code)>/g, ''), null);
-      await notifier.sendMobile(msg.replace(/<\/?(b|code)>/g, ''), null);
+      await notifier.sendWhatsapp(plain, null);
+      await notifier.sendMobile(plain, null);
       console.log('[smart-alerts] التقرير اليومي أُرسل');
     } catch (e) {
       console.error('[smart-alerts] فشل إرسال التقرير اليومي:', e.message);

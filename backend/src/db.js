@@ -80,6 +80,10 @@ try {
       "ALTER TABLE notification_settings ADD COLUMN bot_commands_enabled INTEGER DEFAULT 1",
       "ALTER TABLE notification_settings ADD COLUMN storm_digest_enabled INTEGER DEFAULT 1",
       "ALTER TABLE notification_settings ADD COLUMN storm_window_seconds INTEGER DEFAULT 90",
+      // v2.25.0: تصعيد الانقطاعات (تنبيه ثانٍ للانقطاع المديد + تكرار اختياري).
+      "ALTER TABLE notification_settings ADD COLUMN escalation_enabled INTEGER DEFAULT 0",
+      "ALTER TABLE notification_settings ADD COLUMN escalation_after_minutes INTEGER DEFAULT 30",
+      "ALTER TABLE notification_settings ADD COLUMN escalation_repeat_minutes INTEGER DEFAULT 0",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

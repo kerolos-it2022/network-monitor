@@ -48,6 +48,10 @@ router.get('/settings', requireAuth, async (req, res) => {
       bot_commands_enabled: s.bot_commands_enabled === undefined ? 1 : (s.bot_commands_enabled ? 1 : 0),
       storm_digest_enabled: s.storm_digest_enabled === undefined ? 1 : (s.storm_digest_enabled ? 1 : 0),
       storm_window_seconds: Number(s.storm_window_seconds) || 90,
+      // v2.25.0 — تصعيد الانقطاعات.
+      escalation_enabled: s.escalation_enabled ? 1 : 0,
+      escalation_after_minutes: Number(s.escalation_after_minutes) || 30,
+      escalation_repeat_minutes: Number(s.escalation_repeat_minutes) || 0,
       fcm_server_key: maskToken(s.fcm_server_key),
       fcm_server_key_masked: maskToken(s.fcm_server_key),
       sources: s._sources || {},
@@ -77,6 +81,9 @@ router.put('/settings', requireAuth, (req, res) => {
     bot_commands_enabled,
     storm_digest_enabled,
     storm_window_seconds,
+    escalation_enabled,
+    escalation_after_minutes,
+    escalation_repeat_minutes,
   } = req.body || {};
 
   // ضمان وجود الصف قبل التحديث.
@@ -112,6 +119,9 @@ router.put('/settings', requireAuth, (req, res) => {
     'bot_commands_enabled',
     'storm_digest_enabled',
     'storm_window_seconds',
+    'escalation_enabled',
+    'escalation_after_minutes',
+    'escalation_repeat_minutes',
   ];
   db.prepare(
     'UPDATE notification_settings SET ' + COLUMNS.map((c) => c + ' = ?').join(', ') + ' WHERE id = 1'
@@ -132,6 +142,9 @@ router.put('/settings', requireAuth, (req, res) => {
     bot_commands_enabled === undefined ? 1 : (bot_commands_enabled ? 1 : 0),
     storm_digest_enabled === undefined ? 1 : (storm_digest_enabled ? 1 : 0),
     Math.min(600, Math.max(15, Number(storm_window_seconds) || 90)),
+    escalation_enabled ? 1 : 0,
+    Math.max(1, Math.min(1440, Number(escalation_after_minutes) || 30)),
+    Math.max(0, Math.min(1440, Number(escalation_repeat_minutes) || 0)),
   );
 
   return res.json({ success: true, data: null });

@@ -191,4 +191,25 @@ router.get('/tags', requireAuth, async (req, res) => {
   }
 });
 
+// GET/PUT /auto-schedule — إعدادات التحديث التلقائي المجدول (v2.25.0) في
+// <dataDir>/auto-update.json (نمط backup-schedule.json). ملف الخدمة فقط؛ الحلقة
+// في services/auto-update.service.js.
+router.get('/auto-schedule', requireAuth, (req, res) => {
+  try {
+    const cfg = require('../services/auto-update.service').readSchedule();
+    return res.json({ success: true, data: cfg });
+  } catch (e) { return res.status(500).json({ success: false, error: e.message }); }
+});
+router.put('/auto-schedule', requireAuth, (req, res) => {
+  try {
+    const body = req.body || {};
+    const hour = String(body.hour || '03:30').trim();
+    if (!/^\d{2}:\d{2}$/.test(hour)) return res.status(400).json({ success: false, error: 'الساعة بصيغة HH:MM' });
+    require('../services/auto-update.service').writeSchedule({ enabled: !!body.enabled, hour });
+    return res.json({ success: true, data: { enabled: !!body.enabled, hour } });
+  } catch (e) { return res.status(500).json({ success: false, error: e.message }); }
+});
+
 module.exports = router;
+// v2.25.0 — قفل التزامن مُصدَّر ليستخدمه auto-update.service (تشغيل واحد عبر كل المسارات).
+module.exports.recentActiveUpdate = recentActiveUpdate;

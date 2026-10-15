@@ -537,6 +537,26 @@ function updCopyAll() {
 }
 
 // ── التشغيل ──
+// v2.25.0 — إعدادات التحديث التلقائي المجدول (تحميل/حفظ من بطاقة تبويب التحديثات).
+async function loadAutoUpdateSettings() {
+  const r = await api('/api/appliance-update/auto-schedule');
+  if (!r.success) { updSet('upd-auto-status', 'تعذّر تحميل إعدادات التحديث التلقائي: ' + (r.error || ''), 1); return; }
+  document.getElementById('upd-auto-enabled').checked = !!r.data.enabled;
+  document.getElementById('upd-auto-hour').value = r.data.hour || '03:30';
+}
+async function saveAutoUpdateSettings() {
+  const r = await api('/api/appliance-update/auto-schedule', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      enabled: document.getElementById('upd-auto-enabled').checked ? 1 : 0,
+      hour: document.getElementById('upd-auto-hour').value || '03:30',
+    }),
+  });
+  if (!r.success) { updSet('upd-auto-status', 'فشل الحفظ: ' + (r.error || ''), 1); return; }
+  updSet('upd-auto-status', '✅ حُفظ — التحديث التلقائي ' + (r.data.enabled ? 'مفعّل عند ' + r.data.hour + ' يوميًّا' : 'معطّل'));
+}
+
 async function updInit() {
   const tab = updEl('tab-updates');
   if (!tab) return;
@@ -545,6 +565,12 @@ async function updInit() {
   updRenderLast();
   updCheck(true);                     // فحص أولي (صامت) لرسم شريط الحالة
   updLoadHistory();
+  // v2.25.0 — بطاقة التحديث التلقائي (عناصرها قد لا توجد في حالات خاصة — احتياط).
+  const autoBtn = updEl('upd-auto-save-btn');
+  if (autoBtn) {
+    autoBtn.addEventListener('click', saveAutoUpdateSettings);
+    loadAutoUpdateSettings();
+  }
 
   const checkBtn = updEl('upd-check-btn');
   if (checkBtn) checkBtn.addEventListener('click', () => updCheck(false));

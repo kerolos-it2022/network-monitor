@@ -34,6 +34,10 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-bot_commands_enabled').checked = d.bot_commands_enabled === undefined ? true : !!d.bot_commands_enabled;
   document.getElementById('ntf-storm_digest_enabled').checked = d.storm_digest_enabled === undefined ? true : !!d.storm_digest_enabled;
   document.getElementById('ntf-storm_window_seconds').value = Number(d.storm_window_seconds) || 90;
+  // v2.25.0 — تصعيد الانقطاعات.
+  document.getElementById('ntf-escalation_enabled').checked = !!d.escalation_enabled;
+  document.getElementById('ntf-escalation_after_minutes').value = Number(d.escalation_after_minutes) || 30;
+  document.getElementById('ntf-escalation_repeat_minutes').value = Number(d.escalation_repeat_minutes) || 0;
   document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
   document.getElementById('ntf-fcm_server_key').value = '';
   // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
@@ -72,6 +76,10 @@ async function saveNotificationSettings() {
     bot_commands_enabled: document.getElementById('ntf-bot_commands_enabled').checked,
     storm_digest_enabled: document.getElementById('ntf-storm_digest_enabled').checked,
     storm_window_seconds: Number(document.getElementById('ntf-storm_window_seconds').value) || 90,
+    // v2.25.0 — تصعيد الانقطاعات.
+    escalation_enabled: document.getElementById('ntf-escalation_enabled').checked ? 1 : 0,
+    escalation_after_minutes: Number(document.getElementById('ntf-escalation_after_minutes').value) || 30,
+    escalation_repeat_minutes: Number(document.getElementById('ntf-escalation_repeat_minutes').value) || 0,
   };
   const r = await api('/api/notifications/settings', {
     method: 'PUT',

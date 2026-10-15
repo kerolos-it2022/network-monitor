@@ -495,6 +495,25 @@
               <b>⏰ ساعة التقرير اليومي</b>
               <div><input type="time" id="ntf-daily_report_hour" defaultValue="08:00" style="max-width:160px; margin-top:0.35rem;" /></div>
             </div>
+            <label class="checkbox-label" style="align-items:flex-start; gap:0.6rem; padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <input type="checkbox" id="ntf-escalation_enabled" />
+              <span style="display:block;">
+                <b>🚨 تصعيد الانقطاعات</b><br>
+                <small style="color:var(--muted);">جهاز ما زال واقعًا بعد العتبة ⇒ تنبيه ثانٍ (وتذكير دوري اختياري) حتى يُحلَّ — يُرسل عبر القنوات المفعّلة أعلاه</small>
+              </span>
+            </label>
+            <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
+              <b>⏱️ عتبة التصعيد ودوريته (دقائق)</b>
+              <div style="display:flex; gap:0.6rem; margin-top:0.35rem;">
+                <label style="display:block;">بعد
+                  <div><input type="number" id="ntf-escalation_after_minutes" min="1" max="1440" defaultValue="30" style="max-width:110px; margin-top:0.35rem;" /></div>
+                </label>
+                <label style="display:block;">تذكير كل
+                  <div><input type="number" id="ntf-escalation_repeat_minutes" min="0" max="1440" defaultValue="0" style="max-width:110px; margin-top:0.35rem;" /></div>
+                </label>
+              </div>
+              <small style="display:block; color:var(--muted); margin-top:0.2rem;">«تذكير كل 0» = تنبيه تصعيد واحد فقط — وأي قيمة أخرى = تذكير دوري حتى أنقطاع يُحلّ (وكتم الصيانة يطبق كالمعتاد)</small>
+            </div>
             <div style="padding:0.6rem; border:1px solid var(--border); border-radius:8px; background:var(--bg); display:flex; flex-direction:column; gap:0.5rem;">
               <label class="checkbox-label">
                 <input type="checkbox" id="ntf-maintenance_enabled" />
@@ -942,6 +961,26 @@
             <button type="button" class="btn" id="upd-log-copy-btn" style="padding:0.25rem 0.6rem; font-size:0.8rem;">📋 نسخ السجل</button>
           </div>
           <div id="upd-history" style="font-size:0.9rem; color:var(--muted);">—</div>
+        </div>
+
+        <!-- v2.25.0 — تحديث تلقائي مجدول (اختياري — الافتراضي معطّل) -->
+        <div class="form-card" style="margin-top:1rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">⏰ تحديث تلقائي مجدول</div>
+          <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.6rem 0;">
+            عند الساعة المحددة يوميًا يُطلَب أحدث إصدار تلقائيًّا عبر نفس مسار الجذر الآمن (nm-update) —
+            مع احترام قفل التزامن (لا تشغيل ثانٍ فوق عملية قائمة). <b>معطّل افتراضيًّا.</b>
+          </p>
+          <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="upd-auto-enabled" />
+              <span style="font-weight:600;">تحديث تلقائي مفعّل</span>
+            </label>
+            <label style="display:block;">الساعة اليومية
+              <div><input type="time" id="upd-auto-hour" value="03:30" style="margin-top:0.3rem;" /></div>
+            </label>
+            <button type="button" class="btn btn-primary" id="upd-auto-save-btn" style="padding:0.45rem 0.9rem;">💾 حفظ</button>
+          </div>
+          <div id="upd-auto-status" style="font-size:0.85rem; margin-top:0.5rem;"></div>
         </div>
       </div>
     </section>
