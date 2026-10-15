@@ -166,10 +166,6 @@
             <input type="checkbox" id="discovery-scan-ports" />
             <span>مسح المنافذ الشائعة</span>
           </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="discovery-scan-snmp" />
-            <span>استعلام SNMP</span>
-          </label>
           <div style="display:flex; gap:0.5rem; height:fit-content;">
             <button type="button" class="btn btn-primary" id="discovery-start-btn">🚀 بدء المسح</button>
             <button type="button" class="btn" id="discovery-name-diag-btn" title="فحص طرق استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS عكسي)">🧪 اختبار استخراج الاسم</button>
@@ -177,11 +173,6 @@
             <span id="discovery-name-diag-out" style="font-size:0.85rem; color:var(--muted);"></span>
             <button type="button" class="btn" id="discovery-last-btn" title="عرض آخر نتيجة مسح محفوظة على الخادم (تبقى بعد إعادة تحميل الصفحة)">📄 آخر نتيجة مسح</button>
           </div>
-        </div>
-        <div style="margin-top:0.75rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-          <label for="discovery-snmp-community" style="font-size:0.85rem; color:var(--muted);">Community String (للـ SNMP):</label>
-          <input type="text" id="discovery-snmp-community" value="public" style="width:200px; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
-          <span style="font-size:0.8rem; color:var(--muted);">(يُستخدم فقط عند تفعيل استعلام SNMP)</span>
         </div>
       </div>
 
@@ -217,14 +208,13 @@
           <thead>
             <tr>
               <th style="width:40px;"><input type="checkbox" id="discovery-select-all-checkbox" /></th>
-              <th class="sortable" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز">IP ↕</th>
-              <th class="sortable" data-sort="name" data-label="الاسم الفعلي (Hostname)" style="cursor:pointer;" title="الاسم المستخرج من الجهاز نفسه (NetBIOS/DNS) — انقر للفرز">الاسم الفعلي (Hostname) ↕</th>
+              <th class="sortable" data-sort="name" data-label="الاسم" style="cursor:pointer;" title="الاسم المستخرج من الإعلانات/NBNS/DNS — انقر للفرز">الاسم ↕</th>
+              <th class="sortable" data-sort="ip" data-label="IP" style="cursor:pointer;">العنوان IP ↕</th>
+              <th>المصنّع (MAC)</th>
               <th>النوع</th>
               <th>الموقع</th>
               <th>الفحص</th>
-              <th>الشركة المصنعة (MAC)</th>
-              <th>المنافذ المفتوحة</th>
-              <th>معلومات SNMP</th>
+              <th>المنافذ</th>
               <th class="sortable" data-sort="time" data-label="زمن الاستجابة" style="cursor:pointer;" title="انقر للفرز">زمن الاستجابة ↕</th>
             </tr>
           </thead>

@@ -158,10 +158,12 @@ function renderDiscoveryTable(devices) {
 
     tr.innerHTML = `
       <td><input type="checkbox" class="discovery-checkbox" data-ip="${esc(d.ip)}" ${d.existsInDB ? 'disabled' : ''} /></td>
-      <td>${esc(d.ip)}<br><small>${badge}</small></td>
       <td>
-        <input type="text" class="discovery-name-input" value="${esc(d.suggestedName || '')}" style="${cellInputStyle}" />
+        <b style="font-size:0.95rem;">${esc(d.suggestedName || d.ip)}</b><br>
+        <small>${badge}</small>
+        <input type="text" class="discovery-name-input" value="${esc(d.suggestedName || '')}" style="${cellInputStyle} margin-top:0.25rem;" />
       </td>
+      <td><code style="font-size:0.85rem;" dir="ltr">${esc(d.ip)}</code><br><small style="color:var(--muted);">${d.responseTime != null ? d.responseTime.toFixed(1) + ' ms' : ''}</small></td>
       <td>
         <select class="discovery-type-select" style="${cellInputStyle}">
           <option value="">— اختر النوع —</option>
@@ -182,8 +184,6 @@ function renderDiscoveryTable(devices) {
       </td>
       <td>${esc(d.macVendor || '')} ${d.mac ? '<br><small style="color:var(--muted);">' + esc(d.mac) + '</small>' : ''}</td>
       <td>${formatPorts(d.openPorts)}</td>
-      <td>${d.snmpInfo ? '<small>' + esc(d.snmpInfo.sysDescr || d.snmpInfo.sysName || 'متاح') + '</small>' : '<span style="color:var(--muted);">—</span>'}</td>
-      <td>${d.responseTime ? esc(d.responseTime.toFixed(2)) + ' ms' : '—'}</td>
     `;
     tbody.appendChild(tr);
 
@@ -322,8 +322,6 @@ async function loadTypesAndLocations() {
 async function startDiscovery() {
   const cidr = document.getElementById('discovery-cidr').value.trim();
   const scanPorts = document.getElementById('discovery-scan-ports').checked;
-  const scanSNMP = document.getElementById('discovery-scan-snmp').checked;
-  const snmpCommunity = document.getElementById('discovery-snmp-community').value.trim() || 'public';
 
   if (!cidr) {
     showToast('الرجاء إدخال نطاق الشبكة (CIDR)', { type: 'warning' });
