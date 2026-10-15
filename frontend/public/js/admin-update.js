@@ -175,19 +175,9 @@ async function updRenderProgress() {
     updShowRestartBanner(false);
     updShowStall(false);
     updSet('upd-progress-text', '✅ ' + st.message);
-    // v2.24.0 — الحقيقة المقاسة: بعد الاكتمال نسأل الخادم عن الإصدار الفعلي العامل
-    // ونعرضه بجانب رسالة السجل (مع تنبيه لو اختلفا) — السجل قد يكون لتشغيل قديم.
-    fetch('/api/health', { credentials: 'same-origin', cache: 'no-store' })
-      .then((r) => r.json())
-      .then((h) => {
-        const v = h && h.version;
-        if (!v) return;
-        const tagVer = String(st.tag || '').replace(/^v/i, '');
-        const mismatch = tagVer && tagVer !== String(v);
-        const line = '✅ ' + st.message + ' — النسخة العاملة فعلياً: v' + v + (mismatch ? ' (رسالة السجل عن تشغيل قديم — المعتمَد هو العمل)' : '');
-        updSet('upd-progress-text', line);
-      })
-      .catch(() => {});
+    // v2.30.5 — الحقيقة المقاسة صارت تُبنى من الخادم نفسه (v2.28.3: رسالة النجاح من
+    // package.json العامَل) — فلا حاجة لسؤال /api/health هنا بعد الآن: كان يضيف نفس
+    // الجملة مرتين («النسخة العاملة الآن… النسخة العاملة الآن…»). الخادم مصدر الحقيقة.
     updNote('✅ ' + st.message + ' — النظام يعمل الآن، وجارٍ إعادة تحميل الصفحة…');
     showToast('✅ ' + st.message, { type: 'success', duration: 6000 });
     updSetBusy(false);
