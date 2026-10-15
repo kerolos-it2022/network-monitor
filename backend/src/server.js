@@ -29,7 +29,6 @@ const updateRoutes = require('./routes/update.routes');
 // v2.5.0 — المسح الدوري + الأَجهزة المُكتشَفة + المَصادر (stub لِـ v2.6.0).
 const scanSchedulerRoutes = require('./routes/scan-scheduler.routes');
 const discoveredRoutes = require('./routes/discovered.routes');
-const sourcesRoutes = require('./routes/sources.routes');
 // v2.5.1 — شجرة المواقع الهرمية + الأَجهزة (تبويب «🗺️ خريطة المواقع»).
 const mapRoutes = require('./routes/map.routes');
 // v2.8.7 — البثّ الحيّ لحالة الأجهزة (SSE) لشاشات العرض: /api/live/status.
@@ -124,7 +123,6 @@ app.use('/api/update', updateRoutes);
 // v2.5.0 — المسح الدوري + الأَجهزة المُكتشَفة + المَصادر الخارجية (stub لِـ المرحلة 2).
 app.use('/api/scan-scheduler', scanSchedulerRoutes);
 app.use('/api/discovered', discoveredRoutes);
-app.use('/api/sources', sourcesRoutes);
 // v2.5.1 — شجرة المواقع الهرمية لِـ تبويب «🗺️ خريطة المواقع».
 app.use('/api/map', mapRoutes);
 // v2.8.7 — البثّ الحيّ (SSE): قراءة عامة فقط — كل الكتابات تبقى على REST بجلسة الأدمن.
@@ -209,6 +207,12 @@ app.listen(PORT, () => {
     require('./services/auto-update.service').startAutoUpdate();
   } catch (e) {
     console.error('[AUTO-UPDATE] Failed to start auto-update:', e.message);
+  }
+  // v2.27.0 — المستمع الدائم لأسماء الإعلانات (mDNS/SSDP — كاش discovery_names).
+  try {
+    require('./services/net-announce.service').persistent.startPersistentListener();
+  } catch (e) {
+    console.error('[NET-ANNOUNCE] Failed to start persistent listener:', e.message);
   }
   // v2.26.0 — 🧹 تنظيف سجل الانقطاعات (أرشفة CSV + حذف >90 يومًا — يوميًا 03:10).
   try {

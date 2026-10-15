@@ -724,7 +724,7 @@ async function performScan(scanId, ips, shouldScanPorts, scanSNMP, snmpCommunity
       
       // الحصول على الاسم الحقيقي: NBNS مباشر (v2.16.0) ثم SMB ثم DNS عكسي
       // v2.17.0 — الأولوية القصوى: أسماء الإعلانات (mDNS/WSD/SSDP)
-      const announced = annNames.get(host.ip);
+      const announced = annNames.get(host.ip) || require('../services/net-announce.service').persistent.getNameForIp(host.ip);
       const netbiosName = await getNetBIOSName(host.ip);
       const smbName = await getSMBName(host.ip);
       

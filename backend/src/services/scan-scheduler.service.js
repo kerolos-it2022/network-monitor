@@ -269,7 +269,9 @@ async function processHost(host, settings) {
   if (mac) {
     try { vendor = scanHelpers.getMacVendor(mac); } catch (_) { /* ignore */ }
   }
-  try { hostname = await scanHelpers.resolveHostname(host.ip); } catch (_) { /* ignore */ }
+  // v2.27.0 — الأسماء قراءة أولًا من كاش المستمع الدائم (زي ويندوز/Advanced IP) ثم DNS العكسي
+  try { hostname = require('./net-announce.service').persistent.getNameForIp(host.ip); } catch (_) { /* ignore */ }
+  if (!hostname) { try { hostname = await scanHelpers.resolveHostname(host.ip); } catch (_) { /* ignore */ } }
 
   let openPorts = [];
   if (settings.scan_ports_enabled === 1) {
@@ -299,10 +301,19 @@ async function processHost(host, settings) {
     return 0;
   }
 
+  // v2.27.0 — قائمة الثقة: MAC اعتمده المدير سابقاً رجع (حتى بعنوان جديد) ⇒ اعتماد تلقائي.
+  let approveNow = 0;
+  if (mac) {
+    try {
+      const trusted = db.prepare('SELECT COUNT(*) AS n FROM discovered_devices WHERE mac = ? AND is_approved = 1').get(mac);
+      if (trusted && trusted.n > 0) approveNow = 1;
+    } catch (_) { /* ignore */ }
+  }
+
   // جهاز جديد كَليًّا في قائمة الـ discovered — إِضافة
   const insRes = db.prepare(
     `INSERT INTO discovered_devices (ip, mac, hostname, vendor, detected_type, source, first_seen_at, last_seen_at, seen_count, is_approved)
-     VALUES (?, ?, ?, ?, ?, 'scan', ?, ?, 1, 0)
+     VALUES (?, ?, ?, ?, ?, 'scan', ?, ?, 1, ?)
      ON CONFLICT(ip, mac, source) DO UPDATE SET last_seen_at = ?, seen_count = seen_count + 1`
   ).run(
     host.ip,
@@ -312,11 +323,11 @@ async function processHost(host, settings) {
     detectedType || null,
     now,
     now,
-    now
+    approveNow
   );
 
   // إرسال الإِشعار لو new_device_alert مُفعّل
-  if (settings.new_device_alert === 1) {
+  if (settings.new_device_alert === 1 && !approveNow) {
     notifyNewDevice({ ip: host.ip, mac, vendor, hostname, detectedType });
   }
 
@@ -356,6 +367,19 @@ function notifyNewDevice(device) {
     console.warn('[SCHEDULER] Webhook dispatch error:', e.message);
   }
 }
+
+
+// v2.27.0 — تنظيف سلة الاكتشاف: جهاز لم يُرَ منذ 30 يومًا ولم يعتمد ⇒ حذف (آلي يوميًّا).
+function pruneStaleDiscovered() {
+  try {
+    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+    const del = db.prepare("DELETE FROM discovered_devices WHERE is_approved = 0 AND last_seen_at < ?").run(cutoff);
+    if (del.changes > 0) console.log('[scheduler] تنظيف سلة الاكتشاف: حُذف', del.changes, 'جهازًا خاملاً منذ 30+ يومًا');
+    return del.changes;
+  } catch (e) { return 0; }
+}
+pruneStaleDiscovered();
+setInterval(pruneStaleDiscovered, 24 * 3600 * 1000).unref();
 
 module.exports = {
   startScheduler,

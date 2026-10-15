@@ -110,6 +110,15 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 );
 INSERT OR IGNORE INTO notification_settings (id) VALUES (1);
 
+-- v2.27.0 — كاش أسماء الإعلانات (المستمع الدائم): كل اسم يُسمَع من الشبكة
+-- (mDNS/SSDP) يُخزَّن بعنوانه — يُقرأ أولًا قبل أي استعلام عند مسح الاكتشاف.
+CREATE TABLE IF NOT EXISTS discovery_names (
+    ip TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    source TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- v2.21.0 — إعدادات شات AI (صف واحد فقط). api_key سري (يُقنَّع عند القراءة).
 -- base_url: أي endpoint متوافق مع OpenAI Chat Completions (افتراضي z.ai / GLM).
 -- بلا مفتاح = الشات معطّل والنظام يبقى يعمل كالمعتاد.

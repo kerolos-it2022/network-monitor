@@ -198,3 +198,83 @@ async function collectAnnouncementNames(timeoutMs = 6000) {
 }
 
 module.exports = { collectAnnouncementNames, deviceIconKeys: true };
+
+// ═════════════════════════════════════════════════════════════
+// v2.27.0 — المستمع الدائم (Persistent Listener): بدل 6 ثوانٍ أثناء
+// المسح فقط، نسمع باستمرار بثّ mDNS (وإشعارات SSDP) ونُخزّن كل اسم
+// يُسمَع في جدول discovery_names (ip → name) — نفس آلية عمل «الشبكة»
+// في ويندوز وAdvanced IP Scanner: الأسماء تتراكم لوحدها طول اليوم.
+// ═════════════════════════════════════════════════════════════
+const db = require('../db');
+
+let persistentStarted = false;
+
+// recordName(ip, name, source): كتابة في الكاش — الاسم الأطول (الأغنى) يفوز.
+function recordName(ip, name, source) {
+  try {
+    const clean = String(name || '').trim();
+    if (!ip || !clean || clean.length < 2) return;
+    if (/^[0-9]+(\.[0-9]+){3}$/.test(clean)) return; // لا نخزّن IP كاسم
+    db.prepare(
+      "INSERT INTO discovery_names (ip, name, source, updated_at) VALUES (?, ?, ?, datetime('now')) " +
+      "ON CONFLICT(ip) DO UPDATE SET name = CASE WHEN length(excluded.name) > length(discovery_names.name) THEN excluded.name ELSE discovery_names.name END, updated_at = datetime('now')"
+    ).run(String(ip), clean, String(source || 'listener'));
+  } catch (e) { /* كاش الأسماء لا يُفشل شيئًا أبدًا */ }
+}
+
+function startPersistentListener() {
+  if (persistentStarted) return;
+  persistentStarted = true;
+  // ── mDNS (UDP 5353) — استماع سلبي بصمت: إجابات/إعلانات الأجهزة ──
+  try {
+    const sock = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+    sock.on('error', () => { try { sock.close(); } catch (_) {} });
+    sock.on('message', (msg, rinfo) => {
+      try {
+        const result = { ipToName: new Map(), nameToIp: new Map(), ssdp: [] };
+        parseMdnsPacket(msg, result);
+        for (const [ip, name] of result.ipToName) recordName(ip, name, 'mdns');
+        for (const [name, ip] of result.nameToIp) recordName(ip, name, 'mdns');
+      } catch (_) {}
+    });
+    sock.bind(MDNS_PORT, () => { try { sock.addMembership(MDNS_GROUP); } catch (_) {} });
+  } catch (e) {
+    console.error('[net-announce] تعذّر بدء المستمع الدائم (mDNS):', e.message);
+  }
+  // ── SSDP (UDP 1900) — إشعارات NOTIFY السلبية من أجهزة UPnP ──
+  try {
+    const ssdp = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+    ssdp.on('error', () => { try { ssdp.close(); } catch (_) {} });
+    ssdp.on('message', (msg, rinfo) => {
+      try {
+        const text = msg.toString('utf8');
+        const pick = (key) => {
+          const i = text.toLowerCase().indexOf(key);
+          if (i === -1) return null;
+          let v = text.slice(i + key.length).replace(/^[ \t:]+/, '');
+          const j = v.search(/\r|\n/);
+          if (j !== -1) v = v.slice(0, j);
+          return v.trim();
+        };
+        let name = pick('server:');
+        const loc = pick('location:');
+        if (loc) {
+          try { const u = new URL(loc); const h = u.hostname; if (!/^[0-9]/.test(h)) name = h; } catch (_) {}
+        }
+        if (name) recordName(rinfo.address, name, 'ssdp');
+      } catch (_) {}
+    });
+    ssdp.bind(SSDP_PORT, () => { try { ssdp.addMembership(SSDP_ADDR); } catch (_) {} });
+  } catch (e) { /* SSDP اختياري */ }
+  console.log('[net-announce] المستمع الدائم يعمل — أسماء الأجهزة تتراكم في discovery_names');
+}
+
+// getNameForIp(ip): أفضل اسم معروف لهذا العنوان (من الكاش الدائم).
+function getNameForIp(ip) {
+  try {
+    const r = db.prepare('SELECT name FROM discovery_names WHERE ip = ?').get(String(ip));
+    return r && r.name ? String(r.name) : null;
+  } catch (e) { return null; }
+}
+
+module.exports.persistent = { startPersistentListener, getNameForIp, recordName };

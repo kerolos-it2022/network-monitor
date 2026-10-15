@@ -20,6 +20,7 @@ async function loadDiscovered() {
   if (discoveredView.q) url += `&q=${encodeURIComponent(discoveredView.q)}`;
 
   const r = await api(url);
+  if (Number(r && r.total) >= 0) updateDiscoveredBadge();
   const tbody = document.getElementById('discovered-table-body');
   const emptyMsg = document.getElementById('discovered-empty');
   if (!r || !r.success) {
@@ -361,3 +362,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const s = document.getElementById('section-discovered');
   if (s) observer.observe(s, { attributes: true, attributeFilter: ['class'] });
 });
+
+// ═══ v2.27.0 — شارة «بانتظار اعتمادك» على تبويب الأجهزة المكتشفة ═══
+async function updateDiscoveredBadge() {
+  try {
+    const r = await api('/api/discovered?is_approved=0&limit=1');
+    const total = r && r.success ? Number(r.total || 0) : 0;
+    const badge = document.getElementById('disc-tab-badge');
+    if (!badge) return;
+    if (total > 0) { badge.textContent = String(total); badge.style.display = 'inline-block'; }
+    else badge.style.display = 'none';
+  } catch (e) { /* صامت */ }
+}
+document.addEventListener('DOMContentLoaded', updateDiscoveredBadge);
