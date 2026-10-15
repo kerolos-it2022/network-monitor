@@ -349,7 +349,7 @@ async function startDiscovery() {
     const r = await api('/api/scan/subnet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cidr, scanPorts, scanSNMP, snmpCommunity })
+      body: JSON.stringify({ cidr, scanPorts })
     });
 
     if (!r.success) {
