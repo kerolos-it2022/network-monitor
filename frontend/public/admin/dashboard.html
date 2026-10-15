@@ -149,29 +149,34 @@
         <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
           امسح نطاق الشبكة لاكتشاف الأجهزة المتصلة تلقائياً وتحديد نوعها من المنافذ المفتوحة ومعلومات MAC.
         </p>
-        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr auto; gap:0.75rem; align-items:end;">
-          <label style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
-            نطاق الشبكة (CIDR)
-            <div style="display:flex; gap:0.5rem;">
-              <input type="text" id="discovery-cidr" list="cidr-history" placeholder="192.168.1.0/24" value="192.168.1.0/24" required style="flex:1; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
+        <div style="display:flex; flex-direction:column; gap:0.9rem;">
+          <!-- صف المسح الرئيسي: نطاق + خيار المنافذ + زر البدء -->
+          <div style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+            <label style="display:flex; flex-direction:column; gap:0.3rem; flex:1; min-width:260px;">
+              <span style="font-size:0.85rem; color:var(--muted);">🌐 نطاق الشبكة (CIDR)</span>
+              <input type="text" id="discovery-cidr" list="cidr-history" placeholder="192.168.1.0/24" value="192.168.1.0/24" required style="flex:1; padding:0.55rem 0.7rem; font-size:1rem; border:1px solid var(--border); border-radius:8px; background:var(--card-bg); color:var(--text);" />
               <datalist id="cidr-history">
                 <option value="192.168.1.0/24">
                 <option value="192.168.0.0/24">
                 <option value="10.0.0.0/24">
                 <option value="172.16.0.0/24">
-              </datalist>
-            </div>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="discovery-scan-ports" />
-            <span>مسح المنافذ الشائعة</span>
-          </label>
-          <div style="display:flex; gap:0.5rem; height:fit-content;">
-            <button type="button" class="btn btn-primary" id="discovery-start-btn">🚀 بدء المسح</button>
-            <button type="button" class="btn" id="discovery-name-diag-btn" title="فحص طرق استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS عكسي)">🧪 اختبار استخراج الاسم</button>
-            <input type="text" id="discovery-name-diag-ip" placeholder="IP للاختبار مثل 192.168.88.3" style="max-width:230px; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
-            <span id="discovery-name-diag-out" style="font-size:0.85rem; color:var(--muted);"></span>
+            </label>
+            <label class="checkbox-label" style="padding:0.55rem 0.9rem; border:1px solid var(--border); border-radius:8px; background:var(--card-bg); height:fit-content;">
+              <input type="checkbox" id="discovery-scan-ports" />
+              <span>مسح المنافذ الشائعة</span>
+            </label>
+            <button type="button" class="btn btn-primary" id="discovery-start-btn" style="padding:0.6rem 1.6rem; font-size:1rem;">🚀 بدء المسح</button>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
             <button type="button" class="btn" id="discovery-last-btn" title="عرض آخر نتيجة مسح محفوظة على الخادم (تبقى بعد إعادة تحميل الصفحة)">📄 آخر نتيجة مسح</button>
+            <details style="flex:1; min-width:300px; border:1px solid var(--border); border-radius:8px; padding:0.45rem 0.75rem; background:var(--card-bg);">
+              <summary style="cursor:pointer; font-size:0.85rem; color:var(--muted);">🧪 أدوات التشخيص — اختبار استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS)</summary>
+              <div style="display:flex; gap:0.5rem; align-items:center; margin-top:0.55rem; flex-wrap:wrap;">
+                <input type="text" id="discovery-name-diag-ip" placeholder="IP مثل 192.168.88.3" style="max-width:230px; padding:0.4rem 0.6rem; border:1px solid var(--border); border-radius:6px; background:var(--card-bg); color:var(--text);" />
+                <button type="button" class="btn" id="discovery-name-diag-btn">🧪 فحص</button>
+                <span id="discovery-name-diag-out" style="font-size:0.85rem; color:var(--muted);"></span>
+              </div>
+            </details>
           </div>
         </div>
       </div>
