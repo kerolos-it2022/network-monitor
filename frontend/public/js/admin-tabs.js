@@ -6,6 +6,7 @@ const TAB_TO_SECTION = {
   'tab-discovery': 'section-discovery',
   'tab-discovered': 'section-discovered',
   'tab-scheduler': 'section-scheduler',
+  'tab-discovery-content': 'section-discovery-content',
   'tab-map': 'section-map',
   'tab-topology': 'section-topology',
   'tab-notifications': 'section-notifications',

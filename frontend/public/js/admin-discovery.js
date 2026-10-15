@@ -749,7 +749,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ═══ v2.27.2 — الشرائح الموحّدة (فحص الآن · بانتظار الاعتماد · الجدولة) ═══
 let currentDiscSub = 'scan';
-const SUB_SECTIONS = { scan: 'section-discovery', discovered: 'section-discovered', sched: 'section-scheduler' };
+const SUB_SECTIONS = { scan: 'section-discovery-content', discovered: 'section-discovered', sched: 'section-scheduler' };
 function showDiscSub(sub) {
   currentDiscSub = sub;
   for (const [key, secId] of Object.entries(SUB_SECTIONS)) {
