@@ -32,10 +32,38 @@ function statusText(status) {
   return 'غير معروف';
 }
 
+// RCA-01/02 — شريط الأعطال المرتبطة: عطل جهاز أعلى مع عدد المتأثرين (لعرض «السبب الجذري»
+// بدل قائمة انقطاعات متفرقة). الإشعارات فقط هي المكتومة للأبناء، وحالاتهم تظهر كالمعتاد بالأسفل.
+async function loadIncidentsBanner() {
+  const host = document.getElementById('rca-banner');
+  if (!host) return;
+  const r = await api('/api/incidents?status=open');
+  if (!r || !r.success || !Array.isArray(r.data) || !r.data.length) {
+    host.classList.add('hidden');
+    host.innerHTML = '';
+    return;
+  }
+  const rows = r.data.filter((i) => i.kind === 'root_cause');
+  if (!rows.length) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  host.classList.remove('hidden');
+  host.innerHTML = rows.map((i) => {
+    const names = (i.affected || []).slice(0, 6).map((a) => esc(a.name)).join('، ');
+    const more = (i.affected_count || 0) > 6 ? ` و${i.affected_count - 6} غيرهم` : '';
+    const conf = i.confidence === 'high' ? 'ثقة عالية' : (i.confidence === 'medium' ? 'ثقة متوسطة' : 'ثقة منخفضة');
+    const since = i.started_at ? new Date(i.started_at).toLocaleString('ar') : '—';
+    return `<div style="margin-bottom:0.25rem;">
+      ⚠️ <b>عطل مركزي</b>: ${esc(i.root_name || ('#' + i.root_device_id))}
+      — <b>${i.affected_count}</b> جهازًا متأثرًا (${conf}) — منذ ${since}
+      <div style="color:var(--muted); font-size:0.82rem;">المتأثرون: ${names}${more}</div>
+    </div>`;
+  }).join('');
+}
+
 async function loadDevices() {
   const r = await api('/api/devices');
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
+  loadIncidentsBanner();
   if (!r.success) return;
 
   // تَصفية client-side حسب location_id لو الفلتر فعّال (نَتفادى تَعديل SELECT في الخادم).

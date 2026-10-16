@@ -42,6 +42,8 @@ const publicRoutes = require('./routes/public.routes');
 const settingsRoutes = require('./routes/settings.routes');
 // MON-02 — إدارة الخدمات المراقَبة لكل جهاز.
 const servicesRoutes = require('./routes/services.routes');
+// RCA-01/02 — الأعطال المرتبطة بالشجرة (قراءة بجلسة).
+const incidentsRoutes = require('./routes/incidents.routes');
 
 function createApp() {
   const app = express();
@@ -133,6 +135,8 @@ function createApp() {
   app.use('/api/settings', settingsRoutes);
   // MON-02 — خدمات كل جهاز (قراءة بجلسة · تعديل للمدير فقط) + تدقيق تلقائي.
   app.use('/api/devices/:deviceId/services', servicesRoutes);
+  // RCA — الأعطال المرتبطة (عطل جهاز أعلى + قائمة الأبناء المتأثرين).
+  app.use('/api/incidents', incidentsRoutes);
   app.use('/api/locations', locationsRoutes);
   app.use('/api/device-types', deviceTypesRoutes);
   app.use('/api/notifications', notificationsRoutes);

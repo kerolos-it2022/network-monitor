@@ -226,6 +226,25 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- SpaceKit Phase 2 (RCA-01/02) — أعطال مرتبطة بالشجرة: عطل جهاز أعلى يجمّع أبناءه.
+-- الانقطاع الأصلي لكل جهاز يبقى في downtime_events كما هو؛ هذا الجدول يضيف «العطل المركزي»
+-- وقائمة المتأثرين + مستوى الثقة، ويُستعمل لكتم الإشعارات المكررة فقط (لا تُخفى حالات الشاشات).
+CREATE TABLE IF NOT EXISTS incidents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    root_device_id INTEGER,                        -- الجهاز الجذري المرشَّح (الأب الأعلى المتأثر)
+    kind TEXT NOT NULL DEFAULT 'single',           -- 'single' | 'root_cause'
+    status TEXT NOT NULL DEFAULT 'open',           -- 'open' | 'closed'
+    confidence TEXT,                               -- 'high' | 'medium' | 'low' (قوة الأدلة الطوبولوجية)
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    affected_json TEXT,                            -- [{device_id, name, started_at}] أبناء تأثروا بالعطل
+    notified_at TEXT,                              -- وقت الإشعار المرسل (لمنع التكرار)
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (root_device_id) REFERENCES devices(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
+CREATE INDEX IF NOT EXISTS idx_incidents_root ON incidents(root_device_id);
+
 -- SpaceKit Phase 1 (HIST-02) — تجميعات ساعية/يومية تُبنى **قبل** تقليم السجلات الخام.
 -- تسمح بتقارير 7/30/90 يومًا بعد حذف raw (>7 أيام) بدلالة تغطية صريحة وبلا نسب مُختلَقة.
 CREATE TABLE IF NOT EXISTS status_rollups (

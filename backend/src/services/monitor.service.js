@@ -4,6 +4,8 @@ const db = require('../db');
 const { checkPing, checkPort, checkHttp, checkHttps } = require('./checkers');
 // MON-01 (SpaceKit Phase 1) — حالات المراقبة كدوال نقية (online/offline/unknown + الاستمرارية).
 const { decideHostTransition, isStale } = require('./health-state.service');
+// RCA-01/02 (SpaceKit Phase 2) — ارتباط الأعطال بالشجرة (كتم الإشعارات المكررة فقط).
+const incidents = require('./incidents.service');
 const downtimeService = require('./downtime.service');
 const notifier = require('./notifier.service');
 // v2.8.7 — ناقل البثّ الحيّ (SSE): يُبثّ تغيّر حالة أي جهاز لحظيًا لشاشات العرض (NOC/العامة).
@@ -156,10 +158,30 @@ async function checkDevice(device, opts = {}) {
     if (transition.event === 'down') {
       downtimeService.openDowntimeEvent(device.id);
       console.log(`[DOWN] device ${device.id} (primary=${primary.protocol})`);
+
+      // RCA-01 — إن كان سلف منقطع (سويتش/فايروول أعلى) ⇒ يُضمّ الجهاز لعطله المركزي
+      // ويُكتَم الإشعار الخارجي **فقط** (الانقطاع مسجَّل أعلاه وحالته تظهر في الشاشات كما هي).
+      let rca = { suppressed: false, incidentId: null, rootId: null };
       try {
-        await notifier.notifyDeviceDown(device);
+        rca = incidents.handleDeviceDown(device, { nowMs: Date.parse(nowIso) });
       } catch (e) {
-        console.error('[notify down]', e);
+        console.error('[rca] down handling error:', e.message);
+      }
+      if (rca.suppressed) {
+        console.log(`[RCA] device ${device.id} grouped under root ${rca.rootId} (incident ${rca.incidentId}, confidence=${rca.confidence}) — notification suppressed`);
+        try {
+          require('./audit.service').record('alert_suppressed', null, {
+            target: `device:${device.id}`,
+            details: { root_device_id: rca.rootId, incident_id: rca.incidentId, reason: 'root_cause_grouping' },
+          });
+        } catch (_) { /* التدقيق لا يكسر الفحص */ }
+      } else {
+        try {
+          await notifier.notifyDeviceDown(device);
+          if (rca.incidentId) incidents.markNotified(rca.incidentId, nowIso);
+        } catch (e) {
+          console.error('[notify down]', e);
+        }
       }
     } else if (transition.event === 'recovered') {
       const durationSeconds = downtimeService.closeDowntimeEvent(device.id);
@@ -168,6 +190,23 @@ async function checkDevice(device, opts = {}) {
         await notifier.notifyDeviceRecovered(device, durationSeconds);
       } catch (e) {
         console.error('[notify recovered]', e);
+      }
+      // RCA-02 — إن كان هذا الجهاز جذر عطل مركزي: يُغلق العطل، وأي ابن ما زال منقطعًا
+      // يُطلَق له تنبيه مستقل ويُفتح له عطل خاص (لا تُفقد انقطاعات الأبناء أبدًا).
+      try {
+        const res = incidents.handleDeviceRecovered(device, {
+          nowMs: Date.parse(nowIso),
+          notifyIndependent: (child, inc) => {
+            console.log(`[RCA] independent child alert after root recovery: device ${child.id}`);
+            try { notifier.notifyDeviceDown(child); } catch (e) { console.error('[rca notify child]', e.message); }
+            try { incidents.markNotified(inc.id, new Date().toISOString()); } catch (_) { /* تجاهل */ }
+          },
+        });
+        if (res.closedIncidents.length || res.reopened.length) {
+          console.log(`[RCA] closed incidents=[${res.closedIncidents.join(',')}] reopenedChildren=${res.reopened.length}`);
+        }
+      } catch (e) {
+        console.error('[rca] recovered handling error:', e.message);
       }
     }
 
