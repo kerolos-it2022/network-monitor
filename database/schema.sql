@@ -230,6 +230,50 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- ═══ SpaceKit Phase 3 (SNMP-01/02) — قراءة SNMP اختيارية (معطّلة افتراضيًّا) ═══
+-- v3 (authPriv) مستحسن؛ v2c يحتاج تفعيلًا صريحًا من المالك (مخاطره موثّقة). الأسرار تُقنَّع دائمًا
+-- في الـ API وتُحجب من نسخ الدعم؛ ولا تُكتب أي قراءة SNMP في السجل.
+CREATE TABLE IF NOT EXISTS snmp_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0,              -- opt-in صريح (الكيت: معطّلة افتراضيًّا)
+    interval_seconds INTEGER NOT NULL DEFAULT 60,
+    allow_v2c INTEGER NOT NULL DEFAULT 0             -- السماح بـ v2c (غير مشفّر) — قرار المالك
+);
+INSERT OR IGNORE INTO snmp_settings (id) VALUES (1);
+
+CREATE TABLE IF NOT EXISTS snmp_targets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL UNIQUE,
+    version TEXT NOT NULL DEFAULT '3',               -- '3' | '2c'
+    security_name TEXT,                              -- v3 username (authPriv)
+    auth_protocol TEXT,                              -- md5 | sha | sha256
+    auth_key TEXT,
+    priv_protocol TEXT,                              -- des | aes | aes256
+    priv_key TEXT,
+    community TEXT,                                  -- v2c فقط
+    enabled INTEGER NOT NULL DEFAULT 0,
+    last_poll_at TEXT,
+    last_error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS snmp_interfaces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL,
+    if_index INTEGER NOT NULL,
+    if_name TEXT,
+    if_descr TEXT,
+    oper_status INTEGER,                             -- 1=up · 2=down · …
+    speed_bps INTEGER,
+    in_octets TEXT, out_octets TEXT,                 -- تُخزَّن نصًّا (64-bit > أمان الأعداد العشرية)
+    in_rate_bps INTEGER, out_rate_bps INTEGER,       -- معدّل محسوب بعد معالجة الالتفاف/التصفير
+    in_errors TEXT, out_errors TEXT, in_discards TEXT, out_discards TEXT,
+    polled_at TEXT,
+    UNIQUE(device_id, if_index),
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+
 -- ═══ SpaceKit Phase 2 (AST-01/02/03) — الهوية الثابتة للأصول ═══
 -- المعرّف الخارجي الثابت (NM-000123): يُضاف للقواعد القائمة عبر migration في db.js
 -- (مع فهرس unique) ولا يُعاد استخدامه أبدًا بعد الأرشفة/الحذف (عدّاد في app_settings).

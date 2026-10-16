@@ -87,6 +87,12 @@ app.listen(PORT, () => {
   } catch (e) {
     console.error('[NET-ANNOUNCE] Failed to start persistent listener:', e.message);
   }
+  // Phase 3 (SNMP-01) — مجدول الاستطلاع الاختياري (يصمت تمامًا ما لم يُفعّله المالك).
+  try {
+    require('./services/integrations/snmp.service').startScheduler();
+  } catch (e) {
+    console.error('[SNMP] Failed to start scheduler:', e.message);
+  }
   // v2.26.0 — 🧹 تنظيف سجل الانقطاعات (أرشفة CSV + حذف >90 يومًا — يوميًا 03:10).
   try {
     require('./services/downtime-retention.service').startDowntimeRetention();

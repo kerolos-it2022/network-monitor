@@ -46,6 +46,8 @@ const servicesRoutes = require('./routes/services.routes');
 const incidentsRoutes = require('./routes/incidents.routes');
 // AST-01/02/03 — الأصول ذات الهوية الثابتة (واجهات MAC + سجل IP + تعارضات).
 const assetsRoutes = require('./routes/assets.routes');
+// Phase 3 — تكاملات اختيارية للقراءة فقط (SNMP معطّل افتراضيًّا).
+const integrationsRoutes = require('./routes/integrations.routes');
 
 function createApp() {
   const app = express();
@@ -141,6 +143,8 @@ function createApp() {
   app.use('/api/incidents', incidentsRoutes);
   // AST — الأصول: asset_id ثابت + واجهات MAC + سجل IP + قائمة مراجعة التعارضات.
   app.use('/api/assets', assetsRoutes);
+  // التكاملات الاختيارية (SNMP…) — opt-in صريح وقراءة فقط.
+  app.use('/api/integrations', integrationsRoutes);
   app.use('/api/locations', locationsRoutes);
   app.use('/api/device-types', deviceTypesRoutes);
   app.use('/api/notifications', notificationsRoutes);
