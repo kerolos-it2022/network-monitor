@@ -19,6 +19,16 @@ const PORT = process.env.PORT || 4000;
 try {
   db.prepare('SELECT 1').get();
   console.log('Database connection OK.');
+  // AST-01 — مهمة إقلاع idempotent: منح asset_id لكل جهاز بلا معرّف + تهيئة سجل IP/الواجهات
+  // من البيانات القائمة (آمنة التكرار، ولا تُغيّر أي معرّف قائم).
+  try {
+    const r = require('./services/assets.service').ensureAssetIds();
+    if (r.assigned || r.ipSeeded || r.interfacesSeeded) {
+      console.log(`[assets] identity backfill: asset_ids=${r.assigned} ip_history=${r.ipSeeded} interfaces=${r.interfacesSeeded}`);
+    }
+  } catch (e) {
+    console.error('[assets] identity backfill failed:', e.message);
+  }
 } catch (e) {
   console.error('Database connection FAILED:', e.message);
   console.error('تأكد من تنفيذ database/schema.sql وتعيين DB_PATH في .env');

@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS devices (
     last_probe_protocol TEXT,                      -- ping | port | http | https (آخر فحص أساسي نُفِّذ)
     host_last_ok_at TEXT,                          -- آخر لحظة نجاح للفحص الأساسي
     host_state_changed_at TEXT,                    -- آخر تغيّر فعلي في حالة المضيف
+    -- AST-01 (SpaceKit): المعرّف الخارجي الثابت NM-000123 — لا يُعاد استخدامه أبدًا.
+    asset_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (device_type_id) REFERENCES device_types(id),
     FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
@@ -225,6 +227,67 @@ CREATE TABLE IF NOT EXISTS app_settings (
     value TEXT,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ═══ SpaceKit Phase 2 (AST-01/02/03) — الهوية الثابتة للأصول ═══
+-- المعرّف الخارجي الثابت (NM-000123): يُضاف للقواعد القائمة عبر migration في db.js
+-- (مع فهرس unique) ولا يُعاد استخدامه أبدًا بعد الأرشفة/الحذف (عدّاد في app_settings).
+-- ملاحظة ترتيب مهمة: فهرس `idx_devices_asset_id` يُنشأ **داخل db.js بعد ALTER العمود** —
+-- لأن schema.sql يُنفَّذ قبل الـ migrations، ولو أنشأنا الفهرس هنا لفشل تنفيذ
+-- schema.sql كاملًا على قاعدة قديمة (عمود مفقود) وتوقّفت الهجرات بعده.
+
+-- عناوين MAC لكل جهاز (Ethernet/Wi-Fi/وهمي) — يُحفظ التاريخ حتى لو صار غير نشط.
+CREATE TABLE IF NOT EXISTS device_interfaces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL,
+    mac TEXT NOT NULL,                               -- بصيغة موحّدة aa:bb:cc:dd:ee:ff
+    kind TEXT,                                       -- ethernet | wifi | virtual | unknown
+    source TEXT NOT NULL DEFAULT 'manual',           -- manual | scan | snmp | dhcp | agent
+    confidence INTEGER NOT NULL DEFAULT 50,          -- 0..100 (قوة الدليل)
+    first_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+    is_active INTEGER NOT NULL DEFAULT 1,            -- الإيقاف لا يحذف السجل التاريخي
+    notes TEXT,
+    UNIQUE(device_id, mac),
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_interfaces_device ON device_interfaces(device_id);
+CREATE INDEX IF NOT EXISTS idx_interfaces_mac ON device_interfaces(mac);
+
+-- سجل عناوين IP لكل جهاز (مع صلاحية زمنية ومصدر وثقة).
+-- ⚠️ لا قيد فريد على `ip` عالميًّا: نفس العنوان يُعاد استخدامه لأجهزة مختلفة عبر الزمن.
+CREATE TABLE IF NOT EXISTS device_ip_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL,
+    ip TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'manual',           -- manual | scan | dhcp | snmp | agent
+    confidence INTEGER NOT NULL DEFAULT 50,
+    first_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+    valid_from TEXT,
+    valid_to TEXT,                                   -- NULL = العنوان الحالي
+    subnet TEXT,
+    vlan TEXT,
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_ip_history_device ON device_ip_history(device_id, ip);
+CREATE INDEX IF NOT EXISTS idx_ip_history_ip ON device_ip_history(ip);
+
+-- قائمة مراجعة التعارضات: لا دمج تلقائي أبدًا — القرار للمدير مع تدقيق كامل.
+CREATE TABLE IF NOT EXISTS asset_conflicts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,                              -- ip_reused | mac_duplicate | suggested_merge
+    status TEXT NOT NULL DEFAULT 'open',             -- open | approved | rejected
+    subject_device_id INTEGER,                       -- الجهاز المعني (الأول)
+    other_device_id INTEGER,                         -- الطرف الآخر (لو وُجد)
+    evidence_json TEXT,                              -- الأدلة (ip/mac/hostname/مصدر/ثقة) بلا أسرار
+    resolution_note TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    resolved_at TEXT,
+    resolved_by TEXT,
+    FOREIGN KEY (subject_device_id) REFERENCES devices(id) ON DELETE CASCADE,
+    FOREIGN KEY (other_device_id) REFERENCES devices(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_conflicts_status ON asset_conflicts(status);
 
 -- SpaceKit Phase 2 (RCA-01/02) — أعطال مرتبطة بالشجرة: عطل جهاز أعلى يجمّع أبناءه.
 -- الانقطاع الأصلي لكل جهاز يبقى في downtime_events كما هو؛ هذا الجدول يضيف «العطل المركزي»

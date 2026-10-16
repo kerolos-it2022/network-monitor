@@ -1233,6 +1233,39 @@
     </div>
   </div>
 
+  <!-- ===== AST-03 — نافذة «الأصل» (هوية ثابتة + واجهات MAC + سجل IP + تعارضات) ===== -->
+  <div id="asset-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق">✕</button>
+      <h3 id="asset-modal-title">🔖 الأصل</h3>
+      <p id="asset-modal-meta" style="font-size:0.9rem; color:var(--muted); margin:0.2rem 0 0.8rem;"></p>
+
+      <h4 style="margin:0.6rem 0 0.3rem;">🔗 واجهات الشبكة (MAC)</h4>
+      <div id="asset-interfaces" style="font-size:0.88rem;"></div>
+      <div style="display:flex; gap:0.4rem; margin:0.5rem 0 0.9rem; flex-wrap:wrap;">
+        <input type="text" id="asset-mac-input" placeholder="AA:BB:CC:DD:EE:FF" style="flex:1; min-width:180px;" />
+        <select id="asset-mac-kind" title="نوع الواجهة">
+          <option value="">— نوع تلقائي —</option>
+          <option value="ethernet">Ethernet</option>
+          <option value="wifi">Wi-Fi</option>
+          <option value="virtual">وهمية (VM)</option>
+          <option value="unknown">غير معروف</option>
+        </select>
+        <button type="button" class="btn btn-primary" id="asset-mac-add">➕ إضافة MAC</button>
+      </div>
+
+      <h4 style="margin:0.6rem 0 0.3rem;">🕓 سجل عناوين IP</h4>
+      <div id="asset-ips" style="font-size:0.88rem;"></div>
+      <div style="display:flex; gap:0.4rem; margin:0.5rem 0 0.9rem; flex-wrap:wrap;">
+        <input type="text" id="asset-ip-input" placeholder="192.168.88.50" style="flex:1; min-width:180px;" />
+        <button type="button" class="btn" id="asset-ip-add">➕ تسجيل عنوان</button>
+      </div>
+
+      <h4 style="margin:0.6rem 0 0.3rem;">⚠️ تعارضات الهوية (مراجعة يدوية — لا دمج تلقائي)</h4>
+      <div id="asset-conflicts" style="font-size:0.88rem;"></div>
+    </div>
+  </div>
+
   <!-- ===== HIST-03 — نافذة «تشغيل الجهاز» (24 ساعة / 7 أيام / 30 يومًا + تغطية) ===== -->
   <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
@@ -1398,6 +1431,8 @@
   <script src="../js/admin-display.js"></script>
   <!-- HIST-03 — نافذة تشغيل الجهاز (24h/7d/30d + تغطية) -->
   <script src="../js/admin-history.js"></script>
+  <!-- AST-03 — نافذة الأصل (asset_id + MAC + سجل IP + تعارضات) -->
+  <script src="../js/admin-assets.js"></script>
   <script src="../js/admin-update.js"></script>
   <script src="../js/admin-backup.js"></script>
   <script src="../js/admin-remote.js"></script>

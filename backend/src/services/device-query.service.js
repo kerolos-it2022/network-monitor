@@ -23,6 +23,8 @@ const DEVICE_SELECT = `
     d.last_response_time_ms, d.last_checked_at,
     -- MON-01: حالات المضيف/العامة المفصولة (للإدارة والعرض الداخلي).
     d.host_status, d.overall_health, d.last_probe_protocol,
+    -- AST-01: المعرّف الخارجي الثابت (داخلي فقط — لا يُدرَج في DTO العام).
+    d.asset_id,
     -- MON-02: عدّاد الخدمات المراقَبة المتوقفة (بلا أسماء — صالح حتى للعرض العام).
     (SELECT COUNT(*) FROM monitored_services s
       WHERE s.device_id = d.id AND s.is_enabled = 1 AND s.status = 'offline') AS services_down_count,
