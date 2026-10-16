@@ -305,4 +305,28 @@ function getNameForIp(ip) {
   } catch (e) { return null; }
 }
 
+// ═══ v2.32.1 — LLMNR (UDP 5355): قناة الاسم الثالثة في ويندوز (بعد NBNS/mDNS) —
+// استماع سلبي لاستعلامات وإجابات حلّ الأسماء داخل الشبكة (نمط Responder) ═══
+try {
+  const lls = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+  const LLMNR_GROUP = '224.0.0.252';
+  lls.on('error', () => { try { lls.close(); } catch (_) {} });
+  lls.on('message', (msg, rinfo) => {
+    try {
+      for (let i = 12; i + 5 <= msg.length; i++) {
+        const len = msg[i];
+        if (len < 3 || len > 40 || i + 1 + len > msg.length) continue;
+        const nm = msg.slice(i + 1, i + 1 + len).toString('utf8');
+        const z = msg[i + 1 + len];
+        if (/^[A-Za-z0-9\-_\.]{3,}$/.test(nm) && z === 0) {
+          recordName(rinfo.address, nm, 'llmnr');
+          i += 1 + len;
+        }
+      }
+    } catch (_) {}
+  });
+  lls.bind(5355, () => { try { lls.addMembership(LLMNR_GROUP); } catch (_) {} });
+} catch (e) { console.error('[net-announce] LLMNR bind failed:', e.message); }
+console.log('[net-announce] المستمع الدائم يعمل — LLMNR 5355 + NBNS 137 + mDNS 5353 مراقَبة');
+
 module.exports.persistent = { startPersistentListener, getNameForIp, recordName };
