@@ -177,6 +177,7 @@ router.get('/stats', requireAuth, (req, res) => {
         backups_bytes: backupsSize,
       },
       network: sampleNetworkRate(),
+      lan_ips: Object.values(os.networkInterfaces()).flat().filter(i => i && !i.internal && i.family === 'IPv4').map(i => i.address),
       engine: engine ? {
         last_tick_age_ms: engine.lastTickAgeMs,
         active_devices: engine.activeDevices,
