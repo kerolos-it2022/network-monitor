@@ -397,7 +397,7 @@ function resolveHostname(ip) {
 // ── v2.16.0 — استعلام NBNS مباشر (UDP 137) للحصول على الاسم الحقيقي من الجهاز نفسه ──
 // لا يحتاج nbtstat/nmblookup ولا SMB مفتوحًا — يشتغل على أي جهاز ويندوز/سامبا تقريبًا.
 const dgram = require('dgram');
-function getNetBIOSName(ip, timeoutMs = 700) {
+function getNetBIOSName(ip, timeoutMs = 2000) {   // v2.31.4 — 2000ms (مطابق للتنفيذ الشغّال net-sentry) بدل 700 التي تفوت على الردود البطيئة (ARP أولًا)
   return new Promise((resolve) => {
     const sock = dgram.createSocket('udp4');
     let done = false;
@@ -405,7 +405,7 @@ function getNetBIOSName(ip, timeoutMs = 700) {
     // بناء Node Status Query: اسم '*' مرمَّز بصيغة NetBIOS (كل نصف بايت + 'A')
     const hdr = Buffer.alloc(12);
     hdr.writeUInt16BE(Math.floor(Math.random() * 65535), 0);
-    hdr.writeUInt16BE(0x0010, 2);   // flags: recursion desired
+    hdr.writeUInt16BE(0x0000, 2);   // v2.31.4 — flags صفر مطابق للمشاريع الشغّالة (0x0010 = بِت broadcast يُتجاهل من الأجهزة)
     hdr.writeUInt16BE(1, 4);        // QDCOUNT=1
     const nm = Buffer.alloc(16, 0x20); nm.write('*');
     let qname = '';
