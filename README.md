@@ -25,9 +25,16 @@
 
 ## ✨ لقطات من النظام
 
-| لوحة التحكم (هوية NOC) | شاشة NOC — جدارية الانقطاعات | الصفحة العامة |
-|:---:|:---:|:---:|
-| ![لوحة التحكم](docs/screenshots/dashboard-devices.png) | ![شاشة NOC](docs/screenshots/noc-screen.png) | ![الصفحة العامة](docs/screenshots/public-dashboard.png) |
+<p align="center">
+  <img src="docs/screenshots/noc-screen.png" width="92%" alt="شاشة NOC — سلسلة الإنترنت ومراقبة لحظية" />
+</p>
+<p align="center"><b>شاشة NOC</b> — الجدارية اللحظية: سلسلة الإنترنت، العدادات، الحالات</p>
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-devices.png" width="49%" alt="لوحة التحكم — الأجهزة" />
+  <img src="docs/screenshots/public-dashboard.png" width="49%" alt="الصفحة العامة" />
+</p>
+<p align="center"><b>لوحة التحكم</b> و<b>الصفحة العامة</b> — بالوضعين نهاري/ليلي في كل الصفحات</p>
 
 ## ✅ أبرز المميزات
 
