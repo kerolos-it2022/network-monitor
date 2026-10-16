@@ -28,6 +28,49 @@ function isValidCIDR(cidr) {
 }
 
 // v2.16.1 — تشخيص الاسم لجهاز مفرد: يجرب الطرق الثلاث ويعيد النتائج الخام.
+// v2.31.2 — بثّ NBNS العام (nbtscan-style): استعلام Node Status على البثّ العام 255.255.255.255:137 —
+// كل جهاز فاتح ملفات/المفعّل NBT تجاوب باسمه من شبكته (ولا يحتاج استعلام وسيط).
+router.get('/name-diag-broadcast', (req, res) => {
+  const names = [];
+  const seen = new Set();
+  try {
+    const sock = dgram.createSocket('udp4');
+    sock.on('error', () => {});
+    sock.on('message', (msg, rinfo) => {
+      try {
+        for (let i = 0; i + 34 <= msg.length; i++) {
+          if (msg[i] !== 0x20) continue;
+          let ok = true; const raw = [];
+          for (let k = 0; k < 32; k += 2) {
+            const hi = msg[i + 1 + k], lo = msg[i + 2 + k];
+            if (hi < 0x41 || hi > 0x50 || lo < 0x41 || lo > 0x50) { ok = false; break; }
+            raw.push(((hi - 0x41) << 4) | (lo - 0x41));
+          }
+          if (!ok) continue;
+          let name = Buffer.from(raw).toString('latin1').split(String.fromCharCode(0))[0].replace(/ +/g, ' ').trim();
+          if (name && name.length >= 2 && !/^[0-9.]+$/.test(name) && rinfo.address && !seen.has(rinfo.address)) {
+            seen.add(rinfo.address);
+            names.push({ ip: rinfo.address, name });
+          }
+        }
+      } catch (_) {}
+    });
+    sock.bind(() => {
+      try { sock.setBroadcast(true); } catch (e) {}
+      const hdr = Buffer.alloc(12);
+      hdr.writeUInt16BE(Math.floor(Math.random() * 65535), 0);
+      hdr.writeUInt16BE(0x0010, 2);
+      hdr.writeUInt16BE(1, 4);
+      const nm = Buffer.alloc(16, 0x20); nm.write('*');
+      let qname = '';
+      for (const b of nm) qname += String.fromCharCode(0x41 + ((b >> 4) & 0xF)) + String.fromCharCode(0x41 + (b & 0xF));
+      const pkt = Buffer.concat([hdr, Buffer.from([32]), Buffer.from(qname, 'ascii'), Buffer.from([0x00, 0x00, 0x21, 0x00, 0x01])]);
+      sock.send(pkt, 137, '255.255.255.255', () => {});
+      setTimeout(() => { try { sock.close(); } catch (e) {} res.json({ success: true, names, note: 'بثّ NBNS لمدة 4 ثوانٍ من الأبلاينس' }); }, 4000);
+    });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
 router.get('/name-diag', async (req, res) => {
   const ip = String(req.query.ip || '').trim();
   if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {

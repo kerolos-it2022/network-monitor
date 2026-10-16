@@ -1,6 +1,6 @@
 # 📡 نظام مراقبة أجهزة الشبكة المحلية - Network Monitor
 
-[![Version](https://img.shields.io/badge/version-2.31.1-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![Version](https://img.shields.io/badge/version-2.31.2-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
@@ -8,7 +8,7 @@
 
 > **نظام مراقبة احترافي** لأجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات...) مع مراقبة لحظية، إدارة شاملة، وإشعارات فورية عبر **Telegram** و **WhatsApp** و **تطبيق الموبايل (PWA)**.
 
-> 🌟 **الإصدار الحالي: v2.31.1** — 📡 نافذة تفاصيل جهاز موسّعة (شارة «إنترنت أم محليًّا فقط» بالاستدلال + نسب تشغيل 24/7/30) · 🏷️ ملصقات QR لكل جهاز (مسحة موبايل = تفاصيل كاملة) · 🎨 هوية NOC الدائمة لكل الصفحات.
+> 🌟 **الإصدار الحالي: v2.31.2** — 📡 نافذة تفاصيل جهاز موسّعة (شارة «إنترنت أم محليًّا فقط» بالاستدلال + نسب تشغيل 24/7/30) · 🏷️ ملصقات QR لكل جهاز (مسحة موبايل = تفاصيل كاملة) · 🎨 هوية NOC الدائمة لكل الصفحات.
 
 ## ✨ لقطات من النظام
 
