@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-2.31.2-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
-[![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%2B%20(24%20LTS)-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
@@ -101,8 +101,8 @@ cd network-monitor && cd backend && npm ci --omit=dev && npm start
 
 | المتطلب | الإصدار | ملاحظات |
 |-----------|---------|---------|
-| **Node.js** | 20 LTS أو أعلى | [تحميل](https://nodejs.org/) |
-| **Python 3** | 3.8+ | لبناء `better-sqlite3` |
+| **Node.js** | **22 أو أعلى (24 LTS موصى به)** — `better-sqlite3@13` يشترط ≥22 | [تحميل](https://nodejs.org/) |
+| **Python 3** | 3.8+ | اختياري/احتياطي فقط — `better-sqlite3@13` يُثبَّت بثنائية جاهزة (بلا ترجمة) |
 | **sqlite3 CLI** | - | لإنشاء قاعدة البيانات |
 | **pm2** | أحدث إصدار | `npm install -g pm2` |
 | **Git** | - | لاستنساخ المشروع |
@@ -190,7 +190,7 @@ sudo bash deploy.sh install
 1. ✅ **يكشف التوزيعة** ومدير الحزم المناسب
 2. ✅ **يحدّث النظام** ويثبّت الأدوات الأساسية (git, curl, traceroute, ...)
 3. ✅ يثبّت **أدوات البناء** (python3, make, g++)
-4. ✅ يثبّت **Node.js 20 LTS** (عبر NodeSource)
+4. ✅ يثبّت **Node.js 24 LTS** (عبر NodeSource — والمشروع يشترط Node ≥22)
 5. ✅ يثبّت **PM2** عالمياً + **sqlite3 CLI**
 6. ✅ ينشئ `.env` + يولّد سرّ الجلسة عشوائيًّا + **مفاتيح VAPID تلقائياً**
 7. ✅ `npm install` + بناء `better-sqlite3` للنظام المستهدف

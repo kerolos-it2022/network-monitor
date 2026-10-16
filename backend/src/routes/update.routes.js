@@ -552,6 +552,9 @@ router.post('/perform', requireAuth, async (req, res) => {
       });
     }
     
+    // SEC-03 — تدقيق طلب التحديث (المستخدم/الفرع) قبل أي تنفيذ.
+    require('../services/audit.service').record('update_perform', req, { target: branch });
+
     // التحقق من وجود تحديث أولاً
     const check = await checkForUpdates(branch);
     if (!check.success) {

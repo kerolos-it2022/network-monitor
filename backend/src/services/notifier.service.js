@@ -426,12 +426,77 @@ async function sendGenericNotification(message) {
   ]);
 }
 
+// ═══ MON-02 (SpaceKit Phase 1) — تنبيهات على مستوى **الخدمة** ═══
+// رسالة مستقلة تحمل اسم الخدمة ونوعها ومنفذها، فلا تُخلط بانقطاع المضيف.
+// تحترم نافذة الصيانة مثل بقية الإشعارات، وتُسجَّل في notification_logs بمعرّف الجهاز.
+// isMaintenanceWindow(): فحص نافذة الصيانة بحماية من فشل الخدمة (لا يكسر الإرسال).
+async function isMaintenanceWindow() {
+  try {
+    const { isMaintenanceNow } = require('./maintenance.service');
+    return await isMaintenanceNow();
+  } catch (_) {
+    return false;
+  }
+}
+
+function serviceTarget(service) {
+  if (service.kind === 'tcp') return `TCP ${service.port}`;
+  const port = service.port || (service.kind === 'https' ? 443 : 80);
+  return `${String(service.kind).toUpperCase()} ${port}${service.url_path || '/'}`;
+}
+
+async function notifyServiceDown(device, service) {
+  const maintenance = await isMaintenanceWindow();
+  const timeStr = new Date().toLocaleString('ar');
+  const message =
+    `${service.is_critical ? '⛔' : '🟠'} خدمة متوقفة: ${service.name}\n` +
+    `الجهاز: ${device.name}${device.ip ? ' (' + device.ip + ')' : ''}\n` +
+    `الفحص: ${serviceTarget(service)}\n` +
+    `الخطأ: ${service.last_error || 'غير متاح'}\n` +
+    `الوقت: ${timeStr}`;
+  if (maintenance) {
+    logNotification('telegram', device.id, message, 'maintenance', null);
+    logNotification('whatsapp', device.id, message, 'maintenance', null);
+    logNotification('mobile', device.id, message, 'maintenance', null);
+    console.log(`[notify] نافذة صيانة — كتم إشعار خدمة: ${service.name}`);
+    return;
+  }
+  await Promise.all([
+    sendTelegram(message, device.id),
+    sendWhatsapp(message, device.id),
+    sendMobile(message, device.id),
+  ]);
+}
+
+async function notifyServiceRecovered(device, service) {
+  const maintenance = await isMaintenanceWindow();
+  const timeStr = new Date().toLocaleString('ar');
+  const message =
+    `✅ عادت الخدمة للعمل: ${service.name}\n` +
+    `الجهاز: ${device.name}${device.ip ? ' (' + device.ip + ')' : ''}\n` +
+    `الفحص: ${serviceTarget(service)}\n` +
+    `الوقت: ${timeStr}`;
+  if (maintenance) {
+    logNotification('telegram', device.id, message, 'maintenance', null);
+    logNotification('whatsapp', device.id, message, 'maintenance', null);
+    logNotification('mobile', device.id, message, 'maintenance', null);
+    return;
+  }
+  await Promise.all([
+    sendTelegram(message, device.id),
+    sendWhatsapp(message, device.id),
+    sendMobile(message, device.id),
+  ]);
+}
+
 module.exports = {
   sendTelegram,
   sendWhatsapp,
   sendMobile,
   notifyDeviceDown,
   notifyDeviceRecovered,
+  notifyServiceDown,
+  notifyServiceRecovered,
   sendGenericNotification,
   testAllChannels,
   getSettings,

@@ -247,11 +247,11 @@ router.get('/public/tree', (req, res) => {
 
     const unassignedDevices = [];
     for (const dev of devices) {
-      // مُخفّف: لا name، id بِـ dev- prefix، يَحمل ip + status + device_type فقط.
+      // SEC-02 — مُخفّف: لا name، id بِـ dev- prefix، **ولا ip** (كان يسرّب عناوين
+      // الشبكة الداخلية لأي زائر بلا تسجيل دخول) — status + device_type فقط.
       const devNode = {
         id: `dev-${dev.id}`,
         kind: 'device',
-        ip: dev.ip,
         status: dev.current_status || 'unknown',
         device_type: dev.device_type || null,
       };

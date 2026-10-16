@@ -3,6 +3,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const requireAuth = require('../middleware/requireAuth');
+// SEC-03 — سجل تدقيق: نجاح/فشل الدخول، القفل، الخروج، تغيير كلمات المرور وإدارة المستخدمين.
+const audit = require('../services/audit.service');
 
 const router = express.Router();
 
@@ -56,6 +58,7 @@ router.post('/login', (req, res) => {
   // حالة القفل النشط: رفض مباشر قبل أي فحص اعتمادات (بقية الوقت بالدقائق، أقلها 1).
   if (st && st.lockedUntil && st.lockedUntil > now) {
     const mins = Math.max(1, Math.ceil((st.lockedUntil - now) / 60000));
+    audit.record('login_locked', req, { actor: String(username).slice(0, 120), target: username, details: { locked_minutes: mins } });
     return res.status(429).json({
       success: false,
       error: 'تم إيقاف تسجيل الدخول مؤقتًا بعد محاولات فاشلة متكررة — حاول بعد ' + mins + ' دقيقة',
@@ -73,6 +76,7 @@ router.post('/login', (req, res) => {
     if (cur.count >= LOCK_MAX_FAILURES) {
       cur.lockedUntil = now + LOCK_DURATION_MS;
       loginFailures.set(key, cur);
+      audit.record('login_locked', req, { actor: String(username).slice(0, 120), target: username, details: { failures: cur.count, locked_minutes: Math.ceil(LOCK_DURATION_MS / 60000) } });
       return res.status(429).json({
         success: false,
         error: 'تم إيقاف تسجيل الدخول مؤقتًا بعد ' + LOCK_MAX_FAILURES + ' محاولات فاشلة — حاول بعد ' + Math.ceil(LOCK_DURATION_MS / 60000) + ' دقيقة',
@@ -80,6 +84,7 @@ router.post('/login', (req, res) => {
       });
     }
     loginFailures.set(key, cur);
+    audit.record('login_failed', req, { actor: String(username).slice(0, 120), target: username, details: { attempts: cur.count } });
     return res
       .status(401)
       .json({ success: false, error: 'بيانات الدخول غير صحيحة' });
@@ -89,6 +94,7 @@ router.post('/login', (req, res) => {
   loginFailures.delete(key);
 
   req.session.user = { username: user.username, role: user.role };
+  audit.record('login_success', req, { target: user.username, role: user.role });
 
   // v2.7.5 — تَفعيل «تذكّرني»: نُعيد ضبط عمر الـ cookie لهذه الجلسة لِـ 30 يومًا.
   // (نُفعّلها فقط عند تَحقّق remember من النموذج، وإلا تَبقى 12 ساعة كالسابق.)
@@ -103,6 +109,7 @@ router.post('/login', (req, res) => {
 
 // POST /api/auth/logout  (محمي)
 router.post('/logout', requireAuth, (req, res) => {
+  audit.record('logout', req);
   req.session.destroy(() => {
     return res.status(200).json({ success: true, data: null });
   });

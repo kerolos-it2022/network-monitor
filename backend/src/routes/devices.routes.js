@@ -11,26 +11,12 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ---------------------------------------------------------
-// استعلام موحد لجلب جهاز/أجهزة مع أسماء النوع والموقع (JOINs)
+// SEC-02 — استعلام الأجهزة وحساب السجل انتقلا إلى services/:
+//   device-query.service.js (مشترك: داخلي + عام) · history.service.js
+// (بلا ازدواج بين المسار الداخلي المحمي والمسار العام المنقّى).
 // ---------------------------------------------------------
-const DEVICE_SELECT = `
-  SELECT
-    d.id, d.name, d.ip, d.device_type_id,
-    dt.name AS device_type_name,
-    d.location_id,
-    l.name AS location_name,
-    l.kind AS location_kind,
-    d.parent_id,
-    d.parent_location_id,
-    d.pos_x, d.pos_y,
-    d.check_protocol, d.port, d.web_port,
-    d.check_interval_seconds, d.failure_threshold, d.is_active,
-    d.current_status, d.http_accessible, d.https_accessible,
-    d.last_response_time_ms, d.last_checked_at
-  FROM devices d
-  LEFT JOIN device_types dt ON dt.id = d.device_type_id
-  LEFT JOIN locations l ON l.id = d.location_id
-`;
+const { DEVICE_SELECT, listDevicesWithOutages, getDeviceById } = require('../services/device-query.service');
+const { getDeviceHistory } = require('../services/history.service');
 
 // Topology chain: التحقق من الأب (موجود، ليس هو نفسه، ولا يُحدث حلقة في السلسلة).
 function validateParent(parentId, deviceId) {
@@ -67,110 +53,31 @@ function validateParentLocation(locationId) {
   if (!loc) return { ok: false, error: 'الموقع المتصل عبره غير موجود (id=' + lid + ')' };
   return { ok: true, value: lid };
 }
-// GET /api/devices  (عام)
-// v2.13.6 — آخر انقطاع مغلق لكل جهاز (عمود «آخر انقطاع» في جدول الصفحة العامة):
-//   last_outage_ended_at (ISO نصًّا) · last_outage_seconds (مدة ذلك الانقطاع بالثواني).
-//   NULL = لا انقطاع مسجَّل. MAX(ended_at) آمن لأن الأزمنة تُخزَّن ISO نصًّا.
-function lastOutageByDevice() {
-  const out = new Map();
-  const rows = db.prepare(`
-    SELECT device_id, MAX(ended_at) AS last_ended
-    FROM downtime_events
-    WHERE ended_at IS NOT NULL
-    GROUP BY device_id
-  `).all();
-  const startedOf = db.prepare(
-    'SELECT started_at FROM downtime_events WHERE device_id = ? AND ended_at = ? LIMIT 1'
-  );
-  for (const r of rows) {
-    const s = startedOf.get(r.device_id, r.last_ended);
-    out.set(r.device_id, { endedAt: r.last_ended, startedAt: s ? s.started_at : null });
-  }
-  return out;
-}
-
-router.get('/', (req, res) => {
-  const devices = db.prepare(`${DEVICE_SELECT} ORDER BY d.id ASC`).all();
-  const last = lastOutageByDevice();
-  for (const d of devices) {
-    const l = last.get(d.id) || null;
-    d.last_outage_ended_at = l ? l.endedAt : null;
-    d.last_outage_seconds = (l && l.startedAt)
-      ? Math.max(0, Math.round((new Date(l.endedAt) - new Date(l.startedAt)) / 1000))
-      : null;
-  }
-  return res.json({ success: true, data: devices });
+// GET /api/devices 🔒 (SEC-02 — كان عامًّا يكشف IP/بروتوكول الفحص/المنافذ لكل زائر).
+// الواجهات العامة تستعمل GET /api/public/status المنقّى (بلا أي IP/MAC/سيريال).
+router.get('/', requireAuth, (req, res) => {
+  return res.json({ success: true, data: listDevicesWithOutages() });
 });
 
-// GET /api/devices/:id  (عام)
-router.get('/:id', (req, res) => {
-  const device = db.prepare(`${DEVICE_SELECT} WHERE d.id = ?`).get(req.params.id);
+// GET /api/devices/:id 🔒 (SEC-02 — كان عامًّا). البديل العام المنقّى: /api/public/devices/:id
+router.get('/:id', requireAuth, (req, res) => {
+  const device = getDeviceById(req.params.id);
   if (!device) {
     return res.status(404).json({ success: false, error: 'الجهاز غير موجود' });
   }
   return res.json({ success: true, data: device });
 });
 
-// GET /api/devices/:id/history?range=24h|7d|30d  (عام)
-router.get('/:id/history', (req, res) => {
-  const { id } = req.params;
-  const device = db.prepare('SELECT id FROM devices WHERE id = ?').get(id);
-  if (!device) {
+// GET /api/devices/:id/history?range=24h|7d|30d 🔒 (SEC-02 — كان عامًّا).
+// نفس الحمولة القديمة بالحرف (بلا كسر للواجهات) — البديل العام المنقّى:
+// GET /api/public/devices/:id/history (نفس الحقول + range/since).
+router.get('/:id/history', requireAuth, (req, res) => {
+  const history = getDeviceHistory(req.params.id, req.query.range);
+  if (!history) {
     return res.status(404).json({ success: false, error: 'الجهاز غير موجود' });
   }
-
-  // تحويل range إلى عدد ساعات.
-  const rangeMap = { '24h': 24, '7d': 168, '30d': 720 };
-  const hours = rangeMap[req.query.range] || 24;
-  const sinceIso = new Date(Date.now() - hours * 3600 * 1000).toISOString();
-
-  // 1) سجلات الحالة ضمن النافذة.
-  const statusPoints = db.prepare(
-    `SELECT checked_at, status, response_time_ms
-       FROM status_logs
-      WHERE device_id = ? AND checked_at >= ?
-      ORDER BY checked_at ASC`
-  ).all(id, sinceIso);
-
-  // 2) حساب نسبة التشغيل.
-  let uptimePercentage = 0;
-  if (statusPoints.length > 0) {
-    const onlineCount = statusPoints.filter((s) => s.status === 'online').length;
-    uptimePercentage =
-      Math.round((onlineCount / statusPoints.length) * 10000) / 100; // رقمين عشريين
-  }
-
-  // 3) أحداث الانقطاع: أي حدث بدأ ضمن النافذة أو لا يزال مستمراً (ended_at IS NULL).
-  const events = db.prepare(
-    `SELECT started_at, ended_at, duration_seconds
-       FROM downtime_events
-      WHERE device_id = ?
-        AND (started_at >= ? OR ended_at IS NULL)
-      ORDER BY started_at ASC`
-  ).all(id, sinceIso);
-
-  const now = Date.now();
-  const downtimeEvents = events.map((e) => {
-    let durationSeconds = e.duration_seconds;
-    if (e.ended_at == null) {
-      durationSeconds = Math.floor((Date.now() - new Date(e.started_at).getTime()) / 1000);
-      if (durationSeconds < 0) durationSeconds = 0;
-    }
-    return {
-      started_at: e.started_at,
-      ended_at: e.ended_at,
-      duration_seconds: durationSeconds,
-    };
-  });
-
-  return res.json({
-    success: true,
-    data: {
-      uptime_percentage: uptimePercentage,
-      status_points: statusPoints,
-      downtime_events: downtimeEvents,
-    },
-  });
+  // HIST-01 — نُعيد الحمولة كاملة: الحقول القديمة كما هي (توافق كامل) + التغطية/الجودة.
+  return res.json({ success: true, data: history });
 });
 
 // POST /api/devices/cleanup-history  🔒 (v2.7.0 — PF)

@@ -21,7 +21,8 @@ function buildTopology() {
 
   const devices = db.prepare(`
     SELECT d.id, d.name, d.ip, d.current_status, d.parent_id, d.location_id, d.is_active,
-           d.pos_x, d.pos_y, d.device_type_id, dt.name AS device_type_name
+           d.pos_x, d.pos_y, d.device_type_id, dt.name AS device_type_name,
+           d.host_status, d.overall_health
     FROM devices d
     LEFT JOIN device_types dt ON dt.id = d.device_type_id
     ORDER BY d.name COLLATE NOCASE
@@ -65,6 +66,8 @@ function buildTopology() {
       ip: d.ip,
       device_type_name: d.device_type_name || null,
       status: d.is_active ? (d.current_status || 'unknown') : 'paused',
+      // MON-01 — الحالة العامة المفصولة (تمييز DEGRADED في الشاشات لاحقًا مع خدمات MON-02).
+      overall_health: d.is_active ? (d.overall_health || d.current_status || 'unknown') : 'paused',
       // v2.13.3 — بداية الانقطاع المفتوح (ISO) — null لو متصل أو بلا حدث مفتوح.
       offline_since: d.current_status === 'offline' && openDown.has(d.id)
         ? new Date(openDown.get(d.id)).toISOString()

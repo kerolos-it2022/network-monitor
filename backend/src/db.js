@@ -86,6 +86,12 @@ try {
       "ALTER TABLE notification_settings ADD COLUMN escalation_repeat_minutes INTEGER DEFAULT 0",
       // v2.29.1: مفتاح غطاء الإنذار الأحمر في شاشة NOC (تشغيل/إيقاف من الإشعارات).
       "ALTER TABLE notification_settings ADD COLUMN noc_alert_screen_enabled INTEGER DEFAULT 1",
+      // MON-01 (SpaceKit Phase 1) — حالات المراقبة المفصولة على القواعد القائمة.
+      "ALTER TABLE devices ADD COLUMN host_status TEXT",
+      "ALTER TABLE devices ADD COLUMN overall_health TEXT",
+      "ALTER TABLE devices ADD COLUMN last_probe_protocol TEXT",
+      "ALTER TABLE devices ADD COLUMN host_last_ok_at TEXT",
+      "ALTER TABLE devices ADD COLUMN host_state_changed_at TEXT",
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }

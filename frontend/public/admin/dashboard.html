@@ -34,6 +34,7 @@
       <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
       <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
       <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label">الوصول عن بُعد</span></button></li>
+      <li><button class="tab-btn" id="tab-display" type="button" title="إعدادات العرض: ما يراه الزوار وشاشة NOC"><span class="tab-btn-icon">🎛️</span><span class="tab-btn-label">إعدادات العرض</span></button></li>
       <li><button class="tab-btn" id="tab-system" type="button" title="حالة النظام: رام/معالج/هارد/شبكة"><span class="tab-btn-icon">🖥️</span><span class="tab-btn-label">حالة النظام</span></button></li>
       <!-- v2.23.0 — «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة في حافة القائمة). -->
       <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
@@ -793,6 +794,34 @@
     </section>
 
     <!-- ============ قسم حالة النظام (v2.23.0) ============ -->
+    <!-- ═══ SEC-02/MON-02 — إعدادات العرض (ما يراه الزوار + شاشة NOC الداخلية) ═══ -->
+    <section id="section-display" class="hidden">
+      <div class="form-card">
+        <h3>🎛️ إعدادات العرض</h3>
+        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
+          تتحكم في البيانات التي يراها أي زائر بلا تسجيل دخول، وفيما تعرضه شاشة NOC على التلفزيون.
+          كل التغييرات تُطبَّق فورًا بلا إعادة تشغيل، وتُسجَّل في سجل التدقيق.
+        </p>
+        <div style="display:grid; gap:1rem; max-width:640px;">
+          <label style="font-weight:bold;">وضع العرض العام (للزوار بلا تسجيل دخول)
+            <select id="disp-public-mode" style="margin-top:0.35rem;">
+              <option value="lan">🏠 lan — حالة الأجهزة + بنية الشاشة، بلا أي IP/MAC (المناسب للشبكة الداخلية)</option>
+              <option value="minimal">🔒 minimal — حالة الأجهزة فقط بلا شجرة/إحداثيات (الأنسب للنشر العام / ngrok)</option>
+              <option value="off">⛔ off — إيقاف العرض العام تمامًا (كل مسارات الزوار تُرفض)</option>
+            </select>
+          </label>
+          <label class="checkbox-label" style="font-weight:bold;">
+            <input type="checkbox" id="disp-noc-internal" />
+            <span>📺 شاشة NOC الداخلية تعرض عناوين IP — <b>للجلسات المسجّلة كمدير فقط</b> (الزوار يبقون بلا عناوين)</span>
+          </label>
+          <p id="disp-status" style="font-size:0.85rem; color:var(--muted); margin:0;"></p>
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="disp-save">💾 حفظ إعدادات العرض</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="section-system" class="hidden">
       <div class="form-card">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
@@ -1165,6 +1194,39 @@
           <button type="button" class="btn" id="device-form-cancel" title="إلغاء العملية">✖️ إلغاء</button>
         </div>
       </form>
+
+      <!-- ═══ MON-02 — الخدمات المراقَبة (تظهر عند تعديل جهاز موجود فقط) ═══ -->
+      <div id="df-services-section" class="hidden" style="margin-top:1rem;border-top:1px solid var(--border);padding-top:0.8rem;">
+        <h4 style="margin:0 0 0.3rem;">🧩 الخدمات المراقَبة على هذا الجهاز</h4>
+        <p style="color:var(--muted);font-size:0.8rem;margin:0 0 0.6rem;">
+          مضيف متصل وخدمة متوقفة ⇒ تظهر حالة الجهاز «متصل — خدمة متوقفة» وتُرسل تنبيهًا خاصًّا بالخدمة.
+        </p>
+        <div id="df-services-list"><span style="color:var(--muted);font-size:0.85rem;">…جارٍ التحميل</span></div>
+        <details id="df-service-add" style="margin-top:0.6rem;">
+          <summary style="cursor:pointer;font-size:0.9rem;">➕ إضافة خدمة</summary>
+          <div class="form-grid" style="margin-top:0.6rem;">
+            <label>اسم الخدمة <input type="text" id="dfs-name" placeholder="Odoo ERP" /></label>
+            <label>النوع
+              <select id="dfs-kind">
+                <option value="tcp">TCP (منفذ)</option>
+                <option value="http">HTTP</option>
+                <option value="https">HTTPS</option>
+              </select>
+            </label>
+            <label>المنفذ <input type="number" id="dfs-port" min="1" max="65535" placeholder="8069" /></label>
+            <label>المسار (للويب) <input type="text" id="dfs-url_path" placeholder="/web/login" /></label>
+            <label>الحالة المتوقعة <input type="text" id="dfs-expect_status" placeholder="2xx أو 200-299 أو 200,301" /></label>
+            <label>فاصل الفحص (ثانية) <input type="number" id="dfs-interval_seconds" value="60" min="10" /></label>
+            <label>عتبة الفشل <input type="number" id="dfs-failure_threshold" value="2" min="1" max="10" /></label>
+            <label class="checkbox-label">حرجة <input type="checkbox" id="dfs-is_critical" /><span>خدمة حرجة (تُبرَز في التنبيهات)</span></label>
+            <label class="checkbox-label">شهادة TLS <input type="checkbox" id="dfs-verify_tls" checked /><span>التحقق من الشهادة (موصى به)</span></label>
+          </div>
+          <div class="form-actions" style="margin-top:0.4rem;">
+            <button type="button" class="btn btn-primary" id="dfs-save">➕ إضافة الخدمة</button>
+            <button type="button" class="btn hidden" id="dfs-cancel-edit">✖️ إلغاء التعديل</button>
+          </div>
+        </details>
+      </div>
     </div>
   </div>
 
@@ -1295,6 +1357,8 @@
   <!-- سكريبتات (admin-utils.js يجب أن يُحمّل أولاً — يحوي esc/api المشتركة) -->
   <script src="../js/admin-utils.js"></script>
   <script src="../js/admin-devices.js"></script>
+  <!-- MON-02 — إدارة الخدمات المراقَبة (تُستدعى من نافذة تعديل الجهاز) -->
+  <script src="../js/admin-services.js"></script>
   <script src="../js/admin-topology.js"></script>
   <script src="../js/admin-topology-view.js"></script>
   <script src="../js/admin-locations-types.js"></script>
@@ -1309,6 +1373,8 @@
   <script src="../js/admin-scheduler.js"></script>
   <!-- شرح فضاء خريطة المواقع كان يَستعمل D3 لكن أُعيد كتابته بِـ HTML/CSS ul/li — لا حاجة لِـ CDN -->
   <script src="../js/admin-map.js"></script>
+  <!-- إعدادات العرض (العام + شاشة NOC) -->
+  <script src="../js/admin-display.js"></script>
   <script src="../js/admin-update.js"></script>
   <script src="../js/admin-backup.js"></script>
   <script src="../js/admin-remote.js"></script>

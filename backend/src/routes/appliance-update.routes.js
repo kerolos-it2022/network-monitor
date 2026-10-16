@@ -111,6 +111,9 @@ router.post('/request', requireAuth, (req, res) => {
         update_in_progress: true,
       });
     }
+    // SEC-03 — تدقيق طلب تحديث الأبلاينس (المستخدم/الوسم).
+    require('../services/audit.service').record('appliance_update_request', req, { target: String((req.body && req.body.tag) || 'latest').slice(0, 80) });
+
     const raw = String((req.body && req.body.tag) || '').trim();
     const tag = raw || 'latest';
     if (tag !== 'latest' && !TAG_RE.test(tag)) {

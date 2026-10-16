@@ -289,6 +289,20 @@ router.get('/list', requireAuth, (req, res) => {
 });
 
 // ============================================================
+// SEC-03 — تدقيق تلقائي لكل عمليات النسخ/الاستعادة/الحذف (create/restore/delete/schedule).
+// يُسجَّل بعد اكتمال الطلب مع رمز الحالة — بلا أي بيانات ملفات أو أسرار.
+// ============================================================
+const audit = require('../services/audit.service');
+router.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  res.on('finish', () => {
+    const op = req.path === '/' ? '' : req.path.replace(/\//g, '_');
+    audit.record('backup_' + req.method.toLowerCase() + op, req, { details: { status: res.statusCode } });
+  });
+  next();
+});
+
+// ============================================================
 // POST /api/backup/restore  🔒 — استعادة من ملف مرفوع (.db)
 // ============================================================
 // v2.10.0 — إنشاء نسخة احتياطية على الخادم (خطوة «نسخة احتياطية + تحديث» في تبويب التحديثات).

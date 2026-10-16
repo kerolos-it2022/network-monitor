@@ -1,7 +1,9 @@
 // monitor.service.js: محرك المراقبة — جدولة فحص دوري كل 10 ثوانٍ، عدّاد فشل متتالٍ، تحديث الحالة، فتح/إغلاق أحداث الانقطاع، وإطلاق الإشعارات.
 const cron = require('node-cron');
 const db = require('../db');
-const { checkPing, checkPort, checkHttp, checkHttps, checkAllProtocols } = require('./checkers');
+const { checkPing, checkPort, checkHttp, checkHttps } = require('./checkers');
+// MON-01 (SpaceKit Phase 1) — حالات المراقبة كدوال نقية (online/offline/unknown + الاستمرارية).
+const { decideHostTransition, isStale } = require('./health-state.service');
 const downtimeService = require('./downtime.service');
 const notifier = require('./notifier.service');
 // v2.8.7 — ناقل البثّ الحيّ (SSE): يُبثّ تغيّر حالة أي جهاز لحظيًا لشاشات العرض (NOC/العامة).
@@ -22,6 +24,8 @@ let lastActiveCount = 0;
 let watchdogTimer = null;
 // حالة الحراسة (لمنع تكرار إشعارات التعطّل): 'ok' | 'stalled'.
 let watchdogState = 'ok';
+// PERF/MON-01 — إحصاءات آخر دورة فحص (تُعرَض في /api/health: تأجيل/تخطٍّ/قديم).
+let lastTickStats = null;
 // الفحوصات الجارية الآن — لاكتشاف الفحوصات العالقة (Promise لا ينتهي أبدًا).
 const inflightChecks = new Set();
 // حارس التداخل: دورة جديدة لا تبدأ أثناء دورة سابقة لم تنته.
@@ -35,107 +39,194 @@ const ACTIVE_DEVICES_SQL = `
     d.location_id,
     l.name AS location_name,
     d.check_interval_seconds, d.failure_threshold,
-    d.current_status, d.port
+    d.current_status, d.port, d.web_port,
+    d.check_protocol,
+    d.host_status, d.overall_health, d.last_checked_at
   FROM devices d
   LEFT JOIN device_types dt ON dt.id = d.device_type_id
   LEFT JOIN locations l ON l.id = d.location_id
   WHERE d.is_active = 1
 `;
 
-// checkDevice(device): تنفذ فحصاً واحداً للجهاز وتطبق منطق الحالة الكامل.
-// يتم فحص جميع البروتوكولات (Ping, HTTP, HTTPS) لكل جهاز تلقائياً.
-// إذا كان للجهاز منفذ مخصص (port)، يتم فحصه أيضاً.
-// الجهاز "متصل" إذا نجح أي فحص.
-async function checkDevice(device) {
+// ═══════════════════════════════════════════════════════════════════════════
+// MON-01 (SpaceKit Phase 1) — الفحص الأساسي يُحترم كما هو مُعرَّف في الجهاز:
+//   • check_protocol = 'ping'  ⇒ ICMP هو الفيصل في حالة المضيف.
+//   • check_protocol = 'port'  ⇒ نجاح/فشل TCP على المنفذ المخصّص هو الفيصل
+//     (لا معنى لقول «متصل» لأن Ping نجح بينما الخدمة المفحوصة مغلقة).
+//   • 'http' / 'https'        ⇒ فحص الويب (بمنفذ الجهاز المخصّص أو web_port أو الافتراضي).
+// فحوصات اكتشاف واجهات الويب (HTTP/HTTPS على 80/443) تبقى **لاكتشاف** http_accessible/
+// https_accessible في الواجهة فقط — ولا تغيّر الحالة أبدًا (مواصفة MON: «الاكتشاف لا يعلو
+// على حالة الفحص الأساسي»). سجلّ الحالة (status_logs) يُكتب للحالات المعلومة فقط؛
+// الفترات المجهولة تُترك فجوات صريحة (تُعالج في HIST-01 بدلالة تغطية).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// الفحوصات الافتراضية — قابلة للاستبدال (اختبارات/محاكاة) عبر تمرير probes.
+const DEFAULT_PROBES = { ping: checkPing, port: checkPort, http: checkHttp, https: checkHttps };
+
+// حارسان للموثوقية: فحص واحد فقط لكل جهاز في نفس اللحظة + تجاهل النتائج المتأخرة.
+const inflightDevices = new Set();     // device_id → فحص قيد التنفيذ الآن
+const deviceGeneration = new Map();    // device_id → رقم الجيل (نتيجة قديمة = تُهمَل)
+
+// حد التزامن العام (PERF): لا نطلق فحوصات أكثر من هذا العدد في أي لحظة.
+function maxConcurrentChecks() {
+  return Math.max(1, parseInt(process.env.NM_MAX_CONCURRENT_CHECKS, 10) || 10);
+}
+let activeChecks = 0;
+
+// تشغيل الفحص الأساسي وفق البروتوكول المختار للجهاز.
+async function probePrimary(device, probes) {
+  const proto = String(device.check_protocol || 'ping').toLowerCase();
+  if (proto === 'port') {
+    const r = await probes.port(device.ip, device.port);
+    return { ok: !!r.isOnline, responseTimeMs: r.responseTimeMs, protocol: 'port' };
+  }
+  if (proto === 'http') {
+    const r = await probes.http(device.ip, device.port || device.web_port || 80);
+    return { ok: !!r.isOnline, responseTimeMs: r.responseTimeMs, protocol: 'http' };
+  }
+  if (proto === 'https') {
+    const r = await probes.https(device.ip, device.port || device.web_port || 443);
+    return { ok: !!r.isOnline, responseTimeMs: r.responseTimeMs, protocol: 'https' };
+  }
+  const r = await probes.ping(device.ip);
+  return { ok: !!r.isOnline, responseTimeMs: r.responseTimeMs, protocol: 'ping' };
+}
+
+// checkDevice(device, opts): فحص واحد للجهاز يطبّق منطق الحالة الكامل للمضيف.
+// opts.probes يُستخدم في الاختبارات/المحاكاة بدل الفحوصات الحقيقية.
+// يُرجع { hostStatus, event, skipped? } — وskipped=true عند تجاوز الفحص (inflight/stale/حد التزامن).
+async function checkDevice(device, opts = {}) {
+  const probes = opts.probes || DEFAULT_PROBES;
+
+  // فحص جارٍ لنفس الجهاز ⇒ لا نكرّره (يمنع تداخل الفحوصات ويحمي من الكتابات المتأخرة).
+  if (inflightDevices.has(device.id)) return { skipped: true, reason: 'inflight' };
+
+  inflightDevices.add(device.id);
+  activeChecks += 1;
+  const gen = (deviceGeneration.get(device.id) || 0) + 1;
+  deviceGeneration.set(device.id, gen);
+
   const nowIso = new Date().toISOString();
+  const threshold = Math.max(1, Number(device.failure_threshold) || 2);
 
-  // 1) تنفيذ فحص جميع البروتوكولات بالتوازي لكل جهاز
-  const allResults = await checkAllProtocols(device.ip);
+  try {
+    const primary = await probePrimary(device, probes);
 
-  // إذا كان للجهاز منفذ مخصص (port)، نضيف فحص المنفذ
-  let portResult = { isOnline: false, responseTimeMs: null };
-  if (device.port) {
-    portResult = await checkPort(device.ip, device.port);
-  }
+    // نتيجة من جيل قديم (أُطلق فحص أحدث) ⇒ تُهمَل ولا تكتب فوق الأحدث.
+    if (deviceGeneration.get(device.id) !== gen) return { skipped: true, reason: 'stale' };
 
-  // الجهاز متصل إذا نجح أي فحص (ping أو http أو https أو port المخصص)
-  const isOnline = allResults.isOnline || portResult.isOnline;
-
-  // وقت الاستجابة = أقل وقت استجابة بين الفحوصات الناجحة
-  let responseTimeMs = null;
-  if (isOnline) {
-    const times = [];
-    if (allResults.protocols.ping.isOnline) times.push(allResults.protocols.ping.responseTimeMs);
-    if (allResults.protocols.http.isOnline) times.push(allResults.protocols.http.responseTimeMs);
-    if (allResults.protocols.https.isOnline) times.push(allResults.protocols.https.responseTimeMs);
-    if (portResult.isOnline) times.push(portResult.responseTimeMs);
-    responseTimeMs = times.length > 0 ? Math.min(...times.filter(t => t !== null)) : null;
-  }
-
-  // 2) تسجيل نتيجة الفحص دائماً (نخزن الحالة العامة).
-  db.prepare(
-    `INSERT INTO status_logs (device_id, status, response_time_ms, checked_at)
-     VALUES (?, ?, ?, ?)`
-  ).run(device.id, isOnline ? 'online' : 'offline', responseTimeMs, nowIso);
-
-  if (isOnline) {
-    consecutiveFailures.set(device.id, 0);
-    if (device.current_status !== 'online') {
-      const durationSeconds = downtimeService.closeDowntimeEvent(device.id);
-      if (device.current_status === 'offline') {
-        try {
-          await notifier.notifyDeviceRecovered(device, durationSeconds);
-        } catch (e) {
-          console.error('[notify recovered]', e);
-        }
-      }
-      console.log(`[RECOVERED] device ${device.id}`);
+    // اكتشاف واجهات الويب (لا يؤثر في الحالة) — للأجهزة المفحوصة بـ Ping فقط.
+    let httpFlag = null;
+    let httpsFlag = null;
+    if (primary.protocol === 'ping') {
+      const [h, hs] = await Promise.all([
+        Promise.resolve(probes.http(device.ip, 80)).catch(() => ({ isOnline: false })),
+        Promise.resolve(probes.https(device.ip, 443)).catch(() => ({ isOnline: false })),
+      ]);
+      if (deviceGeneration.get(device.id) !== gen) return { skipped: true, reason: 'stale' };
+      httpFlag = h && h.isOnline ? 1 : 0;
+      httpsFlag = hs && hs.isOnline ? 1 : 0;
     }
+
+    // الحالة السابقة تُقرأ **من القاعدة** لا من الكائن المارَّر: قد يكون الكائن لقطة قديمة
+    // (دورة سابقة) فيؤدي لقرار خاطئ (مثال: نسيان «عودة» لأن الكائن ما زال unknown).
+    const fresh = db.prepare('SELECT host_status, current_status FROM devices WHERE id = ?').get(device.id);
+    const prevHost = (fresh && (fresh.host_status || fresh.current_status)) || device.host_status || device.current_status || 'unknown';
+    const transition = decideHostTransition({
+      hostStatus: prevHost,
+      consecutiveFailures: consecutiveFailures.get(device.id) || 0,
+      failureThreshold: threshold,
+      probeOk: primary.ok,
+    });
+    consecutiveFailures.set(device.id, transition.consecutiveFailures);
+
+    // سجل الحالة: online/offline فقط (الحالات المجهولة تُترك فجوة صريحة بلا قيمة مضلِّلة).
+    if (transition.hostStatus !== 'unknown') {
+      db.prepare(
+        `INSERT INTO status_logs (device_id, status, response_time_ms, checked_at)
+         VALUES (?, ?, ?, ?)`
+      ).run(
+        device.id,
+        transition.hostStatus === 'offline' ? 'offline' : 'online',
+        primary.ok ? primary.responseTimeMs : null,
+        nowIso
+      );
+    }
+
+    if (transition.event === 'down') {
+      downtimeService.openDowntimeEvent(device.id);
+      console.log(`[DOWN] device ${device.id} (primary=${primary.protocol})`);
+      try {
+        await notifier.notifyDeviceDown(device);
+      } catch (e) {
+        console.error('[notify down]', e);
+      }
+    } else if (transition.event === 'recovered') {
+      const durationSeconds = downtimeService.closeDowntimeEvent(device.id);
+      console.log(`[RECOVERED] device ${device.id} (primary=${primary.protocol})`);
+      try {
+        await notifier.notifyDeviceRecovered(device, durationSeconds);
+      } catch (e) {
+        console.error('[notify recovered]', e);
+      }
+    }
+
+    const stateChanged = prevHost !== transition.hostStatus ? 1 : 0;
     db.prepare(
-      `UPDATE devices SET current_status='online', last_response_time_ms=?, 
-       http_accessible=?, https_accessible=?, last_checked_at=? WHERE id=?`
+      `UPDATE devices SET
+         current_status = ?,              -- توافق خلفي: مرآةٌ لحالة المضيف
+         host_status = ?,
+         last_response_time_ms = ?,
+         http_accessible = COALESCE(?, http_accessible),
+         https_accessible = COALESCE(?, https_accessible),
+         last_checked_at = ?,
+         last_probe_protocol = ?,
+         host_last_ok_at = CASE WHEN ? = 1 THEN ? ELSE host_last_ok_at END,
+         host_state_changed_at = CASE WHEN ? = 1 THEN ? ELSE host_state_changed_at END
+       WHERE id = ?`
     ).run(
-      responseTimeMs, 
-      allResults.protocols.http.isOnline ? 1 : 0,
-      allResults.protocols.https.isOnline ? 1 : 0,
-      nowIso, 
+      transition.hostStatus,
+      transition.hostStatus,
+      primary.ok ? primary.responseTimeMs : null,
+      httpFlag,
+      httpsFlag,
+      nowIso,
+      primary.protocol,
+      primary.ok ? 1 : 0, nowIso,
+      stateChanged, nowIso,
       device.id
     );
-    live.scheduleRefresh();   // v2.8.7 — بثّ فوري لتغيّر الحالة (عاد / استقرّ).
-  } else {
-    const failCount = (consecutiveFailures.get(device.id) || 0) + 1;
-    consecutiveFailures.set(device.id, failCount);
 
-    if (failCount >= device.failure_threshold) {
-      if (device.current_status !== 'offline') {
-        downtimeService.openDowntimeEvent(device.id);
-        console.log(`[DOWN] device ${device.id}`);
-        try {
-          await notifier.notifyDeviceDown(device);
-        } catch (e) {
-          console.error('[notify down]', e);
-        }
-      }
-      db.prepare(
-        `UPDATE devices SET current_status='offline', last_response_time_ms=NULL, 
-         http_accessible=?, https_accessible=?, last_checked_at=? WHERE id=?`
-      ).run(
-        allResults.protocols.http.isOnline ? 1 : 0,
-        allResults.protocols.https.isOnline ? 1 : 0,
-        nowIso, 
-        device.id
-      );
-      live.scheduleRefresh();   // v2.8.7 — بثّ فوري لتغيّر الحالة (انقطع).
-    } else {
-      // لم يصل الحد بعد — فقط تحديث وقت آخر فحص دون تغيير current_status.
-      db.prepare('UPDATE devices SET last_checked_at=?, http_accessible=?, https_accessible=? WHERE id=?').run(
-        nowIso,
-        allResults.protocols.http.isOnline ? 1 : 0,
-        allResults.protocols.https.isOnline ? 1 : 0,
-        device.id
-      );
+    // MON-02 — الحالة العامة = مضيف + خدمات (مصدر واحد للحقيقة، يمنع الأخضر الكاذب).
+    require('./monitored-services.service').recomputeOverallHealth(device.id);
+    live.scheduleRefresh();   // v2.8.7 — بثّ فوري لتغيّر الحالة.
+    return { hostStatus: transition.hostStatus, event: transition.event, protocol: primary.protocol };
+  } finally {
+    inflightDevices.delete(device.id);
+    activeChecks -= 1;
+  }
+}
+
+// مسح البيانات القديمة (MON-01): جهاز توقّف وصول فحوصه (أوقف/تعطّل مجدول) ⇒ حالته unknown
+// بدل عرض حالة قديمة مضلِّلة. يُنفَّذ داخل دورة الفحص (خفيف: مقارنة زمنية فقط).
+function sweepStaleDevices(devices, nowMs = Date.now()) {
+  const factor = Math.max(2, parseInt(process.env.NM_STALE_FACTOR, 10) || 3);
+  let changed = 0;
+  const upd = db.prepare(
+    `UPDATE devices SET host_status = 'unknown', current_status = 'unknown',
+       overall_health = 'unknown', host_state_changed_at = ?
+     WHERE id = ?`
+  );
+  for (const d of devices) {
+    const known = (d.host_status || d.current_status) !== 'unknown';
+    if (!known) continue;
+    if (isStale(d.last_checked_at, d.check_interval_seconds, nowMs, factor)) {
+      upd.run(new Date(nowMs).toISOString(), d.id);
+      changed += 1;
     }
   }
+  if (changed) live.scheduleRefresh();
+  return changed;
 }
 
 // startMonitoring(): جدولة فحص كل 10 ثوانٍ، تمر على كل الأجهزة النشطة وتختبر من حان وقته.
@@ -151,19 +242,40 @@ function startMonitoring() {
       const devices = db.prepare(ACTIVE_DEVICES_SQL).all();
       lastActiveCount = devices.length;
       const now = Date.now();
+
+      // MON-01 — مسح البيانات القديمة: جهاز توقّفت فحوصه ⇒ unknown بدل حالة قديمة مضلِّلة.
+      const staleMarked = sweepStaleDevices(devices, now);
+
+      // PERF — التزامن المحدود: لا نُطلق أكثر من الحد في اللحظة نفسها؛ الزائد يُؤجَّل للدورة القادمة.
+      const cap = maxConcurrentChecks();
+      let due = 0;
+      let started = 0;
+      let inflightSkipped = 0;
+      let deferredConcurrency = 0;
       for (const device of devices) {
         const last = lastCheckTime.get(device.id) || 0;
-        if (now - last >= device.check_interval_seconds * 1000) {
-          lastCheckTime.set(device.id, now);
-          // v2.11.9 — تتبّع الفحص الجاري (لاكتشاف العالق منه في حلقة الحراسة).
-          const entry = { deviceId: device.id, deviceName: device.name, startedAt: Date.now() };
-          inflightChecks.add(entry);
-          checkDevice(device)
-            .catch((e) => console.error('checkDevice error', e))
-            .finally(() => inflightChecks.delete(entry));
-        }
+        if (now - last < device.check_interval_seconds * 1000) continue;
+        due += 1;
+        if (activeChecks >= cap) { deferredConcurrency += 1; continue; }
+        if (inflightDevices.has(device.id)) { inflightSkipped += 1; continue; }
+        lastCheckTime.set(device.id, now);
+        started += 1;
+        // v2.11.9 — تتبّع الفحص الجاري (لاكتشاف العالق منه في حلقة الحراسة).
+        const entry = { deviceId: device.id, deviceName: device.name, startedAt: Date.now() };
+        inflightChecks.add(entry);
+        checkDevice(device)
+          .catch((e) => console.error('checkDevice error', e))
+          .finally(() => inflightChecks.delete(entry));
       }
-      // v2.8.7 — شبكة أمان: تحديث الحالة الحيّة مرة كل دورة (لو تغيّر شيء خارج مسار الفحص).
+      // MON-02 — الخدمات المراقَبة: لكل خدمة فاصلها الخاص (لا تتبع دورة الـ 10 ثوانٍ).
+      let servicesStats = null;
+      try {
+        servicesStats = require('./monitored-services.service').checkDueServices({ notifier });
+      } catch (e) {
+        console.error('[services] dispatch error:', e.message);
+      }
+      lastTickStats = { due, started, inflightSkipped, deferredConcurrency, staleMarked, maxConcurrent: cap, services: servicesStats };
+      // v2.8.7 — شبكة أمان: تحديث الحالة الحيّة مرة كل دورة (لو تغير شيء خارج مسار الفحص).
       live.scheduleRefresh();
     } catch (e) {
       console.error('monitoring tick error', e);
@@ -210,6 +322,8 @@ function evaluateEngineHealth(snap, now, cfg) {
     stuckDevices: stuck.slice(0, 5).map((c) => c.deviceName || c.deviceId),
     inflightChecks: (snap.inflight || []).length,
     activeDevices: snap.activeDevices || 0,
+    // PERF — إحصاءات آخر دورة: كم فحصًا استحق، وكم بدأ، وكم أُجّل/تُخطّي، وكم جهازًا صار unknown.
+    tickStats: snap.tickStats || null,
   };
 }
 
@@ -223,7 +337,7 @@ function engineConfig() {
 // لقطة صحّة حالية — تُخدَم عبر /api/health وتُستعمل في حلقة الحراسة.
 function getEngineHealth() {
   return evaluateEngineHealth(
-    { lastTickAt, activeDevices: lastActiveCount, inflight: [...inflightChecks] },
+    { lastTickAt, activeDevices: lastActiveCount, inflight: [...inflightChecks], tickStats: lastTickStats },
     Date.now(),
     engineConfig()
   );
@@ -265,4 +379,11 @@ function startWatchdog() {
   if (watchdogTimer.unref) watchdogTimer.unref();
 }
 
-module.exports = { startMonitoring, getEngineHealth, evaluateEngineHealth };
+module.exports = {
+  startMonitoring,
+  getEngineHealth,
+  evaluateEngineHealth,
+  // MON-01 — للاختبارات والاستخدام الداخلي (فحص جهاز واحد بفحوصات قابلة للاستبدال).
+  checkDevice,
+  probePrimary,
+};

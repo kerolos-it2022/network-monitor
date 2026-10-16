@@ -9,6 +9,12 @@ const SNMP = require('snmp-native');
 
 const router = express.Router();
 const db = require('../db');
+// SEC-02 (SpaceKit) — كل مسارات المسح تتطلب تسجيل دخول: كانت مفتوحة للمجهول
+// (بدء مسح CIDR / إضافة جماعية / إلغاء / قراءة نتائج المسح الداخلية).
+const requireAuth = require('../middleware/requireAuth');
+router.use(requireAuth);
+// SEC-03 — سجل تدقيق لعمليات المسح (بدء/إلغاء/إضافة جماعية).
+const audit = require('../services/audit.service');
 
 // تخزين نتائج المسح لكل scanId (في الذاكرة)
 const scanResults = {};
@@ -432,7 +438,7 @@ function getNetBIOSName(ip, timeoutMs = 2000) {   // v2.31.4 — 2000ms (مطا�
         // أول اسم نظام (suffix 0x00 = Workstation) وإلا الأول
         let chosen = null;
         for (let k = 0; k < count && (11 + k * 18 + 15) <= rdata.length; k++) {
-          const raw = rdata.slice(11 + k * 18, 11 + k * 18 + 15).toString('ascii').replace(/[\s ]+$/g, '');
+          const raw = rdata.slice(11 + k * 18, 11 + k * 18 + 15).toString('ascii').replace(/[\s\u0000]+$/g, '');
           const suffix = rdata[11 + k * 18 + 15];
           if (suffix === 0x00 && raw) { chosen = raw; break; }
           if (!chosen && raw) chosen = raw;
@@ -629,6 +635,7 @@ router.post('/subnet', async (req, res) => {
     if (ips.length > 1024) {
       return res.status(400).json({ success: false, error: 'النطاق كبير جداً (الحد الأقصى 1024 IP). استخدم /24 أو أصغر.' });
     }
+    audit.record('scan_start', req, { target: cidr, details: { ips: ips.length, scan_ports: !!shouldScanPorts, snmp: !!scanSNMP } });
     
     // v2.11.7 — تسجيل المسح اليدوي في scan_runs (source='manual') ليظهر في تبويب «⏱️ المسح الدوري».
     // فشل التسجيل لا يُوقف المسح: نُسجّل تحذيرًا ونُكمل.
@@ -989,6 +996,7 @@ router.post('/cancel/:scanId', (req, res) => {
     return res.json({ success: true, data: { cancelRequested: false, alreadyDone: true, cancelled: !!result.cancelled } });
   }
   result.cancelRequested = true;
+  audit.record('scan_cancel', req, { target: scanId });
   result.progress = '⏹ جارٍ الإلغاء…';
   res.json({ success: true, data: { cancelRequested: true } });
 });
@@ -1001,6 +1009,7 @@ router.post('/bulk-add', async (req, res) => {
     if (!devices || !Array.isArray(devices) || devices.length === 0) {
       return res.status(400).json({ success: false, error: 'لا توجد أجهزة للإضافة' });
     }
+    audit.record('scan_bulk_add', req, { details: { count: devices.length } });
     
     // جلب الأنواع والمواقع المتاحة
     const types = db.prepare('SELECT id, name FROM device_types').all();

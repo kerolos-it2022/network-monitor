@@ -7,8 +7,14 @@
 const express = require('express');
 const router = express.Router();
 const live = require('../services/live.service');
+const publicDisplay = require('../services/public-display.service');
 
 router.get('/status', (req, res) => {
+  // SEC-02 — يحترم وضع العرض العام: 'off' ⇒ لا بثّ للمجهول.
+  // (الحمولة لا تحوي IP/MAC أصلًا، لكن المالك قد يريد إيقاف العرض العام بالكامل.)
+  if (publicDisplay.getMode() === 'off') {
+    return res.status(403).json({ success: false, error: 'العرض العام معطّل من إعدادات المالك' });
+  }
   res.writeHead(200, {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',

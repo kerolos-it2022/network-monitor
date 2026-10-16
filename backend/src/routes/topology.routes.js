@@ -9,8 +9,9 @@ const requireAuth = require('../middleware/requireAuth');
 const db = require('../db');
 const { buildTopology } = require('../services/topology.service');
 
-// GET /api/topology (عام) — يعيد الجذور (كل موقع/جهاز مع أبنائه) وحالاتها ومواضعها.
-router.get('/', (req, res) => {
+// GET /api/topology 🔒 (SEC-02) — كان عامًّا ويكشف IP/بنية الشبكة الداخلية.
+// صار يتطلب تسجيل دخول؛ الشاشات العامة تستعمل GET /api/public/topology المنقّى.
+router.get('/', requireAuth, (req, res) => {
   res.json({ success: true, data: buildTopology() });
 });
 

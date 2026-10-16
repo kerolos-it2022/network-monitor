@@ -271,6 +271,8 @@ router.post('/request', requireAuth, (req, res) => {
     if (!ALLOWED_ACTIONS.includes(action)) {
       return res.status(400).json({ success: false, error: 'فعل غير مسموح.' });
     }
+    // SEC-03 — تدقيق طلبات الوصول عن بُعد (المستخدم/الفعل — بلا أي قيمة حساسة).
+    require('../services/audit.service').record('remote_access_request', req, { target: action });
 
     let value = null;
     if (ACTIONS_WITH_VALUE.includes(action)) {

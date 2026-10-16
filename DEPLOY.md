@@ -23,7 +23,7 @@
 | العنصر | الإصدار | ملاحظات |
 |---|---|---|
 | Linux Kernel | 4.x أو أحدث | أي توزيعة من القائمة أعلاه |
-| Node.js | 20 LTS | السكريبت يثبّته تلقائياً |
+| Node.js | **24 LTS** (≥22 إلزامي) | السكريبت يثبّته تلقائياً |
 | PM2 | آخر إصدار | السكريبت يثبّته تلقائياً (إدارة العمليات) |
 | RAM | 512 MB minimum | 1 GB موصى به لمراقبة 50+ جهاز |
 | صلاحيات | sudo / root | مطلوبة لتثبيت الحزم |
@@ -62,7 +62,7 @@ sudo bash deploy.sh install
 2. ✅ **تحديث الحزم** (apt update + upgrade على Debian-based)
 3. ✅ تثبيت **الأدوات الأساسية**: git, curl, wget, ca-certificates, sudo, gnupg, **traceroute**
 4. ✅ تثبيت **أدوات البناء**: python3, make, g++/gcc (ضرورية لـ better-sqlite3)
-5. ✅ تثبيت **Node.js 20 LTS** (عبر NodeSource على Debian/RHEL، أو مدير الحزم على الباقي)
+5. ✅ تثبيت **Node.js 24 LTS** (عبر NodeSource على Debian/RHEL، أو مدير الحزم على الباقي)
 6. ✅ تثبيت **PM2** عالمياً (إدارة العمليات)
 7. ✅ تثبيت **sqlite3 CLI** (لاستيراد مخطط قاعدة البيانات)
 8. ✅ إنشاء `backend/.env` من القالب + توليد `SESSION_SECRET` عشوائي + **توليد مفاتيح VAPID تلقائياً**
@@ -502,7 +502,7 @@ node src/seedAdmin.js
 | python3 | ✓ | ✓ | ✓ | ✓ | ✓ |
 | make + g++ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | build-essential / base-devel / build-base | ✓ | ✓ (group) | ✓ | ✓ | ✓ (pattern) |
-| Node.js 20 LTS | NodeSource | NodeSource | pacman | apk | zypper |
+| Node.js 24 LTS | NodeSource | NodeSource | pacman | apk | zypper |
 | sqlite3 CLI | ✓ | ✓ (sqlite) | ✓ | ✓ | ✓ |
 | PM2 | npm -g | npm -g | npm -g | npm -g | npm -g |
 

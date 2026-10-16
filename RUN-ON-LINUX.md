@@ -22,7 +22,7 @@ sudo bash deploy.sh install
 
 **ما يفعله السكريبت تلقائياً:**
 - يكتشف التوزيعة (Debian/Ubuntu/RHEL/Arch/Alpine/openSUSE)
-- يثبّت: git, curl, python3, make, g++, Node.js 20 LTS, PM2, sqlite3
+- يثبّت: git, curl, python3, make, g++, Node.js 24 LTS (≥22), PM2, sqlite3
 - ينشئ `backend/.env` + `SESSION_SECRET` عشوائي
 - يهيّئ قاعدة البيانات + حساب المدير
 - يشغّل التطبيق عبر PM2 + يضبطه ليبدأ مع النظام
@@ -33,19 +33,19 @@ sudo bash deploy.sh install
 
 ## 🛠️ الطريقة اليدوية — خطوة بخطوة (للتطوير والتجربة)
 
-### 1) تثبيت Node.js 20 LTS
+### 1) تثبيت Node.js 24 LTS (المشروع يشترط **Node ≥22** — لأن better-sqlite3@13)
 
 | التوزيعة | الأمر |
 |---|---|
-| **Debian/Ubuntu** | `curl -fsSL https://deb.nodesource.com/setup_20.x \| sudo bash - && sudo apt install -y nodejs` |
-| **RHEL/CentOS/Rocky** | `curl -fsSL https://rpm.nodesource.com/setup_20.x \| sudo bash - && sudo dnf install -y nodejs` |
+| **Debian/Ubuntu** | `curl -fsSL https://deb.nodesource.com/setup_24.x \| sudo bash - && sudo apt install -y nodejs` |
+| **RHEL/CentOS/Rocky** | `curl -fsSL https://rpm.nodesource.com/setup_24.x \| sudo bash - && sudo dnf install -y nodejs` |
 | **Arch/Manjaro** | `sudo pacman -S nodejs npm` |
 | **Alpine** | `sudo apk add nodejs npm` |
-| **openSUSE** | `sudo zypper install nodejs20` |
+| **openSUSE** | `sudo zypper install nodejs24` (أو NodeSource) |
 
 تأكيد التثبيت:
 ```bash
-node -v   # يجب أن يطبع v20.x
+node -v   # يجب أن يطبع v22.x أو أحدث (v24.x الموصى به)
 npm -v
 ```
 

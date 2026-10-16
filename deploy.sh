@@ -20,7 +20,9 @@ set -eu
 # ---- إعدادات قابلة للتعديل ----
 PROJECT_DIR="${PROJECT_DIR:-/opt/network-monitor}"
 APP_USER="${APP_USER:-root}"
-NODE_REQUIRED="${NODE_REQUIRED:-20}"
+# OPS-01 (SpaceKit): Node 24 LTS هو الإصدار المدعوم (better-sqlite3@13 يشترط Node ≥22).
+# يمكن تجاوزه صراحةً: NODE_REQUIRED=22 ./deploy.sh install
+NODE_REQUIRED="${NODE_REQUIRED:-24}"
 PORT="${PORT:-4000}"
 
 # ---- مسار Home لمستخدم العملية و PM2_HOME لتفادي نشوء daemon root عابر ----

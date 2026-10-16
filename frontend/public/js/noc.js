@@ -6,6 +6,8 @@
   // ── State Variables ──
   let rawTopology = [];
   let allDevices = [];
+  // SEC-02/MON-02 — وضع بيانات شاشة NOC: 'sanitized' (افتراضي) | 'full' (جلسة مدير + إعداد المالك).
+  let nocMode = 'sanitized';
   let allLocations = [];
   let locById = new Map();
   let devById = new Map();
@@ -120,7 +122,7 @@
   }
 
   // ── v2.13.3 — غطاء إنذار الانقطاع + شارات «منقطع منذ …» ──
-  // المصدر: offline_since يأتي من الخادم (downtime_events مفتوحة) عبر /api/topology وSSE.
+  // المصدر: offline_since يأتي من الخادم (downtime_events مفتوحة) عبر /api/public/topology وSSE.
   // offlineSinceById: خريطة جهاز → بداية الانقطاع — لأن أشجار الخريطة/الرسم لا تحمل الحقل.
   let offlineSinceById = new Map();   // Number(id) → ISO string|null
   let overlayDevices = [];
@@ -541,7 +543,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         <div class="hero-card ${dnsDown ? 'down' : 'up'}">
           <span class="role">🌍 فحص الاتصال الخارجي</span>
           <div class="nm">${esc(dns.name)}</div>
-          <div class="meta">${esc(dns.ip)} — Google Public DNS</div>
+          <div class="meta">${dns.ip ? esc(dns.ip) + ' — ' : ''}Google Public DNS</div>
           <div class="st-badge ${dnsDown ? 'down' : 'up'}">${dnsDown ? '🔴 انقطاع الاستجابة' : '🟢 اتصال إنترنت مستقر'}</div>
         </div>
       `;
@@ -573,7 +575,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         <div class="hero-card ${cls}">
           <span class="role">🛡️ جدار الحماية المركزي</span>
           <div class="nm">${esc(firewall.name)}</div>
-          <div class="meta">${esc(firewall.ip)} — ${esc(firewall.device_type_name || 'Firewall')}</div>
+          <div class="meta">${firewall.ip ? esc(firewall.ip) + ' — ' : ''}${esc(firewall.device_type_name || 'Firewall')}</div>
           <div class="st-badge ${cls}">${stLabel}</div>
         </div>
       `;
@@ -584,15 +586,24 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     html += `<div class="hero-link ${srvClusterDown ? 'down' : ''}"></div>`;
 
     // Card 4: Servers Core Infrastructure (v2.8.5 — لا «جميع الخوادم تعمل» بلا خوادم مُعرَّفة)
+    // MON-02 — خادم متصل لكن خدمة مراقَبة متوقفة ⇒ DEGRADED (لا نقول «جميع الخوادم تعمل»).
     const noServers = coreServers.length === 0;
-    const srvCls = noServers ? 'neutral' : (serversDown > 0 ? (serversUp === 0 ? 'down' : 'warn') : 'up');
+    const degradedServers = coreServers.filter((s) => s.overall_health === 'degraded').length;
+    const srvCls = noServers
+      ? 'neutral'
+      : (serversDown > 0 ? (serversUp === 0 ? 'down' : 'warn') : (degradedServers > 0 ? 'warn' : 'up'));
+    const srvText = noServers
+      ? '⚪ لا توجد خوادم مُعرَّفة'
+      : (serversDown > 0
+        ? `⚠️ ${serversDown} خوادم منقطعة`
+        : (degradedServers > 0 ? `🟡 ${degradedServers} خادم بخدمة متوقفة` : '🟢 جميع الخوادم تعمل'));
     html += `
       <div class="hero-card ${srvCls}">
         <span class="role">🖥️ مجمع الخوادم المركزية</span>
         <div class="nm">خوادم الشبكة الرئيسية</div>
         <div class="meta">${coreServers.length} خوادم (Odoo · ESXi · SIS · Synology)</div>
         <div class="st-badge ${srvCls}">
-          ${noServers ? '⚪ لا توجد خوادم مُعرَّفة' : (serversDown === 0 ? '🟢 جميع الخوادم تعمل' : `⚠️ ${serversDown} خوادم منقطعة`)}
+          ${srvText}
         </div>
       </div>
     `;
@@ -638,7 +649,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const m = /^dev-(\d+)$/.exec(String(node && node.id != null ? node.id : ''));
     return m ? Number(m[1]) : null;
   }
-  // التسمية كما في «خريطة المواقع»: «الاسم (IP)» — الاسم يُدمج من /api/topology.
+  // التسمية كما في «خريطة المواقع»: «الاسم (IP)» — الاسم يُدمج من /api/public/topology (بلا IP للزوار).
   function mapDevLabel(node) {
     const id = mapDevNum(node);
     const dev = id != null ? devById.get(id) : null;
@@ -970,6 +981,14 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   function statusBadgeText(status) {
     return status === 'online' ? 'متصل' : (status === 'offline' ? 'متوقف' : 'غير معروف');
   }
+  // MON-02 — نص الحالة العامة: يميّز «متصل مع خدمة متوقفة» (DEGRADED) بدل الأخضر الكاذب.
+  function overallHealthText(d) {
+    if (d.overall_health === 'degraded') return 'متصل — خدمة متوقفة';
+    if (d.status === 'offline' || d.overall_health === 'offline') return 'متوقف';
+    if (d.status === 'paused') return 'موقوف';
+    if ((d.status || d.overall_health) === 'unknown') return 'غير معروف';
+    return 'متصل';
+  }
   async function openDeviceDetails(deviceId) {
     const modal = document.getElementById('noc-device-modal');
     if (!modal) return;
@@ -983,7 +1002,9 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     try {
-      const res = await fetch('/api/devices/' + encodeURIComponent(deviceId), { credentials: 'same-origin' });
+      // SEC-02 — المسار حسب وضع شاشة NOC: داخلي كامل (بجلسة مدير + إعداد المالك) أو منقّى.
+      const devUrl = (nocMode === 'full' ? '/api/devices/' : '/api/public/devices/') + encodeURIComponent(deviceId);
+      const res = await fetch(devUrl, { credentials: 'same-origin' });
       const json = await res.json();
       if (!json || !json.success) throw new Error((json && json.error) || 'فشل الطلب');
       const d = json.data;
@@ -995,15 +1016,13 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       }
       if (fieldsEl) {
         fieldsEl.innerHTML = `
-          <div class="details-field"><span class="df-label">IP</span><span class="df-value">${esc(d.ip || '—')}</span></div>
+          ${d.ip ? `<div class="details-field"><span class="df-label">IP</span><span class="df-value">${esc(d.ip)}</span></div>` : ''}
           <div class="details-field"><span class="df-label">النوع</span><span class="df-value">${esc(d.device_type_name || '—')}</span></div>
           <div class="details-field"><span class="df-label">الموقع</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
-          <div class="details-field"><span class="df-label">طريقة الفحص</span><span class="df-value">${esc(d.check_protocol || 'ping')}</span></div>
-          <div class="details-field"><span class="df-label">المنفذ</span><span class="df-value">${esc(d.port || '—')}</span></div>
-          <div class="details-field"><span class="df-label">فترة الفحص</span><span class="df-value">${esc(d.check_interval_seconds ?? '—')} ث</span></div>
-          <div class="details-field"><span class="df-label">حد التنبيه</span><span class="df-value">${esc(d.failure_threshold ?? '—')}</span></div>
+          <div class="details-field"><span class="df-label">الحالة</span><span class="df-value">${esc(overallHealthText(d))}</span></div>
+          ${d.services_total ? `<div class="details-field"><span class="df-label">الخدمات</span><span class="df-value">${Number(d.services_down_count) || 0} متوقفة من ${Number(d.services_total)}</span></div>` : ''}
           <div class="details-field"><span class="df-label">مفعّل</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
-          <div class="details-field"><span class="df-label">زمن الاستجابة</span><span class="df-value">${d.last_response_time_ms != null ? esc(d.last_response_time_ms) + ' ms' : '—'}</span></div>
+          <div class="details-field"><span class="df-label">زمن الاستجابة</span><span class="df-value">${d.response_time_ms != null ? esc(d.response_time_ms) + ' ms' : '—'}</span></div>
           <div class="details-field"><span class="df-label">آخر فحص</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
         `;
       }
@@ -1110,7 +1129,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
             <span class="mv-dot ${dotCls}"></span>
             <span class="mv-inner-type">${esc(d.device_type_name || 'جهاز')}</span>
             <span class="mv-inner-nm" title="${esc(d.name)}">${esc(d.name)}</span>
-            <span class="mv-inner-ip">${esc(d.ip)}</span>
+            <span class="mv-inner-ip">${esc(d.ip || '—')}</span>
             ${dtBadge}
           </div>
         `;
@@ -1143,7 +1162,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   }
 
   // v2.8.8 — نقر جهاز داخل «التخطيط المرسوم» يفتح **نفس** نافذة التفاصيل (كما في «خريطة المباني»):
-  // نفس المسار GET /api/devices/:id ونفس الحقول، مع دعم لوحة المفاتيح (Enter/Space).
+  // نفس المسار GET /api/public/devices/:id ونفس الحقول، مع دعم لوحة المفاتيح (Enter/Space).
   let drawBoardEventsBound = false;
   function bindDrawBoardEvents() {
     if (drawBoardEventsBound) return;
@@ -1235,9 +1254,11 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
               const isDown = d.status === 'offline';
               const isPath = !!d.pathDown;
               const isPaused = d.status === 'paused';
-              const cardCls = isDown ? 'down' : isPath ? 'pathdown' : isPaused ? 'paused' : 'up';
-              const badgeCls = isDown ? 'down' : isPath ? 'pathdown' : isPaused ? 'paused' : 'up';
-              const badgeText = isDown ? '🔴 منقطع' : isPath ? '⛔ مسدود عبر الأب' : isPaused ? '⏸ موقوف' : '🟢 متصل';
+              // MON-02 — مضيف متصل وخدمة متوقفة ⇒ DEGRADED (أصفر) وليس أخضر.
+              const isDegraded = !isDown && !isPaused && !isPath && d.overall_health === 'degraded';
+              const cardCls = isDown ? 'down' : isPath ? 'pathdown' : isPaused ? 'paused' : isDegraded ? 'pathdown' : 'up';
+              const badgeCls = isDown ? 'down' : isPath ? 'pathdown' : isPaused ? 'paused' : isDegraded ? 'pathdown' : 'up';
+              const badgeText = isDown ? '🔴 منقطع' : isPath ? '⛔ مسدود عبر الأب' : isPaused ? '⏸ موقوف' : isDegraded ? '🟡 خدمة متوقفة' : '🟢 متصل';
               
               const loc = d.location_id ? locById.get(Number(d.location_id)) : null;
               const locName = loc ? loc.name : 'غير محدد';
@@ -1250,7 +1271,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
                     <span class="dev-badge ${badgeCls}">${badgeText}</span>
                   </div>
                   <div class="dev-card-meta">
-                    <span class="ip">${esc(d.ip)}</span>
+                    <span class="ip">${esc(d.ip || '—')}</span>
                     <span class="loc-tag" title="الموقع: ${esc(locName)}">📍 ${esc(locName)}</span>
                   </div>
                   ${d.status === 'offline' ? `<div class="dev-downtime">⏱ منقطع منذ ${esc(downtimeAge(d.offline_since))}</div>` : ''}
@@ -1297,7 +1318,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
   // تطبيق تحديث السيرفر على الحالة المحلّية (بلا طلب شبكة) ثم إعادة رسم واحدة مجمّعة.
   // ملاحظة: نُحدّث **المصدرين** معًا لأن الشاشة ترسم منهما:
-  //   1) شجرة /api/topology (devById) — للعدّادات ومسار الإنترنت وبطاقات الأجهزة.
+  //   1) شجرة /api/public/topology (devById) — للعدّادات ومسار الإنترنت وبطاقات الأجهزة.
   //   2) شجرة «خريطة المباني» (mapRootData) — لصفوف الأجهزة داخل البطاقات.
   function applyLiveUpdate(msg) {
     // v2.29.1 — حالة غطاء الإنذار تصل ضمن لقطة الإعدادات.
@@ -1414,8 +1435,13 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const updateStatusEl = document.getElementById('update-status');
     try {
       // v2.8.6 — مصدران: السلسلة (للأسماء والأجهزة) + شجرة «خريطة المواقع» العامة (الترتيب والتشكيل).
+      // SEC-02 — شاشة NOC عامة (بلا جلسة): تقرأ الشجرة المنقّاة /api/public/topology
+      // (بلا IP/MAC) بدل /api/topology الداخلي الذي صار يتطلب تسجيل دخول.
+      // SEC-02/MON-02 — مسار الشجرة: داخلي (مع IP) للجلسات الإدارية لو فعّل المالك ذلك،
+      // وإلا المنقّى للجميع. القرار يُقرأ مرة عند الإقلاع من /api/settings/noc-mode.
+      const topoUrl = nocMode === 'full' ? '/api/topology' : '/api/public/topology';
       const [topoRes, treeRes, healthRes] = await Promise.all([
-        fetch('/api/topology', { credentials: 'same-origin' }),
+        fetch(topoUrl, { credentials: 'same-origin' }),
         fetch('/api/map/public/tree', { credentials: 'same-origin' }),
         // v2.11.9 — صحّة محرك المراقبة (لبانر التحذير).
         fetch('/api/health', { credentials: 'same-origin' }).catch(() => null),
@@ -1497,7 +1523,21 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const btn = document.getElementById('outage-overlay-close');
     if (btn) btn.addEventListener('click', hideOutageOverlay);
   })();
-  tick();
+  // SEC-02/MON-02 — تحديد وضع شاشة NOC قبل أول دورة بيانات:
+  //   'full' ⇒ المسارات الداخلية (تعرض IP) — تُرجَع فقط إن كان المالك فعّل الخيار **والجلسة مدير**.
+  //   'sanitized' ⇒ العرض العام المنقّى (الافتراضي الآمن).
+  async function resolveNocMode() {
+    try {
+      const r = await fetch('/api/settings/noc-mode', { credentials: 'same-origin' });
+      const j = await r.json();
+      if (j && j.success && j.data && j.data.mode === 'full') {
+        nocMode = 'full';
+        document.body.setAttribute('data-noc-mode', 'full');
+      }
+    } catch (_) { /* يبقى الوضع المنقّى */ }
+  }
+
+  resolveNocMode().finally(() => tick());
   // v2.12.0 — استرجاع حالة «التنبيه الصوتي» المحفوظة (كانت تُفقد مع كل إعادة تحميل ⇒ تفعيل يدوي كل مرة).
   (function restoreAudioAlert() {
     let saved = '0';

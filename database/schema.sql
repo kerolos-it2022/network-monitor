@@ -66,6 +66,12 @@ CREATE TABLE IF NOT EXISTS devices (
     https_accessible INTEGER NOT NULL DEFAULT 0,   -- 1 = الجهاز له واجهة HTTPS (يُفحص تلقائياً)
     last_response_time_ms INTEGER,
     last_checked_at TEXT,
+    -- SpaceKit MON-01 — حالات المراقبة المفصولة (المضيف مقابل الحالة العامة):
+    host_status TEXT,                              -- 'online' | 'offline' | 'unknown' (من بروتوكول الفحص الأساسي)
+    overall_health TEXT,                           -- online | degraded | offline | unknown (degraded تُفعَّل مع خدمات MON-02)
+    last_probe_protocol TEXT,                      -- ping | port | http | https (آخر فحص أساسي نُفِّذ)
+    host_last_ok_at TEXT,                          -- آخر لحظة نجاح للفحص الأساسي
+    host_state_changed_at TEXT,                    -- آخر تغيّر فعلي في حالة المضيف
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (device_type_id) REFERENCES device_types(id),
     FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
@@ -210,6 +216,82 @@ CREATE INDEX IF NOT EXISTS idx_discovered_approved ON discovered_devices(is_appr
 -- v2.5.0 — إضافة عمود webhook_url لِـ notification_settings (لو لم يَكُن موجُودًا — آمن عبر IF NOT EXISTS غير متوفر في ALTER، لِذا SID نظامي عبر migrate فيها).
 -- ملاحظة: better-sqlite3 لا يَدعم ALTER TABLE ADD COLUMN IF NOT EXISTS. لِذا نَنفّذها يدويًّا من migrateWebhook() في db.js (لا هنا).
 -- بعد migrate: notification_settings يَ gaining webhook_url TEXT NULL.
+
+-- SpaceKit Phase 0 (SEC-02) — إعدادات عامة (key/value) يملكها المدير.
+-- أول استخدام: public_display_mode (lan | minimal | off) لوضع العرض العام للزوار.
+-- آمنة على القواعد القائمة: CREATE TABLE IF NOT EXISTS تُطبَّق عند كل إقلاع (db.js).
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- SpaceKit Phase 1 (MON-02) — الخدمات المراقَبة لكل جهاز (اختيارية بالكامل، يعرّفها المالك).
+-- مضيف متصل + هذه الخدمة متوقفة ⇒ overall_health = degraded (وليس أخضر كاذبًا).
+CREATE TABLE IF NOT EXISTS monitored_services (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL,
+    name TEXT NOT NULL,                              -- اسم الخدمة (مثل: Odoo ERP)
+    kind TEXT NOT NULL,                              -- 'tcp' | 'http' | 'https'
+    port INTEGER,                                    -- مطلوب لـ tcp؛ اختياري للويب (80/443 افتراضيًا)
+    url_path TEXT,                                   -- مسار للـ http/https (افتراضي '/')
+    expect_status TEXT NOT NULL DEFAULT '2xx',       -- '2xx' | '200' | '200-299' | '200,204,301'
+    verify_tls INTEGER NOT NULL DEFAULT 1,           -- https: التحقق من الشهادة (آمن افتراضيًا)
+    interval_seconds INTEGER NOT NULL DEFAULT 60,    -- فاصل الخدمة الخاص (لا يتبع دورة الـ 10 ثوانٍ)
+    timeout_ms INTEGER NOT NULL DEFAULT 5000,
+    failure_threshold INTEGER NOT NULL DEFAULT 2,
+    is_critical INTEGER NOT NULL DEFAULT 0,          -- خدمة حرجة (تُبرَز في التنبيهات/الواجهات)
+    is_enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    -- الحالة الحالية (يُحدّثها المحرك — MON-02)
+    status TEXT NOT NULL DEFAULT 'unknown',          -- online | offline | unknown
+    consecutive_failures INTEGER NOT NULL DEFAULT 0,
+    last_checked_at TEXT,
+    last_ok_at TEXT,
+    last_response_ms INTEGER,
+    last_error TEXT,
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_services_device ON monitored_services(device_id);
+CREATE INDEX IF NOT EXISTS idx_services_enabled ON monitored_services(is_enabled);
+
+-- سجل حالات الخدمات (تاريخ الخدمة يُحفظ مستقلًّا عن سجل الجهاز).
+CREATE TABLE IF NOT EXISTS service_status_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_id INTEGER NOT NULL,
+    device_id INTEGER NOT NULL,
+    status TEXT NOT NULL,                            -- online | offline (المجهول لا يُسجَّل = فجوة صريحة)
+    response_ms INTEGER,
+    error TEXT,
+    checked_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (service_id) REFERENCES monitored_services(id) ON DELETE CASCADE,
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_service_logs_service ON service_status_logs(service_id, checked_at);
+
+-- SpaceKit Phase 0 (SEC-03) — سجل تدقيق للأحداث الحساسة (دخول/فشل دخول/تغييرات/مسح/تحديث...).
+-- لا يحوي أسرارًا: التنقية تتم في services/audit.service.js قبل الكتابة.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL DEFAULT (datetime('now')),
+    actor TEXT,                                    -- اسم المستخدم (أو null للفشل قبل المصادقة)
+    role TEXT,                                     -- admin | viewer | null
+    event TEXT NOT NULL,                           -- login_success | login_failed | tool_run | ...
+    target TEXT,                                   -- الهدف/الكيان المتأثر (جهاز، مستخدم، وضع...)
+    details TEXT,                                  -- JSON منقّى (بلا أي سرّ)
+    ip TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_audit_at ON audit_log(at);
+CREATE INDEX IF NOT EXISTS idx_audit_event ON audit_log(event);
+
+-- SpaceKit Phase 0 (SEC-03) — جلسات تسجيل الدخول الدائمة (بديل MemoryStore).
+-- تُنشأ أيضًا تلقائيًّا من services/session-store.service.js إن غابت (توثيق + تثبيت نظيف).
+CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    sess TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 
 -- بيانات ابتدائية لأنواع الأجهزة الشائعة
 INSERT OR IGNORE INTO device_types (name, icon) VALUES

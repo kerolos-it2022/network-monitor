@@ -1,0 +1,31 @@
+#!/bin/sh
+# 0050-install-nodejs.hook.chroot (SpaceKit OPS-01) — تثبيت Node.js 24 LTS من NodeSource.
+#
+# السبب: حزمة دبيان 12 الافتراضية هي Node 18، والمشروع صار يشترط Node ≥22
+# (better-sqlite3@13 لهذه النسخة من المشروع)، فحزمة `nodejs` من مستودع دبيان لم تعد كافية.
+# يعمل هذا الـ hook قبل 0100-build-app (ترتيب أبجدي) فيكون npm وnode جاهزين قبل `npm ci`.
+# ملاحظة إضافية: `backend/.npmrc` يضبط ignore-scripts=true لأن better-sqlite3@13 يشحن ثنائيات
+# جاهزة داخل الحزمة ⇒ لا حاجة لـ g++/python/toolchain داخل الـ chroot (مُتحقَّق منه بمحاكاة
+# `npm ci --omit=dev` في مجلد نظيف بلا أدوات بناء على ويندوز).
+# ملاحظة: لم يُختبر بعد داخل live-build هنا — اختبار صورة الأبلاينس يبقى NOT_VERIFIED حتى تشغيله على Linux.
+set -e
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates curl gnupg
+
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+  | gpg --dearmor --yes -o /etc/apt/keyrings/nodesource.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" \
+  > /etc/apt/sources.list.d/nodesource.list
+
+apt-get update
+apt-get install -y --no-install-recommends nodejs
+
+# تحقق صريح: لو نزل إصدار أقدم من 22 نفشل البناء بدل إنتاج ISO لا يعمل.
+node -v
+node -e "const m=Number(process.versions.node.split('.')[0]); if (m < 22) { console.error('Node المُثبَّت أقدم من 22 — راجع مستودع NodeSource'); process.exit(1); }"
+npm -v

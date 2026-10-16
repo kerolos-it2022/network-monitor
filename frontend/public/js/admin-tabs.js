@@ -16,6 +16,8 @@ const TAB_TO_SECTION = {
   'tab-backup': 'section-backup',
   // v2.23.0 — «حالة النظام» ثم «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة).
   'tab-remote': 'section-remote',
+  // إعدادات العرض (العام + شاشة NOC الداخلية) — SEC-02/MON-02.
+  'tab-display': 'section-display',
   'tab-system': 'section-system',
   'tab-updates': 'section-updates',
 };

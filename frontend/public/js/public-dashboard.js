@@ -2,7 +2,9 @@
 let allDevices = [];
 let currentChart = null;
 let currentView = 'cards'; // v2.13.11 — 'cards' | 'table' (أُزيل 'map' — الخريطة في NOC)
-let currentSort = 'ip';  // v2.13.5 — الافتراضي حسب IP (طلبت)؛ الاختيار اليدوي يُحفظ في المتصفح. // 'name' | 'ip' | 'status' | 'type' | 'location' | 'last_checked'
+// SEC-02 — الافتراضي صار «حسب الاسم» لأن العرض العام لم يعد يحمل عناوين IP
+// (خيار «حسب IP» يبقى متاحًا لكنه يعود للترتيب بالاسم تلقائيًّا عند غياب العناوين).
+let currentSort = 'name';  // 'name' | 'ip' | 'status' | 'type' | 'location' | 'last_checked'
 const VIEW_STORAGE_KEY = 'nm.publicView';
 const SORT_STORAGE_KEY = 'nm.publicSort';
 const THEME_STORAGE_KEY = 'nm.publicTheme'; // 'dark' | 'light'
@@ -32,10 +34,21 @@ function statusText(status) {
 }
 
 function statusDotClass(d) {
+  // MON-02 — مضيف متصل وخدمة متوقفة ⇒ تحذير (DEGRADED) لا أخضر.
+  if (d.overall_health === 'degraded') return 'warning';
   if (d.current_status === 'online' && d.last_response_time_ms != null && d.last_response_time_ms > 500) {
     return 'warning';
   }
   return d.current_status || 'unknown';
+}
+
+// MON-02 — نص الحالة العامة (يشمل DEGRADED) بدل الاعتماد على حالة المضيف وحدها.
+function overallStatusText(d) {
+  if (d.overall_health === 'degraded') {
+    var n = Number(d.services_down_count) || 0;
+    return 'متصل — ' + (n > 0 ? n + ' خدمة متوقفة' : 'خدمة متوقفة');
+  }
+  return statusText(d.current_status);
 }
 
 function formatDuration(seconds) {
@@ -52,13 +65,20 @@ function sortDevices(devicesList) {
   sorted.sort((a, b) => {
     let valA, valB;
     switch (currentSort) {
-      case 'ip':
-        valA = a.ip.split('.').map(Number);
-        valB = b.ip.split('.').map(Number);
+      case 'ip': {
+        // SEC-02 — العرض العام بلا IP (تغذية منقّاة): نرجع للترتيب بالاسم تلقائيًّا عند غياب العناوين.
+        const ipa = String(a.ip || '');
+        const ipb = String(b.ip || '');
+        if (!ipa || !ipb) {
+          return String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+        }
+        valA = ipa.split('.').map(Number);
+        valB = ipb.split('.').map(Number);
         for (let i = 0; i < 4; i++) {
           if (valA[i] !== valB[i]) return valA[i] - valB[i];
         }
         return 0;
+      }
       case 'status':
         const statusOrder = { offline: 0, unknown: 1, online: 2 };
         return (statusOrder[a.current_status] || 1) - (statusOrder[b.current_status] || 1);
@@ -101,10 +121,11 @@ function renderDevices(devicesList) {
     // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444).
     var portSuffix = d.web_port ? ':' + d.web_port : '';
     var openBtnHtml = '';
-    if (d.https_accessible == 1) {
+    // SEC-02 — العرض العام بلا عناوين: زر «فتح» لا يظهر إلا لو توفّر IP (لا يتوفر للزوار).
+    if (d.ip && d.https_accessible == 1) {
       var url = 'https://' + d.ip + portSuffix + '/';
       openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTPS' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')" type="button">🔒 فتح HTTPS</button>';
-    } else if (d.http_accessible == 1) {
+    } else if (d.ip && d.http_accessible == 1) {
       var url = 'http://' + d.ip + portSuffix + '/';
       openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTP' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')" type="button">🌐 فتح HTTP</button>';
     }
@@ -114,11 +135,11 @@ function renderDevices(devicesList) {
     card.dataset.id = d.id;   // v2.30.0 — لدعم بصمات QR (فتح الجهاز من الملصق)
     card.innerHTML =
       '<div class="name">' + escapeHtml(d.name) + '</div>' +
-      '<div class="ip">' + escapeHtml(d.ip) + '</div>' +
+      (d.ip ? '<div class="ip">' + escapeHtml(d.ip) + '</div>' : '') +
       '<div class="meta">\u0627\u0644\u0646\u0648\u0639: ' + escapeHtml(d.device_type_name || '-') + '</div>' +
       '<div class="meta">\u0627\u0644\u0645\u0648\u0642\u0639: ' + escapeHtml(d.location_name || '-') + '</div>' +
       '<div class="meta">\u0622\u062e\u0631 \u0641\u062d\u0635: ' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
-      '<span class="status-badge ' + badgeClass + '">' + statusText(d.current_status) + '</span>' +
+      '<span class="status-badge ' + badgeClass + '">' + overallStatusText(d) + '</span>' +
       (openBtnHtml ? '<div class="card-actions">' + openBtnHtml + '</div>' : '');
     card.addEventListener('click', function (e) {
       // لا تفتح المودال إذا تم الضغط على زر الفتح
@@ -139,7 +160,7 @@ function renderDevices(devicesList) {
 
 // ====== \u0646\u0645\u0637 \u0627\u0644\u062c\u062f\u0648\u0644 ======
 // v2.13.6 — نصّ خلية «آخر انقطاع»: «منذ 2 س 5 د · دام 45 د» أو «—» لو لا انقطاع مسجل.
-// المصدر: last_outage_ended_at / last_outage_seconds من GET /api/devices (downtime_events).
+// المصدر: last_outage_ended_at / last_outage_seconds من GET /api/public/status (downtime_events).
 function fmtLastOutage(d) {
   if (!d.last_outage_ended_at) return '\u2014';
   const started = new Date(d.last_outage_ended_at).getTime();
@@ -173,19 +194,20 @@ function renderTable(devicesList) {
     // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444).
     const tPortSuffix = d.web_port ? ':' + d.web_port : '';
     let openBtnHtml = '';
-    if (d.https_accessible == 1) {
+    // SEC-02 — بلا IP في العرض العام ⇒ لا زر فتح (نفس منطق البطاقات).
+    if (d.ip && d.https_accessible == 1) {
       const url = 'https://' + d.ip + tPortSuffix + '/';
       openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
-    } else if (d.http_accessible == 1) {
+    } else if (d.ip && d.http_accessible == 1) {
       const url = 'http://' + d.ip + tPortSuffix + '/';
       openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
     }
     const tr = document.createElement('tr');
     tr.className = 'public-row';
     tr.innerHTML =
-      '<td><span class="status-dot ' + dot + '" title="' + escapeHtml(statusText(d.current_status)) + '"></span></td>' +
+      '<td><span class="status-dot ' + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
       '<td>' + escapeHtml(d.name) + '</td>' +
-      '<td style="direction:ltr;text-align:center;font-size:0.85rem;">' + escapeHtml(d.ip) + '</td>' +
+      '<td style="direction:ltr;text-align:center;font-size:0.85rem;">' + escapeHtml(d.ip || '—') + '</td>' +
       '<td>' + escapeHtml(d.device_type_name || '-') + '</td>' +
       '<td>' + escapeHtml(d.location_name || '-') + '</td>' +
       '<td style="font-size:0.85rem;color:var(--muted);">' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '-') + '</td>' +
@@ -283,7 +305,7 @@ function applyFilters() {
   var status = document.getElementById('filter-status').value;
 
   var filtered = allDevices.filter(function (d) {
-    if (q && !String(d.name).toLowerCase().includes(q) && !String(d.ip).toLowerCase().includes(q)) return false;
+    if (q && !String(d.name).toLowerCase().includes(q) && !String(d.ip || '').toLowerCase().includes(q)) return false;
     if (type && d.device_type_id != +type) return false;
     if (location && d.location_id != +location) return false;
     if (status && d.current_status !== status) return false;
@@ -392,16 +414,16 @@ window.openDeviceModal = async function (deviceId) {
 
 // ====== \u062a\u0647\u064a\u0626\u0629 \u0627\u0644\u0635\u0641\u062d\u0629 ======
 async function init() {
+  // SEC-02 — الصفحة العامة تقرأ من التغذية المنقّاة /api/public/status (بلا IP/MAC/سيريال)،
+  // وقوائم الفلترة (النوع/الموقع) تُبنى من نفس القائمة — لا حاجة لمسارات داخلية محمية.
   var results = await Promise.all([
-    fetchApi('/api/devices'),
-    fetchApi('/api/device-types'),
-    fetchApi('/api/locations'),
+    fetchApi('/api/public/status'),
   ]);
-  var devs = results[0], types = results[1], locs = results[2];
+  var devs = results[0];
   allDevices = devs.success ? devs.data : [];
 
-  fillSelect('filter-type', types.success ? types.data : []);
-  fillSelect('filter-location', locs.success ? locs.data : []);
+  fillSelectFromDevices('filter-type', allDevices, 'device_type_id', 'device_type_name');
+  fillSelectFromDevices('filter-location', allDevices, 'location_id', 'location_name');
 
   try {
     var savedView = localStorage.getItem(VIEW_STORAGE_KEY);
@@ -506,7 +528,19 @@ async function init() {
       });
 
       if (!response.ok) {
-        toolsOutput.textContent = 'خطأ: HTTP ' + response.status;
+        // SEC-01: أدوات التشخيص صارت للمدير (أو المشغّل) فقط — رسائل واضحة بدل HTTP خام.
+        var friendly = {
+          401: '🔒 أداة التشخيص تتطلب تسجيل دخول المدير',
+          403: '🔒 هذا الهدف غير مسموح أو صلاحيتك لا تتيح استخدام أدوات التشخيص',
+          429: '⏳ محاولات كثيرة — انتظر قليلًا ثم أعد المحاولة',
+        };
+        var msg = friendly[response.status] || ('⚠️ خطأ: HTTP ' + response.status);
+        try {
+          // الرسالة العربية التفصيلية من الخادم (هدف غير صالح/خارج النطاق...) إن وُجدت.
+          var errBody = await response.json();
+          if (response.status !== 401 && errBody && errBody.error) msg = '⚠️ ' + errBody.error;
+        } catch (e) { /* الاستجابة ليست JSON */ }
+        toolsOutput.textContent = msg;
         finishTool();
         return;
       }
@@ -683,7 +717,7 @@ let publicLiveES = null;
 
 async function pollDevices() {
   try {
-    const r = await fetchApi('/api/devices');
+    const r = await fetchApi('/api/public/status');
     if (r.success) {
       allDevices = r.data;
       applyFilters();
@@ -729,6 +763,30 @@ function fillSelect(selectId, items) {
     var opt = document.createElement('option');
     opt.value = it.id;
     opt.textContent = it.name;
+    sel.appendChild(opt);
+  }
+}
+
+// SEC-02 — بناء قائمة فلترة (النوع/الموقع) من قائمة الأجهزة المنقّاة نفسها
+// بدل الاعتماد على /api/device-types و/api/locations المحميين بجلسة.
+function fillSelectFromDevices(selectId, devices, idKey, nameKey) {
+  var sel = document.getElementById(selectId);
+  if (!sel) return;
+  var seen = {};
+  var pairs = [];
+  for (var i = 0; i < (devices || []).length; i++) {
+    var it = devices[i];
+    var id = it[idKey];
+    var name = it[nameKey];
+    if (id == null || !name || seen[id]) continue;
+    seen[id] = true;
+    pairs.push({ id: id, name: name });
+  }
+  pairs.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'ar'); });
+  for (var j = 0; j < pairs.length; j++) {
+    var opt = document.createElement('option');
+    opt.value = pairs[j].id;
+    opt.textContent = pairs[j].name;
     sel.appendChild(opt);
   }
 }

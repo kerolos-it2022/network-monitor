@@ -191,6 +191,8 @@ function resetDeviceForm() {
 function openDeviceForm() {
   resetDeviceForm();
   document.getElementById('device-form-title').textContent = 'إضافة جهاز';
+  // MON-02 — لا خدمات لجهاز لم يُحفظ بعد.
+  if (window.AdminServices) window.AdminServices.mount(null);
   openEditModal(document.getElementById('device-modal'), {
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات قديمة.
     onClose: () => resetDeviceForm(),
@@ -215,6 +217,8 @@ async function startEditDevice(id) {
   document.getElementById('df-failure_threshold').value = d.failure_threshold;
   document.getElementById('df-is_active').checked = !!d.is_active;
   document.getElementById('device-form-title').textContent = 'تعديل جهاز #' + d.id;
+  // MON-02 — تحميل الخدمات المراقَبة لهذا الجهاز داخل النافذة.
+  if (window.AdminServices) window.AdminServices.mount(d.id);
   openEditModal(document.getElementById('device-modal'), {
     focusSelector: '#df-name',
     // onClose يُطلق عند ✕/ESC/backdrop → نَضمن reset النموذج لِـ تَجنب بقاء بيانات التعديل.
