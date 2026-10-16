@@ -70,8 +70,42 @@ const inflightDevices = new Set();     // device_id → فحص قيد التنف
 const deviceGeneration = new Map();    // device_id → رقم الجيل (نتيجة قديمة = تُهمَل)
 
 // حد التزامن العام (PERF): لا نطلق فحوصات أكثر من هذا العدد في أي لحظة.
-function maxConcurrentChecks() {
-  return Math.max(1, parseInt(process.env.NM_MAX_CONCURRENT_CHECKS, 10) || 10);
+// MON-03 (نتيجة تحقق الأحمال): حدٌّ ثابت صغير على شبكة كبيرة يجعل الفحص الفعلي أبطأ من
+// الفاصل المُعرَّف (مثال: 100 جهاز ÷ 10 = فحص كل 10 دورات = 100 ثانية) فتُصنَّف الأجهزة
+// «unknown» بلا داعٍ. لذلك:
+//   • إن ضبط المالك NM_MAX_CONCURRENT_CHECKS صراحةً ⇒ نحترمه حرفيًّا (قراره).
+//   • وإلا ⇒ حد **تكيّفي**: يكفي لفحص كل الأجهزة المستحقة في الدورة نفسها، بحدٍّ أقصى 100
+//     (فوق ذلك يُوزَّع الفحص على دورات ويُعلَن التأخير في /api/health).
+const HARD_CAP_DEFAULT = 100;
+function maxConcurrentChecks(activeCount = null) {
+  const explicit = parseInt(process.env.NM_MAX_CONCURRENT_CHECKS, 10);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const count = Number.isFinite(activeCount) && activeCount > 0 ? activeCount : 0;
+  return Math.max(10, Math.min(HARD_CAP_DEFAULT, count || 10));
+}
+
+// كم دورة يلزم لفحص كل الأجهزة المستحقة عند هذا الحد؟ (لتقدير التأخير الحقيقي)
+function lagFactorFor(activeCount, cap) {
+  const count = Math.max(0, Number(activeCount) || 0);
+  const c = Math.max(1, Number(cap) || 1);
+  return Math.max(1, Math.ceil(count / c));
+}
+
+// الفاصل الفعلي المُحقَّق لجهاز (بالثواني) — يشمل تأخير الحد التكيّفي (الدورة 10 ثوانٍ).
+function achievableIntervalSeconds(deviceIntervalSeconds, activeCount, cap) {
+  return Math.max(Number(deviceIntervalSeconds) || 10, lagFactorFor(activeCount, cap) * 10);
+}
+
+// MON-03 — ترتيب الأجهزة المستحقة: الأقدم فحصًا أولًا (نقي — قابل للاختبار).
+// بدونه يقع «جوع»: نفس أول N جهاز تُفحص كل دورة، والأجهزة الأخيرة لا تُفحص أبدًا عند بلوغ الحد.
+function orderDueDevices(devices, lastCheckTimeMap, nowMs = Date.now()) {
+  const due = [];
+  for (const d of devices || []) {
+    const last = lastCheckTimeMap.get(d.id) || 0;
+    if (nowMs - last >= (Number(d.check_interval_seconds) || 10) * 1000) due.push(d);
+  }
+  due.sort((a, b) => (lastCheckTimeMap.get(a.id) || 0) - (lastCheckTimeMap.get(b.id) || 0));
+  return due;
 }
 let activeChecks = 0;
 
@@ -250,6 +284,8 @@ async function checkDevice(device, opts = {}) {
 // بدل عرض حالة قديمة مضلِّلة. يُنفَّذ داخل دورة الفحص (خفيف: مقارنة زمنية فقط).
 function sweepStaleDevices(devices, nowMs = Date.now()) {
   const factor = Math.max(2, parseInt(process.env.NM_STALE_FACTOR, 10) || 3);
+  const cap = maxConcurrentChecks(devices.length);
+  const lagSeconds = lagFactorFor(devices.length, cap) * 10;
   let changed = 0;
   const upd = db.prepare(
     `UPDATE devices SET host_status = 'unknown', current_status = 'unknown',
@@ -259,7 +295,9 @@ function sweepStaleDevices(devices, nowMs = Date.now()) {
   for (const d of devices) {
     const known = (d.host_status || d.current_status) !== 'unknown';
     if (!known) continue;
-    if (isStale(d.last_checked_at, d.check_interval_seconds, nowMs, factor)) {
+    // TTL واعٍ بالتأخير: لا نُعلن «unknown» لمجرد أن الدورة تؤجّل الفحص بسبب حد التزامن.
+    const effectiveInterval = Math.max(Number(d.check_interval_seconds) || 10, lagSeconds);
+    if (isStale(d.last_checked_at, effectiveInterval, nowMs, factor)) {
       upd.run(new Date(nowMs).toISOString(), d.id);
       changed += 1;
     }
@@ -286,14 +324,14 @@ function startMonitoring() {
       const staleMarked = sweepStaleDevices(devices, now);
 
       // PERF — التزامن المحدود: لا نُطلق أكثر من الحد في اللحظة نفسها؛ الزائد يُؤجَّل للدورة القادمة.
-      const cap = maxConcurrentChecks();
+      const cap = maxConcurrentChecks(devices.length);
       let due = 0;
       let started = 0;
       let inflightSkipped = 0;
       let deferredConcurrency = 0;
-      for (const device of devices) {
-        const last = lastCheckTime.get(device.id) || 0;
-        if (now - last < device.check_interval_seconds * 1000) continue;
+      // MON-03 — عدالة التوزيع: الأجهزة المستحقة مرتّبة بالأقدم فحصًا أولًا (انظر orderDueDevices).
+      const dueDevices = orderDueDevices(devices, lastCheckTime, now);
+      for (const device of dueDevices) {
         due += 1;
         if (activeChecks >= cap) { deferredConcurrency += 1; continue; }
         if (inflightDevices.has(device.id)) { inflightSkipped += 1; continue; }
@@ -313,7 +351,15 @@ function startMonitoring() {
       } catch (e) {
         console.error('[services] dispatch error:', e.message);
       }
-      lastTickStats = { due, started, inflightSkipped, deferredConcurrency, staleMarked, maxConcurrent: cap, services: servicesStats };
+      const lagFactor = lagFactorFor(devices.length, cap);
+      lastTickStats = {
+        due, started, inflightSkipped, deferredConcurrency, staleMarked,
+        maxConcurrent: cap,
+        // MON-03 — التأخير المُعلَن: كم دورة يلزم لفحص كل الأجهزة، والفاصل الفعلي الناتج (ثوانٍ).
+        lagFactor,
+        achievableIntervalSeconds: lagFactor * 10,
+        services: servicesStats,
+      };
       // v2.8.7 — شبكة أمان: تحديث الحالة الحيّة مرة كل دورة (لو تغير شيء خارج مسار الفحص).
       live.scheduleRefresh();
     } catch (e) {
@@ -446,4 +492,9 @@ module.exports = {
   // MON-01 — للاختبارات والاستخدام الداخلي (فحص جهاز واحد بفحوصات قابلة للاستبدال).
   checkDevice,
   probePrimary,
+  // MON-03 — حساب الحد التكيّفي/التأخير (مُختبَر ويُستعمل في التقارير).
+  maxConcurrentChecks,
+  lagFactorFor,
+  achievableIntervalSeconds,
+  orderDueDevices,
 };
