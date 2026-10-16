@@ -135,7 +135,9 @@ CREATE TABLE IF NOT EXISTS ai_settings (
     enabled INTEGER NOT NULL DEFAULT 0,
     api_key TEXT,
     base_url TEXT NOT NULL DEFAULT 'https://api.z.ai/api/paas/v4',
-    model TEXT NOT NULL DEFAULT 'glm-4-flash'
+    model TEXT NOT NULL DEFAULT 'glm-4-flash',
+    -- AI-02 (SpaceKit): تنقيح العناوين الداخلية/MAC قبل أي إرسال لمزوّد خارجي (1 = مفعّل افتراضيًّا).
+    redact_internal INTEGER NOT NULL DEFAULT 1
 );
 INSERT OR IGNORE INTO ai_settings (id) VALUES (1);
 

@@ -86,6 +86,8 @@ try {
       "ALTER TABLE notification_settings ADD COLUMN escalation_repeat_minutes INTEGER DEFAULT 0",
       // v2.29.1: مفتاح غطاء الإنذار الأحمر في شاشة NOC (تشغيل/إيقاف من الإشعارات).
       "ALTER TABLE notification_settings ADD COLUMN noc_alert_screen_enabled INTEGER DEFAULT 1",
+      // AI-02 (SpaceKit Phase 4) — تنقيح السياق المُرسل لمزوّد AI (مفعّل افتراضيًّا).
+      "ALTER TABLE ai_settings ADD COLUMN redact_internal INTEGER NOT NULL DEFAULT 1",
       // AST-01 (SpaceKit Phase 2) — المعرّف الثابت للأصول على القواعد القائمة.
       "ALTER TABLE devices ADD COLUMN asset_id TEXT",
       // الفهرس يُنشأ هنا (بعد ALTER) لا في schema.sql — تفصيل الأمان في تعليق schema.sql.

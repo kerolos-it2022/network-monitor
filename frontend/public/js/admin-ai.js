@@ -36,9 +36,27 @@ async function loadAiSettings() {
   keyEl.placeholder = d.api_key_masked || 'غير مضبوط';
   document.getElementById('ai-base-url').value = d.base_url || '';
   document.getElementById('ai-model').value = d.model || '';
+  const redactEl = document.getElementById('ai-redact-internal');
+  if (redactEl) redactEl.checked = d.redact_internal == null ? true : !!d.redact_internal;
   if (!d.enabled || !d.has_key) {
-    aiSetStatus('شات AI غير مفعّل بعد — أكمل الإعدادات بالأسفل (مفتاح API + تفعيل) ليبدأ الإجابة.', false);
+    aiSetStatus('شات AI غير مفعّل — الردود الآن «بقواعد محلية» بلا أي إرسال خارجي. أضف مفتاح API وفعّل وضع النموذج للتحليل الكامل.', false);
   }
+}
+
+// AI-02 — معاينة ما سيُرسَل فعلًا لمزوّد النموذج (بعد التنقيح) — شفافية كاملة قبل أي إرسال.
+async function aiPreviewContext() {
+  const out = document.getElementById('ai-preview-out');
+  if (!out) return;
+  out.classList.remove('hidden');
+  out.textContent = '…جارٍ التجهيز';
+  const r = await api('/api/ai/context-preview');
+  if (!r.success) { out.textContent = 'تعذّر: ' + (r.error || ''); return; }
+  const d = r.data;
+  const head = (d.redacted ? '🛡️ منقّح (العناوين/MAC برموز) — ' : '⚠️ غير منقّح (يعرض عناوين حقيقية) — ')
+    + d.chars + ' حرفًا · أجهزة ' + d.stats.devices
+    + ' (مُستبعَد ' + d.stats.omitted_devices + ') · أحداث ' + d.stats.events
+    + ' · أعطال ' + d.stats.incidents;
+  out.textContent = head + '\n\n' + d.preview;
 }
 
 function aiSetSettingsStatus(msg, isError) {
@@ -64,6 +82,8 @@ async function saveAiSettings() {
       api_key: document.getElementById('ai-api-key').value.trim() || undefined,
       base_url: base,
       model: model,
+      // AI-02 — قرار المالك بشأن تنقيح العناوين الداخلية قبل الإرسال.
+      redact_internal: (document.getElementById('ai-redact-internal') || {}).checked ? 1 : 0,
     }),
   });
   if (!r.success) { aiSetSettingsStatus('فشل الحفظ: ' + (r.error || ''), true); return; }
@@ -129,6 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
   sendBtn.addEventListener('click', aiSend);
   clearBtn.addEventListener('click', aiClear);
   document.getElementById('ai-save-btn').addEventListener('click', saveAiSettings);
+  const previewBtn = document.getElementById('ai-preview-btn');
+  if (previewBtn) previewBtn.addEventListener('click', aiPreviewContext);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSend(); }
   });

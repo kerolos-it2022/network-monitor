@@ -20,16 +20,27 @@ function isReady() {
   return !!(s.enabled && s.api_key);
 }
 
-// ── بناء «موجز السياق» من القاعدة (بكل شيء شامل الـ IPs — قرار المستخدم 2026-10-15) ──
+// ── بناء «موجز السياق» من القاعدة ──
+// AI-01 (SpaceKit): ترتيب **واقعيًّا** لا أبجديًّا (المتوقف ثم المتدهور ثم غير المعروف ثم المتصل)،
+// مع عدد الأجهزة المُستبعَدة صراحةً، ووقت اللقطة ورقم الإصدار، وعطل مركزي جارٍ إن وُجد.
 function buildNetworkContext() {
   const devices = db.prepare(`
-    SELECT d.id, d.name, d.ip, d.current_status, d.last_response_time_ms, d.last_checked_at,
-           d.is_active, d.parent_id, d.web_port,
+    SELECT d.id, d.name, d.ip, d.current_status, d.host_status, d.overall_health,
+           d.last_response_time_ms, d.last_checked_at, d.is_active, d.parent_id, d.web_port,
+           (SELECT COUNT(*) FROM monitored_services s
+             WHERE s.device_id = d.id AND s.is_enabled = 1 AND s.status = 'offline') AS services_down_count,
            t.name AS type_name, l.name AS location_name
     FROM devices d
     LEFT JOIN device_types t ON t.id = d.device_type_id
     LEFT JOIN locations l ON l.id = d.location_id
-    ORDER BY d.current_status DESC, d.name COLLATE NOCASE ASC
+    ORDER BY
+      CASE
+        WHEN d.current_status = 'offline' THEN 0
+        WHEN d.overall_health = 'degraded' THEN 1
+        WHEN d.current_status = 'unknown' THEN 2
+        ELSE 3
+      END ASC,
+      d.name COLLATE NOCASE ASC
     LIMIT ?
   `).all(MAX_CONTEXT_DEVICES);
   const events = db.prepare(`
@@ -45,10 +56,129 @@ function buildNetworkContext() {
       COUNT(*) AS total,
       SUM(CASE WHEN current_status = 'online' THEN 1 ELSE 0 END) AS online,
       SUM(CASE WHEN current_status = 'offline' THEN 1 ELSE 0 END) AS offline,
-      SUM(CASE WHEN current_status = 'unknown' THEN 1 ELSE 0 END) AS unknown
+      SUM(CASE WHEN current_status = 'unknown' THEN 1 ELSE 0 END) AS unknown,
+      SUM(CASE WHEN overall_health = 'degraded' THEN 1 ELSE 0 END) AS degraded
     FROM devices WHERE is_active = 1
   `).get();
-  return { generated_at: new Date().toISOString(), counts, devices, recent_downtime_events: events };
+  // RCA — أعطال مركزية جارية (تُقدَّم كسياق مستهدف بدل الاعتماد على قائمة الأجهزة وحدها).
+  let incidents = [];
+  try {
+    incidents = db.prepare(
+      "SELECT id, root_device_id, kind, confidence, started_at, affected_json FROM incidents WHERE status = 'open' ORDER BY id DESC LIMIT 10"
+    ).all().map((r) => {
+      let affected = [];
+      try { affected = JSON.parse(r.affected_json || '[]'); } catch (_) { affected = []; }
+      return { id: r.id, kind: r.kind, confidence: r.confidence, started_at: r.started_at, affected_count: affected.length, affected_names: affected.slice(0, 8).map((a) => a.name) };
+    });
+  } catch (_) { incidents = []; }
+
+  let version = null;
+  try { version = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../../package.json'), 'utf8')).version; } catch (_) { version = null; }
+
+  return {
+    snapshot_at: new Date().toISOString(),
+    app_version: version,
+    counts,
+    // عدد الأجهزة التي لم تُدرَج في القائمة (شفافية بدل حدٍّ صامت) — AI-01.
+    omitted_devices: Math.max(0, (counts.total || 0) - devices.length),
+    context_limit: MAX_CONTEXT_DEVICES,
+    devices,
+    open_incidents: incidents,
+    recent_downtime_events: events,
+  };
+}
+
+// ═══ AI-02 — تنقيح السياق قبل أي إرسال لمزوّد خارجي ═══
+// استبدال العناوين الداخلية وأسماء MAC برموز ثابتة (نفس العنوان ⇒ نفس الرمز داخل اللقطة)،
+// وحذف أي مفتاح يشبه سرًّا. الأسماء المعروضة (alias) للمالك تبقى — فهي أساس فائدة التشخيص.
+// الدالة **نقية** ⇒ قابلة للاختبار مباشرة.
+const SECRET_KEY_RE = /(key|token|secret|password|passwd|authorization|cookie|credential|webhook|chat_id|api)/i;
+function redactContext(ctx, enabled = true) {
+  if (!enabled) return ctx;
+  const ipTokens = new Map();
+  const macTokens = new Map();
+  const tokenFor = (map, value, prefix) => {
+    if (!value) return value;
+    if (!map.has(value)) map.set(value, prefix + '-' + (map.size + 1));
+    return map.get(value);
+  };
+  const IPV4_RE = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;
+  const MAC_RE = /\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b/gi;
+
+  const walk = (value) => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (value && typeof value === 'object') {
+      const out = {};
+      for (const [k, v] of Object.entries(value)) {
+        if (SECRET_KEY_RE.test(k)) { out[k] = '[REDACTED]'; continue; }
+        out[k] = walk(v);
+      }
+      return out;
+    }
+    if (typeof value === 'string') {
+      let s = value.replace(MAC_RE, (m) => tokenFor(macTokens, m.toLowerCase(), 'mac'));
+      s = s.replace(IPV4_RE, (m) => tokenFor(ipTokens, m, 'ip'));
+      return s;
+    }
+    return value;
+  };
+
+  return {
+    redacted: true,
+    redaction_note: 'العناوين الداخلية وMAC مُستبدلة برموز (ip-1، mac-1…) — الأسماء المعروضة كما هي.',
+    data: walk(ctx),
+  };
+}
+
+// معاينة ما سيُرسَل فعلًا (نفس المنطق) — للعرض للمالك قبل أي استدعاء خارجي.
+function privacyPreview() {
+  const s = getSettings();
+  const redacted = s.redact_internal == null ? true : !!s.redact_internal;
+  const ctx = buildNetworkContext();
+  const payload = redacted ? redactContext(ctx, true) : { redacted: false, data: ctx };
+  const text = JSON.stringify(payload.data);
+  return {
+    redacted,
+    chars: text.length,
+    preview: text.slice(0, 4000),
+    stats: {
+      devices: ctx.devices.length,
+      omitted_devices: ctx.omitted_devices,
+      events: ctx.recent_downtime_events.length,
+      incidents: ctx.open_incidents.length,
+    },
+  };
+}
+
+// AI-02 — تشخيص محلي بقواعد (بلا أي اتصال خارجي): يشرح أعلى الأعطال أولويةً.
+function deterministicDiagnosis(ctxInput) {
+  const ctx = ctxInput && ctxInput.devices ? ctxInput : buildNetworkContext();
+  const offline = ctx.devices.filter((d) => d.current_status === 'offline');
+  const degraded = ctx.devices.filter((d) => d.overall_health === 'degraded');
+  const unknown = ctx.devices.filter((d) => d.current_status === 'unknown');
+  const lines = [];
+  lines.push(`📊 الشبكة الآن: ${ctx.counts.total} جهازًا — متصل ${ctx.counts.online} · متقطع ${ctx.counts.offline} · غير معروف ${ctx.counts.unknown} · متدهور ${ctx.counts.degraded || 0}.`);
+  if (ctx.open_incidents && ctx.open_incidents.length) {
+    const inc = ctx.open_incidents[0];
+    lines.push(`🧠 عطل مركزي محتمل (#${inc.id}) يشمل ${inc.affected_count} جهازًا (ثقة: ${inc.confidence || 'غير محددة'}) — ابدأ بفحص الجهاز الأعلى قبل الأبناء.`);
+  }
+  if (offline.length) {
+    lines.push('🔴 أعلى الأعطال أولويةً:');
+    for (const d of offline.slice(0, 5)) {
+      const ev = (ctx.recent_downtime_events || []).find((e) => Number(e.device_id) === Number(d.id) && !e.ended_at);
+      const since = ev && ev.started_at ? ` (منذ ${new Date(ev.started_at).toLocaleString('ar')})` : '';
+      lines.push(`   • ${d.name} — ${d.type_name || 'جهاز'} في ${d.location_name || 'بلا موقع'}${since}`);
+    }
+    if (offline.length > 5) lines.push(`   • و${offline.length - 5} جهازًا آخر منقطعًا.`);
+  } else {
+    lines.push('🟢 لا انقطاعات مسجّلة حاليًّا.');
+  }
+  if (degraded.length) {
+    lines.push('🟡 أجهزة متصلة لكن بها خدمات متوقفة: ' + degraded.slice(0, 5).map((d) => `${d.name} (${d.services_down_count || 0})`).join(' · '));
+  }
+  if (ctx.omitted_devices) lines.push(`ℹ️ لم تُدرَج ${ctx.omitted_devices} جهازًا في اللقطة (الحد ${ctx.context_limit}).`);
+  lines.push('ℹ️ هذه إجابة بقواعد محلية — لا تُرسَل أي بيانات خارج الجهاز. فعّل مزوّد AI لمزيد من التحليل.');
+  return lines.join('\n');
 }
 
 function systemPrompt(context) {
@@ -140,4 +270,6 @@ module.exports = {
   DEFAULT_BASE_URL, DEFAULT_MODEL, CHAT_TIMEOUT_MS,
   getSettings, isReady, buildNetworkContext, systemPrompt,
   callModel, friendlyModelError, chatCompletion, analyzeDailyReport,
+  // AI-01/AI-02 (SpaceKit Phase 4)
+  redactContext, privacyPreview, deterministicDiagnosis, MAX_CONTEXT_DEVICES,
 };
