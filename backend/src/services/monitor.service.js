@@ -289,6 +289,27 @@ function startMonitoring() {
   // v2.11.9 — تشغيل حلقة حراسة المحرك (نبضة متوقفة/فحوصات عالقة → تحذير تلجرام).
   startWatchdog();
 
+  // ═══ HIST-02 — تجميعات ساعية/يومية **قبل** التقليم (وإلا فُقد ما لم يُجمَّع) ═══
+  // كل ساعة (دقيقة 5): تحديث دلاء آخر 3 ساعات (رخيص).
+  cron.schedule('5 * * * *', () => {
+    try {
+      const r = require('./rollup.service').runRollupMaintenance({ hoursBack: 3, daysBack: 2 });
+      console.log(`[rollup] hourly: hourBuckets=${r.hours} dayBuckets=${r.days} deletedOld=${r.deletedOld}`);
+    } catch (e) {
+      console.error('[rollup] hourly error:', e.message);
+    }
+  });
+  // يوميًّا 02:50 (قبل تقليم السجلات 03:00): بناء الدلاء + حذف الأقدم من مدة الاحتفاظ (90 يومًا).
+  cron.schedule('50 2 * * *', () => {
+    try {
+      const r = require('./rollup.service').runRollupMaintenance();
+      console.log(`[rollup] daily: hourBuckets=${r.hours} dayBuckets=${r.days} deletedOld=${r.deletedOld} retention=${r.retentionDays}d`);
+    } catch (e) {
+      console.error('[rollup] daily error:', e.message);
+    }
+  });
+  console.log('Rollup maintenance scheduled (hourly @:05 · daily 02:50 before raw-log cleanup).');
+
   // v2.7.x — مَسح آلِي يَوْمِي لِـ status_logs (الجَدول الَّذِي يَنمو بِـ ~354 أَلْف صَف/يَوم).
   // الاحتفاظ بِـ آخر STATUS_LOGS_RETENTION_DAYS أَيام (افتراضِيّاً 7) لِـ الرسوم البيانية/Uptime.
   // يَعمل عِند 03:00 مَحلِيّاً يَوْمياً. busy_timeout=5000 (db.js) يَتَكَفَّل تَزاحُم كِتاَبٍ وَراء كَوال

@@ -183,26 +183,71 @@ function getDeviceHistory(deviceId, rangeKey) {
     return { started_at: e.started_at, ended_at: e.ended_at, duration_seconds: durationSeconds };
   });
 
+  // ── HIST-02: دمج التجميعات (rollups) للفترة الأقدم من نطاق البيانات الخام (~7 أيام) ──
+  // تُحسب التجميعات قبل تقليم السجلات الخام، فيبقى تقرير 30/90 يومًا ذا دلالة بتغطية صريحة.
+  const firstInWindowMs = statusPoints.length ? new Date(statusPoints[0].checked_at).getTime() : windowEnd;
+  const rollupBucket = hours > 8 * 24 ? 'day' : 'hour';   // نوافذ طويلة ⇒ دلاء يومية (نفس الدقة)
+  let rollupOnlineMs = 0;
+  let rollupOfflineMs = 0;
+  let rollupUnknownMs = 0;
+  let rollupBuckets = 0;
+  try {
+    // require متأخر لكسر دورة الاستيراد (rollup.service يستورد computeAvailability من هنا).
+    const rollupSvc = require('./rollup.service');
+    const cutoffMs = Math.min(firstInWindowMs, windowEnd);
+    if (cutoffMs > windowStart) {
+      for (const r of rollupSvc.getRollups(device.id, rollupBucket, windowStart, cutoffMs)) {
+        const bStart = new Date(r.bucket_start).getTime();
+        const bEnd = rollupSvc.bucketEndFor(bStart, rollupBucket);
+        const clipStart = Math.max(bStart, windowStart);
+        const clipEnd = Math.min(bEnd, cutoffMs);
+        const span = Math.max(0, clipEnd - clipStart);
+        const bucketSpan = bEnd - bStart;
+        if (!span || !bucketSpan) continue;
+        const ratio = span / bucketSpan;   // دلو جزئي عند حدود النافذة ⇒ قصّ نسبي
+        rollupOnlineMs += r.online_seconds * 1000 * ratio;
+        rollupOfflineMs += r.offline_seconds * 1000 * ratio;
+        rollupUnknownMs += r.unknown_seconds * 1000 * ratio;
+        rollupBuckets += 1;
+      }
+    }
+  } catch (e) {
+    // التجميعات إضافة تحسينية: لو الجدول غير موجود (قاعدة قديمة) نكمل بالبيانات الخام وحدها.
+  }
+
+  const windowMs = windowEnd - windowStart;
+  const mergedOnlineMs = calc.onlineMs + rollupOnlineMs;
+  const mergedOfflineMs = calc.offlineMs + rollupOfflineMs;
+  const mergedKnownMs = Math.min(windowMs, mergedOnlineMs + mergedOfflineMs);
+  const mergedUnknownMs = Math.max(0, windowMs - mergedKnownMs);
+  const mergedAvailability = mergedKnownMs > 0 ? mergedOnlineMs / mergedKnownMs : null;
+  const mergedQuality = dataQualityFor({ windowMs, unknownMs: mergedUnknownMs, knownMs: mergedKnownMs, ttlMs });
+  const mergedCoverage = (mergedKnownMs / windowMs) * 100;
+
   const round2 = (n) => Math.round(n * 100) / 100;
   return {
     range,
     hours,
     since: startIso,
     // ── توافق خلفي (نفس الحقول القديمة) ──
-    uptime_percentage: calc.availability == null ? null : round2(calc.availability * 100),
+    uptime_percentage: mergedAvailability == null ? null : round2(mergedAvailability * 100),
     status_points: statusPoints,
     downtime_events: downtimeEvents,
-    // ── HIST-01: التغطية والحساب الزمني ──
+    // ── HIST-01: التغطية والحساب الزمني (بعد دمج التجميعات من HIST-02) ──
     window_start: startIso,
     window_end: new Date(windowEnd).toISOString(),
-    coverage_percentage: round2(calc.coveragePercentage),
-    known_seconds: Math.round(calc.knownMs / 1000),
-    online_seconds: Math.round(calc.onlineMs / 1000),
-    offline_seconds: Math.round(calc.offlineMs / 1000),
-    unknown_seconds: Math.round(calc.unknownMs / 1000),
-    data_quality: calc.dataQuality,
+    coverage_percentage: round2(Math.min(100, mergedCoverage)),
+    known_seconds: Math.round(mergedKnownMs / 1000),
+    online_seconds: Math.round(mergedOnlineMs / 1000),
+    offline_seconds: Math.round(mergedOfflineMs / 1000),
+    unknown_seconds: Math.round(mergedUnknownMs / 1000),
+    data_quality: mergedQuality,
     calculation_method: CALCULATION_METHOD,
     expected_sample_ttl_seconds: Math.round(calc.expectedSampleTtlMs / 1000),
+    // ── HIST-02: مصدر التغطية الأقدم ──
+    rollup_granularity: rollupBuckets > 0 ? rollupBucket : null,
+    rollup_buckets: rollupBuckets,
+    rollup_seconds: Math.round((rollupOnlineMs + rollupOfflineMs + rollupUnknownMs) / 1000),
   };
 }
 

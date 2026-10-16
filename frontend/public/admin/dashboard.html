@@ -1230,6 +1230,24 @@
     </div>
   </div>
 
+  <!-- ===== HIST-03 — نافذة «تشغيل الجهاز» (24 ساعة / 7 أيام / 30 يومًا + تغطية) ===== -->
+  <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق">✕</button>
+      <h3 id="history-modal-title">📈 تشغيل الجهاز</h3>
+      <div id="history-ranges" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin:0.4rem 0 0.6rem;">
+        <button type="button" class="btn" data-hrange="24h">24 ساعة</button>
+        <button type="button" class="btn" data-hrange="7d">7 أيام</button>
+        <button type="button" class="btn" data-hrange="30d">30 يومًا</button>
+        <span id="history-quality" style="align-self:center; font-size:0.82rem; color:var(--muted);"></span>
+      </div>
+      <p id="history-summary" style="font-size:0.95rem; margin:0 0 0.5rem;"></p>
+      <div id="history-strip" style="margin:0.4rem 0 0.8rem;"></div>
+      <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.4rem;">أحدث الانقطاعات في الفترة:</p>
+      <ul id="history-downtimes" style="font-size:0.85rem; margin:0; padding-inline-start:1.1rem;"></ul>
+    </div>
+  </div>
+
   <!-- ===== popup modal إِضافة/تعديل موقع (v2.7.4) ===== -->
   <div id="location-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
@@ -1375,6 +1393,8 @@
   <script src="../js/admin-map.js"></script>
   <!-- إعدادات العرض (العام + شاشة NOC) -->
   <script src="../js/admin-display.js"></script>
+  <!-- HIST-03 — نافذة تشغيل الجهاز (24h/7d/30d + تغطية) -->
+  <script src="../js/admin-history.js"></script>
   <script src="../js/admin-update.js"></script>
   <script src="../js/admin-backup.js"></script>
   <script src="../js/admin-remote.js"></script>

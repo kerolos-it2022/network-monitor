@@ -100,6 +100,7 @@ async function loadDevices() {
       <td>${esc(statusText(d.current_status))}</td>
       <td>
         ${openBtn}
+        <button class="btn" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>
         <button class="btn" data-edit="${d.id}" title="تعديل الجهاز">✏️ تعديل</button>
         <button class="btn btn-danger" data-del="${d.id}" title="حذف الجهاز">🗑️ حذف</button>
       </td>
@@ -111,6 +112,10 @@ async function loadDevices() {
         window.open(this.dataset.url, '_blank');
       });
     }
+    // HIST-03 — نافذة التشغيل (24h/7d/30d + تغطية).
+    tr.querySelector('[data-hist]').addEventListener('click', () => {
+      if (window.AdminHistory) window.AdminHistory.open(d.id, d.name);
+    });
     tr.querySelector('[data-edit]').addEventListener('click', () => startEditDevice(d.id));
     tr.querySelector('[data-del]').addEventListener('click', () => deleteDevice(d.id, d.name));
     tbody.appendChild(tr);

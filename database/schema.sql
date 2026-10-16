@@ -226,6 +226,27 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- SpaceKit Phase 1 (HIST-02) — تجميعات ساعية/يومية تُبنى **قبل** تقليم السجلات الخام.
+-- تسمح بتقارير 7/30/90 يومًا بعد حذف raw (>7 أيام) بدلالة تغطية صريحة وبلا نسب مُختلَقة.
+CREATE TABLE IF NOT EXISTS status_rollups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL,
+    bucket TEXT NOT NULL,                            -- 'hour' | 'day'
+    bucket_start TEXT NOT NULL,                      -- بداية الدلو (ISO UTC)
+    online_seconds INTEGER NOT NULL DEFAULT 0,
+    offline_seconds INTEGER NOT NULL DEFAULT 0,
+    unknown_seconds INTEGER NOT NULL DEFAULT 0,
+    sample_count INTEGER NOT NULL DEFAULT 0,
+    min_response_ms INTEGER,
+    avg_response_ms REAL,
+    max_response_ms INTEGER,
+    p95_response_ms INTEGER,
+    computed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(device_id, bucket, bucket_start),         -- يجعل البناء idempotent (upsert)
+    FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_rollups_lookup ON status_rollups(device_id, bucket, bucket_start);
+
 -- SpaceKit Phase 1 (MON-02) — الخدمات المراقَبة لكل جهاز (اختيارية بالكامل، يعرّفها المالك).
 -- مضيف متصل + هذه الخدمة متوقفة ⇒ overall_health = degraded (وليس أخضر كاذبًا).
 CREATE TABLE IF NOT EXISTS monitored_services (
