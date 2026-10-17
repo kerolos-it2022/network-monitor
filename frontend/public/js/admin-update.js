@@ -276,25 +276,18 @@ async function updCheck(silent = false) {
     const localNewer = (r.localNewer !== undefined) ? !!r.localNewer : (!has && updIsNewer(cur, lat));
     const canInstall = remoteNewer;
     updSet('upd-current', 'v' + cur, 'upd-hero-value');
-    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (remoteNewer ? 'upd-warn' : 'upd-ok'));
-    updSet('upd-latest-sub',
-      remoteNewer ? 'يتوفّر تحديث جديد 🟠'
-        : (localNewer ? 'منشور على GitHub — ونسختك المحلية أحدث منه ✓' : 'أنت على أحدث إصدار ✓'),
-      'upd-hero-sub');
-    updSet('upd-state',
-      remoteNewer ? '🟠 تحديث متاح' : (localNewer ? '🟠 فرق إصدارات (محليًا أحدث)' : '🟢 محدَّث'),
-      'upd-hero-value ' + (remoteNewer ? 'upd-warn' : 'upd-ok'));
-    // تفسير الفرق في صندوق الملاحظة (جملة عربية جاهزة من الخادم)
-    if (has && r.note) updNote(r.note);
+    // النصوص كما كانت في الأصل تمامًا (فحص GitHub: أي فرق = «تحديث متاح»)، وأزرار التنزيل/التثبيت
+    // لا تظهر إلا لو كان على GitHub إصدار أحدث فعلًا (حماية من تنزيل نازل يُلغي شغلًا محليًا غير مرفوع).
+    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
+    updSet('upd-latest-sub', has ? 'يتوفّر تحديث جديد 🟠' : 'أنت على أحدث إصدار ✓', 'upd-hero-sub');
+    updSet('upd-state', has ? '🟠 تحديث متاح' : '🟢 محدَّث', 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
     const now = Date.now();
     try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
     updRenderLast(now);
     updBadge(has);
     // v2.10.5 — إشعار بنتيجة الفحص (وإلا تبدو الصفحة صامتة)؛ ويظهر أيضًا في الفحص التلقائي لو وُجد فرق
     if (!silent || has) {
-      showToast(!has ? ('🟢 أنت على أحدث إصدار (v' + cur + ')')
-        : (remoteNewer ? ('🟠 يتوفّر تحديث جديد: v' + lat)
-          : ('🟠 GitHub عليه v' + lat + ' — ونسختك المحلية v' + cur + ' أحدث (لم تُرفع بعد)')),
+      showToast(has ? ('🟠 يتوفّر تحديث جديد: v' + lat) : ('🟢 أنت على أحدث إصدار (v' + cur + ')'),
         { type: has ? 'warning' : 'success', duration: has ? 6000 : 3000 });
     }
     updShow('upd-changelog-btn', has);
