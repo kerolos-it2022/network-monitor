@@ -21,20 +21,20 @@
     <div class="brand">
       <span class="brand-icon">🖥️</span>
       <div>
-        <h1>مراقبة الشبكة — NOC</h1>
-        <span class="tag" id="noc-version-tag">مركز عمليات الشبكة</span>
+        <h1 data-i18n="noc.brand">مراقبة الشبكة — NOC</h1>
+        <span class="tag" id="noc-version-tag" data-i18n="noc.tag">مركز عمليات الشبكة</span>
       </div>
     </div>
     <div class="header-actions">
-      <span id="clock">—</span>
-      <a class="btn-action" href="/" title="الرجوع إلى الصفحة العامة (إدارة الأجهزة والأدوات)">🏠 الصفحة العامة</a>
-      <button class="btn-action" id="noc-theme-toggle" onclick="nocToggleTheme()" title="تبديل الوضع النهاري/الليلي (يُحفظ ويُشارَك مع الصفحة العامة)">
+      <span id="clock" data-i18n="common.none">—</span>
+      <a class="btn-action" href="/" title="الرجوع إلى الصفحة العامة (إدارة الأجهزة والأدوات)" data-i18n="topbar.publicPage">🏠 الصفحة العامة</a>
+      <button class="btn-action" id="noc-theme-toggle" onclick="nocToggleTheme()" title="تبديل الوضع النهاري/الليلي (يُحفظ ويُشارَك مع الصفحة العامة)" data-i18n="noc.themeLight">
         ☀️ وضع نهاري
       </button>
       <button class="btn-action" id="btn-audio" onclick="toggleAudioAlert()" title="تشغيل تنبيه صوتي عند انقطاع أي جهاز">
         <span id="audio-icon">🔔</span> تنبيه صوتي
       </button>
-      <button class="btn-action" onclick="toggleFullscreen()">
+      <button class="btn-action" onclick="toggleFullscreen()" data-i18n="noc.fullscreen">
         ⛶ ملء الشاشة
       </button>
     </div>
@@ -57,23 +57,23 @@
   <div class="counters">
     <div class="counter c-ok">
       <div class="num" id="c-up">—</div>
-      <div class="lbl">🟢 أجهزة متصلة</div>
+      <div class="lbl" data-i18n="noc.online">🟢 أجهزة متصلة</div>
     </div>
     <div class="counter c-bad">
       <div class="num" id="c-down">—</div>
-      <div class="lbl">🔴 أجهزة منقطعة</div>
+      <div class="lbl" data-i18n="noc.offline">🔴 أجهزة منقطعة</div>
     </div>
     <div class="counter c-warn">
       <div class="num" id="c-path">—</div>
-      <div class="lbl">⛔ مسدودة عبر المسار</div>
+      <div class="lbl" data-i18n="noc.blocked">⛔ مسدودة عبر المسار</div>
     </div>
     <div class="counter c-purple">
       <div class="num" id="c-locs">—</div>
-      <div class="lbl">🏢 إجمالي المواقع والمباني</div>
+      <div class="lbl" data-i18n="noc.sites">🏢 إجمالي المواقع والمباني</div>
     </div>
     <div class="counter c-info">
       <div class="num" id="c-total">—</div>
-      <div class="lbl">📊 إجمالي الأجهزة النشطة</div>
+      <div class="lbl" data-i18n="noc.activeDevices">📊 إجمالي الأجهزة النشطة</div>
     </div>
   </div>
 
@@ -90,7 +90,7 @@
     </div>
     <div class="filter-controls">
       <input type="text" id="search-input" class="search-box" placeholder="🔍 بحث بالاسم أو الآي بي..." oninput="onSearchOrFilterChange()">
-      <button class="filter-pill active" data-st="all" onclick="setStatusFilter('all')">الكل</button>
+      <button class="filter-pill active" data-st="all" onclick="setStatusFilter('all')" data-i18n="common.all">الكل</button>
       <button class="filter-pill" data-st="down" onclick="setStatusFilter('down')">🔴 المنقطع فقط</button>
       <button class="filter-pill" data-st="up" onclick="setStatusFilter('up')">🟢 المتصل</button>
     </div>
@@ -102,7 +102,7 @@
     <!-- 1. HERO BACKBONE UPLINK -->
     <section id="hero-section">
       <div class="section-title">
-        <span>🔗 مسار الإنترنت والبنية التحتية الرئيسية</span>
+        <span data-i18n="noc.backbone">🔗 مسار الإنترنت والبنية التحتية الرئيسية</span>
         <span class="badge" id="hero-status-badge">نشط</span>
         <div class="bar"></div>
       </div>
@@ -196,6 +196,7 @@
   </div>
 
 <script src="js/nm-format.js"></script>
+<script src="js/nm-i18n.js"></script>
 <script src="js/noc.js"></script>
 </body>
 </html>

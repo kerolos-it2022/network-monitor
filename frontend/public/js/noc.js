@@ -1450,7 +1450,8 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     try { json = await healthRes.json(); } catch (e) { json = null; }
     // v2.13.8 — رأس الشاشة يعرض الإصدار من الخادم (بدل نصّ ثابت قديم كان يظهر لسنوات).
     const vtag = document.getElementById('noc-version-tag');
-    if (vtag) vtag.textContent = 'Network Operations Center' + (json && json.version ? ' — v' + json.version : '');
+    // v2.33.0 — النصّ العربي بدل الكلمة الإنجليزية الوصفية (قرار المالك: لا إنجليزية وصفية في الواجهة)
+    if (vtag) vtag.textContent = (window.NMI18N ? NMI18N.t('noc.tag') : 'مركز عمليات الشبكة') + (json && json.version ? ' — v' + json.version : '');
     const eng = json ? json.engine : null;
     if (!eng || eng.notStarted) { hideEngineAlert(); return; }
     const sec = Math.round((eng.lastTickAgeMs || 0) / 1000);

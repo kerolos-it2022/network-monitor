@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>مراقبة أجهزة الشبكة</title>
+  <title data-i18n="public.title">مراقبة أجهزة الشبكة</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/ui.css" />
 
@@ -23,21 +23,21 @@
   <header class="topbar">
     <div class="topbar-title">
       <h1>مراقبة أجهزة الشبكة</h1>
-      <a href="admin/login.html" class="admin-link" id="admin-link">لوحة التحكم</a>
+      <a href="admin/login.html" class="admin-link" id="admin-link" data-i18n="topbar.dashboard">لوحة التحكم</a>
     </div>
     <div id="summary-bar" class="summary-bar">جارٍ التحميل…</div>
-    <button id="theme-toggle" class="theme-toggle" type="button">🌙 وضع ليلي</button>
-    <button id="notify-btn" class="theme-toggle" type="button" title="تفعيل إشعارات الهاتف">🔔 تفعيل الإشعارات</button>
+    <button id="theme-toggle" class="theme-toggle" type="button" data-i18n="topbar.themeDark">🌙 وضع ليلي</button>
+    <button id="notify-btn" class="theme-toggle" type="button" title="تفعيل إشعارات الهاتف" data-i18n="public.notifyOn">🔔 تفعيل الإشعارات</button>
     <a id="noc-link" class="noc-link-btn" href="/noc.html" target="_blank" title="شاشة عرض كبيرة للحالة — للـ TV وغرفة المراقبة">📺 عرض الشاشة <span class="noc-tv-badge">TV</span></a>
   </header>
 
   <!-- أدوات الفلترة والبحث + مبدّل نمط العرض + الترتيب -->
   <section class="filters-bar">
     <input id="search-input" type="search" placeholder="بحث بالاسم أو IP…" />
-    <select id="filter-type" title="فلترة حسب نوع الجهاز"><option value="">كل الأنواع</option></select>
-    <select id="filter-location" title="فلترة حسب الموقع"><option value="">كل المواقع</option></select>
+    <select id="filter-type" title="فلترة حسب نوع الجهاز"><option value="" data-i18n="public.filter.type">كل الأنواع</option></select>
+    <select id="filter-location" title="فلترة حسب الموقع"><option value="" data-i18n="public.filter.location">كل المواقع</option></select>
     <select id="filter-status" title="فلترة حسب الحالة">
-      <option value="">كل الحالات</option>
+      <option value="" data-i18n="public.filter.status">كل الحالات</option>
       <option value="online">✅ متصل</option>
       <option value="offline">❌ متوقف</option>
       <option value="unknown">❓ غير معروف</option>
@@ -59,14 +59,14 @@
 
     <!-- قسم أدوات الشبكة -->
     <section class="tools-bar">
-      <div class="tools-title">🛠️ أدوات الشبكة</div>
+      <div class="tools-title" data-i18n="public.tools.title">🛠️ أدوات الشبكة</div>
       <div class="tools-input-row">
         <input id="tools-ip-input" type="text" placeholder="أدخل IP أو اسم المضيف..." />
-        <button id="tools-ping-btn" class="btn btn-primary" type="button" title="تنفيذ Ping">📡 Ping</button>
-        <button id="tools-tracert-btn" class="btn btn-primary" type="button" title="تنفيذ Tracert">🌐 Tracert</button>
-        <button id="speedtest-btn" class="btn btn-primary" type="button" title="قياس سرعة الانترنت">⚡ قياس السرعة</button>
-        <button id="tools-stop-btn" class="btn btn-danger hidden" type="button" title="إيقاف العملية">⏹ إيقاف</button>
-        <button id="tools-clear-btn" class="btn hidden" type="button" title="مسح المخرجات">🗑️ مسح</button>
+        <button id="tools-ping-btn" class="btn btn-primary" type="button" title="تنفيذ Ping" data-i18n="public.tools.ping">📡 Ping</button>
+        <button id="tools-tracert-btn" class="btn btn-primary" type="button" title="تنفيذ Tracert" data-i18n="public.tools.tracert">🌐 Tracert</button>
+        <button id="speedtest-btn" class="btn btn-primary" type="button" title="قياس سرعة الانترنت" data-i18n="public.tools.speed">⚡ قياس السرعة</button>
+        <button id="tools-stop-btn" class="btn btn-danger hidden" type="button" title="إيقاف العملية" data-i18n="public.tools.stop">⏹ إيقاف</button>
+        <button id="tools-clear-btn" class="btn hidden" type="button" title="مسح المخرجات" data-i18n="public.tools.clear">🗑️ مسح</button>
       </div>
       <div class="tools-status hidden" id="tools-status">
         <span id="tools-status-text">جاري التنفيذ...</span>
@@ -95,7 +95,7 @@
               <th class="col-ltr">آخر فحص</th>
               <th class="col-center">آخر انقطاع</th>
               <th class="col-actions">فتح</th>
-              <th class="col-actions">تفاصيل</th>
+              <th class="col-actions" data-i18n="common.details">تفاصيل</th>
             </tr>
           </thead>
           <tbody id="devices-table-body"></tbody>
@@ -109,7 +109,7 @@
   <div id="device-modal" class="modal hidden">
     <div class="modal-content">
       <button id="modal-close-btn" type="button" class="modal-close" aria-label="إغلاق">✕</button>
-      <h2 id="modal-device-name">—</h2>
+      <h2 id="modal-device-name" data-i18n="common.none">—</h2>
       <div id="modal-uptime" class="modal-uptime"></div>
       <div id="device-connect-chip" class="connect-chip" style="margin:0.5rem 0;"></div>
       <div class="modal-chart-wrap">
@@ -152,6 +152,7 @@
   <!-- Chart.js من CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/nm-format.js"></script>
+  <script src="js/nm-i18n.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/public-dashboard.js"></script>
   <script src="js/public-speedtest.js"></script>

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>لوحة التحكم</title>
+  <title data-i18n="topbar.dashboard">لوحة التحكم</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/ui.css" />
 </head>
@@ -13,32 +13,32 @@
   <header class="admin-topbar">
     <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
     <h1 class="admin-page-title">📋 لوحة التحكم</h1>
-    <a href="../index.html" class="admin-link">🏠 الصفحة العامة</a>
+    <a href="../index.html" class="admin-link" data-i18n="topbar.publicPage">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
-    <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع">🌙 وضع ليلي</button>
-    <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج">🚪 تسجيل الخروج</button>
+    <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع" data-i18n="topbar.themeDark">🌙 وضع ليلي</button>
+    <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج" data-i18n="topbar.logout">🚪 تسجيل الخروج</button>
   </header>
 
   <!-- ===== القائمة الجانبية العمودية (sidebar — v2.7.0) ===== -->
   <!-- RTL: sidebar على اليمين (inset-inline-start: 0). drawer في < 768px عبر .open -->
   <aside class="sidebar" id="admin-sidebar" role="navigation" aria-label="أَقسام لوحة الإِدارة">
     <ul class="sidebar-list">
-      <li><button class="tab-btn active" id="tab-devices" type="button" title="إدارة الأجهزة"><span class="tab-btn-icon">📱</span><span class="tab-btn-label">الأَجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع"><span class="tab-btn-icon">📍</span><span class="tab-btn-label">المواقع</span></button></li>
-      <li><button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة"><span class="tab-btn-icon">🏷️</span><span class="tab-btn-label">أنواع الأجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً"><span class="tab-btn-icon">🔍</span><span class="tab-btn-label">اِكتشاف الأَجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label">خريطة المواقع</span></button></li>
-      <li><button class="tab-btn" id="tab-topology" type="button" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label">سلسلة الشبكة</span></button></li>
-      <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label">الإِشعارات</span></button></li>
-      <li><button class="tab-btn" id="tab-ai" type="button" title="شات AI: اسأل عن الشبكة بالعربية"><span class="tab-btn-icon">🤖</span><span class="tab-btn-label">شات AI</span></button></li>
-      <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label">السجل</span></button></li>
-      <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label">الملف الشخصي</span></button></li>
-      <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label">النسخ الاحتياطي</span></button></li>
-      <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label">الوصول عن بُعد</span></button></li>
-      <li><button class="tab-btn" id="tab-display" type="button" title="إعدادات العرض: ما يراه الزوار وشاشة NOC"><span class="tab-btn-icon">🎛️</span><span class="tab-btn-label">إعدادات العرض</span></button></li>
-      <li><button class="tab-btn" id="tab-system" type="button" title="حالة النظام: رام/معالج/هارد/شبكة"><span class="tab-btn-icon">🖥️</span><span class="tab-btn-label">حالة النظام</span></button></li>
+      <li><button class="tab-btn active" id="tab-devices" type="button" title="إدارة الأجهزة"><span class="tab-btn-icon">📱</span><span class="tab-btn-label" data-i18n="nav.devices">الأَجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع"><span class="tab-btn-icon">📍</span><span class="tab-btn-label" data-i18n="nav.locations">المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة"><span class="tab-btn-icon">🏷️</span><span class="tab-btn-label" data-i18n="nav.types">أنواع الأجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً"><span class="tab-btn-icon">🔍</span><span class="tab-btn-label" data-i18n="nav.discovery">اِكتشاف الأَجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label" data-i18n="nav.map">خريطة المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-topology" type="button" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label" data-i18n="nav.topology">سلسلة الشبكة</span></button></li>
+      <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label" data-i18n="nav.notifications">الإِشعارات</span></button></li>
+      <li><button class="tab-btn" id="tab-ai" type="button" title="شات AI: اسأل عن الشبكة بالعربية"><span class="tab-btn-icon">🤖</span><span class="tab-btn-label" data-i18n="nav.ai">شات AI</span></button></li>
+      <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label" data-i18n="nav.logs">السجل</span></button></li>
+      <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label" data-i18n="nav.profile">الملف الشخصي</span></button></li>
+      <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label" data-i18n="nav.backup">النسخ الاحتياطي</span></button></li>
+      <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label" data-i18n="nav.remote">الوصول عن بُعد</span></button></li>
+      <li><button class="tab-btn" id="tab-display" type="button" title="إعدادات العرض: ما يراه الزوار وشاشة NOC"><span class="tab-btn-icon">🎛️</span><span class="tab-btn-label" data-i18n="nav.display">إعدادات العرض</span></button></li>
+      <li><button class="tab-btn" id="tab-system" type="button" title="حالة النظام: رام/معالج/هارد/شبكة"><span class="tab-btn-icon">🖥️</span><span class="tab-btn-label" data-i18n="nav.system">حالة النظام</span></button></li>
       <!-- v2.23.0 — «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة في حافة القائمة). -->
-      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
+      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label" data-i18n="nav.updates">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
     </ul>
   </aside>
 
@@ -50,7 +50,7 @@
     <section id="section-devices">
       <div class="nm-card">
         <div class="nm-toolbar">
-          <button id="add-device-btn" type="button" class="btn btn-primary" title="إضافة جهاز جديد للمراقبة">➕ إضافة جهاز</button>
+          <button id="add-device-btn" type="button" class="btn btn-primary" title="إضافة جهاز جديد للمراقبة" data-i18n="admin.addDevice">➕ إضافة جهاز</button>
           <button id="export-devices-btn" type="button" class="btn" title="تصدير قائمة الأجهزة لملف Excel">📤 تصدير Excel</button>
           <a id="devices-labels-btn" class="btn" href="/labels/devices" target="_blank" rel="noopener" title="صفحة طباعة ملصقات QR لكل جهاز (تُلصق على الجهاز)">🏷️ ملصقات QR</a>
           <label class="btn" style="cursor:pointer;" title="استيراد أجهزة من ملف Excel">
@@ -100,13 +100,13 @@
         <label class="nm-sub" for="filter-kind-locations">فلتر النوع:</label>
         <select id="filter-kind-locations" class="nm-select" style="max-width:200px;" title="تصفية المواقع حسب النوع">
           <option value="">🏝️ كل الأَنواع</option>
-          <option value="internet">🌐 إنترنت</option>
-          <option value="zone">📍 منطقة</option>
-          <option value="site">🏛️ موقع</option>
-          <option value="building">🏢 مبنى</option>
-          <option value="floor">📐 طابق</option>
-          <option value="room">🚪 غرفة</option>
-          <option value="rack">🗄️ خزانة</option>
+          <option value="internet" data-i18n="kind.internet">🌐 إنترنت</option>
+          <option value="zone" data-i18n="kind.zone">📍 منطقة</option>
+          <option value="site" data-i18n="kind.site">🏛️ موقع</option>
+          <option value="building" data-i18n="kind.building">🏢 مبنى</option>
+          <option value="floor" data-i18n="kind.floor">📐 طابق</option>
+          <option value="room" data-i18n="kind.room">🚪 غرفة</option>
+          <option value="rack" data-i18n="kind.rack">🗄️ خزانة</option>
         </select>
         <label class="nm-sub" for="filter-sort-locations">ترتيب:</label>
         <select id="filter-sort-locations" class="nm-select" style="max-width:200px;">
@@ -132,7 +132,7 @@
     <section id="section-types" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🏷️ أنواع الأجهزة</h3>
+          <h3 class="nm-card-title" data-i18n="card.types.title">🏷️ أنواع الأجهزة</h3>
         </div>
         <p class="nm-card-desc">
           الأنواع هنا تُصنّف الأجهزة تلقائيًا في شاشة NOC (أقسام «أنواع الأجهزة») وفي الفلاتر — الأيقونة الظاهرة إلى جوار كل نوع تُستنتج من اسمه تلقائيًا إن لم تُحدَّد يدويًا.
@@ -216,7 +216,7 @@
           <span id="discovery-progress-text" style="font-weight:600;">جاري المسح...</span>
           <span id="discovery-progress-count" style="color:var(--muted);">0 / 0</span>
           <div style="flex:1;"></div>
-          <button type="button" class="btn btn-danger" id="discovery-stop-btn" title="إلغاء المسح الجاري — يتوقف خلال ثوانٍ وتُحفظ أي نتائج وصلت">⏹ إيقاف</button>
+          <button type="button" class="btn btn-danger" id="discovery-stop-btn" title="إلغاء المسح الجاري — يتوقف خلال ثوانٍ وتُحفظ أي نتائج وصلت" data-i18n="public.tools.stop">⏹ إيقاف</button>
         </div>
       </div>
 
@@ -228,7 +228,7 @@
           <div style="flex:1;"></div>
           <input type="text" id="discovery-search" class="search-box" placeholder="🔎 بحث بالاسم أو IP أو الشركة..." style="max-width:240px;" title="بحث فوري داخل نتائج المسح" />
           <select id="discovery-filter" class="sort-select" title="فلترة الصفوف">
-            <option value="all">الكل</option>
+            <option value="all" data-i18n="common.all">الكل</option>
             <option value="new">الجديد فقط</option>
             <option value="existing">الموجود فقط</option>
           </select>
@@ -260,7 +260,7 @@
     <!-- ============ قسم الأجهزة المُكتشَفة ============ -->
     <section id="section-discovered" class="hidden">
       <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-        <button id="discovered-refresh-btn" type="button" class="btn" title="تحديث القائمة">🔄 تحديث</button>
+        <button id="discovered-refresh-btn" type="button" class="btn" title="تحديث القائمة" data-i18n="admin.refresh">🔄 تحديث</button>
         <select id="discovered-filter-source" class="sort-select" title="تصفية حسب المصدر">
           <option value="">كل المصادر</option>
           <option value="scan">المسح الدوري</option>
@@ -270,7 +270,7 @@
           <option value="lldp">LLDP</option>
         </select>
         <select id="discovered-filter-status" class="sort-select" title="تصفية حسب الحالة">
-          <option value="">كل الحالات</option>
+          <option value="" data-i18n="public.filter.status">كل الحالات</option>
           <option value="0">بانتظار الاعتماد</option>
           <option value="1">تم اعتماده</option>
           <option value="-1">مرفوض</option>
@@ -336,7 +336,7 @@
         </div>
       </div>
       <div class="nm-note" style="margin:1rem 0;">
-        <b>الحالة الحالية:</b> <span id="sched-current-status">—</span>
+        <b>الحالة الحالية:</b> <span id="sched-current-status" data-i18n="common.none">—</span>
       </div>
       <h3>📋 سجل المسحات الأخيرة</h3>
       <table class="data-table">
@@ -442,18 +442,18 @@
     <section id="section-notifications" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🔔 إعدادات الإشعارات</h3>
+          <h3 class="nm-card-title" data-i18n="card.notifications.title">🔔 إعدادات الإشعارات</h3>
           <span class="nm-chip">كل القنوات اختيارية — تُحفظ بزر «حفظ الإعدادات» بالأسفل</span>
         </div>
 
         <div class="nm-sub-section">
-          <div class="nm-sub-head">📨 تلجرام</div>
+          <div class="nm-sub-head" data-i18n="notify.sub.telegram">📨 تلجرام</div>
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-telegram_enabled" />
               <span>القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط">🔔 اختبار هذه القناة</button>
+            <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط" data-i18n="admin.testChannel">🔔 اختبار هذه القناة</button>
           </div>
           <div class="form-grid cols-2">
             <label>توكن البوت
@@ -466,7 +466,7 @@
         </div>
 
         <div class="nm-sub-section">
-          <div class="nm-sub-head">📟 واتساب</div>
+          <div class="nm-sub-head" data-i18n="notify.sub.whatsapp">📟 واتساب</div>
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-whatsapp_enabled" />
@@ -488,13 +488,13 @@
         </div>
 
         <div class="nm-sub-section">
-          <div class="nm-sub-head">📱 إشعارات الهاتف</div>
+          <div class="nm-sub-head" data-i18n="notify.sub.mobile">📱 إشعارات الهاتف</div>
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-mobile_enabled" />
               <span>القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف (PWA) فقط">🔔 اختبار هذه القناة</button>
+            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف فقط">🔔 اختبار هذه القناة</button>
           </div>
           <div class="form-grid cols-2">
             <label>مفتاح FCM Server Key
@@ -508,7 +508,7 @@
         </div>
 
         <div class="nm-sub-section">
-          <div class="nm-sub-head">🧠 ذكاء الإشعارات</div>
+          <div class="nm-sub-head" data-i18n="notify.sub.smart">🧠 ذكاء الإشعارات</div>
           <small class="nm-hint">كل ميزة مستقلة — شغّلها أو أوقفها بحرية، ثم احفظ من الأسفل.</small>
           <div class="form-grid cols-2" style="margin-top:0.6rem;">
             <div class="nm-option-card">
@@ -594,8 +594,8 @@
         </div>
 
         <div class="nm-actions">
-          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات">💾 حفظ الإعدادات</button>
-          <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)">🔔 اختبار الإشعار</button>
+          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات" data-i18n="common.saveSettings">💾 حفظ الإعدادات</button>
+          <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)" data-i18n="admin.testNotification">🔔 اختبار الإشعار</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
       </div>
@@ -670,7 +670,7 @@
            لها بِـ notification_logs المَعْرُوض هنا. -->
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">📋 سجل الإشعارات</h3>
+          <h3 class="nm-card-title" data-i18n="card.logs.title">📋 سجل الإشعارات</h3>
           <div class="nm-row">
             <label class="nm-sub" for="logs-filter-status">الحالة:</label>
             <select id="logs-filter-status" class="nm-select" style="min-width:180px;" title="إظهار كل الإشعارات أو الناجحة أو الفاشلة فقط">
@@ -713,7 +713,7 @@
       <!-- v2.20.0 — إدارة المستخدمين (admin فقط؛ يظهر فارغًا/مخفيًا للحسابات الأخرى) -->
       <div class="nm-card" id="users-card" style="display:none;">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">👥 إدارة المستخدمين</h3>
+          <h3 class="nm-card-title" data-i18n="users.card.title">👥 إدارة المستخدمين</h3>
         </div>
         <p class="nm-card-desc">
           «مدير»: كل الصلاحيات · «عرض فقط»: يتصفح ويستقبل الإشعارات لكن كل التعديلات تُرفض (403).
@@ -734,7 +734,7 @@
       </div>
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🔐 تغيير كلمة المرور</h3>
+          <h3 class="nm-card-title" data-i18n="users.card.password">🔐 تغيير كلمة المرور</h3>
         </div>
         <form id="change-password-form">
           <div class="form-grid cols-3">
@@ -750,7 +750,7 @@
       </div>
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🪪 معلومات الحساب</h3>
+          <h3 class="nm-card-title" data-i18n="users.card.info">🪪 معلومات الحساب</h3>
         </div>
         <div class="form-grid cols-2">
           <label>اسم المستخدم <input type="text" id="profile-username" readonly /></label>
@@ -763,7 +763,7 @@
     <section id="section-backup" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">⏰ النسخ الاحتياطي التلقائي المجدول</h3>
+          <h3 class="nm-card-title" data-i18n="backup.card.schedule">⏰ النسخ الاحتياطي التلقائي المجدول</h3>
         </div>
         <div class="form-grid cols-3" style="align-items:end;">
           <label class="nm-check">تفعيل النسخ التلقائي اليومي <input type="checkbox" id="bk-sched-enabled" /></label>
@@ -787,7 +787,7 @@
 
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">💾 النسخ الاحتياطي واستعادة قاعدة البيانات</h3>
+          <h3 class="nm-card-title" data-i18n="backup.card.main">💾 النسخ الاحتياطي واستعادة قاعدة البيانات</h3>
         </div>
         <p class="nm-card-desc">
           تصدير نسخة احتياطية كاملة من قاعدة البيانات كملف SQLite أصلي (.db)، أو استعادة نسخة سابقة.
@@ -824,7 +824,7 @@
 
         <!-- ===== أزرار تَنظيف الجداول الكبيرة (نَقْل من تبويب السجل — v2.7.x) ===== -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head">🧹 تَنظيف جداول السِّجلّات الكبيرة</div>
+          <div class="nm-sub-head" data-i18n="backup.card.cleanup">🧹 تَنظيف جداول السِّجلّات الكبيرة</div>
           <small class="nm-hint" style="display:block; margin-bottom:0.7rem;">
             تَحْرير مَساحة عبر حذف نُقاط/أَحداث قَدِيمة. يُؤثّر في الرسوم البيانية ونِسَب Uptime الظاهرة في الصفحة العامة (تُحدَّث عند إِعادَة تَحميلها).
           </small>
@@ -839,7 +839,7 @@
 
         <!-- تصدير / استيراد -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head">⬆️⬇️ تصدير واستعادة ملف</div>
+          <div class="nm-sub-head" data-i18n="backup.card.io">⬆️⬇️ تصدير واستعادة ملف</div>
           <div class="nm-actions" style="margin-top:0;">
             <button type="button" class="btn btn-primary" id="backup-export-btn" title="تنزيل ملف .db يحتوي على كامل قاعدة البيانات">⬇️ تصدير نسخة احتياطية (.db)</button>
           </div>
@@ -881,7 +881,7 @@
     <section id="section-display" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🎛️ إعدادات العرض والأدوات</h3>
+          <h3 class="nm-card-title" data-i18n="card.display.title">🎛️ إعدادات العرض والأدوات</h3>
           <span class="nm-chip is-info">تُطبَّق فورًا · بلا إعادة تشغيل</span>
         </div>
         <p class="nm-card-desc">
@@ -891,12 +891,12 @@
 
         <!-- (1) ما يراه الزائر -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head">🧑‍🤝‍🧑 ما يراه الزائر (بدون تسجيل دخول)</div>
+          <div class="nm-sub-head" data-i18n="display.guestHeading">🧑‍🤝‍🧑 ما يراه الزائر (بدون تسجيل دخول)</div>
           <label class="nm-field" style="max-width:560px;">وضع الصفحة العامة للزائر
             <select id="disp-public-mode" class="nm-select">
-              <option value="lan">🏠 البطاقات + خريطة المواقع (الافتراضي للشبكة الداخلية)</option>
-              <option value="minimal">🔒 الحالة فقط بلا خريطة (الأنسب للرابط المكشوف على الإنترنت)</option>
-              <option value="off">⛔ إيقاف العرض العام تمامًا (أي زائر يُرفض)</option>
+              <option value="lan" data-i18n="display.mode.lan">🏠 البطاقات + خريطة المواقع (الافتراضي للشبكة الداخلية)</option>
+              <option value="minimal" data-i18n="display.mode.minimal">🔒 الحالة فقط بلا خريطة (الأنسب للرابط المكشوف على الإنترنت)</option>
+              <option value="off" data-i18n="display.mode.off">⛔ إيقاف العرض العام تمامًا (أي زائر يُرفض)</option>
             </select>
           </label>
           <small class="nm-hint">الزائر لا يرى أي عنوان IP/MAC في كل الأوضاع — الفرق بين الأوضاع في كمية المعلومة لا في الخصوصية.</small>
@@ -905,7 +905,7 @@
 
         <!-- (2) ما يراه المستخدم المسجَّل -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head">🙋 ما يراه المستخدم المسجَّل (مدير أو عرض)</div>
+          <div class="nm-sub-head" data-i18n="display.userHeading">🙋 ما يراه المستخدم المسجَّل (مدير أو عرض)</div>
           <label class="nm-check">
             <input type="checkbox" id="disp-noc-internal" />
             <span>عرض <b>عناوين IP</b> على الصفحة العامة وشاشة NOC — <b>لأي مستخدم مسجَّل</b> (الزوار محجوبون دائمًا)</span>
@@ -915,7 +915,7 @@
 
         <!-- (3) أدوات التشخيص -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head">🛠️ أدوات التشخيص (Ping / Tracert)</div>
+          <div class="nm-sub-head" data-i18n="display.toolsHeading">🛠️ أدوات التشخيص (Ping / Tracert)</div>
           <div class="nm-grid" style="max-width:640px;">
             <label class="nm-field">مَن يستطيع الاستخدام؟
               <select id="tools-min-role" class="nm-select">
@@ -945,7 +945,7 @@
     <section id="section-system" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🖥️ حالة النظام — الاستهلاك الحي</h3>
+          <h3 class="nm-card-title" data-i18n="card.system.title">🖥️ حالة النظام — الاستهلاك الحي</h3>
           <label class="nm-check">
             <input type="checkbox" id="sys-auto-refresh" checked />
             <span>تحديث ذاتي (كل 5 ثوانٍ)</span>
@@ -1040,7 +1040,7 @@
 
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🔄 تحديثات النظام</h3>
+          <h3 class="nm-card-title" data-i18n="card.updates.title">🔄 تحديثات النظام</h3>
         </div>
         <p class="nm-card-desc">
           فحص الإصدارات من GitHub وتنفيذ التحديث بأمان — الويب لا تنفّذ أوامر، والتنفيذ بصلاحية root عبر «ملف طلب».
@@ -1142,7 +1142,7 @@
             <label class="nm-field" style="max-width:180px;">الساعة اليومية
               <input type="time" class="nm-input" id="upd-auto-hour" value="03:30" />
             </label>
-            <button type="button" class="btn btn-primary" id="upd-auto-save-btn">💾 حفظ</button>
+            <button type="button" class="btn btn-primary" id="upd-auto-save-btn" data-i18n="common.save">💾 حفظ</button>
           </div>
           <div id="upd-auto-status" class="nm-sub" style="margin-top:0.5rem;"></div>
         </div>
@@ -1154,7 +1154,7 @@
     <section id="section-remote" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title">🌍 الوصول عن بُعد (ngrok)</h3>
+          <h3 class="nm-card-title" data-i18n="card.remote.title">🌍 الوصول عن بُعد (ngrok)</h3>
         </div>
         <p class="nm-card-desc">
           مطابق لقائمة «Remote access (ngrok)» في كونسول الجهاز — بندًا ببند.
@@ -1314,7 +1314,7 @@
         <p style="color:var(--muted);font-size:0.8rem;margin:0 0 0.6rem;">
           مضيف متصل وخدمة متوقفة ⇒ تظهر حالة الجهاز «متصل — خدمة متوقفة» وتُرسل تنبيهًا خاصًّا بالخدمة.
         </p>
-        <div id="df-services-list"><span style="color:var(--muted);font-size:0.85rem;">…جارٍ التحميل</span></div>
+        <div id="df-services-list"><span style="color:var(--muted);font-size:0.85rem;" data-i18n="common.loading">…جارٍ التحميل</span></div>
         <details id="df-service-add" style="margin-top:0.6rem;">
           <summary style="cursor:pointer;font-size:0.9rem;">➕ إضافة خدمة</summary>
           <div class="form-grid" style="margin-top:0.6rem;">
@@ -1487,6 +1487,7 @@
 
   <!-- سكريبتات (admin-utils.js يجب أن يُحمّل أولاً — يحوي esc/api المشتركة) -->
   <script src="../js/nm-format.js"></script>
+  <script src="../js/nm-i18n.js"></script>
   <script src="../js/admin-utils.js"></script>
   <script src="../js/admin-devices.js"></script>
   <!-- MON-02 — إدارة الخدمات المراقَبة (تُستدعى من نافذة تعديل الجهاز) -->
