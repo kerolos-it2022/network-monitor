@@ -151,10 +151,20 @@ async function checkDevice(device, opts = {}) {
     // نتيجة من جيل قديم (أُطلق فحص أحدث) ⇒ تُهمَل ولا تكتب فوق الأحدث.
     if (deviceGeneration.get(device.id) !== gen) return { skipped: true, reason: 'stale' };
 
-    // اكتشاف واجهات الويب (لا يؤثر في الحالة) — للأجهزة المفحوصة بـ Ping فقط.
+    // اكتشاف واجهات الويب (لا يؤثر في الحالة إطلاقًا — «الاكتشاف لا يعلو على الفحص الأساسي»).
+    // قرار مهم (استرجاع سلوك): زر «فتح HTTP/HTTPS» في جدول الأجهزة يعتمد على هذين العلمين،
+    // وكان السلوك الأصلي يُحدّثهما لكل جهاز في كل دورة. بعد احترام check_protocol (MON-01)
+    // كانا يُحدَّثان لأجهزة ping فقط ⇒ اختفى الزر من أجهزة http/https/port. الآن:
+    //   • الفحص الأساسي ويب (http/https) ⇒ العلم من نتيجته مباشرة (بلا فحص مكرّر).
+    //   • الفحص الأساسي ping/port ⇒ نجسّ 80/443 لاكتشاف الواجهة (كما كان السلوك الأصلي).
+    // العلم غير المُقاس يبقى null ⇒ لا يُكتب فوق قيمة سابقة (COALESCE في UPDATE).
     let httpFlag = null;
     let httpsFlag = null;
-    if (primary.protocol === 'ping') {
+    if (primary.protocol === 'http') {
+      httpFlag = primary.ok ? 1 : 0;
+    } else if (primary.protocol === 'https') {
+      httpsFlag = primary.ok ? 1 : 0;
+    } else {
       const [h, hs] = await Promise.all([
         Promise.resolve(probes.http(device.ip, 80)).catch(() => ({ isOnline: false })),
         Promise.resolve(probes.https(device.ip, 443)).catch(() => ({ isOnline: false })),
@@ -162,6 +172,17 @@ async function checkDevice(device, opts = {}) {
       if (deviceGeneration.get(device.id) !== gen) return { skipped: true, reason: 'stale' };
       httpFlag = h && h.isOnline ? 1 : 0;
       httpsFlag = hs && hs.isOnline ? 1 : 0;
+      // واجهة على منفذ مخصّص (web_port): كثير من الأجهزة تخدم واجهتها على منفذ غير 80/443
+      // (Synology 5001 · Odoo 8069 …) فيجب فحص المنفذ المخصّص نفسه لتظهر أزرار «فتح الواجهة».
+      const wp = Number(device.web_port);
+      if (!httpFlag && !httpsFlag && wp && wp !== 80 && wp !== 443) {
+        const sec = await Promise.resolve(probes.https(device.ip, wp)).catch(() => ({ isOnline: false }));
+        if (sec && sec.isOnline) httpsFlag = 1;
+        else {
+          const pla = await Promise.resolve(probes.http(device.ip, wp)).catch(() => ({ isOnline: false }));
+          if (pla && pla.isOnline) httpFlag = 1;
+        }
+      }
     }
 
     // الحالة السابقة تُقرأ **من القاعدة** لا من الكائن المارَّر: قد يكون الكائن لقطة قديمة

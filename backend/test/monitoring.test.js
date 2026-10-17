@@ -160,3 +160,37 @@ test('MON-01: probePrimary يحترم البروتوكول والمنافذ (ا�
     ['ping', '10.0.0.5'],
   ]);
 });
+
+// ── استرجاع أعلام «فتح الواجهة» (http_accessible/https_accessible) لكل أنواع الفحص ──
+// السبب الميداني: زر «فتح HTTP/HTTPS» في جدول الأجهزة يعتمد على هذين العلمين. بعد احترام
+// check_protocol صارا يُحدَّثان لأجهزة ping فقط ⇒ اختفى الزر من أجهزة port/http/https والمنافذ المخصّصة.
+test('واجهة الويب: أجهزة فحص المنفذ تُحدّث علم HTTP (زر فتح الواجهة يعود للظهور)', async () => {
+  const d1 = seedDevice({ check_protocol: 'port', port: 8069 });
+  await checkDevice(d1, { probes: probesAlways({ port: true, http: true, https: false }) });
+  const row1 = db.prepare('SELECT http_accessible, https_accessible FROM devices WHERE id = ?').get(d1.id);
+  assert.equal(row1.http_accessible, 1, 'اكتشاف الواجهة يجب أن يعمل مع فحص المنفذ أيضًا');
+  assert.equal(row1.https_accessible, 0);
+});
+
+test('واجهة الويب: جهاز بفحص https يأخذ العلم من الفحص الأساسي (بلا فحص مكرّر)', async () => {
+  const d2 = seedDevice({ check_protocol: 'https', port: 443 });
+  // قيمة سابقة من دورة أقدم: جهاز كان يخدم HTTP ثم تغيّر فحصه إلى https
+  db.prepare('UPDATE devices SET http_accessible = 1, https_accessible = 0 WHERE id = ?').run(d2.id);
+  await checkDevice(d2, { probes: probesAlways({ https: true }) });
+  const row = db.prepare('SELECT http_accessible, https_accessible FROM devices WHERE id = ?').get(d2.id);
+  assert.equal(row.https_accessible, 1, 'علم HTTPS من نتيجة الفحص الأساسي نفسه');
+  assert.equal(row.http_accessible, 1, 'العلم غير المُقاس لا يُصفَّر فوق قيمة سابقة (COALESCE)');
+});
+
+test('واجهة الويب: منفذ مخصّص (web_port) يُفحص عندما لا تخدم الواجهة على 80/443', async () => {
+  const d3 = seedDevice({ check_protocol: 'ping', web_port: 5001 });
+  const portAware = {
+    ping: async () => ({ isOnline: true, responseTimeMs: 2 }),
+    port: async () => ({ isOnline: false, responseTimeMs: null }),
+    http: async (ip, p) => ({ isOnline: p === 5001, responseTimeMs: 4 }),
+    https: async (ip, p) => ({ isOnline: p === 5001, responseTimeMs: 5 }),
+  };
+  const r = await checkDevice(d3, { probes: portAware });
+  assert.equal(r.hostStatus, 'online', 'اكتشاف الواجهة لا يغيّر حالة المضيف');
+  assert.equal(db.prepare('SELECT https_accessible FROM devices WHERE id = ?').get(d3.id).https_accessible, 1);
+});
