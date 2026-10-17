@@ -5,6 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const source = fs.readFileSync(path.join(__dirname, '../../frontend/public/sw.js'), 'utf8');
+// اسم الكاش الحالي يُقرأ من الملف نفسه: ترقيته (v25 → v26 …) لا تُسقط هذا الاختبار —
+// المهم أن activate يمسح الأقدم ويُبقي الحالي وكاش أي تطبيق آخر.
+const CURRENT_CACHE = /CACHE_NAME\s*=\s*'([^']+)'/.exec(source)[1];
+const OLDER_CACHES = ['network-monitor-v24', 'network-monitor-v25'].filter((k) => k !== CURRENT_CACHE);
 
 function worker({ offline = false, cacheControl = '', redirected = false } = {}) {
   const handlers = {}, writes = [], deleted = [];
@@ -21,7 +25,7 @@ function worker({ offline = false, cacheControl = '', redirected = false } = {})
     caches: {
       open: async () => ({ put: async (req) => { writes.push(req.url); } }),
       match: async () => cached,
-      keys: async () => ['network-monitor-v24', 'network-monitor-v25', 'another-app'],
+      keys: async () => [...OLDER_CACHES, CURRENT_CACHE, 'another-app'],
       delete: async (key) => { deleted.push(key); },
     },
   };
@@ -62,5 +66,6 @@ test('activation removes older application caches without deleting another appli
   const w = worker(); let done;
   w.handlers.activate({ waitUntil: (p) => { done = p; } });
   await done;
-  assert.deepEqual(w.deleted, ['network-monitor-v24']);
+  assert.deepEqual([...w.deleted].sort(), [...OLDER_CACHES].sort());
+  assert.ok(!w.deleted.includes(CURRENT_CACHE), 'الكاش الحالي لا يُمسح');
 });
