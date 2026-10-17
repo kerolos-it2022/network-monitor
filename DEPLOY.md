@@ -180,6 +180,36 @@ sudo bash deploy.sh update
 > git push origin main && git push origin v<X.Y.Z>
 > ```
 
+### 🖥️ ترقية الأبلاينس في المكان (in-place) إلى 2.33.0 — الترتيب إلزامي
+
+أبلاينس مُبنًّى من ISO قديم يثبّت **Node 18** (من مستودع دبيان 12)، والمشروع من 2.33.0 يشترط **Node ≥ 22**
+(`better-sqlite3@13` لا يُحمَّل على 18 — الأثر: الخدمة لا تقلع بعد التحديث).
+لذلك: **رقِّ Node أولًا، ثم حدّث التطبيق** (مرة واحدة فقط؛ الأجهزة المُنشأة من الـ ISO الجديد تأتي بـ Node 24).
+
+```bash
+# 0) اعرف الوضع الحالي + خُذ نسخة قاعدة آمنة (الأفضل من اللوحة: تبويب النسخ الاحتياطي → تصدير .db)
+node -v ; npm -v
+
+# 1) ترقية Node إلى 24 LTS
+apt-get update && apt-get install -y ca-certificates curl gnupg
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+apt-get install -y nodejs
+node -v      # يجب أن يطبع v24.x
+
+# 2) ثم من اللوحة: «🔄 التحديثات» → «🔍 فحص التحديثات» → «🛡️ نسخة احتياطية + تحديث»
+#    (مُحدِّث الأبلاينس nm-update ينزّل أرشيف الوسم، يُحدّث الكود بلا لمس قاعدة البيانات،
+#     ثم npm ci ثم إعادة تشغيل الخدمة — المتابعة: tail -f /var/lib/network-monitor/update/update.log)
+
+# 3) تحقّق بعد التحديث
+systemctl status network-monitor --no-pager | head -5      # active (running)
+curl -s localhost:4001/api/health                          # version = 2.33.0
+curl -s -o /dev/null -w "%{http_code}\n" localhost:4001/api/devices   # 401 (كان مكشوفًا 200 قبل التحديث)
+```
+
+**التراجع:** من اللوحة «↩️ الرجوع لإصدار أقدم» لاختيار الوسم السابق (نفس المسار الآمن)، وإعادة Node لأي إصدار
+عند الحاجة عبر `curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs`
+ثم `cd /opt/network-monitor/backend && npm ci --omit=dev`، والقاعدة من نسختك الاحتياطية عند اللزوم.
+
 ### ⚠️ ملاحظات الانتقال من 2.2.0 إلى 2.3.0
 
 نسخة 2.3.0 تُصلح مشاكل VAPID و SSE (مسح الأجهزة عبر reverse proxy). بعد `deploy.sh update`:
@@ -519,7 +549,7 @@ node src/seedAdmin.js
 - [ ] ضبطت نسخ احتياطي يومي لـ `monitoring.db`
 - [ ] اختبرت تسجيل الدخول + إضافة جهاز + وصول إشعار تلجرام
 - [ ] `node -v` يطبع **v22 أو أحدث** (المشروع 2.33.0 يشترط Node ≥22 — `better-sqlite3@13`)
-- [ ] `cd backend && npm test` يمرّ (**91/91**) قبل الترقية
+- [ ] `cd backend && npm test` يمرّ (**115/115**) قبل الترقية
 - [ ] أخذت نسخة احتياطية + `PRAGMA integrity_check` قبل الترقية
 - [ ] راجعت «إعدادات العرض» (العرض العام + شاشة NOC) و«مساعد AI» (التنقيح) بعد الترقية
 - [ ] يُستحسن: ضبط `check_interval_seconds` للأجهزة غير الحرجة على الشبكات الكبيرة (30/60 ثانية)
