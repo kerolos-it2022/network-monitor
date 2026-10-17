@@ -1023,6 +1023,10 @@ table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 }
 /* قائمة طويلة الخيارات لا تدفع الصفّ: تُقصّ بحدّ أقصى وتظل قابلة للسحب */
 .nm-row > select, .nm-row-between > select, .nm-card-head > select, .nm-actions > select { max-width: 320px; }
+/* صفّ الأزرار: القائمة/الحقل بجانب الأزرار بنفس حجم خطّها (كان النصّ أكبر من نصّ الزرّ المجاور).
+   ملاحظة: يجب تكرار body:not(.page-noc) وإلا سبقتها قاعدة الحقول العامة (أعلى تخصيصًا). */
+body:not(.page-noc) .nm-actions > select,
+body:not(.page-noc) .nm-actions > input { font-size: var(--nm-fs-sm); }
 
 /* (ب) مربّعات الإدخال تلتقي على خطّ واحد داخل الصفّ مهما اختلف طول التسمية أو التفصيل الجانبي:
    ندفع محتوى كل حقل إلى **أسفل خليّته**، وآخر عنصر في الحقل هو مربّع الإدخال ⇒ كل المربّعات على خطّ واحد.
@@ -1045,7 +1049,9 @@ table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 @supports selector(label:has(> input[type="checkbox"])) {
   .form-grid > label:has(> input[type="checkbox"]):not(:has(input:not([type="checkbox"]))) {
     flex-direction: column;
-    align-items: flex-end;      /* المربّع من جهة البداية (يمين) مثل بقية الحقول */
+    /* ⚠ في العربية flex-end = **الشمال** (نهاية المحور الداخلي) — استعملناها بالغلط فالتسمية
+       والمربّع اتزنقوا على شمال الخليّة. الصحيح flex-start لأنها تعني «بداية السطر» = اليمين. */
+    align-items: flex-start;
     justify-content: space-between;
     height: 100%;
   }
