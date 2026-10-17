@@ -97,9 +97,6 @@ router.post('/bulk/approve', requireAuth, (req, res) => {
     const findExisting = db.prepare('SELECT id FROM devices WHERE ip = ?');
     const insertDev = db.prepare(`INSERT INTO devices (name, ip, device_type_id, current_status, is_active) VALUES (?, ?, ?, 'unknown', 1)`);
 
-    // AST-01/02 — تُنفَّذ بعد المعاملة (لا تُشغّل كتابات إضافية داخل tx):
-    // هوية ثابتة + تسجيل IP/MAC المرصودين بأدلة، وأي شك ⇒ تعارض للمراجعة بلا دمج تلقائي.
-    const assetWork = [];
     const tx = db.transaction((ids) => {
       let approved = 0;
       let skipped = 0;
@@ -113,7 +110,6 @@ router.post('/bulk/approve', requireAuth, (req, res) => {
           const ins = insertDev.run(dev.hostname || dev.vendor || `جهاز ${dev.ip}`, dev.ip, typeId);
           createdId = ins.lastInsertRowid;
         }
-        assetWork.push({ dev, createdId });
         approveStmt.run(id);
         approved++;
       }
@@ -121,18 +117,6 @@ router.post('/bulk/approve', requireAuth, (req, res) => {
     });
     const out = tx(ids);
 
-    try {
-      const assets = require('../services/assets.service');
-      for (const w of assetWork) {
-        if (w.createdId) {
-          assets.assignAssetId(w.createdId);
-          assets.attachObservation(w.createdId, { ip: w.dev.ip, mac: w.dev.mac, source: 'scan', confidence: 60 });
-        }
-        assets.observeDiscovery({ ip: w.dev.ip, mac: w.dev.mac, hostname: w.dev.hostname, source: 'scan' });
-      }
-    } catch (e) {
-      console.error('[assets] bulk-approve hooks:', e.message);
-    }
     res.json({ success: true, message: `تم اعتماد ${out.approved} جهاز.` + (out.skipped ? ` (تُخطّي ${out.skipped} لعدم وجود أنواع أجهزة)` : ''),
       data: out });
   } catch (e) {
@@ -207,21 +191,6 @@ router.post('/:id/approve', requireAuth, (req, res) => {
     db.prepare(
       `UPDATE discovered_devices SET is_approved = 1, approved_at = datetime('now') WHERE id = ?`
     ).run(req.params.id);
-
-    // AST-01/02 — هوية ثابتة + تسجيل IP/MAC المرصودين، وأي شك ⇒ تعارض للمراجعة (بلا دمج تلقائي).
-    try {
-      const assets = require('../services/assets.service');
-      if (deviceId) {
-        assets.assignAssetId(deviceId);
-        assets.attachObservation(deviceId, { ip: dev.ip, mac: dev.mac, source: 'scan', confidence: 60 });
-      }
-      const obs = assets.observeDiscovery({ ip: dev.ip, mac: dev.mac, hostname: dev.hostname, source: 'scan' });
-      if (obs.action === 'review') {
-        console.log(`[assets] conflict #${obs.conflictId} (${obs.kind}) awaiting owner review — no auto-merge`);
-      }
-    } catch (e) {
-      console.error('[assets] approve hooks:', e.message);
-    }
 
     res.json({
       success: true,

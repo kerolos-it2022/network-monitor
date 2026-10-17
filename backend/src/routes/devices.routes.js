@@ -213,14 +213,6 @@ router.post('/', requireAuth, (req, res) => {
 
   const newDeviceId = result.lastInsertRowid;
 
-  // AST-01 — هوية ثابتة فورًا: asset_id دائم + بداية سجل IP لهذا الجهاز.
-  try {
-    require('../services/assets.service').assignAssetId(newDeviceId);
-    require('../services/assets.service').recordIp(newDeviceId, ip, { source: 'manual', confidence: 100 });
-  } catch (e) {
-    console.error('[assets] create hooks failed:', e.message);
-  }
-
   // فحص تلقائي لبروتوكولات HTTP و HTTPS عند إضافة جهاز جديد
   // تنفيذ بشكل غير متزامن حتى لا يؤخر إرجاع الرد
   // v2.7.5 — لو حُدِّد web_port نَفحص HTTP و HTTPS على هذا البورت فقط (واجهة على
@@ -327,19 +319,6 @@ router.put('/:id', requireAuth, (req, res) => {
     is_active == null ? 1 : is_active,
     id
   );
-
-  // AST-01 — تغيّر عنوان الجهاز يُسجَّل في سجل IP: يُغلق الفترة القديمة ويُفتح عنوان جديد
-  // (الهوية تبقى ثابتة على نفس الـ asset_id — لا جهاز جديد عند تغيّر الـ DHCP).
-  try {
-    const assets = require('../services/assets.service');
-    assets.assignAssetId(id);
-    const oldIp = db.prepare('SELECT ip FROM device_ip_history WHERE device_id = ? AND valid_to IS NULL ORDER BY id DESC LIMIT 1').get(id);
-    if (!oldIp || oldIp.ip !== ip) {
-      assets.recordIp(id, ip, { source: 'manual', confidence: 100 });
-    }
-  } catch (e) {
-    console.error('[assets] update hooks failed:', e.message);
-  }
 
   // v2.7.5 — لو تغيّر web_port (أُدخل/حُذِف/عُدِّل) نُعيد الفحص التلقائي لِـ HTTP/HTTPS
   // على البورت الجديد (أو الافتراضي 80/443 لو حُذِف) — نفس نمط الفحص عند الإِضافة.

@@ -44,8 +44,6 @@ const settingsRoutes = require('./routes/settings.routes');
 const servicesRoutes = require('./routes/services.routes');
 // RCA-01/02 — الأعطال المرتبطة بالشجرة (قراءة بجلسة).
 const incidentsRoutes = require('./routes/incidents.routes');
-// AST-01/02/03 — الأصول ذات الهوية الثابتة (واجهات MAC + سجل IP + تعارضات).
-const assetsRoutes = require('./routes/assets.routes');
 // Phase 3 — تكاملات اختيارية للقراءة فقط (SNMP معطّل افتراضيًّا).
 const integrationsRoutes = require('./routes/integrations.routes');
 
@@ -141,8 +139,6 @@ function createApp() {
   app.use('/api/devices/:deviceId/services', servicesRoutes);
   // RCA — الأعطال المرتبطة (عطل جهاز أعلى + قائمة الأبناء المتأثرين).
   app.use('/api/incidents', incidentsRoutes);
-  // AST — الأصول: asset_id ثابت + واجهات MAC + سجل IP + قائمة مراجعة التعارضات.
-  app.use('/api/assets', assetsRoutes);
   // التكاملات الاختيارية (SNMP…) — opt-in صريح وقراءة فقط.
   app.use('/api/integrations', integrationsRoutes);
   app.use('/api/locations', locationsRoutes);

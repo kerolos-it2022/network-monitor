@@ -1066,16 +1066,6 @@ router.post('/bulk-add', async (req, res) => {
           d.failure_threshold || 3,
           d.is_active ? 1 : 0
         );
-        // AST-01/02 — هوية ثابتة + تسجيل IP/MAC، وأي شك ⇒ تعارض للمراجعة (بلا دمج تلقائي).
-        try {
-          const assets = require('../services/assets.service');
-          const newId = ins.lastInsertRowid;
-          assets.assignAssetId(newId);
-          assets.attachObservation(newId, { ip: d.ip, mac: d.mac || null, source: 'scan', confidence: 60 });
-          if (d.mac) assets.observeDiscovery({ ip: d.ip, mac: d.mac, hostname: d.hostname, source: 'scan' });
-        } catch (e) {
-          console.error('[assets] bulk-add hooks:', e.message);
-        }
         imported++;
       } catch (e) {
         skipped++;

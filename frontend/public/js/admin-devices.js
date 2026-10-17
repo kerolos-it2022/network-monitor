@@ -125,7 +125,7 @@ async function loadDevices() {
     }
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${esc(d.name)}${d.asset_id ? `<div class="nm-sub nm-ltr" style="display:block; font-size:0.72rem;">${esc(d.asset_id)}</div>` : ''}</td>
+      <td>${esc(d.name)}</td>
       <td class="col-ltr">${esc(d.ip)}</td>
       <td>${esc(d.device_type_name || '—')}</td>
       <td>${esc(d.location_name || '—')}</td>
@@ -133,7 +133,6 @@ async function loadDevices() {
       <td class="col-actions">
         ${openBtn}
         <button class="btn btn-sm" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>
-        <button class="btn btn-sm" data-asset="${esc(d.asset_id || d.id)}" title="الأصل: الهوية الثابتة + واجهات MAC + سجل IP + تعارضات">🔖 أصل</button>
         <button class="btn btn-sm" data-edit="${d.id}" title="تعديل الجهاز">✏️ تعديل</button>
         <button class="btn btn-sm btn-danger" data-del="${d.id}" title="حذف الجهاز">🗑️ حذف</button>
       </td>
@@ -148,10 +147,6 @@ async function loadDevices() {
     // HIST-03 — نافذة التشغيل (24h/7d/30d + تغطية).
     tr.querySelector('[data-hist]').addEventListener('click', () => {
       if (window.AdminHistory) window.AdminHistory.open(d.id, d.name);
-    });
-    // AST-03 — نافذة الأصل (هوية ثابتة + MAC + سجل IP + تعارضات).
-    tr.querySelector('[data-asset]').addEventListener('click', function () {
-      if (window.AdminAssets) window.AdminAssets.open(this.dataset.asset);
     });
     tr.querySelector('[data-edit]').addEventListener('click', () => startEditDevice(d.id));
     tr.querySelector('[data-del]').addEventListener('click', () => deleteDevice(d.id, d.name));

@@ -88,10 +88,6 @@ try {
       "ALTER TABLE notification_settings ADD COLUMN noc_alert_screen_enabled INTEGER DEFAULT 1",
       // AI-02 (SpaceKit Phase 4) — تنقيح السياق المُرسل لمزوّد AI (مفعّل افتراضيًّا).
       "ALTER TABLE ai_settings ADD COLUMN redact_internal INTEGER NOT NULL DEFAULT 1",
-      // AST-01 (SpaceKit Phase 2) — المعرّف الثابت للأصول على القواعد القائمة.
-      "ALTER TABLE devices ADD COLUMN asset_id TEXT",
-      // الفهرس يُنشأ هنا (بعد ALTER) لا في schema.sql — تفصيل الأمان في تعليق schema.sql.
-      "CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_asset_id ON devices(asset_id)",
       // MON-01 (SpaceKit Phase 1) — حالات المراقبة المفصولة على القواعد القائمة.
       "ALTER TABLE devices ADD COLUMN host_status TEXT",
       "ALTER TABLE devices ADD COLUMN overall_health TEXT",
@@ -101,6 +97,27 @@ try {
     ];
     for (const sql of migrations) {
       try { db.exec(sql); } catch (_) { /* العمود موجُود بالفعل */ }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // v2.33.0 — إزالة «نظام الأصل» بالكامل (قرار المالك: حذف كامل + مسح بيانات).
+    // تُسقط جداول الأصول الثلاثة + عمود asset_id عن الأجهزة (وفهرسه) + مفتاح العدّاد.
+    // نهائية ولا رجعة فيها؛ آمنة التكرار (IF EXISTS + فحص وجود العمود).
+    // ─────────────────────────────────────────────────────────────
+    try {
+      db.exec('DROP TABLE IF EXISTS device_interfaces');
+      db.exec('DROP TABLE IF EXISTS device_ip_history');
+      db.exec('DROP TABLE IF EXISTS asset_conflicts');
+      db.exec('DROP TABLE IF EXISTS assets');
+      const hasAssetCol = db.prepare('PRAGMA table_info(devices)').all().some((c) => c.name === 'asset_id');
+      if (hasAssetCol) {
+        db.exec('DROP INDEX IF EXISTS idx_devices_asset_id');
+        db.exec('ALTER TABLE devices DROP COLUMN asset_id');
+      }
+      db.prepare("DELETE FROM app_settings WHERE key = 'asset_id_seq'").run();
+      if (hasAssetCol) console.log('[db] v2.33.0 — أُزيل نظام الأصل (جداول + عمود asset_id + العدّاد).');
+    } catch (e) {
+      console.warn('[db] asset removal skipped:', e.message);
     }
 
     // ─────────────────────────────────────────────────────────────
