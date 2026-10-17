@@ -6,6 +6,7 @@ const express = require('express');
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 const pd = require('../services/public-display.service');
+const toolsPolicy = require('../services/tools-policy.service');
 // SEC-03 — تغييرات الإعدادات تُسجَّل في سجل التدقيق.
 const audit = require('../services/audit.service');
 
@@ -65,6 +66,41 @@ router.put('/noc-display', adminOnly, (req, res) => {
   if (!result.ok) return res.status(400).json({ success: false, error: result.error });
   audit.record('settings_change', req, { target: 'noc_internal_full', details: { mode: result.mode } });
   res.json({ success: true, data: { mode: result.mode } });
+});
+
+// ─────────────────────────────────────────────────────────────
+// 🛠️ سياسة أدوات التشخيص (Ping/Tracert) — من اللوحة بدل .env، مع تدقيق.
+//   GET/PUT /api/settings/tools-policy
+//   min_role: admin|viewer · allow_public: 0|1 · allowed_cidrs: قائمة CIDR (فارغة = الخاص فقط)
+// ─────────────────────────────────────────────────────────────
+router.get('/tools-policy', adminOnly, (req, res) => {
+  const p = toolsPolicy.getToolsPolicy();
+  res.json({
+    success: true,
+    data: {
+      min_role: p.minRole,
+      allow_public: p.allowPublic ? 1 : 0,
+      allowed_cidrs: p.allowedCidrs,
+      source: p.source,
+      effective: {
+        who_can_use: p.minRole === 'viewer' ? 'أي مستخدم مسجَّل (مدير أو عرض)' : 'المدير فقط',
+        targets: p.allowPublic
+          ? 'أي عنوان (عام أو خاص) للمستخدمين المسجّلين'
+          : (p.allowedCidrs ? 'النطاقات المخصّصة فقط: ' + p.allowedCidrs : 'الشبكات الخاصة فقط (10.x · 172.16-31.x · 192.168.x · 127.x · IPv6 محلي)'),
+        anonymous: 'ممنوع دائمًا (401)',
+      },
+    },
+  });
+});
+
+router.put('/tools-policy', adminOnly, (req, res) => {
+  const result = toolsPolicy.saveToolsPolicy(req.body || {});
+  if (!result.ok) return res.status(400).json({ success: false, error: result.error });
+  audit.record('tools_policy_change', req, {
+    target: 'tools_policy',
+    details: { min_role: result.policy.minRole, allow_public: result.policy.allowPublic, allowed_cidrs: result.policy.allowedCidrs || null },
+  });
+  res.json({ success: true, data: { min_role: result.policy.minRole, allow_public: result.policy.allowPublic ? 1 : 0, allowed_cidrs: result.policy.allowedCidrs } });
 });
 
 // بلا requireAuth: تُرجع فقط الوضع الفعلي **لهذا الطلب** (تُستخدم من shashet NOC).

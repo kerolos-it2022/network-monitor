@@ -14,6 +14,8 @@ const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 const { authorizeTarget } = require('../services/net/target-guard');
 const { createSlidingWindowLimiter, createSemaphore } = require('../services/net/tool-limits');
+// SEC-01/قرار المالك — السياسة تُقرأ من اللوحة (app_settings) ← .env ← الافتراضي الآمن.
+const toolsPolicy = require('../services/tools-policy.service');
 // SEC-03 — سجل تدقيق لاستخدام أدوات التشخيص (من/إلى/أي أداة).
 const audit = require('../services/audit.service');
 
@@ -26,7 +28,8 @@ function intEnv(name, fallback) {
 
 function toolsConfig() {
   return {
-    minRole: String(process.env.NM_TOOLS_MIN_ROLE || 'admin').toLowerCase() === 'viewer' ? 'viewer' : 'admin',
+    // minRole/allowPublic من سياسة اللوحة (تتجاوز .env) — تُقرأ في كل طلب فتُطبَّق فورًا.
+    policy: toolsPolicy.getToolsPolicy(),
     ratePerMin: intEnv('NM_TOOLS_RATE_PER_MIN', 10),
     maxConcurrent: intEnv('NM_TOOLS_MAX_CONCURRENT', 2),
     pingCount: Math.min(intEnv('NM_PING_COUNT', 4), 10),
@@ -166,7 +169,10 @@ function buildHandler(tool) {
     }
 
     // تحقق + سياسة الوجهة (يُحلّ الاسم هنا ويُنفَّذ العنوان الناتج نفسه).
-    const auth = await authorizeTarget(req.query.ip);
+    const auth = await authorizeTarget(req.query.ip, {
+      allowPublic: cfg.policy.allowPublic,
+      cidrs: toolsPolicy.resolveCidrsForPolicy(cfg.policy),
+    });
     if (!auth.ok) {
       const status = auth.code === 'TARGET_NOT_ALLOWED' ? 403 : 400;
       return res.status(status).json({ success: false, error: auth.error });
@@ -183,7 +189,7 @@ function buildHandler(tool) {
   };
 }
 
-const gate = [requireAuth, (req, res, next) => requireRole(toolsConfig().minRole)(req, res, next)];
+const gate = [requireAuth, (req, res, next) => requireRole(toolsConfig().policy.minRole)(req, res, next)];
 
 // GET /api/tools/ping?ip=192.168.1.1  — بث مباشر (للمدير/المشغّل فقط)
 router.get('/ping', gate, buildHandler('ping'));

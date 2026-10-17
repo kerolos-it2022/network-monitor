@@ -811,28 +811,58 @@
     <!-- ═══ SEC-02/MON-02 — إعدادات العرض (ما يراه الزوار + شاشة NOC الداخلية) ═══ -->
     <section id="section-display" class="hidden">
       <div class="form-card">
-        <h3>🎛️ إعدادات العرض</h3>
+        <h3>🎛️ إعدادات العرض والأدوات</h3>
         <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
-          تتحكم في البيانات التي يراها أي زائر بلا تسجيل دخول، وفيما تعرضه شاشة NOC على التلفزيون.
-          كل التغييرات تُطبَّق فورًا بلا إعادة تشغيل، وتُسجَّل في سجل التدقيق.
+          كل ما هنا يُطبَّق <b>فورًا</b> بلا إعادة تشغيل، ويُسجَّل في سجل التدقيق. والمبدأ العام:
+          <b>الزائر بلا تسجيل دخول لا يرى أي عنوان أبدًا</b>، والقرار للمستخدم المسجَّل.
         </p>
-        <div style="display:grid; gap:1rem; max-width:640px;">
-          <label style="font-weight:bold;">وضع العرض العام (للزوار بلا تسجيل دخول)
-            <select id="disp-public-mode" style="margin-top:0.35rem;">
-              <option value="lan">🏠 lan — حالة الأجهزة + بنية الشاشة، بلا أي IP/MAC (المناسب للشبكة الداخلية)</option>
-              <option value="minimal">🔒 minimal — حالة الأجهزة فقط بلا شجرة/إحداثيات (الأنسب للنشر العام / ngrok)</option>
-              <option value="off">⛔ off — إيقاف العرض العام تمامًا (كل مسارات الزوار تُرفض)</option>
+
+        <!-- (1) ما يراه الزائر -->
+        <h4 style="margin:0.4rem 0 0.3rem;">🧑‍🤝‍🧑 ما يراه الزائر (بدون تسجيل دخول)</h4>
+        <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.4rem;">
+          الزائر يرى الحالة فقط — <b>وبدون أي عنوان IP/MAC</b> في كل الأحوال.
+        </p>
+        <select id="disp-public-mode" style="max-width:640px;">
+          <option value="lan">🏠 lan — حالة الأجهزة + شكل الشاشة/الخريطة (المناسب للشبكة الداخلية — الافتراضي)</option>
+          <option value="minimal">🔒 minimal — حالة الأجهزة فقط بلا خريطة/ترتيب (الأنسب لو الرابط مكشوف على الإنترنت / ngrok)</option>
+          <option value="off">⛔ off — إيقاف العرض العام تمامًا (أي زائر يُرفض)</option>
+        </select>
+        <p id="disp-status" style="font-size:0.82rem; color:var(--muted); margin:0.35rem 0 0;"></p>
+
+        <!-- (2) ما يراه المستخدم المسجَّل -->
+        <h4 style="margin:1rem 0 0.3rem;">🙋 ما يراه المستخدم المسجَّل (مدير أو عرض)</h4>
+        <label class="checkbox-label" style="font-weight:bold;">
+          <input type="checkbox" id="disp-noc-internal" />
+          <span>عرض <b>عناوين IP</b> على الصفحة العامة وشاشة NOC — <b>لأي مستخدم مسجَّل</b> (الزوار محجوبون دائمًا)</span>
+        </label>
+        <p style="font-size:0.78rem; color:var(--muted); margin:0.25rem 0 0;">
+          ألغِ التحديد لو الشاشة معلّقة في مكان عام وبها جلسة مسجّلة — عندها تُعرض الحالة بلا عناوين للجميع.
+        </p>
+
+        <!-- (3) أدوات التشخيص -->
+        <h4 style="margin:1rem 0 0.3rem;">🛠️ أدوات التشخيص (Ping / Tracert)</h4>
+        <div style="display:grid; gap:0.6rem; max-width:640px;">
+          <label style="font-weight:bold;">مَن يستطيع الاستخدام؟
+            <select id="tools-min-role" style="margin-top:0.3rem;">
+              <option value="admin">🔒 المدير فقط</option>
+              <option value="viewer">👥 أي مستخدم مسجَّل (مدير أو عرض)</option>
             </select>
           </label>
-          <label class="checkbox-label" style="font-weight:bold;">
-            <input type="checkbox" id="disp-noc-internal" />
-            <span>📺 شاشة NOC الداخلية تعرض عناوين IP — <b>للجلسات المسجّلة كمدير فقط</b> (الزوار يبقون بلا عناوين)</span>
+          <label class="checkbox-label">
+            <input type="checkbox" id="tools-allow-public" />
+            <span>🌍 السماح بفحص <b>عناوين عامة</b> على الإنترنت (مثل 8.8.8.8) — للمستخدمين المسجّلين فقط</span>
           </label>
-          <p id="disp-status" style="font-size:0.85rem; color:var(--muted); margin:0;"></p>
-          <div class="form-actions">
-            <button type="button" class="btn btn-primary" id="disp-save">💾 حفظ إعدادات العرض</button>
-          </div>
+          <label style="font-weight:bold;">نطاقات مخصّصة (اختياري — CIDR مفصولة بفواصل)
+            <input type="text" id="tools-allowed-cidrs" placeholder="192.168.88.0/23, 10.0.0.0/8" style="margin-top:0.3rem; direction:ltr; text-align:left;" />
+          </label>
+          <p id="tools-effective" style="font-size:0.82rem; color:var(--muted); margin:0;"></p>
         </div>
+
+        <div class="form-actions" style="margin-top:1rem; flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary" id="disp-save">💾 حفظ الإعدادات</button>
+          <button type="button" class="btn" id="guest-preview-btn" title="يعرض بالضبط ما سيصل للزائر الآن (بلا عناوين)">👁️ معاينة ما يراه الزائر</button>
+        </div>
+        <pre id="guest-preview-out" class="hidden" style="margin-top:0.6rem; max-height:220px; overflow:auto; font-size:0.78rem; background:var(--card-bg, rgba(0,0,0,0.04)); padding:0.5rem; border-radius:8px;"></pre>
       </div>
     </section>
 
