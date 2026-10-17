@@ -249,6 +249,12 @@
       // ── الذيل: نصوص الصفحات الثلاث ──
 
       // ── أجزاء/كلمات مدمجة (عدّادات ووحدات) ──
+      'fault.header': '⚠️ <b>عطل مركزي</b>: {name} — <b>{n}</b> جهازًا متأثرًا ({conf}) — منذ {since}',
+      'fault.affected': 'المتأثرون: {names}',
+      'fault.more': ' و{n} غيرهم',
+      'fault.confHigh': 'ثقة عالية',
+      'fault.confMedium': 'ثقة متوسطة',
+      'fault.confLow': 'ثقة منخفضة',
       'system.used': 'مستخدم',
       'system.of': 'من',
       'system.available': '— متاح',

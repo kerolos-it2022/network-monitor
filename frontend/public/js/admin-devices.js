@@ -86,13 +86,14 @@ async function loadIncidentsBanner() {
   host.classList.remove('hidden');
   host.innerHTML = rows.map((i) => {
     const names = (i.affected || []).slice(0, 6).map((a) => esc(a.name)).join('، ');
-    const more = (i.affected_count || 0) > 6 ? ` و${i.affected_count - 6} ${T('frag.others', 'غيرهم')}` : '';
-    const conf = i.confidence === 'high' ? 'ثقة عالية' : (i.confidence === 'medium' ? 'ثقة متوسطة' : 'ثقة منخفضة');
+    const more = (i.affected_count || 0) > 6 ? T('fault.more', { n: i.affected_count - 6 }) : '';
+    const conf = i.confidence === 'high'
+      ? T('fault.confHigh', 'ثقة عالية')
+      : (i.confidence === 'medium' ? T('fault.confMedium', 'ثقة متوسطة') : T('fault.confLow', 'ثقة منخفضة'));
     const since = i.started_at ? NMFormat.dateTime(i.started_at) : '—';
     return `<div style="margin-bottom:0.25rem;">
-      ⚠️ <b>${T('frag.central_fault', 'عطل مركزي')}</b>: ${esc(i.root_name || ('#' + i.root_device_id))}
-      — <b>${i.affected_count}</b> ${T('frag.affected_devices', 'جهازًا متأثرًا ')}(${conf}) — ${T('frag.since', 'منذ ')}${since}
-      <div style="color:var(--muted); font-size:0.82rem;">${T('frag.affected', 'المتأثرون')}: ${names}${more}</div>
+      ${NMI18N.t('fault.header', { name: esc(i.root_name || ('#' + i.root_device_id)), n: i.affected_count, conf: conf, since: since })}
+      <div style="color:var(--muted); font-size:0.82rem;">${NMI18N.t('fault.affected', { names: names + more })}</div>
     </div>`;
   }).join('');
 }
@@ -248,7 +249,7 @@ async function loadFormOptions() {
   locSel.innerHTML = `<option value="">${T('device.field.noLocation', '— بدون —')}</option>`;
   // فلتر الجدول: خيار "كل المواقع" + خيارات هرمية لِـ كل موقع.
   if (filterLocSel) {
-    filterLocSel.innerHTML = `<option value="">📍 ${T('frag.all', 'كل ')}${T('nav.locations', 'المواقع')}</option>`;
+    filterLocSel.innerHTML = `<option value="">${T('devices.allLocations', '📍 كل المواقع')}</option>`;
   }
   for (const t of types.success ? types.data : []) {
     const o = document.createElement('option');

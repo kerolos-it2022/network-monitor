@@ -243,6 +243,12 @@
     // ── Tail: the remaining page texts ──
 
     // ── Merged fragments (counters and units) ──
+    'fault.header': '⚠️ <b>Central fault</b>: {name} — <b>{n}</b> affected devices ({conf}) — since {since}',
+    'fault.affected': 'Affected: {names}',
+    'fault.more': ' and {n} more',
+    'fault.confHigh': 'high confidence',
+    'fault.confMedium': 'medium confidence',
+    'fault.confLow': 'low confidence',
     'system.used': 'used',
     'system.of': 'of',
     'system.available': '— available',
