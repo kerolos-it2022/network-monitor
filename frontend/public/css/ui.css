@@ -1039,14 +1039,28 @@ table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 .form-grid textarea { width: 100%; }
 /* (د) خلايا الشبكة لا تتمطّط: كل خليّة بارتفاع محتواها وتُحاذى من الأسفل ⇒ المربّعات على خطّ واحد */
 .form-grid { align-items: end; }
-/* (هـ) خليّة فيها مربّع اختيار فقط: تصير سطرًا واحدًا بارتفاع الحقل نفسه ⇒ المربّع في نفس سطر جيرانه */
+/* (هـ) خليّة فيها مربّع اختيار فقط: **بنفس بنية الخلايا المجاورة بالحرف** —
+   التسمية في سطر التسميات (نفس ارتفاع تسميات جيرانها)، والمربّع في سطر الحقول بارتفاع
+   الحقل نفسه ومتمركز على مركزه. (كانت التسمية تنزل لسطر الحقول فيبدو الصفّ غير مصطفّ.) */
 @supports selector(label:has(> input[type="checkbox"])) {
   .form-grid > label:has(> input[type="checkbox"]):not(:has(input:not([type="checkbox"]))) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: var(--nm-control-h);
+    flex-direction: column;
+    align-items: flex-end;      /* المربّع من جهة البداية (يمين) مثل بقية الحقول */
+    justify-content: space-between;
+    height: 100%;
+  }
+  .form-grid > label:has(> input[type="checkbox"]):not(:has(input:not([type="checkbox"]))) > input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-block-end: calc((var(--nm-control-h) - 1.05rem) / 2);   /* مركز المربّع = مركز الحقول */
   }
 }
+/* حقول الساعة (🕒 ساعة النسخ · 🗓️ من/إلى · الساعة اليومية): المتصفح **يفرض** عليها الاتجاه
+   اليساري ولا يقبل تغييره (مُختبَر: حتى direction:rtl المضمّنة والبصمة dir="rtl" تُتجاهل)،
+   فيظهر الوقت في أقصى يسار الحقل — عكس كل الحقول في الصفحة. الحل: محاذاة النصّ لليمين
+   وإخفاء أيقونة الساعة الأصلية (كل تسميات هذه الحقول فيها 🕒 أو كلمة «الساعة» أصلًا)
+   ⇒ الوقت يبدأ من اليمين مثل «عدد النسخ» والقوائم تمامًا. */
+body:not(.page-noc) input[type="time"] { text-align: right; }
+body:not(.page-noc) input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
 /* التفصيل الصغير (مثل «(URL)») لا يكسر السطر: يبقى مع التسمية */
 .form-grid label small, .nm-field small { font-weight: 400; }
