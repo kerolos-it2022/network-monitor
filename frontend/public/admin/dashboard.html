@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="topbar.dashboard">لوحة التحكم</title>
   <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui2" />
+  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui3" />
 </head>
 <body>
   <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
@@ -792,8 +792,9 @@
         <div class="nm-card-head">
           <h3 class="nm-card-title" data-i18n="backup.card.schedule">⏰ النسخ الاحتياطي التلقائي المجدول</h3>
         </div>
-        <div class="form-grid cols-3" style="align-items:end;">
-          <label class="nm-check">تفعيل النسخ التلقائي اليومي <input type="checkbox" id="bk-sched-enabled" /></label>
+        <!-- طلب المالك: «اقسمهم على سطرين» — سطر لمفتاح التفعيل (بعرض البطاقة) وسطر للحقلين معًا. -->
+        <div class="form-grid cols-2">
+          <label class="nm-check span-all">تفعيل النسخ التلقائي اليومي <input type="checkbox" id="bk-sched-enabled" /></label>
           <label>🕒 ساعة النسخ اليومي <input type="time" id="bk-sched-hour" value="03:30" /></label>
           <label>🗄️ عدد النسخ المحفوظة <input type="number" id="bk-sched-keep" min="1" max="30" value="7" /></label>
         </div>

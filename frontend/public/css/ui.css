@@ -1068,5 +1068,18 @@ body:not(.page-noc) .nm-actions > input { font-size: var(--nm-fs-sm); }
    ⇒ الوقت يبدأ من اليمين مثل «عدد النسخ» والقوائم تمامًا. */
 body:not(.page-noc) input[type="time"] { text-align: right; }
 body:not(.page-noc) input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+/* (و) خليّة تأخذ سطرًا كاملًا (مثل مفتاح تفعيل يسبق حقول إعداده): `span-all` في الوسم،
+   ومربّع الاختيار فيها يبقى سطرًا واحدًا (المربّع يسار النصّ = سلوك كل الشاشات) لا تسمية فوق حقل. */
+.form-grid .span-all { grid-column: 1 / -1; }
+@supports selector(label:has(> input[type="checkbox"])) {
+  .form-grid > label.span-all:has(> input[type="checkbox"]) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: var(--nm-control-h);
+  }
+  .form-grid > label.span-all:has(> input[type="checkbox"]) > input[type="checkbox"] { margin-block-end: 0; }
+}
+
 /* التفصيل الصغير (مثل «(URL)») لا يكسر السطر: يبقى مع التسمية */
 .form-grid label small, .nm-field small { font-weight: 400; }
