@@ -5,6 +5,7 @@ const db = require('../db');
 const requireAuth = require('../middleware/requireAuth');
 // SEC-03 — سجل تدقيق: نجاح/فشل الدخول، القفل، الخروج، تغيير كلمات المرور وإدارة المستخدمين.
 const audit = require('../services/audit.service');
+const { bindSession, revokeSessions } = require('../services/session-auth.service');
 
 const router = express.Router();
 
@@ -25,10 +26,9 @@ const LOCK_WINDOW_MS = 1000 * 60 * 15;      // نافذة عدّ المحاول�
 const LOCK_DURATION_MS = 1000 * 60 * 15;    // مدة القفل بعد بلوغ الحد
 const loginFailures = new Map();            // '${username}|${ip}' → { count, firstAt, lockedUntil }
 
-// IP الحقيقي خلف ngrok/بروكسي: X-Forwarded-For أول قيمة؛ وإلا عنوان الاتصال مباشرة.
+// Express resolves forwarding headers only through the configured trusted proxies.
 function clientIp(req) {
-  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-  return xff || (req.socket && req.socket.remoteAddress) || 'unknown';
+  return req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
 }
 function lockKey(req, username) {
   return String(username || '').toLowerCase() + '|' + clientIp(req);
@@ -43,9 +43,9 @@ function pruneLocks(now) {
 
 // POST /api/auth/login
 // Body: { username, password, remember? }
-router.post('/login', (req, res) => {
-  const { username, password, remember } = req.body;
-  if (!username || !password) {
+router.post('/login', (req, res, next) => {
+  const { username, password, remember } = req.body || {};
+  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
     return res
       .status(400)
       .json({ success: false, error: 'بيانات الدخول غير صحيحة' });
@@ -93,18 +93,21 @@ router.post('/login', (req, res) => {
   // نجاح الدخول: صفّر عدّاد هذا المستخدم+IP.
   loginFailures.delete(key);
 
-  req.session.user = { username: user.username, role: user.role };
-  audit.record('login_success', req, { target: user.username, role: user.role });
+  req.session.regenerate((err) => {
+    if (err) return next(err);
+    bindSession(req.session, user);
+    audit.record('login_success', req, { target: user.username, role: user.role });
 
-  // v2.7.5 — تَفعيل «تذكّرني»: نُعيد ضبط عمر الـ cookie لهذه الجلسة لِـ 30 يومًا.
-  // (نُفعّلها فقط عند تَحقّق remember من النموذج، وإلا تَبقى 12 ساعة كالسابق.)
-  if (remember && req.session.cookie && typeof req.session.cookie.maxAge === 'number') {
-    req.session.cookie.maxAge = REMEMBER_MAX_AGE;
-  }
+    // v2.7.5 — تَفعيل «تذكّرني»: نُعيد ضبط عمر الـ cookie لهذه الجلسة لِـ 30 يومًا.
+    // (نُفعّلها فقط عند تَحقّق remember من النموذج، وإلا تَبقى 12 ساعة كالسابق.)
+    if (remember && req.session.cookie && typeof req.session.cookie.maxAge === 'number') {
+      req.session.cookie.maxAge = REMEMBER_MAX_AGE;
+    }
 
-  return res
-    .status(200)
-    .json({ success: true, data: { username: user.username, role: user.role } });
+    return res
+      .status(200)
+      .json({ success: true, data: { username: user.username, role: user.role } });
+  });
 });
 
 // POST /api/auth/logout  (محمي)
@@ -128,7 +131,7 @@ router.get('/me', (req, res) => {
 // PUT /api/auth/change-password  🔒
 router.put('/change-password', requireAuth, (req, res) => {
   const { current_password, new_password } = req.body || {};
-  if (!current_password || !new_password) {
+  if (typeof current_password !== 'string' || typeof new_password !== 'string' || !current_password || !new_password) {
     return res.status(400).json({ success: false, error: 'كلمة المرور الحالية والجديدة مطلوبتان' });
   }
   if (new_password.length < 6) {
@@ -146,7 +149,12 @@ router.put('/change-password', requireAuth, (req, res) => {
   }
 
   const newHash = bcrypt.hashSync(new_password, 10);
-  db.prepare('UPDATE users SET password_hash = ? WHERE username = ?').run(newHash, req.session.user.username);
+  db.transaction(() => {
+    db.prepare('UPDATE users SET password_hash = ? WHERE username = ?').run(newHash, user.username);
+    revokeSessions(user.username, req.sessionID);
+  })();
+  bindSession(req.session, { ...user, password_hash: newHash });
+  audit.record('password_change', req, { target: user.username });
 
   return res.json({ success: true, data: null });
 });
@@ -191,6 +199,10 @@ router.delete('/users/:username', requireAuth, requireAdmin, (req, res) => {
   if (user.role === 'admin' && db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n <= 1) {
     return res.status(400).json({ success: false, error: 'لا يمكن حذف آخر مدير في النظام' });
   }
-  db.prepare('DELETE FROM users WHERE username = ?').run(target);
+  db.transaction(() => {
+    db.prepare('DELETE FROM users WHERE username = ?').run(target);
+    revokeSessions(target);
+  })();
+  audit.record('user_delete', req, { target });
   res.json({ success: true });
 });

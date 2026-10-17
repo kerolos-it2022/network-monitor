@@ -7,9 +7,7 @@
 'use strict';
 
 function isHttps(req) {
-  if (req.secure) return true;
-  const xfp = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
-  return xfp === 'https';
+  return !!req.secure;
 }
 
 function securityHeaders(req, res, next) {

@@ -3,72 +3,17 @@
 //   GET /reports/weekly?offset=0      → صفحة HTML مستقلة مزوّدة CSS طباعة
 //     (زر «حفظ PDF» يستخدم حوار الطباعة في المتصفح — بلا أي مكتبات خادم إضافية).
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const db = require('../db');
+const { buildWeeklyReport } = require('../services/weekly-report.service');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
-
-// buildWeeklyReport(offsetWeeks): إحصاءات آخر 7 أيام (مزاحة بعدد الأسابيع).
-function buildWeeklyReport(offsetWeeks = 0) {
-  const end = new Date(Date.now() - (Number(offsetWeeks) || 0) * 7 * 86400000);
-  const start = new Date(end.getTime() - 7 * 86400000);
-  const startIso = start.toISOString(), endIso = end.toISOString();
-
-  const events = db.prepare(`
-    SELECT de.device_id, de.started_at, de.ended_at, de.duration_seconds, d.name, d.ip
-    FROM downtime_events de
-    LEFT JOIN devices d ON d.id = de.device_id
-    WHERE de.started_at >= ? AND de.started_at < ?
-    ORDER BY de.started_at ASC
-  `).all(startIso, endIso);
-
-  const stillOpen = db.prepare(`
-    SELECT COUNT(*) AS n FROM downtime_events WHERE ended_at IS NULL AND started_at < ?
-  `).get(endIso).n;
-
-  const totalMin = events.reduce((a, e) => a + Math.max(0, (e.duration_seconds != null ? e.duration_seconds : (new Date((e.ended_at || endIso)) - new Date(e.started_at)) / 1000)) / 60, 0);
-  const perDevice = {};
-  for (const e of events) {
-    const name = e.name || 'جهاز محذوف';
-    const min = Math.max(0, (e.duration_seconds != null ? e.duration_seconds : (new Date((e.ended_at || endIso)) - new Date(e.started_at)) / 1000)) / 60;
-    if (!perDevice[e.device_id]) perDevice[e.device_id] = { name, ip: e.ip, min: 0, count: 0, worst_start: null, worst_min: 0 };
-    const p = perDevice[e.device_id];
-    p.min += min; p.count++;
-    const evMin = min;
-    if (evMin > p.worst_min) { p.worst_min = evMin; p.worst_start = e.started_at; }
-  }
-  const worstList = Object.values(perDevice).sort((a, b) => b.min - a.min).slice(0, 10);
-  const longest = events.slice().sort((a, b) => (b.duration_seconds || 0) - (a.duration_seconds || 0)).slice(0, 5);
-
-  const devCount = db.prepare('SELECT COUNT(*) AS n FROM devices WHERE is_active = 1').get().n;
-  // نسبة التشغيل التقريبية: (أجهزة × 7 أيام − دقائق الانقطاع) / (أجهزة × 7 أيام × 1440)
-  const totalDeviceMinutes = devCount * 7 * 1440;
-  const uptimePct = totalDeviceMinutes ? Math.max(0, (1 - totalMin / totalDeviceMinutes) * 100) : 100;
-
-  return {
-    start: startIso, end: endIso, offset: Number(offsetWeeks) || 0,
-    events_count: events.length,           // انقطاعات الأسبوع (التي بدأت خلاله)
-    open_still: stillOpen,                 // انقطاعات ما تزال قائمة (معلوماتية)
-    total_minutes: Math.round(totalMin),
-    uptime_percent: Math.round(uptimePct * 10) / 10,
-    devices_active: devCount,
-    per_device: worstList,
-    longest_events: longest.map((e) => ({
-      name: e.name || 'جهاز محذوف', ip: e.ip,
-      started_at: e.started_at, ended_at: e.ended_at,
-      minutes: e.duration_seconds != null ? Math.round(e.duration_seconds / 60) : null,
-    })),
-  };
-}
 
 // GET /api/reports/weekly?offset=N 🔒
 router.get('/weekly', requireAuth, (req, res) => {
   try {
     return res.json({ success: true, data: buildWeeklyReport(req.query.offset) });
   } catch (e) {
-    return res.status(500).json({ success: false, error: e.message });
+    return res.status(e.status || 500).json({ success: false, error: e.status === 400 ? e.message : 'خطأ داخلي في الخادم' });
   }
 });
 
@@ -79,7 +24,7 @@ const fmtDT = (iso) => { try { return new Date(iso).toLocaleString('ar-EG'); } c
 function weeklyPage(req, res) {
   if (!req.session || !req.session.user) return res.redirect('/admin/login.html');
   let rep;
-  try { rep = buildWeeklyReport(req.query.offset); } catch (e) { return res.status(500).send('خطأ: ' + e.message); }
+  try { rep = buildWeeklyReport(req.query.offset); } catch (e) { return res.status(e.status || 500).send(e.status === 400 ? e.message : 'خطأ داخلي في الخادم'); }
   const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const worstRows = rep.per_device.map((p, i) =>
     '<tr><td>' + (i + 1) + '</td><td>' + escHtml(p.name) + '</td><td dir="ltr">' + escHtml(p.ip || '') + '</td><td>' + Math.round(p.min) + '</td><td>' + p.count + '</td></tr>'

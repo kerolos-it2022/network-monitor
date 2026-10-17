@@ -25,8 +25,7 @@ function scrub(value, depth = 0) {
 
 function clientIp(req) {
   if (!req) return null;
-  const xff = String(req.headers && req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-  return xff || (req.socket && req.socket.remoteAddress) || null;
+  return req.ip || (req.socket && req.socket.remoteAddress) || null;
 }
 
 // record(event, req, { target, details, actor, role })

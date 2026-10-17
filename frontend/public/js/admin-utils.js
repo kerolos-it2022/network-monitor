@@ -6,10 +6,10 @@
 function esc(s) {
   if (s == null) return '';
   return String(s)
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
 
@@ -42,6 +42,18 @@ async function api(url, opts) {
 //   }
 // الاستعمال: const ok = await confirmAction({title, message, danger:true}); if (!ok) return;
 let __confirmState = null;   // يَحفظ الـ handlers أثناء فتح الـ modal.
+function trapModalFocus(event, modal) {
+  if (event.key !== 'Tab') return;
+  const items = Array.from(modal.querySelectorAll('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'))
+    .filter((el) => el.getClientRects().length > 0);
+  if (!items.length) { event.preventDefault(); return; }
+  const first = items[0], last = items[items.length - 1];
+  if (!modal.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) {
+    event.preventDefault(); (event.shiftKey ? last : first).focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
+}
 function confirmAction(opts) {
   opts = opts || {};
   const modal = document.getElementById('confirm-modal');
@@ -49,6 +61,8 @@ function confirmAction(opts) {
     // fallback آمن: لو modal غَير مَوجُود (خطأ تَحميل)، اِستَعمِل confirm الأَصلي.
     return Promise.resolve(window.confirm(opts.message || 'تأكيد؟'));
   }
+  if (__confirmState) __confirmState.cancel();
+  const previousFocus = document.activeElement;
   const titleEl = document.getElementById('confirm-modal-title');
   const msgEl = document.getElementById('confirm-modal-message');
   const okBtn = document.getElementById('confirm-modal-ok-btn');
@@ -62,7 +76,6 @@ function confirmAction(opts) {
 
   return new Promise((resolve) => {
     // اِنظِف handlers سابِقة (لِـ تَفادي تَسرّب promise نشط).
-    if (__confirmState) __confirmState._cleanup();
     let settled = false;
     function settle(result) {
       if (settled) return;
@@ -70,16 +83,19 @@ function confirmAction(opts) {
       modal.classList.add('hidden');
       modal.setAttribute('aria-hidden', 'true');
       modal.classList.remove('danger');
-      document.removeEventListener('keydown', onKey);
+      _cleanup();
       if (__confirmState) __confirmState = null;
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
       resolve(result);
     }
     function onKey(e) {
+      trapModalFocus(e, modal);
       if (e.key === 'Escape') { e.preventDefault(); settle(false); }
-      else if (e.key === 'Enter') { e.preventDefault(); settle(true); }
+      else if (e.key === 'Enter') { e.preventDefault(); settle(document.activeElement !== cancelBtn); }
     }
     function onBackdropClick(e) { if (e.target === modal) settle(false); }
     function _cleanup() {
+      document.removeEventListener('keydown', onKey);
       if (okBtn) okBtn.removeEventListener('click', onOk);
       if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
       modal.removeEventListener('click', onBackdropClick);
@@ -90,7 +106,7 @@ function confirmAction(opts) {
     if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
     modal.addEventListener('click', onBackdropClick);
     document.addEventListener('keydown', onKey);
-    __confirmState = { _cleanup };
+    __confirmState = { _cleanup, cancel: () => settle(false) };
 
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
@@ -115,7 +131,8 @@ function openEditModal(modalEl, opts) {
   if (!modalEl) return;
   opts = opts || {};
   // نَنظّف handlers سابِقة (لِـ تَفادي تَسرّب listeners نشطة من فتح سابق لِـ الـ modal نَفسه).
-  if (__editModalState && __editModalState._cleanup) __editModalState._cleanup();
+  if (__editModalState && __editModalState._close) __editModalState._close();
+  const previousFocus = document.activeElement;
 
   const contentEl = modalEl.querySelector('.modal-content');
   const closeBtn = modalEl.querySelector('.modal-close');
@@ -126,14 +143,16 @@ function openEditModal(modalEl, opts) {
     closed = true;
     modalEl.classList.add('hidden');
     modalEl.setAttribute('aria-hidden', 'true');
-    document.removeEventListener('keydown', onKey);
-    modalEl.removeEventListener('click', onBackdropClick);
+    _cleanup();
     __editModalState = null;
+    if (previousFocus && previousFocus.isConnected) previousFocus.focus();
     if (typeof opts.onClose === 'function') {
       try { opts.onClose(); } catch (e) { console.warn('[editModal] onClose', e); }
     }
   }
   function onKey(e) {
+    if (__confirmState) return;
+    trapModalFocus(e, modalEl);
     if (e.key === 'Escape') { e.preventDefault(); doClose(); }
   }
   function onBackdropClick(e) {

@@ -16,6 +16,8 @@ const { getEngineHealth } = require('./services/monitor.service');
 const { securityHeaders } = require('./middleware/security-headers');
 const { createCsrfGuard } = require('./middleware/csrf-guard');
 const { createSqliteSessionStore } = require('./services/session-store.service');
+const { validateSession } = require('./services/session-auth.service');
+const APP_VERSION = require('../package.json').version;
 
 const authRoutes = require('./routes/auth.routes');
 const devicesRoutes = require('./routes/devices.routes');
@@ -93,12 +95,20 @@ function createApp() {
       // إعادة التشغيل/التحديث (T03: «auth stable after reboot»).
       store: createSqliteSessionStore(db),
       cookie: {
+        secure: 'auto',
         httpOnly: true,
         sameSite: 'lax',
         maxAge: 1000 * 60 * 60 * 12, // 12 ساعة
       },
     })
   );
+  app.use(validateSession);
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path.startsWith('/reports/') || req.path.startsWith('/labels/')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+    next();
+  });
 
   // SEC-03 — حماية CSRF: التحقق من الأصل لكل الطلبات المُغيِّرة (انظر middleware/csrf-guard.js).
   app.use(createCsrfGuard());
@@ -113,9 +123,7 @@ function createApp() {
   app.get('/api/health', (req, res) => {
     let engine = null;
     try { engine = getEngineHealth(); } catch (e) { engine = { error: e.message }; }
-    let version = null;
-    try { version = JSON.parse(require('fs').readFileSync(path.join(__dirname, '../package.json'), 'utf8')).version || null; } catch (e) { version = null; }
-    res.json({ success: true, data: 'ok', version, engine });
+    res.json({ success: true, data: 'ok', version: APP_VERSION, engine });
   });
 
   // API routes.
