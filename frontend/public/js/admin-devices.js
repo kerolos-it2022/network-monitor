@@ -55,10 +55,17 @@ function renderDevicesSummary(list) {
   el('sum-offline').textContent = offline;
   el('sum-unknown').textContent = unknown;
   el('sum-services').textContent = services;
-  // الأصفار تُخفَّف بصريًّا (لا ضجيج لوني بلا معنى)
-  el('sum-offline').className = 'nm-kpi-value' + (offline ? ' is-bad' : ' is-muted');
-  el('sum-unknown').className = 'nm-kpi-value' + (unknown ? '' : ' is-muted');
-  el('sum-services').className = 'nm-kpi-value' + (services ? ' is-warn' : ' is-muted');
+  // الأصفار تُخفَّف بصريًّا (لا ضجيج لوني بلا معنى) — واللون يقع على البطاقة كلها
+  // (الرقم + الشريط العلوي) بستايل بطاقات NOC: أخضر للمتصل، أحمر حين يوجد منقطع،
+  // برتقالي حين توجد خدمات متأثرة، رمادي لما يكون الرقم صفرًا.
+  const paint = (counterId, active) => {
+    const c = el(counterId);
+    if (c) c.className = 'nm-counter ' + (active || 'is-muted');
+  };
+  paint('counter-online', 'is-ok');
+  paint('counter-offline', offline ? 'is-bad' : 'is-muted');
+  paint('counter-unknown', unknown ? 'is-info' : 'is-muted');
+  paint('counter-services', services ? 'is-warn' : 'is-muted');
 }
 
 // RCA-01/02 — شريط الأعطال المرتبطة: عطل جهاز أعلى مع عدد المتأثرين (لعرض «السبب الجذري»
@@ -88,19 +95,48 @@ async function loadIncidentsBanner() {
   }).join('');
 }
 
+// v2.33.0 — بحث فوري في تبويب الأجهزة: اسم الجهاز أو عنوان IP (بلا حساسية لحالة الأحرف).
+// نُخزّن آخر قائمة مجلوبة حتى تكون التصفية والترتيب والبحث **إعادة رسم محلية بلا أي طلب شبكة**.
+let lastDevicesList = [];      // آخر قائمة أجهزة من الخادم (تُحدَّث في loadDevices فقط)
+let devicesSearch = '';        // نصّ البحث الحالي (بلا حفظ في المتصفح — يعود فارغًا بعد التحميل)
+let devicesSearchTimer = null; // مهلة تهدئة 200ms قبل إعادة الرسم أثناء الكتابة
+
+function deviceMatchesSearch(d, q) {
+  if (!q) return true;
+  return String(d.name || '').toLowerCase().includes(q)
+    || String(d.ip || '').toLowerCase().includes(q);
+}
+
 async function loadDevices() {
   const r = await api('/api/devices');
+  const emptyBox = document.getElementById('devices-empty');
+  if (!r.success) {
+    lastDevicesList = [];
+    document.getElementById('devices-table-body').innerHTML = '';
+    if (emptyBox) emptyBox.classList.add('hidden');
+    return;
+  }
+  lastDevicesList = Array.isArray(r.data) ? r.data : [];
+  loadIncidentsBanner();
+  renderDevicesView();
+}
+
+// رسم العرض: (فلتر الموقع ← البحث ← الترتيب) ثم الملخص ثم الصفوف — من الذاكرة فقط.
+function renderDevicesView() {
   const tbody = document.getElementById('devices-table-body');
   const emptyBox = document.getElementById('devices-empty');
+  if (!tbody) return;
   tbody.innerHTML = '';
-  loadIncidentsBanner();
-  if (!r.success) { if (emptyBox) emptyBox.classList.add('hidden'); return; }
 
   // تَصفية client-side حسب location_id لو الفلتر فعّال (نَتفادى تَعديل SELECT في الخادم).
   const locFilter = currentLocationFilter ? Number(currentLocationFilter) : null;
-  const filtered = locFilter != null
-    ? r.data.filter((d) => Number(d.location_id) === locFilter)
-    : r.data;
+  const byLocation = locFilter != null
+    ? lastDevicesList.filter((d) => Number(d.location_id) === locFilter)
+    : lastDevicesList;
+
+  // البحث: بالاسم أو IP (نصّ صغير ⇒ بلا حساسية لحالة الأحرف)
+  const q = devicesSearch.trim().toLowerCase();
+  const filtered = byLocation.filter((d) => deviceMatchesSearch(d, q));
 
   // تطبيق الترتيب
   const sortBy = currentDevicesSort;
@@ -137,8 +173,13 @@ async function loadDevices() {
     return 0;
   });
 
-  // حالة فارغة صريحة: لا جدول بلا صفوف وبلا رسالة
-  if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
+  // حالة فارغة صريحة: لا جدول بلا صفوف وبلا رسالة — والرسالة تذكر البحث لو كان فعّالًا
+  if (emptyBox) {
+    emptyBox.classList.toggle('hidden', sortedData.length > 0);
+    emptyBox.innerHTML = q
+      ? '<span class="nm-empty-icon">🔍</span>لا توجد أجهزة تطابق «' + esc(devicesSearch.trim()) + '» — جرّب جزءًا آخر من الاسم أو الـ IP، أو امسح البحث (Esc).'
+      : '<span class="nm-empty-icon">📱</span>لا توجد أجهزة مطابقة — أضف جهازًا بزر «➕ إضافة جهاز» أو غيّر الفلاتر.';
+  }
 
   // v2.33.0 — ملخص الحالة أعلى الجدول: يُحسب من **نفس القائمة المعروضة** (فلو فُلتر بموقع،
   // الأرقام تطابق ما تراه في الجدول) وبلا أي نداء شبكة إضافي.
@@ -488,6 +529,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentLocationFilter = e.target.value || '';
       try { localStorage.setItem(DEVICES_FILTER_KEY, currentLocationFilter); } catch (_) {}
       loadDevices();
+    });
+  }
+
+  // v2.33.0 — خانة البحث (اسم أو IP): إعادة رسم محلية بتهدئة 200ms (بلا أي طلب للسيرفر)،
+  // وEsc يمسح البحث — نفس سلوك شاشة خريطة المواقع.
+  const devicesSearchEl = document.getElementById('devices-search');
+  if (devicesSearchEl) {
+    devicesSearchEl.addEventListener('input', (e) => {
+      const val = e.target.value || '';
+      if (devicesSearchTimer) clearTimeout(devicesSearchTimer);
+      devicesSearchTimer = setTimeout(() => {
+        devicesSearchTimer = null;
+        devicesSearch = val;
+        renderDevicesView();
+      }, 200);
+    });
+    devicesSearchEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.target.value = '';
+        if (devicesSearchTimer) { clearTimeout(devicesSearchTimer); devicesSearchTimer = null; }
+        devicesSearch = '';
+        renderDevicesView();
+      }
     });
   }
 

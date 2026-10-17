@@ -918,9 +918,60 @@ table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 .nm-pill.is-muted { color: var(--muted); background: var(--bg); border-color: var(--border); }
 
 /* بطاقات الملخص: أرقامها أوضح قليلًا من بطاقات KPI العامة (رأس شاشة الأجهزة) */
-#devices-summary { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-/* على الشاشات الأصغر: صفّان ثم عمود واحد — بلا أي ضغط للأرقام */
-@media (max-width: 900px) { #devices-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px) { #devices-summary { grid-template-columns: 1fr; } }
-#devices-summary .nm-kpi { min-height: 74px; }
-#devices-summary .nm-kpi-value { font-size: 1.35rem; line-height: 1.2; }
+/* ═══════════════════════ 15) بطاقات الأرقام بستايل NOC (لتبويب الأجهزة) ═══════════════════════ */
+/* محاكاة بطاقات شاشة NOC (رقم كبير ملوّن + شريط لوني أعلى + توسيط) لكن برموز ألوان اللوحة
+   فتظهر صحيحة في الوضعين النهاري والليلي — تُستعمل في ملخص تبويب الأجهزة. */
+.nm-counter {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  background: linear-gradient(180deg, var(--card-bg), var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-lg);
+  padding: 0.75rem 0.9rem 0.7rem;
+  color: var(--muted);                      /* اللون الافتراضي للشريط/الرقم (حالة محايدة) */
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.nm-counter::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: currentColor;                 /* الشريط يأخذ لون الحالة */
+  opacity: 0.85;
+}
+.nm-counter:hover { transform: translateY(-2px); box-shadow: var(--nm-shadow-md); }
+.nm-counter .num {
+  font-size: 1.9rem;
+  font-weight: 900;
+  line-height: 1.12;
+  color: currentColor;                      /* الرقم بلون الحالة أيضًا */
+  font-variant-numeric: tabular-nums;
+}
+.nm-counter .lbl {
+  margin-top: 0.2rem;
+  font-size: var(--nm-fs-xs);
+  font-weight: 700;
+  color: var(--muted);                      /* التسمية هادئة دائمًا */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.nm-counter.is-ok { color: var(--nm-ok); }
+.nm-counter.is-bad { color: var(--nm-bad); }
+.nm-counter.is-warn { color: var(--nm-warn); }
+.nm-counter.is-info { color: var(--accent); }
+.nm-counter.is-muted { color: var(--muted); }
+.nm-counter.is-ok { border-color: var(--nm-ok-border); }
+.nm-counter.is-bad { border-color: var(--nm-bad-border); }
+.nm-counter.is-warn { border-color: var(--nm-warn-border); }
+
+/* شبكة الملخص: ٥ بطاقات في صف · صفّان على المتوسط · عمود واحد على الموبايل */
+.nm-counter-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--nm-gap); }
+@media (max-width: 900px) { .nm-counter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .nm-counter-grid { grid-template-columns: 1fr; } }
+
+/* خانة بحث الأجهزة: نفس شكل حقول اللوحة مع مساحة مريحة في شريط الأدوات */
+#devices-search { min-width: 220px; max-width: 320px; flex: 1 1 220px; }

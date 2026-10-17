@@ -58,6 +58,9 @@
             <input type="file" id="import-devices-file" accept=".xlsx,.xls" style="display:none;" />
           </label>
           <span class="spacer"></span>
+          <input id="devices-search" type="search" class="nm-input" autocomplete="off"
+                 data-i18n-attr="placeholder:devices.search.placeholder"
+                 placeholder="🔍 ابحث بالاسم أو IP…" title="بحث فوري: اكتب اسم الجهاز أو عنوان IP — النتائج تتحدّث أثناء الكتابة (Esc للمسح)" />
           <label class="nm-sub" for="filter-location-devices">فلتر الموقع:</label>
           <select id="filter-location-devices" class="nm-select" style="max-width:190px;" title="تصفية الأَجهزة حسب الموقع">
             <option value="">📍 كل المواقع</option>
@@ -73,27 +76,27 @@
           </select>
         </div>
 
-        <!-- v2.33.0 — ملخص حالة الأجهزة: أرقام فورية أعلى الجدول (تُحسب من نفس بيانات الجدول) -->
-        <div class="nm-kpi-grid" id="devices-summary" style="margin-bottom:0.75rem;">
-          <div class="nm-kpi">
-            <div class="nm-kpi-label" data-i18n="devices.sum.total">📊 إجمالي الأجهزة</div>
-            <div class="nm-kpi-value" id="sum-total">—</div>
+        <!-- v2.33.0 — ملخص حالة الأجهزة: أرقام فورية أعلى الجدول (تُحسب من نفس بيانات الجدول) — بستايل بطاقات NOC -->
+        <div class="nm-counter-grid" id="devices-summary" style="margin-bottom:0.75rem;">
+          <div class="nm-counter is-info" id="counter-total">
+            <div class="num" id="sum-total">—</div>
+            <div class="lbl" data-i18n="devices.sum.total">📊 إجمالي الأجهزة</div>
           </div>
-          <div class="nm-kpi">
-            <div class="nm-kpi-label" data-i18n="devices.sum.online">🟢 متصل الآن</div>
-            <div class="nm-kpi-value is-ok" id="sum-online">—</div>
+          <div class="nm-counter is-ok" id="counter-online">
+            <div class="num" id="sum-online">—</div>
+            <div class="lbl" data-i18n="devices.sum.online">🟢 متصل الآن</div>
           </div>
-          <div class="nm-kpi">
-            <div class="nm-kpi-label" data-i18n="devices.sum.offline">🔴 منقطع</div>
-            <div class="nm-kpi-value is-bad" id="sum-offline">—</div>
+          <div class="nm-counter is-muted" id="counter-offline" title="الأجهزة المنقطعة الآن">
+            <div class="num" id="sum-offline">—</div>
+            <div class="lbl" data-i18n="devices.sum.offline">🔴 منقطع</div>
           </div>
-          <div class="nm-kpi" title="الأجهزة التي لم تُحسم حالتها بعد (غير معروفة أو موقوفة من المراقبة)">
-            <div class="nm-kpi-label" data-i18n="devices.sum.unknown">⚪ غير معروف</div>
-            <div class="nm-kpi-value is-muted" id="sum-unknown">—</div>
+          <div class="nm-counter is-muted" id="counter-unknown" title="الأجهزة التي لم تُحسم حالتها بعد (غير معروفة أو موقوفة من المراقبة)">
+            <div class="num" id="sum-unknown">—</div>
+            <div class="lbl" data-i18n="devices.sum.unknown">⚪ غير معروف</div>
           </div>
-          <div class="nm-kpi" title="عدد الأجهزة التي بها خدمة مراقَبة متوقفة واحدة على الأقل">
-            <div class="nm-kpi-label" data-i18n="devices.sum.services">🧩 خدمات متأثرة</div>
-            <div class="nm-kpi-value is-warn" id="sum-services">—</div>
+          <div class="nm-counter is-muted" id="counter-services" title="عدد الأجهزة التي بها خدمة مراقَبة متوقفة واحدة على الأقل">
+            <div class="num" id="sum-services">—</div>
+            <div class="lbl" data-i18n="devices.sum.services">🧩 خدمات متأثرة</div>
           </div>
         </div>
 
