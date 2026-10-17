@@ -230,6 +230,26 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- ═══ SpaceKit Phase 3 (INT-01..03) — تكاملات اختيارية للقراءة فقط (معطّلة افتراضيًّا) ═══
+-- صف لكل موصل (sophos | esxi | synology): لا اتصال قبل تفعيل صريح + فحص قدرات يدوي.
+-- الأسرار تُقنَّع دائمًا في الـ API، ولا تُكتب في السجلات أو التدقيق.
+CREATE TABLE IF NOT EXISTS integration_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL UNIQUE,                    -- sophos | esxi | synology
+    enabled INTEGER NOT NULL DEFAULT 0,           -- opt-in صريح
+    base_url TEXT,                                -- https://host أو https://host:port
+    username TEXT,
+    secret TEXT,                                  -- كلمة مرور/توكن (لا يُعاد أبدًا)
+    verify_tls INTEGER NOT NULL DEFAULT 1,        -- التحقق من الشهادة (آمن افتراضيًّا)
+    owner_verified INTEGER NOT NULL DEFAULT 0,    -- أقرّ المالك أن الإصدار/النقطة مُتحقَّق منهما
+    last_probe_at TEXT,
+    last_ok_at TEXT,
+    last_error TEXT,
+    capabilities_json TEXT,                       -- نتيجة آخر فحص قدرات (بلا أسرار)
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT
+);
+
 -- ═══ SpaceKit Phase 3 (SNMP-01/02) — قراءة SNMP اختيارية (معطّلة افتراضيًّا) ═══
 -- v3 (authPriv) مستحسن؛ v2c يحتاج تفعيلًا صريحًا من المالك (مخاطره موثّقة). الأسرار تُقنَّع دائمًا
 -- في الـ API وتُحجب من نسخ الدعم؛ ولا تُكتب أي قراءة SNMP في السجل.

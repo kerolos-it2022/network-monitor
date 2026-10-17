@@ -178,7 +178,11 @@ test('SNMP: واجهات الإدارة محميّة والتفعيل مُدقَ
   const cap = await (await admin.get('/api/integrations/capabilities')).json();
   assert.equal(cap.data.snmp.available, true);
   assert.equal(cap.data.snmp.enabled, false, 'معطّل افتراضيًّا');
-  assert.equal(cap.data.sophos.available, false, 'لا ندّعي دعمًا لم يُتحقق منه');
+  // INT-01..03 — الموصلات تُعلَن بحالتها الحقيقية (معطّلة/غير مهيّأة) بلا أي ادّعاء دعم.
+  const syn = cap.data.connectors.find((c) => c.kind === 'synology');
+  assert.equal(syn.enabled, false);
+  assert.equal(syn.configured, false);
+  assert.equal(syn.state, 'disabled');
 
   const put = await admin.put('/api/integrations/snmp/settings', { enabled: 1, interval_seconds: 120 });
   assert.equal(put.status, 200);

@@ -13,6 +13,8 @@ const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 const audit = require('../services/audit.service');
 const snmp = require('../services/integrations/snmp.service');
+const connectors = require('../services/integrations/connector-base.service');
+const synology = require('../services/integrations/synology.service');
 const db = require('../db');
 
 const router = express.Router();
@@ -20,24 +22,55 @@ const adminOnly = [requireAuth, requireRole('admin')];
 
 // GET /api/integrations/capabilities — يتيح للواجهة إظهار «ما هو متاح» بصدق (بلا مبالغة).
 router.get('/capabilities', requireAuth, (req, res) => {
-  let snmpAvailable = false;
-  try { require.resolve('snmp-native'); snmpAvailable = true; } catch (_) { snmpAvailable = false; }
   const s = snmp.getSettings();
   res.json({
     success: true,
     data: {
       snmp: {
-        available: snmpAvailable,
+        available: true,
         enabled: !!s.enabled,
         allow_v2c: !!s.allow_v2c,
         interval_seconds: s.interval_seconds,
         note: 'قراءة فقط (ifOperStatus/حجم/أخطاء) — معطّل حتى يفعّله المالك صراحةً.',
       },
-      sophos: { available: false, note: 'يُتحقَّق من إصدار Sophos ونقطة النهاية على جهاز المالك أولًا (INT-01).' },
-      esxi: { available: false, note: 'غير مُنفَّذ بعد (INT-02) — يحتاج جهازًا للتحقق.' },
-      synology: { available: false, note: 'غير مُنفَّذ بعد (INT-03) — يحتاج جهازًا للتحقق.' },
+      // INT-01..03 — كل موصل بحالته الحقيقية: معطّل/ناقص/مُتحقَّق — بلا ادّعاء دعم.
+      connectors: connectors.capabilitiesReport(),
     },
   });
+});
+
+// ── INT-01..03 — إعداد/فحص موصلات القراءة فقط ──
+// GET /api/integrations/connectors — القائمة (الأسرار مقنّعة)
+router.get('/connectors', adminOnly, (req, res) => {
+  res.json({ success: true, data: connectors.listSettings() });
+});
+
+// PUT /api/integrations/connectors/:kind — حفظ الإعداد (opt-in + تفضيلات)
+router.put('/connectors/:kind', adminOnly, (req, res) => {
+  const kind = String(req.params.kind || '').toLowerCase();
+  const result = connectors.saveSettings(kind, req.body || {});
+  if (!result.ok) return res.status(400).json({ success: false, error: result.error });
+  audit.record('connector_settings_saved', req, {
+    target: 'connector:' + kind,
+    details: { enabled: result.settings.enabled, base_url: connectors.sanitizeUrl(result.settings.base_url || ''), owner_verified: result.settings.owner_verified },
+  });
+  res.json({ success: true, data: result.settings });
+});
+
+// POST /api/integrations/connectors/:kind/probe — فحص قدرات (قراءة فقط)
+router.post('/connectors/:kind/probe', adminOnly, async (req, res) => {
+  const kind = String(req.params.kind || '').toLowerCase();
+  const result = await connectors.probe(kind);
+  audit.record('connector_probed', req, { target: 'connector:' + kind, details: { ok: result.ok, state: result.capabilities ? result.capabilities.summary : result.error } });
+  if (!result.ok) return res.status(502).json({ success: false, error: result.error });
+  res.json({ success: true, data: result.capabilities });
+});
+
+// GET /api/integrations/synology/storage — قراءة صحة التخزين (قراءة فقط)
+router.get('/synology/storage', requireAuth, async (req, res) => {
+  const result = await synology.readStorageHealth();
+  if (!result.ok) return res.status(502).json({ success: false, error: result.error });
+  res.json({ success: true, data: { volumes: result.volumes, disks: result.disks, smart_supported: result.smart_supported, at: result.at } });
 });
 
 // GET /api/integrations/snmp/settings
