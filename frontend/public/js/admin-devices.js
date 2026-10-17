@@ -29,8 +29,8 @@ function ipSortKey(ip) {
 // نصوص الحالة من القاموس (تتغيّر مع اللغة) — والقيم البرمجية ('online' …) تبقى كما هي.
 function __t(k, fb) { try { return (window.NMI18N && NMI18N.t(k)) || fb; } catch (e) { return fb; } }
 function statusText(status) {
-  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', 'متصل')))))))))))))))))));
-  if (status === 'offline') return __t('status.offline', T('s2x.offline', 'متوقف'));
+  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))));
+  if (status === 'offline') return __t('status.offline', T('s2x.offline', T('status.offline', 'متوقف')));
   if (status === 'paused') return __t('status.paused', T('status.paused', 'موقوف'));
   return __t('status.unknown', T('status.unknown', 'غير معروف'));
 }
@@ -208,7 +208,7 @@ function renderDevicesView() {
       <td class="col-status">${statusPill(d.current_status)}</td>
       <td class="col-actions">
         ${openBtn}
-        <button class="btn btn-sm" data-hist="${d.id}" title="${T('s2x.device_uptime_24_h_7_d_30_d_coverage', "تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)")}">${T('s3.uptime', '📈 تشغيل')}</button>
+        <button class="btn btn-sm" data-hist="${d.id}" title="${T('s2x.device_uptime_24_h_7_d_30_d_coverage', T('s2x.device_uptime_24_h_7_d_30_d_coverage', "تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)"))}">${T('s3.uptime', '📈 تشغيل')}</button>
         <button class="btn btn-sm" data-edit="${d.id}" title="${T('s2x.edit_the_device', "تعديل الجهاز")}">${T('common.edit', '✏️ تعديل')}</button>
         <button class="btn btn-sm btn-danger" data-del="${d.id}" title="${T('s2x.delete_the_device', "حذف الجهاز")}">${T('common.delete', '🗑️ حذف')}</button>
       </td>

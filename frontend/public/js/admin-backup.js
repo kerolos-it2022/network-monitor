@@ -209,9 +209,9 @@ async function restoreBackup() {
       let err = (data && data.error) ? data.error : `HTTP ${response.status}`;
       // v2.8.7 — رسالة واضحة لخطأ الحجم (nginx يرفض الطلب قبل أن يصل للخادم).
       if (response.status === 413) {
-        err = T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.'))))));
+        err = T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.')))))));
       } else if (response.status === 404 || response.status === 502) {
-        err = T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.'))))));
+        err = T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.')))))));
       }
       throw new Error(err);
     }
@@ -239,7 +239,7 @@ async function restoreFromExisting(filename) {
 
   showBackupOutput(true);
   document.getElementById('backup-log').textContent = '';
-  appendBackupLog(`🔄 ${T('frag.restore_from_the_existing_copy', 'استعادة من النسخة الموجودة')}: ${filename}...`);
+  appendBackupLog(`🔄 ${T('frag.restore_from_the_existing_copy', T('frag.restore_from_the_existing_copy', 'استعادة من النسخة الموجودة'))}: ${filename}...`);
   showBackupStatus(T('s2j.restoring', '⏳ جاري الاستعادة...'), false);
 
   try {
@@ -308,12 +308,12 @@ async function loadBackupList() {
 
   const r = await backupApi('/api/backup/list');
   if (!r.success) {
-    listEl.innerHTML = `<div style="color:var(--muted); padding:1rem;">${T('tail.could_not_load_the_safety_copies', '❌ تعذر تحميل النسخ الأمنية')}</div>`;
+    listEl.innerHTML = `<div style="color:var(--muted); padding:1rem;">${T('tail.could_not_load_the_safety_copies', T('tail.could_not_load_the_safety_copies', '❌ تعذر تحميل النسخ الأمنية'))}</div>`;
     return;
   }
 
   if (!r.backups || r.backups.length === 0) {
-    listEl.innerHTML = `<div class="nm-empty" style="color:var(--muted); padding:1rem;">${T('tail.no_safety_copies_yet_one_is_created_automati', '📭 لا توجد نسخ أمنية حالياً. سيتم إنشاؤها تلقائياً عند أول عملية استعادة.')}</div>`;
+    listEl.innerHTML = `<div class="nm-empty" style="color:var(--muted); padding:1rem;">${T('tail.no_safety_copies_yet_one_is_created_automati', T('tail.no_safety_copies_yet_one_is_created_automati', '📭 لا توجد نسخ أمنية حالياً. سيتم إنشاؤها تلقائياً عند أول عملية استعادة.'))}</div>`;
     return;
   }
 

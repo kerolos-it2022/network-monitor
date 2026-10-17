@@ -34,7 +34,7 @@ async function changePassword(e) {
     return;
   }
   if (newPass.length < 6) {
-    statusEl.textContent = T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'))))));
+    statusEl.textContent = T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل')))))));
     statusEl.style.color = 'var(--offline)';
     return;
   }

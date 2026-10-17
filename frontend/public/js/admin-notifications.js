@@ -15,7 +15,7 @@ async function loadNotificationSettings() {
   const placeholderFor = (masked, from, envName) => {
     if (masked) return masked;
     if (from === 'env') return 'يُقرأ من ' + envName + ' في .env — اكتب قيمة هنا لاستبداله';
-    return T('s2.not_set', 'غير مضبوط');
+    return T('s2.not_set', T('admin.unset', 'غير مضبوط'));
   };
   document.getElementById('ntf-telegram_enabled').checked = !!d.telegram_enabled;
   // نعرض المفتاح المقنّع فقط كـ placeholder؛ المستخدم يمكنه إدخال قيمة جديدة.
@@ -41,13 +41,13 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-escalation_after_minutes').value = Number(d.escalation_after_minutes) || 30;
   document.getElementById('ntf-escalation_repeat_minutes').value = Number(d.escalation_repeat_minutes) || 0;
   document.getElementById('ntf-noc_alert_screen').checked = (d.noc_alert_screen_enabled === undefined || d.noc_alert_screen_enabled === null) ? true : !!d.noc_alert_screen_enabled;
-  document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || T('s2.not_set', 'غير مضبوط');
+  document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || T('s2.not_set', T('admin.unset', 'غير مضبوط'));
   document.getElementById('ntf-fcm_server_key').value = '';
   // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
   const vapidEl = document.getElementById('ntf-status');
   if (vapidEl && d.vapid_public_key_ready === false) {
     vapidEl.style.color = 'var(--offline)';
-    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.'))))));
+    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.')))))));
   }
 }
 
@@ -55,7 +55,7 @@ async function saveNotificationSettings() {
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ إعدادات الإِشعارات (إِجراء حسّاس).
   const ok = await confirmAction({
     title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
-    message: T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟')))))),
+    message: T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟'))))))),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
@@ -127,7 +127,7 @@ async function testNotification(channel) {
         const okSent = !!(data.data && data.data.sent);
         statusEl.textContent = okSent
           ? T('tail.sent_check_your_phone', '✅ تم الإرسال (افتح هاتفك للتأكد)')
-          : T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة'))))));
+          : T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة')))))));
         if (!okSent) statusEl.style.color = 'var(--offline)';
       } else {
         statusEl.style.color = 'var(--offline)';

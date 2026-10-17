@@ -243,6 +243,9 @@
     // ── Tail: the remaining page texts ──
 
     // ── Merged fragments (counters and units) ──
+    'loc.unspecified': 'not specified',
+    'loc.unassigned': 'Unassigned devices',
+    'noc.drawEmpty': 'No locations drawn on the plan board yet — draw them from the dashboard → draw mode (💾 Save the layout).',
 
     // ── Full sentences with variables ──
     'backup.restoreWarn': '⚠️ Warning: the current database will be replaced by this copy:\n{file}\n\n• A safety copy of the current database is created automatically before replacing it.\n• The server restarts afterwards.\n\nContinue?',

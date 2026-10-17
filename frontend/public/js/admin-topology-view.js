@@ -22,7 +22,7 @@
   function statusInfo(n) {
     if (n.type === 'location') return { cls: 'location', st: '' };
     const status = n.status;
-    if (status === 'offline') return { cls: 'down', st: T('s3b.offline', '🔴 منقطع') };
+    if (status === 'offline') return { cls: 'down', st: T('s3b.offline', T('devices.sum.offline', '🔴 منقطع')) };
     if (status === 'paused') return { cls: 'paused', st: T('s3b.paused', '⏸ موقوف') };
     if (status === 'unknown') return { cls: 'unknown', st: '❔ غير معروف' };
     return { cls: 'up', st: T('s3b.online', '🟢 متصل') };
@@ -51,13 +51,13 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', '🏢 مبنى'))))))))));
+    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', '🏢 مبنى')))))))))));
     if (kind === 'internet') return '🌐 بوابة إنترنت';
-    if (kind === 'floor') return T('s2.floor', T('s3.floor', '📐 طابق'));
-    if (kind === 'room') return T('s2.room', T('s3.room', '🚪 غرفة'));
-    if (kind === 'rack') return T('s2.rack', T('s3.rack', '🗄️ خزانة'));
-    if (kind === 'site') return T('s2.site', T('s3.site', '🏛️ موقع'));
-    return T('s2.zone', T('s3.zone', '📍 منطقة'));
+    if (kind === 'floor') return T('s2.floor', T('s3.floor', T('kind.floor', '📐 طابق')));
+    if (kind === 'room') return T('s2.room', T('s3.room', T('kind.room', '🚪 غرفة')));
+    if (kind === 'rack') return T('s2.rack', T('s3.rack', T('kind.rack', '🗄️ خزانة')));
+    if (kind === 'site') return T('s2.site', T('s3.site', T('kind.site', '🏛️ موقع')));
+    return T('s2.zone', T('s3.zone', T('kind.zone', '📍 منطقة')));
   }
 
   // v2.10.2 — أيقونة النوع (نفس أيقونات «خريطة المواقع»).
@@ -134,7 +134,7 @@
       const byId = new Map();
       indexTree(j.data, null, byId);
       if (!j.data.length) {
-        treeEl.innerHTML = `<p class="muted">${T('common.no', 'لا')} ${T('frag.no_devices_yet_add_devices_from_the', 'توجد أجهزة بعد — أضف أجهزة من تبويب ')}«${T('frag.devices_2', 'الأجهزة')}» ${T('frag.and_set_for_each_device', 'وحدّد لكل جهاز ')}«${T('s3.connects_via', 'متصل عبر')}» ${T('frag.to_build_the_path', 'لبناء المسار.')}</p>`;
+        treeEl.innerHTML = `<p class="muted">${T('common.no', 'لا')} ${T('frag.no_devices_yet_add_devices_from_the', T('frag.no_devices_yet_add_devices_from_the', 'توجد أجهزة بعد — أضف أجهزة من تبويب') + ' ')}«${T('frag.devices_2', 'الأجهزة')}» ${T('frag.and_set_for_each_device', 'وحدّد لكل جهاز ')}«${T('s3.connects_via', 'متصل عبر')}» ${T('frag.to_build_the_path', 'لبناء المسار.')}</p>`;
       } else {
         treeEl.innerHTML = j.data.map((n) => renderNode(n, 0)).join('');
       }

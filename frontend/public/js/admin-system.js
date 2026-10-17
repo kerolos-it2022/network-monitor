@@ -79,7 +79,7 @@ async function loadSystemStats() {
       'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
   } else {
     sysSetBar('sys-disk-bar', null);
-    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة'))))));
+    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة')))))));
   }
   document.getElementById('sys-db-size').innerHTML =
     '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
@@ -160,7 +160,7 @@ async function loadSystemStats() {
         + '<br><span class="nm-sub">بايتات مُرسَلة منذ الإقلاع: ' + esc(NMFormat.bytes(s.bytesSent)) + '</span>';
     }
   }
-  sysSetStatus(T('s2j.last_updated', 'آخر تحديث:') + ' ' + NMFormat.time(d.ts), false);
+  sysSetStatus(T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();
 }

@@ -92,7 +92,7 @@
     el('dfs-failure_threshold').value = '2';
     const crit = document.getElementById('dfs-is_critical'); if (crit) crit.checked = false;
     el('dfs-verify_tls').checked = true;
-    el('dfs-save').textContent = T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', '➕ إضافة الخدمة')))))))))));
+    el('dfs-save').textContent = T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', '➕ إضافة الخدمة'))))))))))));
     el('dfs-cancel-edit').classList.add('hidden');
   }
 
@@ -134,7 +134,7 @@
     const act = btn.dataset.act;
 
     if (act === 'del') {
-      const ok = await confirmAction({ message: T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', 'حذف هذه الخدمة نهائيًّا؟ (سيختفي تمييز «خدمة متوقفة» عنها)')))))) });
+      const ok = await confirmAction({ message: T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', 'حذف هذه الخدمة نهائيًّا؟ (سيختفي تمييز «خدمة متوقفة» عنها)'))))))) });
       if (!ok) return;
       const r = await jsonApi('/api/devices/' + currentDeviceId + '/services/' + sid, 'DELETE');
       if (!r.success) { showToast(r.error || 'تعذّر الحذف', { type: 'error' }); return; }

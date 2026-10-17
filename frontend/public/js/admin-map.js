@@ -537,7 +537,7 @@ function renderTree(rootData) {
   if (emptyEl) {
     emptyEl.style.display = 'none';
     emptyEl.classList.remove('map-empty-error');
-    emptyEl.textContent = T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', 'لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.'))))));
+    emptyEl.textContent = T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', 'لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.')))))));
   }
 
   // P1.3 — ملخص تفاعلي: chips (offline/online/unknown) عند عدم وجود فلتر، أَو عدّ المُطابِقات عند الفِلتر.
@@ -828,7 +828,7 @@ async function loadMap() {
     if (emptyEl) {
       emptyEl.style.display = 'block';
       emptyEl.classList.add('map-empty-error');
-      emptyEl.textContent = T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', '⚠️ تعذّر جلب شجرة المواقع. تَحقّق من الاتّصال و حاول مَرّةً أُخرى.'))))));
+      emptyEl.textContent = T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', '⚠️ تعذّر جلب شجرة المواقع. تَحقّق من الاتّصال و حاول مَرّةً أُخرى.')))))));
     }
     // إِزالة أَيّ بطاقة zone قَديمة (لو كان هناك عَرض سابق).
     if (container) container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
@@ -921,7 +921,7 @@ function deviceIcon(deviceType) {
 }
 
 function statusBadgeHtml(status, idAttr) {
-  const text = status === 'online' ? T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', 'متصل')))))))))) : (status === 'offline' ? T('s2x.offline', 'متوقف') : T('status.unknown', 'غير معروف'));
+  const text = status === 'online' ? T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', 'متصل'))))))))))) : (status === 'offline' ? T('s2x.offline', T('status.offline', 'متوقف')) : T('status.unknown', 'غير معروف'));
   const id = idAttr ? `id="${idAttr}" ` : '';
   return `<span ${id}class="details-status-badge ${status || 'unknown'}">${text}</span>`;
 }
@@ -946,7 +946,7 @@ async function showDeviceDetails(deviceId) {
 
   const r = await api(`/api/devices/${encodeURIComponent(deviceId)}`);
   if (!r || !r.success) {
-    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('frag.could_not_load_the_device_details', 'تعذّر جلب تَفاصيل الجهاز')}${r?.error ? ': ' + esc(r.error) : ''}</p>`;
+    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('frag.could_not_load_the_device_details', T('frag.could_not_load_the_device_details', 'تعذّر جلب تَفاصيل الجهاز'))}${r?.error ? ': ' + esc(r.error) : ''}</p>`;
     return;
   }
   const d = r.data;
@@ -968,14 +968,14 @@ async function showDeviceDetails(deviceId) {
     fieldsEl.innerHTML = `
       <div class="details-field"><span class="df-label">IP</span><span class="df-value">${esc(d.ip || '—')}</span></div>
       <div class="details-field"><span class="df-label">${T('s2.type', 'النوع')}</span><span class="df-value">${esc(d.device_type_name || '—')}</span></div>
-      <div class="details-field"><span class="df-label">${T('devices.th.location', 'الموقع')}</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
+      <div class="details-field"><span class="df-label">${T('devices.th.location', T('s3.location', 'الموقع'))}</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
       <div class="details-field"><span class="df-label">${T('device.field.protocol', 'طريقة الفحص')}</span><span class="df-value">${esc(d.check_protocol || 'ping')}</span></div>
       <div class="details-field"><span class="df-label">${T('device.services.port', 'المنفذ')}</span><span class="df-value">${esc(d.port || '—')}</span></div>
       <div class="details-field"><span class="df-label">${T('frag.check_interval', 'فترة الفحص')}</span><span class="df-value">${esc(d.check_interval_seconds ?? '—')} ث</span></div>
       <div class="details-field"><span class="df-label">${T('device.field.threshold', 'حد التنبيه')}</span><span class="df-value">${esc(d.failure_threshold ?? '—')}</span></div>
-      <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
+      <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? T('common.yes', 'نعم') : T('common.no', 'لا')}</span></div>
       <div class="details-field"><span class="df-label">${T('s3.response_time', 'زمن الاستجابة')}</span><span class="df-value">${d.last_response_time_ms != null ? esc(d.last_response_time_ms) + ' ms' : '—'}</span></div>
-      <div class="details-field"><span class="df-label">${T('s2.last_check', 'آخر فحص')}</span><span class="df-value">${fmtDate(d.last_checked_at)}</span></div>
+      <div class="details-field"><span class="df-label">${T('s2.last_check', T('s3.last_check', 'آخر فحص'))}</span><span class="df-value">${fmtDate(d.last_checked_at)}</span></div>
     `;
   }
 

@@ -3,6 +3,13 @@
 
 // تحويل القيمة إلى نص ثم الهروب من أحرف HTML الخطيرة (يمنع XSS عند الحقن في innerHTML).
 // ملاحظة: الترتيب مهم — يجب معالجة & أولاً حتى لا تُشوّه escapes اللاحقة.
+
+// T(key, fallback) — احتياط عالمي: إن لم يكن نظام الترجمة محمّلًا (اختبار وحدة/تحميل جزئي)
+// يُرجع النصّ العربي المكتوب في مكان النداء بدل أن يرمي خطأ. نظام الترجمة يعرّفه في nm-i18n.js.
+if (typeof window !== "undefined" && typeof window.T !== "function") {
+  window.T = function (key, fallback) { return fallback === undefined ? key : fallback; };
+}
+var T = (typeof window !== "undefined" && typeof window.T === "function") ? window.T : function (k, f) { return f === undefined ? k : f; };
 function esc(s) {
   if (s == null) return '';
   return String(s)
@@ -24,9 +31,9 @@ async function api(url, opts) {
     if (!r.ok && r.status !== 401 && r.status !== 404) {
       return data || { success: false, error: 'HTTP ' + r.status };
     }
-    return data != null ? data : { success: false, error: (window.NMI18N ? NMI18N.t('api.badResponse') : 'استجابة غير صالحة من الخادم') };
+    return data != null ? data : { success: false, error: (window.NMI18N ? NMI18N.t('api.badResponse') : T('api.badResponse', 'استجابة غير صالحة من الخادم')) };
   } catch (e) {
-    return { success: false, error: (window.NMI18N ? NMI18N.t('api.serverDown') : 'تعذر الاتصال بالخادم') };
+    return { success: false, error: (window.NMI18N ? NMI18N.t('api.serverDown') : T('api.serverDown', 'تعذر الاتصال بالخادم')) };
   }
 }
 
@@ -68,10 +75,10 @@ function confirmAction(opts) {
   const okBtn = document.getElementById('confirm-modal-ok-btn');
   const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
   const _t = (k, fb) => (window.NMI18N ? NMI18N.t(k) : fb);
-  if (titleEl) titleEl.textContent = opts.title || _t('confirm.title', 'تَأكيد');
+  if (titleEl) titleEl.textContent = opts.title || _t('confirm.title', T('confirm.title', 'تَأكيد'));
   if (msgEl) msgEl.textContent = opts.message || '';
-  if (okBtn) okBtn.textContent = opts.confirmText || _t('confirm.ok', '✓ تَأكيد');
-  if (cancelBtn) cancelBtn.textContent = opts.cancelText || _t('confirm.cancel', '✖️ إلغاء');
+  if (okBtn) okBtn.textContent = opts.confirmText || _t('confirm.ok', T('confirm.ok', '✓ تَأكيد'));
+  if (cancelBtn) cancelBtn.textContent = opts.cancelText || _t('confirm.cancel', T('confirm.cancel', '✖️ إلغاء'));
   // danger → زرّ أَحمر على الـ modal.
   modal.classList.toggle('danger', !!opts.danger);
 

@@ -24,7 +24,7 @@ async function loadDiscovered() {
   const tbody = document.getElementById('discovered-table-body');
   const emptyMsg = document.getElementById('discovered-empty');
   if (!r || !r.success) {
-    if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="color:#b00;">⚠️ ${esc((r && r.error) || 'تعذّر الجلب')}</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="color:#b00;">⚠️ ${esc((r && r.error) || T('tail.could_not_fetch', 'تعذّر الجلب'))}</td></tr>`;
     updateDiscoveredPager(0);
     return;
   }
@@ -87,7 +87,7 @@ function ensureApproveModal() {
       <div class="form-grid">
         <label>${T('s2.name', 'الاسم')} <input type="text" id="dsc-name" /></label>
         <label>${T('s2.type', 'النوع')} <select id="dsc-type"><option value="">${T('device.field.noLocation', '— بدون —')}</option></select></label>
-        <label>${T('devices.th.location', 'الموقع')} <select id="dsc-loc"><option value="">${T('device.field.noLocation', '— بدون —')}</option></select></label>
+        <label>${T('devices.th.location', T('s3.location', 'الموقع'))} <select id="dsc-loc"><option value="">${T('device.field.noLocation', '— بدون —')}</option></select></label>
         <label>${T('device.field.protocol', 'طريقة الفحص')}
           <select id="dsc-proto">
             <option value="ping">Ping</option>
@@ -100,7 +100,7 @@ function ensureApproveModal() {
         <label>${T('frag.web_port', 'منفذ الواجهة ')}(web_port) <input type="number" id="dsc-webport" min="1" max="65535" placeholder="443" /></label>
       </div>
       <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem; flex-wrap:wrap;">
-        <button type="button" class="btn" id="dsc-quick" title="${T('frag.approve_instantly_with_the_default_behav', 'اعتماد فوري بالسلوك الافتراضي ')}(${T('frag.without_details', 'بلا تفاصيل')})">⚡ ${T('frag.quick_approve', 'اعتماد سريع')}</button>
+        <button type="button" class="btn" id="dsc-quick" title="${T('frag.approve_instantly_with_the_default_behav', T('frag.approve_instantly_with_the_default_behav', 'اعتماد فوري بالسلوك الافتراضي') + ' ')}(${T('frag.without_details', 'بلا تفاصيل')})">⚡ ${T('frag.quick_approve', 'اعتماد سريع')}</button>
         <button type="button" class="btn btn-primary" id="dsc-ok">✅ ${T('frag.approve_with_details', 'اعتماد بالتفاصيل')}</button>
       </div>
     </div>`;
@@ -140,7 +140,7 @@ async function openApproveModal(id, detectedType) {
     row = (r && r.success) ? r.data : null;
   } catch (e) { /* fallback: تُعرض النافذة بقيم افتراضية */ }
   if (!row) {
-    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.')))))), { type: 'error' });
+    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.'))))))), { type: 'error' });
     return;
   }
   discoveredApproveId = id;
@@ -196,7 +196,7 @@ async function submitApprove(quick) {
     const port = portRaw ? Number(portRaw) : null;
     const webPort = webRaw ? Number(webRaw) : null;
     if (protocol !== 'ping' && !port) {
-      showToast(T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.')))))), { type: 'warning' });
+      showToast(T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.'))))))), { type: 'warning' });
       return;
     }
     body = {

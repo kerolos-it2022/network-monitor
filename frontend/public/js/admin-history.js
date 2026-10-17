@@ -25,7 +25,7 @@
     const host = el('history-strip');
     if (!host) return;
     if (!points || !points.length) {
-      host.innerHTML = `<span style="font-size:0.85rem; color:var(--muted);">${T('tail.no_raw_samples_in_this_period_rollups_were_u', 'لا عيّنات خام في هذه الفترة (اعتُمدت التجميعات للأرقام).')}</span>`;
+      host.innerHTML = `<span style="font-size:0.85rem; color:var(--muted);">${T('tail.no_raw_samples_in_this_period_rollups_were_u', T('tail.no_raw_samples_in_this_period_rollups_were_u', 'لا عيّنات خام في هذه الفترة (اعتُمدت التجميعات للأرقام).'))}</span>`;
       return;
     }
     const buckets = 240;
@@ -70,7 +70,7 @@
       list.innerHTML = '';
       const events = (data.downtime_events || []).slice(-10).reverse();
       if (!events.length) {
-        list.innerHTML = `<li style="color:var(--muted);">${T('tail.no_outages_recorded_in_the_period', 'لا انقطاعات مسجّلة في الفترة.')}</li>`;
+        list.innerHTML = `<li style="color:var(--muted);">${T('tail.no_outages_recorded_in_the_period', T('tail.no_outages_recorded_in_the_period', 'لا انقطاعات مسجّلة في الفترة.'))}</li>`;
       } else {
         for (const ev of events) {
           const li = document.createElement('li');

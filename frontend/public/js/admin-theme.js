@@ -11,7 +11,7 @@ function applyTheme(isDark) {
   var btn = document.getElementById('theme-toggle');
   if (btn) {
     // نصّ الزر من القاموس (يتغيّر مع اللغة) — والاحتياط العربي كما هو.
-  btn.textContent = isDark ? T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a') : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
+  btn.textContent = isDark ? T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a')) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
   }
 }
 

@@ -82,9 +82,9 @@ async function fetchApi(url) {
 }
 
 function statusText(status) {
-  if (status === 'online') return T('status.online', '\u0645\u062a\u0635\u0644');
-  if (status === 'offline') return T('status.offline', '\u0645\u062a\u0648\u0642\u0641');
-  return T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641');
+  if (status === 'online') return T('status.online', T('status.online', '\u0645\u062a\u0635\u0644'));
+  if (status === 'offline') return T('status.offline', T('status.offline', '\u0645\u062a\u0648\u0642\u0641'));
+  return T('status.unknown', T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641'));
 }
 
 function statusDotClass(d) {
@@ -106,11 +106,11 @@ function overallStatusText(d) {
 }
 
 function formatDuration(seconds) {
-  if (seconds == null || isNaN(seconds)) return T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641');
+  if (seconds == null || isNaN(seconds)) return T('status.unknown', T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641'));
   const s = Math.max(0, Math.floor(seconds));
-  if (s < 60) return s + ' \u062b\u0627\u0646\u064a\u0629';
-  if (s < 3600) return Math.floor(s / 60) + ' \u062f\u0642\u064a\u0642\u0629';
-  return Math.floor(s / 3600) + ' \u0633\u0627\u0639\u0629 ' + Math.floor((s % 3600) / 60) + ' \u062f\u0642\u064a\u0642\u0629';
+  if (s < 60) return s + T('s3.seconds', ' \u062b\u0627\u0646\u064a\u0629');
+  if (s < 3600) return Math.floor(s / 60) + T('frag.min', ' \u062f\u0642\u064a\u0642\u0629');
+  return Math.floor(s / 3600) + T('frag.h', ' \u0633\u0627\u0639\u0629 ') + Math.floor((s % 3600) / 60) + T('frag.min', ' \u062f\u0642\u064a\u0642\u0629');
 }
 
 // ====== \u062f\u0627\u0644\u0629 \u0627\u0644\u062a\u0631\u062a\u064a\u0628 ======
@@ -222,9 +222,9 @@ function fmtLastOutage(d) {
   const mins = Math.max(0, Math.floor((Date.now() - started) / 60000));
   let ago;
   if (mins < 1) ago = '\u0627\u0644\u0622\u0646';
-  else if (mins < 60) ago = '\u0645\u0646\u0630 ' + mins + ' \u062f';
-  else if (mins < 1440) ago = '\u0645\u0646\u0630 ' + Math.floor(mins / 60) + ' \u0633 ' + (mins % 60) + ' \u062f';
-  else ago = '\u0645\u0646\u0630 ' + Math.floor(mins / 1440) + ' \u064a\u0648\u0645';
+  else if (mins < 60) ago = T('frag.since', '\u0645\u0646\u0630 ') + mins + ' \u062f';
+  else if (mins < 1440) ago = T('frag.since', '\u0645\u0646\u0630 ') + Math.floor(mins / 60) + ' \u0633 ' + (mins % 60) + ' \u062f';
+  else ago = T('frag.since', '\u0645\u0646\u0630 ') + Math.floor(mins / 1440) + ' \u064a\u0648\u0645';
   let dur = '';
   const s = d.last_outage_seconds;
   if (s != null && s >= 0) {
@@ -314,9 +314,9 @@ function updateUptimeBars(total, online, offline) {
     bar.innerHTML =
       '<div class="uptime-bar"><div class="uptime-fill" style="width:' + pct + '%"></div></div>' +
       '<span class="uptime-text">\u0646\u0650\u0633\u0628\u0629 \u0627\u0644\u062a\u064e\u0634\u063a\u064a\u0644: \ud83d\udfe2 <span class="uptime-pct ' + pctClass + '">' + pct + '%</span> ' +
-      '(' + online + '/' + total + ' \u0645\u062a\u0635\u0644' +
-      (offline > 0 ? ' \u2014 \ud83d\udd34 ' + offline + ' \u0645\u062a\u0648\u0642\u0641' : '') +
-      (unknown > 0 ? ' \u2014 \u26aa ' + unknown + ' \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641' : '') +
+      '(' + online + '/' + total + T('status.online', ' \u0645\u062a\u0635\u0644') +
+      (offline > 0 ? ' \u2014 \ud83d\udd34 ' + offline + T('status.offline', ' \u0645\u062a\u0648\u0642\u0641') : '') +
+      (unknown > 0 ? ' \u2014 \u26aa ' + unknown + T('status.unknown', ' \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641') : '') +
       ')</span>';
   }
 }
@@ -672,15 +672,15 @@ async function init() {
   try {
     if (localStorage.getItem(THEME_STORAGE_KEY) === 'dark') {
       document.body.classList.add('dark');
-      themeBtn.textContent = T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a');
+      themeBtn.textContent = T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a'));
     }
   } catch (e) {}
-  document.addEventListener('nm:lang', function () { try { themeBtn.textContent = document.body.classList.contains('dark') ? T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a') : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a'); } catch (e) {} });
+  document.addEventListener('nm:lang', function () { try { themeBtn.textContent = document.body.classList.contains('dark') ? T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a')) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a'); } catch (e) {} });
   themeBtn.addEventListener('click', function () {
     document.body.classList.toggle('dark');
     var isDark = document.body.classList.contains('dark');
     // نصّ الزرّ من القاموس (ومعه إصلاح خطأ إملائي قديم: «لتليلي» ⇒ «ليلي»)
-    themeBtn.textContent = isDark ? T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a') : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
+    themeBtn.textContent = isDark ? T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a')) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
     try { localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light'); } catch (e) {}
   });
   // ===== زر تفعيل إشعارات الموبايل (Web Push + VAPID) =====

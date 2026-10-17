@@ -33,7 +33,7 @@ async function loadAiSettings() {
   document.getElementById('ai-enabled').checked = !!d.enabled;
   const keyEl = document.getElementById('ai-api-key');
   keyEl.value = '';
-  keyEl.placeholder = d.api_key_masked || T('s2.not_set', 'غير مضبوط');
+  keyEl.placeholder = d.api_key_masked || T('s2.not_set', T('admin.unset', 'غير مضبوط'));
   document.getElementById('ai-base-url').value = d.base_url || '';
   document.getElementById('ai-model').value = d.model || '';
   const redactEl = document.getElementById('ai-redact-internal');
@@ -71,7 +71,7 @@ async function saveAiSettings() {
   const model = document.getElementById('ai-model').value.trim();
   // تحقق لطيف قبل الحفظ: العنوان لا يساوي فراغًا ولا يفشل صامتًا.
   if (base && !/^https?:\/\//i.test(base)) {
-    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://')))))), true);
+    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://'))))))), true);
     return;
   }
   const r = await api('/api/ai/settings', {
@@ -87,9 +87,9 @@ async function saveAiSettings() {
     }),
   });
   if (!r.success) { aiSetSettingsStatus(T('s2j.save_failed', 'فشل الحفظ:') + ' ' + (r.error || ''), true); return; }
-  aiSetSettingsStatus('✅ حُفظت الإعدادات — المفتاح: ' + (r.data.api_key_masked || T('s2.not_set', 'غير مضبوط')), false);
+  aiSetSettingsStatus('✅ حُفظت الإعدادات — المفتاح: ' + (r.data.api_key_masked || T('s2.not_set', T('admin.unset', 'غير مضبوط'))), false);
   document.getElementById('ai-api-key').value = '';
-  document.getElementById('ai-api-key').placeholder = r.data.api_key_masked || T('s2.not_set', 'غير مضبوط');
+  document.getElementById('ai-api-key').placeholder = r.data.api_key_masked || T('s2.not_set', T('admin.unset', 'غير مضبوط'));
   if (r.data.enabled && r.data.has_key) aiSetStatus(T('tail.ai_chat_is_ready_ask_away', 'شات AI جاهز — اسأل ما شئت.'), false);
   else aiSetStatus('شات AI غير نشط (يحتاج مفتاحًا + تفعيلًا).', false);
 }

@@ -59,7 +59,7 @@ function setPageTitle(tabId) {
   const el = document.querySelector('.admin-topbar h1');
   if (el) el.textContent = title;
   // عنوان تبويب المتصفح: بلا إيموجي + لاحقة لوحة التحكم (مترجمة أيضًا)
-  document.title = title.replace(/^\S+\s*/, '') + ' — ' + TTitle('topbar.dashboard', T('topbar.dashboard', 'لوحة التحكم'));
+  document.title = title.replace(/^\S+\s*/, '') + ' — ' + TTitle('topbar.dashboard', T('topbar.dashboard', T('public.adminLink', 'لوحة التحكم')));
 }
 
 // تغيير اللغة يُعيد كتابة العنوان فورًا (بلا حاجة لتغيير التبويب)
