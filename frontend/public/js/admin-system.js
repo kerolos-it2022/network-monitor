@@ -134,7 +134,7 @@ async function loadSystemStats() {
       const reasons = [];
       if (!b.telegramEnabled) reasons.push('قناة تلجرام غير مفعّلة');
       if (!b.hasToken) reasons.push('توكن البوت غير مضبوط');
-      if (!b.hasChatId) reasons.push('معرّف المحادثة (Chat ID) غير مضبوط');
+      if (!b.hasChatId) reasons.push('معرّف المحادثة غير مضبوط');
       if (b.hasToken && b.hasChatId && b.telegramEnabled && !b.commandsEnabled) reasons.push('مفتاح «بوت تلجرام التفاعلي» مُطفأ');
       if (reasons.length === 0 && b.running) reasons.push('في انتظار أول دورة استقبال');
       botEl.innerHTML = '⛔ <b>متوقف</b>'

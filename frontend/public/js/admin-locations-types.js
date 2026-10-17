@@ -66,7 +66,7 @@ function populateParentSelect(currentId) {
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
     const o = document.createElement('option');
     o.value = l.id;
-    o.textContent = `${kl.icon} [${l.kind || 'zone'}] ${l.name}`;
+    o.textContent = `${kl.icon} ${kl.label} — ${l.name}`;
     sel.appendChild(o);
   }
   // أُعيد القيمة السابقة لو ما زالت موجُودة.
@@ -87,7 +87,7 @@ function populateMapParentSelect(currentId) {
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
     const o = document.createElement('option');
     o.value = l.id;
-    o.textContent = `${kl.icon} [${l.kind || 'zone'}] ${l.name}`;
+    o.textContent = `${kl.icon} ${kl.label} — ${l.name}`;
     sel.appendChild(o);
   }
   if (prevValue && [...sel.options].some((o) => o.value === prevValue)) {
@@ -149,7 +149,7 @@ async function loadLocations() {
     tr.innerHTML = `
       <td class="col-center">${l.id}</td>
       <td>${esc(l.name)}</td>
-      <td>${kl.icon} ${kl.label} <span class="nm-sub" style="font-size:0.85em;">(<span class="nm-ltr">${esc(l.kind || 'zone')}</span>)</span></td>
+      <td>${kl.icon} ${kl.label}</td>
       <td>${parentName ? esc(parentName) : '<span class="nm-muted">—</span>'}</td>
       <td class="col-center">${sortOrderDisplay}</td>
       <td class="col-actions">

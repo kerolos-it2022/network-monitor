@@ -100,13 +100,13 @@
         <label class="nm-sub" for="filter-kind-locations">فلتر النوع:</label>
         <select id="filter-kind-locations" class="nm-select" style="max-width:200px;" title="تصفية المواقع حسب النوع">
           <option value="">🏝️ كل الأَنواع</option>
-          <option value="internet">🌐 internet</option>
-          <option value="zone">📍 zone</option>
-          <option value="site">🏛️ site</option>
-          <option value="building">🏢 building</option>
-          <option value="floor">📐 floor</option>
-          <option value="room">🚪 room</option>
-          <option value="rack">🗄️ rack</option>
+          <option value="internet">🌐 إنترنت</option>
+          <option value="zone">📍 منطقة</option>
+          <option value="site">🏛️ موقع</option>
+          <option value="building">🏢 مبنى</option>
+          <option value="floor">📐 طابق</option>
+          <option value="room">🚪 غرفة</option>
+          <option value="rack">🗄️ خزانة</option>
         </select>
         <label class="nm-sub" for="filter-sort-locations">ترتيب:</label>
         <select id="filter-sort-locations" class="nm-select" style="max-width:200px;">
@@ -456,10 +456,10 @@
             <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط">🔔 اختبار هذه القناة</button>
           </div>
           <div class="form-grid cols-2">
-            <label>توكن البوت <small class="nm-muted">(Bot Token)</small>
+            <label>توكن البوت
               <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" />
             </label>
-            <label>معرّف المحادثة <small class="nm-muted">(Chat ID)</small>
+            <label>معرّف المحادثة
               <input type="text" id="ntf-telegram_chat_id" />
             </label>
           </div>
@@ -478,17 +478,17 @@
             <label>رابط الـ API <small class="nm-muted">(URL)</small>
               <input type="text" id="ntf-whatsapp_api_url" />
             </label>
-            <label>التوكن <small class="nm-muted">(API Token)</small>
+            <label>التوكن
               <input type="text" id="ntf-whatsapp_api_token" />
             </label>
-            <label>رقم المستلم <small class="nm-muted">(To Number)</small>
+            <label>رقم المستلم
               <input type="text" id="ntf-whatsapp_to_number" />
             </label>
           </div>
         </div>
 
         <div class="nm-sub-section">
-          <div class="nm-sub-head">📱 إشعارات الهاتف (PWA)</div>
+          <div class="nm-sub-head">📱 إشعارات الهاتف</div>
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-mobile_enabled" />
@@ -503,7 +503,7 @@
           </div>
           <small class="nm-hint">
             💡 للحصول على المفتاح: <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> ← Project Settings ← Cloud Messaging ← Legacy Server Key.
-            ولتفعيلها على هاتفك: افتح <a href="../index.html" target="_blank" rel="noopener">الصفحة العامة</a> من Chrome واضغط «🔔 تفعيل الإشعارات» ثم ثبّت التطبيق (Add to Home Screen).
+            ولتفعيلها على هاتفك: افتح <a href="../index.html" target="_blank" rel="noopener">الصفحة العامة</a> من Chrome واضغط «🔔 تفعيل الإشعارات» ثم ثبّت التطبيق (إضافة إلى الشاشة الرئيسية).
           </small>
         </div>
 
@@ -635,7 +635,7 @@
           <label>مفتاح API <small style="color:var(--muted);">(يُحفظ ولا يُعرض — اكتب قيمة جديدة لاستبداله)</small>
             <input type="password" id="ai-api-key" autocomplete="off" placeholder="غير مضبوط" />
           </label>
-          <label>اسم النموذج <small style="color:var(--muted);">(Model)</small>
+          <label>اسم النموذج
             <input type="text" id="ai-model" value="glm-4-flash" />
           </label>
         </div>
@@ -894,9 +894,9 @@
           <div class="nm-sub-head">🧑‍🤝‍🧑 ما يراه الزائر (بدون تسجيل دخول)</div>
           <label class="nm-field" style="max-width:560px;">وضع الصفحة العامة للزائر
             <select id="disp-public-mode" class="nm-select">
-              <option value="lan">🏠 lan — البطاقات + خريطة المواقع (الافتراضي للشبكة الداخلية)</option>
-              <option value="minimal">🔒 minimal — الحالة فقط بلا خريطة (الأنسب للرابط المكشوف على الإنترنت)</option>
-              <option value="off">⛔ off — إيقاف العرض العام تمامًا (أي زائر يُرفض)</option>
+              <option value="lan">🏠 البطاقات + خريطة المواقع (الافتراضي للشبكة الداخلية)</option>
+              <option value="minimal">🔒 الحالة فقط بلا خريطة (الأنسب للرابط المكشوف على الإنترنت)</option>
+              <option value="off">⛔ إيقاف العرض العام تمامًا (أي زائر يُرفض)</option>
             </select>
           </label>
           <small class="nm-hint">الزائر لا يرى أي عنوان IP/MAC في كل الأوضاع — الفرق بين الأوضاع في كمية المعلومة لا في الخصوصية.</small>

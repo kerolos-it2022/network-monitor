@@ -107,7 +107,7 @@ async function saveNotificationSettings() {
 // (أزرار «🔔 اختبار هذه القناة» داخل كل قسم)؛ بلا مُعامل ⇒ كل القنوات المفعّلة كما كان.
 async function testNotification(channel) {
   const statusEl = document.getElementById('ntf-status');
-  const only = channel ? { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف (PWA)' }[channel] || channel : null;
+  const only = channel ? { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف' }[channel] || channel : null;
   statusEl.style.color = 'var(--online)';
   statusEl.textContent = only
     ? ('🔔 جارٍ إرسال إشعار تجريبي على ' + only + ' فقط…')
@@ -135,7 +135,7 @@ async function testNotification(channel) {
       }
       return;
     }
-    const labels = { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف (PWA)' };
+    const labels = { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف' };
     const lines = results.map((res) => {
       const name = labels[res.channel] || res.channel;
       if (res.ok) return name + ': ✅ تم الإرسال';
@@ -193,7 +193,7 @@ async function loadNotificationLogs() {
   const channelText = (c) => {
     if (c === 'telegram') return 'تلجرام';
     if (c === 'whatsapp') return 'واتساب';
-    if (c === 'mobile') return 'هاتف (PWA)';
+    if (c === 'mobile') return 'هاتف';
     return c;
   };
   // v2.33.0 — فلتر الحالة (كل / تم الإرسال / فشل / مكتوم صيانة) قبل العرض

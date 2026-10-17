@@ -77,7 +77,7 @@
     const st = await api('/api/public/status');
     const modeNow = (mode && mode.success && mode.data.mode) || 'lan';
     if (modeNow === 'off') {
-      out.textContent = '⛔ وضع العرض العام الآن «off» — الزائر لا يرى أي شيء (يُرفض طلبه).';
+      out.textContent = '⛔ العرض العام موقوف الآن — الزائر لا يرى أي شيء (يُرفض طلبه) — «إيقاف تام».';
       return;
     }
     const devs = (st && st.success && Array.isArray(st.data)) ? st.data : [];
