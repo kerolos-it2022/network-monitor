@@ -560,7 +560,9 @@ body.sidebar-collapsed .sidebar .tab-btn { padding-inline: 0; }
 .device-card:hover { box-shadow: var(--nm-shadow-md); }
 .device-card .name { font-size: var(--nm-fs-lg); }
 .device-card .ip, .device-card .meta { font-size: var(--nm-fs-sm); line-height: 1.7; }
-.device-card .status-badge { margin-top: auto; align-self: center; padding: 0.22rem 0.7rem; font-size: var(--nm-fs-xs); }
+/* الشارة ترجع لموضعها الأصلي: ملتصقة بحافة البطاقة (البداية = اليمين في RTL) بعرضها الطبيعي
+   بدل ما كانت في المنتصف — مع بقاء تثبيتها أسفل البطاقة (margin-top: auto) لتناسق الصفوف. */
+.device-card .status-badge { margin-top: auto; align-self: flex-start; padding: 0.22rem 0.7rem; font-size: var(--nm-fs-xs); }
 .status-online,  .device-card.status-online  { border-inline-start-color: var(--online); }
 .status-offline, .device-card.status-offline { border-inline-start-color: var(--offline); }
 .status-unknown, .device-card.status-unknown { border-inline-start-color: var(--unknown); }
