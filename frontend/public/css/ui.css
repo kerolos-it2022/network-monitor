@@ -823,36 +823,36 @@ body:not(.page-noc) input[readonly] { background: var(--card-bg); color: var(--m
 .nm-note.is-info { color: var(--text); }
 
 /* ═══════════════════════════ 12) محاذاة صفوف الجداول — نموذج واحد لكل الصفحات ═══════════════════════════ */
-/* القاعدة: أعمدة النصوص (الأسماء/المواقع/الرسائل) تبدأ من اليمين، وأعمدة القيم القصيرة
-   (IP · MAC · وقت · رقم · شارة · أزرار) في وسط العمود — والرأس يتبع نفس محاذاة قيمه
-   حتى لا يظهر عنوان «IP» في جهة وقيمه في جهة أخرى. */
+/* القاعدة (بأمر المالك — لا توسيط في الموقع): كل الأعمدة تبدأ من اليمين، والرأس يتبع نفس
+   محاذاة قيمه. أعمدة القيم اللاتينية (IP · MAC · وقت) تحتفظ بعزل الاتجاه LTR لنصّ القيمة
+   نفسها، لكن الخلية تُحاذى يمينًا فيزيائيًّا (نستخدم right لا start لأن اتجاه الخليّة نفسها ltr). */
 table.data-table th, table.nm-table th { vertical-align: middle !important; }
 table.data-table td, table.nm-table td { vertical-align: middle; }
 
-table.data-table .col-center, table.nm-table .col-center { text-align: center; }
-table.data-table th.col-center, table.nm-table th.col-center { text-align: center; }
+table.data-table .col-center, table.nm-table .col-center { text-align: right; }
+table.data-table th.col-center, table.nm-table th.col-center { text-align: right; }
 
 table.data-table .col-ltr, table.nm-table .col-ltr {
-  text-align: center;
+  text-align: right;
   direction: ltr;
   unicode-bidi: isolate;
   white-space: nowrap;
 }
-table.data-table th.col-ltr, table.nm-table th.col-ltr { text-align: center; }
+table.data-table th.col-ltr, table.nm-table th.col-ltr { text-align: right; }
 
-table.data-table .col-actions, table.nm-table .col-actions { text-align: center; white-space: nowrap; }
-table.data-table th.col-actions, table.nm-table th.col-actions { text-align: center; }
-table.data-table .col-actions .btn, table.nm-table .col-actions .btn { margin: 0 0.12rem; }
+table.data-table .col-actions, table.nm-table .col-actions { text-align: right; white-space: nowrap; }
+table.data-table th.col-actions, table.nm-table th.col-actions { text-align: right; }
+table.data-table .col-actions .btn, table.nm-table .col-actions .btn { margin: 0 0 0 0.12rem; }
 
 table.data-table td.is-empty, table.nm-table td.is-empty {
-  text-align: center;
+  text-align: start;
   color: var(--muted);
   padding: 1.2rem 0.75rem;
   font-size: var(--nm-fs-sm);
 }
 
-/* خلية حالة الجهاز (نقطة/شارة) — مرتّبة في وسط العمود مع رأسها */
-table.data-table td.col-status, table.data-table th.col-status { text-align: center; }
+/* خلية حالة الجهاز (نقطة/شارة) — تبدأ من اليمين مع رأسها */
+table.data-table td.col-status, table.data-table th.col-status { text-align: right; }
 
 /* الجدول على الشاشات الصغيرة: تمرير أفقي محترم بلا كسر الأعمدة */
 .nm-table-wrap > table.data-table { min-width: 640px; }
