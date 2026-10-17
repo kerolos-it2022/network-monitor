@@ -807,6 +807,25 @@ body:not(.page-noc) textarea::placeholder { color: var(--muted); opacity: 0.9; }
 /* حقول القراءة فقط (مثل معلومات الحساب) تبدو خاملة بوضوح */
 body:not(.page-noc) input[readonly] { background: var(--card-bg); color: var(--muted); }
 
+/* ── 11.1) الوضع الليلي: الحقل يُرى كحقل ──
+   كان الحقل بخلفية الصفحة الداكنة تمامًا وحدود رقيقة جدًّا فيبدو كأنه فراغ بلا إطار.
+   هنا: خلفية أغمق قليلًا من البطاقة (فيُفهم أنه حقل) + حدود أفتح تُرى بوضوح. */
+:root { --nm-field-bg: var(--bg); --nm-field-border: var(--border); }
+body.dark {
+  color-scheme: dark;                 /* عناصر المتصفح الأصلية (سهم القائمة · أيقونة الساعة · مؤشّرات الأرقام) داكنة */
+  --nm-field-bg: #0b1220;
+  --nm-field-border: #4b5d78;         /* أفتح من --border فيظهر إطار كل حقل */
+}
+body:not(.page-noc) select,
+body:not(.page-noc) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+body:not(.page-noc) textarea,
+.nm-input, .nm-select, .nm-textarea {
+  background: var(--nm-field-bg);
+  border-color: var(--nm-field-border);
+}
+body.dark:not(.page-noc) input[readonly]:not([type="checkbox"]) { background: #131c2e; }
+body.dark:not(.page-noc) input::placeholder, body.dark:not(.page-noc) textarea::placeholder { color: #8fa3bd; }
+
 /* صفوف الاختيار (checkbox) — نفس الشكل في كل الشاشات القديمة والجديدة */
 .checkbox-label {
   display: inline-flex;
@@ -983,3 +1002,51 @@ table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 
 /* خانة بحث الأجهزة: نفس شكل حقول اللوحة مع مساحة مريحة في شريط الأدوات */
 #devices-search { min-width: 220px; max-width: 320px; flex: 1 1 220px; }
+
+/* ═══════════════════════════ 16) انتظام مربّعات الإدخال والقوائم المنسدلة ═══════════════════════════ */
+/* (أ) السبب الجذري لتراصّ القوائم فوق بعضها: .nm-input/.nm-select عرضها 100% (وهو صحيح داخل عمود)،
+   لكن داخل صفّ أفقي (‎.nm-row‎) كانت القائمة تأخذ **سطرًا كاملًا** فينزل ما بعدها لسطر جديد،
+   فيظهر الصفّ مرصوصًا عموديًّا. هنا داخل الصفوف فقط: عرض طبيعي + مرونة بالسحب. */
+.nm-row > input, .nm-row > select, .nm-row > textarea,
+.nm-row-between > input, .nm-row-between > select,
+.nm-toolbar > input, .nm-toolbar > select,
+.nm-card-head > input, .nm-card-head > select,
+.nm-actions > input, .nm-actions > select {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 150px;
+}
+/* الحقل المُغلَّف (تسمية فوق حقل) داخل صفّ: يقاسم الصفّ مع أخيه بالتساوي بدل أن يبقى ضيّقًا */
+.nm-row > .nm-field, .nm-row-between > .nm-field, .nm-toolbar > .nm-field {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+/* قائمة طويلة الخيارات لا تدفع الصفّ: تُقصّ بحدّ أقصى وتظل قابلة للسحب */
+.nm-row > select, .nm-row-between > select, .nm-card-head > select, .nm-actions > select { max-width: 320px; }
+
+/* (ب) مربّعات الإدخال تلتقي على خطّ واحد داخل الصفّ مهما اختلف طول التسمية أو التفصيل الجانبي:
+   ندفع محتوى كل حقل إلى **أسفل خليّته**، وآخر عنصر في الحقل هو مربّع الإدخال ⇒ كل المربّعات على خطّ واحد.
+   (كانت المربّعات تظهر متدرّجة 183/167/146 بكسل لأن التسميات مختلفة الطول.) */
+.nm-field,
+.form-grid > label:not(.nm-check):not(.checkbox-label),
+.form-grid.cols-2 > label:not(.nm-check):not(.checkbox-label),
+.form-grid.cols-3 > label:not(.nm-check):not(.checkbox-label) {
+  justify-content: flex-end;
+}
+/* (ج) عرض موحّد لكل حقول الشبكة: صناديق متساوية بدل 17/90/305 بكسل */
+.form-grid input:not([type="checkbox"]):not([type="radio"]),
+.form-grid select,
+.form-grid textarea { width: 100%; }
+/* (د) خلايا الشبكة لا تتمطّط: كل خليّة بارتفاع محتواها وتُحاذى من الأسفل ⇒ المربّعات على خطّ واحد */
+.form-grid { align-items: end; }
+/* (هـ) خليّة فيها مربّع اختيار فقط: تصير سطرًا واحدًا بارتفاع الحقل نفسه ⇒ المربّع في نفس سطر جيرانه */
+@supports selector(label:has(> input[type="checkbox"])) {
+  .form-grid > label:has(> input[type="checkbox"]):not(:has(input:not([type="checkbox"]))) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: var(--nm-control-h);
+  }
+}
+/* التفصيل الصغير (مثل «(URL)») لا يكسر السطر: يبقى مع التسمية */
+.form-grid label small, .nm-field small { font-weight: 400; }

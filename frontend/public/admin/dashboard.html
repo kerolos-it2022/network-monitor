@@ -666,7 +666,7 @@
             <input type="text" id="ai-model" value="glm-4-flash" />
           </label>
         </div>
-        <label style="display:block; margin-top:0.6rem;">عنوان الخدمة <small style="color:var(--muted);">(أي endpoint متوافق OpenAI — يشمل /chat/completions تلقائيًّا)</small>
+        <label class="nm-field" style="margin-top:0.6rem;">عنوان الخدمة <small style="color:var(--muted);">(أي endpoint متوافق OpenAI — يشمل /chat/completions تلقائيًّا)</small>
           <input type="text" id="ai-base-url" value="https://api.z.ai/api/paas/v4" dir="ltr" style="text-align:left;" />
         </label>
         <div class="form-actions" style="margin-top:1rem;">
@@ -795,7 +795,7 @@
         <div class="form-grid cols-3" style="align-items:end;">
           <label class="nm-check">تفعيل النسخ التلقائي اليومي <input type="checkbox" id="bk-sched-enabled" /></label>
           <label>🕒 ساعة النسخ اليومي <input type="time" id="bk-sched-hour" value="03:30" /></label>
-          <label>🗄️ الاحتفاظ بآخر <input type="number" id="bk-sched-keep" min="1" max="30" value="7" style="max-width:90px;" /> نسخة</label>
+          <label>🗄️ عدد النسخ المحفوظة <input type="number" id="bk-sched-keep" min="1" max="30" value="7" /></label>
         </div>
         <div class="nm-actions">
           <button type="button" class="btn btn-primary" id="bk-sched-save">💾 حفظ الجدولة</button>
