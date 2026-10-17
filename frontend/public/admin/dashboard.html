@@ -73,6 +73,30 @@
           </select>
         </div>
 
+        <!-- v2.33.0 — ملخص حالة الأجهزة: أرقام فورية أعلى الجدول (تُحسب من نفس بيانات الجدول) -->
+        <div class="nm-kpi-grid" id="devices-summary" style="margin-bottom:0.75rem;">
+          <div class="nm-kpi">
+            <div class="nm-kpi-label" data-i18n="devices.sum.total">📊 إجمالي الأجهزة</div>
+            <div class="nm-kpi-value" id="sum-total">—</div>
+          </div>
+          <div class="nm-kpi">
+            <div class="nm-kpi-label" data-i18n="devices.sum.online">🟢 متصل الآن</div>
+            <div class="nm-kpi-value is-ok" id="sum-online">—</div>
+          </div>
+          <div class="nm-kpi">
+            <div class="nm-kpi-label" data-i18n="devices.sum.offline">🔴 منقطع</div>
+            <div class="nm-kpi-value is-bad" id="sum-offline">—</div>
+          </div>
+          <div class="nm-kpi" title="الأجهزة التي لم تُحسم حالتها بعد (غير معروفة أو موقوفة من المراقبة)">
+            <div class="nm-kpi-label" data-i18n="devices.sum.unknown">⚪ غير معروف</div>
+            <div class="nm-kpi-value is-muted" id="sum-unknown">—</div>
+          </div>
+          <div class="nm-kpi" title="عدد الأجهزة التي بها خدمة مراقَبة متوقفة واحدة على الأقل">
+            <div class="nm-kpi-label" data-i18n="devices.sum.services">🧩 خدمات متأثرة</div>
+            <div class="nm-kpi-value is-warn" id="sum-services">—</div>
+          </div>
+        </div>
+
         <!-- RCA-01/02 — شريط الأعطال المرتبطة (عطل جهاز أعلى + المتأثرون) -->
         <div id="rca-banner" class="hidden nm-note is-warn" style="margin:0.7rem 0;"></div>
 

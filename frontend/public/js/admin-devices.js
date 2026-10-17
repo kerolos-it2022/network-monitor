@@ -29,7 +29,36 @@ function ipSortKey(ip) {
 function statusText(status) {
   if (status === 'online') return 'متصل';
   if (status === 'offline') return 'متوقف';
+  if (status === 'paused') return 'موقوف';
   return 'غير معروف';
+}
+
+// v2.33.0 — شارة الحالة (نقطة + الكلمة على خلفية باهتة بلون الحالة): أوضح من كلمة سادة،
+// وليست معتمدة على اللون وحده (الكلمة مكتوبة دائمًا) — والكلمات نفسها بلا تغيير.
+function statusPill(status) {
+  const cls = status === 'online' ? 'is-ok' : (status === 'offline' ? 'is-bad' : 'is-muted');
+  return '<span class="nm-pill ' + cls + '"><span class="dot"></span>' + esc(statusText(status)) + '</span>';
+}
+
+// v2.33.0 — ملخص الحالة: إجمالي · متصل · منقطع · غير معروف · خدمات متأثرة (= أجهزة بها خدمة
+// مراقَبة متوقفة واحدة على الأقل). تُحدَّث في كل رسم للجدول.
+function renderDevicesSummary(list) {
+  const el = (id) => document.getElementById(id);
+  if (!el('sum-total')) return;
+  const rows = Array.isArray(list) ? list : [];
+  const online = rows.filter((d) => d.current_status === 'online').length;
+  const offline = rows.filter((d) => d.current_status === 'offline').length;
+  const unknown = rows.length - online - offline;               // غير معروف + موقوف من المراقبة
+  const services = rows.filter((d) => Number(d.services_down_count) > 0).length;
+  el('sum-total').textContent = rows.length;
+  el('sum-online').textContent = online;
+  el('sum-offline').textContent = offline;
+  el('sum-unknown').textContent = unknown;
+  el('sum-services').textContent = services;
+  // الأصفار تُخفَّف بصريًّا (لا ضجيج لوني بلا معنى)
+  el('sum-offline').className = 'nm-kpi-value' + (offline ? ' is-bad' : ' is-muted');
+  el('sum-unknown').className = 'nm-kpi-value' + (unknown ? '' : ' is-muted');
+  el('sum-services').className = 'nm-kpi-value' + (services ? ' is-warn' : ' is-muted');
 }
 
 // RCA-01/02 — شريط الأعطال المرتبطة: عطل جهاز أعلى مع عدد المتأثرين (لعرض «السبب الجذري»
@@ -111,6 +140,10 @@ async function loadDevices() {
   // حالة فارغة صريحة: لا جدول بلا صفوف وبلا رسالة
   if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
 
+  // v2.33.0 — ملخص الحالة أعلى الجدول: يُحسب من **نفس القائمة المعروضة** (فلو فُلتر بموقع،
+  // الأرقام تطابق ما تراه في الجدول) وبلا أي نداء شبكة إضافي.
+  renderDevicesSummary(sortedData);
+
   for (const d of sortedData) {
     // زر الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
     // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444)، وإلا الافتراضي.
@@ -129,7 +162,7 @@ async function loadDevices() {
       <td class="col-ltr">${esc(d.ip)}</td>
       <td>${esc(d.device_type_name || '—')}</td>
       <td>${esc(d.location_name || '—')}</td>
-      <td class="col-status">${esc(statusText(d.current_status))}</td>
+      <td class="col-status">${statusPill(d.current_status)}</td>
       <td class="col-actions">
         ${openBtn}
         <button class="btn btn-sm" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>

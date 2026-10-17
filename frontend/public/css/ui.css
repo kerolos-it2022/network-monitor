@@ -887,3 +887,40 @@ table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 
 /* سطر الحقوق في ذيل الصفحة: يمين بدل المنتصف */
 .site-footer { text-align: start; }
+
+/* ═══════════════════════════ 14) شارات الحالة وملخص الأجهزة (v2.33.0) ═══════════════════════════ */
+/* شارة حالة: نقطة ملوّنة + الكلمة على خلفية باهتة — والكلمة مكتوبة دائمًا (لا اعتماد على اللون وحده). */
+.nm-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--nm-r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: var(--nm-fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.7;
+}
+.nm-pill .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+.nm-pill.is-ok { color: var(--nm-ok); background: var(--nm-ok-soft); border-color: var(--nm-ok-border); }
+.nm-pill.is-bad { color: var(--nm-bad); background: var(--nm-bad-soft); border-color: var(--nm-bad-border); }
+.nm-pill.is-warn { color: var(--nm-warn); background: var(--nm-warn-soft); border-color: var(--nm-warn-border); }
+.nm-pill.is-muted { color: var(--muted); background: var(--bg); border-color: var(--border); }
+
+/* بطاقات الملخص: أرقامها أوضح قليلًا من بطاقات KPI العامة (رأس شاشة الأجهزة) */
+#devices-summary { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* على الشاشات الأصغر: صفّان ثم عمود واحد — بلا أي ضغط للأرقام */
+@media (max-width: 900px) { #devices-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { #devices-summary { grid-template-columns: 1fr; } }
+#devices-summary .nm-kpi { min-height: 74px; }
+#devices-summary .nm-kpi-value { font-size: 1.35rem; line-height: 1.2; }

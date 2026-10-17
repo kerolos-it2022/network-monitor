@@ -161,6 +161,13 @@
       'noc.group.printer': 'الطابعات وماكينات التصوير',
       'noc.group.other': 'أجهزة وأنظمة أخرى',
 
+      // ── ملخص الأجهزة في لوحة التحكم ──
+      'devices.sum.total': '📊 إجمالي الأجهزة',
+      'devices.sum.online': '🟢 متصل الآن',
+      'devices.sum.offline': '🔴 منقطع',
+      'devices.sum.unknown': '⚪ غير معروف',
+      'devices.sum.services': '🧩 خدمات متأثرة',
+
       // ── ذيل الصفحة ──
       'footer.rights': 'جميع الحقوق محفوظة',
 
