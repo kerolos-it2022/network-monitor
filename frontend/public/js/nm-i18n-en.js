@@ -243,6 +243,15 @@
     // ── Tail: the remaining page texts ──
 
     // ── Merged fragments (counters and units) ──
+    'sys.calcNext': 'Calculated from the next refresh…',
+    'system.closedByPolicy': 'closed after the display was switched off:',
+    'sys.memLine': '{used} used of {total} — {free} free ({pct})',
+    'sys.svcLine': '🧩 Monitoring service: {rss} (Heap used {heap}) · open for {up}',
+    'sys.diskLine': '{used} used of {total} — {free} free ({pct})',
+    'sys.diskUnavailable': 'Root-disk measurement is not available on this platform',
+    'sys.cpuLine': 'Usage: {pct} · {cores} cores · {model}',
+    'sys.sseLine': 'Open streams now: {open} / {max} · peak: {peak} · dropped (slow screens): {dropped} · refused (over limit): {refused}',
+    'sys.sseBytes': 'Bytes sent since boot: {bytes}',
     'fault.header': '⚠️ <b>Central fault</b>: {name} — <b>{n}</b> affected devices ({conf}) — since {since}',
     'fault.affected': 'Affected: {names}',
     'fault.more': ' and {n} more',

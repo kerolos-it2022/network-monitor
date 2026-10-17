@@ -249,6 +249,15 @@
       // ── الذيل: نصوص الصفحات الثلاث ──
 
       // ── أجزاء/كلمات مدمجة (عدّادات ووحدات) ──
+      'sys.calcNext': 'يُحسب من التحديث التالي…',
+      'system.closedByPolicy': 'أُغلقوا بعد إيقاف العرض:',
+      'sys.memLine': 'مستخدم {used} من {total} — متاح {free} ({pct})',
+      'sys.svcLine': '🧩 خدمة المراقبة: {rss} (Heap مستخدم {heap}) · مفتوحة منذ {up}',
+      'sys.diskLine': 'مستخدم {used} من {total} — متاح {free} ({pct})',
+      'sys.diskUnavailable': 'قياس قرص الجذر غير متاح على هذه المنصة',
+      'sys.cpuLine': 'الأداء: {pct} · {cores} أنوية · {model}',
+      'sys.sseLine': 'شاشات مفتوحة الآن: {open} / {max} · أقصى عدد وصل: {peak} · مُسقَطون (شاشات بطيئة): {dropped} · مرفوضون (تجاوز الحد): {refused}',
+      'sys.sseBytes': 'بايتات مُرسَلة منذ الإقلاع: {bytes}',
       'fault.header': '⚠️ <b>عطل مركزي</b>: {name} — <b>{n}</b> جهازًا متأثرًا ({conf}) — منذ {since}',
       'fault.affected': 'المتأثرون: {names}',
       'fault.more': ' و{n} غيرهم',

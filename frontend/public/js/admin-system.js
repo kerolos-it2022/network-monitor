@@ -16,10 +16,8 @@ function sysFmtBytes(b) {
 
 function sysFmtUptime(sec) {
   if (!sec || sec < 0) return '—';
-  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
-  if (d) return d + T('unit.dayAnd', ' يوم و ') + h + ' ساعة';
-  if (h) return h + T('unit.hoursAnd', ' ساعة و ') + m + T('unit.min', ' دقيقة');
-  return m + ' دقيقة';
+  // نُسلّمها لمنسّق المدّة الموحّد (يتكلّم اللغتين: «1 يوم و 3 ساعات» / «1 day 3 hours»)
+  return NMFormat.duration(sec);
 }
 
 // لون الشريط: أخضر حتى 60% · أصفر حتى 85% · أحمر بعدها.
@@ -56,34 +54,35 @@ async function loadSystemStats() {
   // 🧠 الرام
   sysSetBar('sys-memory-bar', d.memory.used_percent);
   document.getElementById('sys-memory-text').innerHTML =
-    'مستخدم ' + bdi(sysFmtBytes(d.memory.used_bytes)) + ' من ' + bdi(sysFmtBytes(d.memory.total_bytes))
-    + ' — متاح ' + bdi(sysFmtBytes(d.memory.free_bytes)) + ' (' + bdi(d.memory.used_percent + '%') + ')';
+    NMI18N.t('sys.memLine', { used: bdi(sysFmtBytes(d.memory.used_bytes)), total: bdi(sysFmtBytes(d.memory.total_bytes)),
+      free: bdi(sysFmtBytes(d.memory.free_bytes)), pct: bdi(d.memory.used_percent + '%') });
   document.getElementById('sys-process').innerHTML =
-    '🧩 خدمة المراقبة: ' + bdi(sysFmtBytes(d.memory.process.rss_bytes))
-    + ' (Heap مستخدم ' + bdi(sysFmtBytes(d.memory.process.heap_used_bytes)) + ')'
-    + ' · مفتوحة منذ ' + esc(sysFmtUptime(d.memory.process.uptime_seconds));
+    NMI18N.t('sys.svcLine', { rss: bdi(sysFmtBytes(d.memory.process.rss_bytes)),
+      heap: bdi(sysFmtBytes(d.memory.process.heap_used_bytes)), up: esc(sysFmtUptime(d.memory.process.uptime_seconds)) });
 
   // ⚡ المعالج
   const cpuPercent = d.cpu.usage_percent;
   sysSetBar('sys-cpu-bar', cpuPercent);
-  document.getElementById('sys-cpu-text').innerHTML = (cpuPercent === null ? 'يُحسب من التحديث التالي…' : 'الاستخدام الحي: ' + bdi(cpuPercent + '%'))
-    + ' · أنوية: ' + bdi(d.cpu.cores) + (d.cpu.model ? ' · ' + bdi(d.cpu.model) : '');
+  document.getElementById('sys-cpu-text').innerHTML = cpuPercent === null
+    ? T('sys.calcNext', 'يُحسب من التحديث التالي…')
+    : NMI18N.t('sys.cpuLine', { pct: bdi(cpuPercent + '%'), cores: bdi(d.cpu.cores), model: d.cpu.model ? bdi(d.cpu.model) : '' });
   document.getElementById('sys-loadavg').innerHTML =
-    d.cpu.loadavg_1_5_15 ? 'تحميل النظام (1/5/15 دقيقة): ' + bdi(d.cpu.loadavg_1_5_15.join(' · ')) : '—';
+    d.cpu.loadavg_1_5_15 ? T('system.loadAvg', 'تحميل النظام (1/5/15 دقيقة):') + ' ' + bdi(d.cpu.loadavg_1_5_15.join(' · ')) : '—';
 
   // 💾 القرص
   const root = d.disks.root;
   if (root) {
     sysSetBar('sys-disk-bar', root.used_percent);
     document.getElementById('sys-disk-text').innerHTML =
-      'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
+      NMI18N.t('sys.diskLine', { used: bdi(sysFmtBytes(root.used)), total: bdi(sysFmtBytes(root.total)),
+        free: bdi(sysFmtBytes(root.free)), pct: bdi(root.used_percent + '%') });
   } else {
     sysSetBar('sys-disk-bar', null);
-    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة'))))))))));
+    document.getElementById('sys-disk-text').textContent = T('sys.diskUnavailable', 'قياس قرص الجذر غير متاح على هذه المنصة');
   }
   document.getElementById('sys-db-size').innerHTML =
-    '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
-    + ' · 💾 النسخ الاحتياطية: ' + bdi(sysFmtBytes(d.disks.backups_bytes));
+    T('system.dbHeading', '🗃️ قاعدة البيانات:') + ' ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
+    + ' · ' + T('system.backupsHeading', '· 💾 النسخ الاحتياطية:') + ' ' + bdi(sysFmtBytes(d.disks.backups_bytes));
 
   // 🌐 الشبكة (لينكس فقط — بطاقة تُخفى بهدوء على غيره)
   const netCard = document.getElementById('sys-network-card');
@@ -150,14 +149,14 @@ async function loadSystemStats() {
     if (!s) sseEl.textContent = T('s2j.service_not_loaded', '— (الخدمة غير محمّلة)');
     else {
       const parts = [
-        'شاشات مفتوحة الآن: <bdi>' + esc(s.clients) + '</bdi> / ' + esc(s.maxClients),
-        'أقصى عدد وصل: <bdi>' + esc(s.peak) + '</bdi>',
-        'مُسقَطون (شاشات بطيئة): <bdi>' + esc(s.droppedSlow) + '</bdi>',
-        'مرفوضون (تجاوز الحد): <bdi>' + esc(s.rejectedLimit) + '</bdi>',
+        T('system.streamsOpen', 'شاشات مفتوحة الآن:') + ' <bdi>' + esc(s.clients) + '</bdi> / ' + esc(s.maxClients),
+        T('system.peak', '/ 100 · أقصى عدد وصل:') + ' <bdi>' + esc(s.peak) + '</bdi>',
+        T('system.dropped', '· مُسقَطون (شاشات بطيئة):') + ' <bdi>' + esc(s.droppedSlow) + '</bdi>',
+        T('system.refused', '· مرفوضون (تجاوز الحد):') + ' <bdi>' + esc(s.rejectedLimit) + '</bdi>',
       ];
-      if (s.closedByPolicy) parts.push('أُغلقوا بعد إيقاف العرض: <bdi>' + esc(s.closedByPolicy) + '</bdi>');
+      if (s.closedByPolicy) parts.push(T('system.closedByPolicy', 'أُغلقوا بعد إيقاف العرض:') + ' <bdi>' + esc(s.closedByPolicy) + '</bdi>');
       sseEl.innerHTML = parts.join(' · ')
-        + '<br><span class="nm-sub">بايتات مُرسَلة منذ الإقلاع: ' + esc(NMFormat.bytes(s.bytesSent)) + '</span>';
+        + '<br><span class="nm-sub">' + NMI18N.t('sys.sseBytes', { bytes: esc(NMFormat.bytes(s.bytesSent)) }) + '</span>';
     }
   }
   sysSetStatus(T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + NMFormat.time(d.ts), false);
