@@ -321,12 +321,29 @@ async function sendMobile(message, deviceId = null) {
 // testAllChannels(message): إرسال إشعار تجربة عبر القنوات الثلاث مع نتيجة مفصّلة
 // لكل قناة — يستهلكه POST /api/notifications/test. القنوات المعطّلة لا يُرسَل لها
 // شيء، بل تُرجَع بسببه واضحًا (تشخيص بلا إزعاج).
+const TEST_DELIVERERS = {
+  telegram: (msg) => deliverTelegram(msg, null),
+  whatsapp: (msg) => deliverWhatsapp(msg, null),
+  mobile: (msg) => deliverMobile(msg, null),
+};
+const TEST_CHANNELS = Object.keys(TEST_DELIVERERS);
+
+/** القنوات المتاحة لاختبار فردي (للتحقق في المسار والواجهة). */
+function testChannelNames() { return TEST_CHANNELS.slice(); }
+
+/** اختبار قناة واحدة بالاسم — {channel, ok, error} (بلا إرسال للبقية). */
+async function testChannel(channel, message = '🔔 إشعار تجريبي من نظام مراقبة الشبكة') {
+  const key = String(channel || '').trim().toLowerCase();
+  const deliver = TEST_DELIVERERS[key];
+  if (!deliver) {
+    return { channel: key || null, ok: false, error: 'قناة غير معروفة — المتاح: ' + TEST_CHANNELS.join(' · ') };
+  }
+  const r = await deliver(message);
+  return Object.assign({ channel: key }, r || { ok: false, error: 'بلا نتيجة' });
+}
+
 async function testAllChannels(message = '🔔 إشعار تجريبي من نظام مراقبة الشبكة') {
-  return Promise.all([
-    deliverTelegram(message, null),
-    deliverWhatsapp(message, null),
-    deliverMobile(message, null),
-  ]);
+  return Promise.all(TEST_CHANNELS.map((c) => testChannel(c, message)));
 }
 
 // notifyDeviceDown(device): إشعار انقطاع جهاز للقنوات المفعّلة (متوازي).
@@ -499,6 +516,8 @@ module.exports = {
   notifyServiceRecovered,
   sendGenericNotification,
   testAllChannels,
+  testChannel,
+  testChannelNames,
   getSettings,
   getSettingsWithSources,
 };

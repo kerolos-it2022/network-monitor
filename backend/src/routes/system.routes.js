@@ -185,6 +185,11 @@ router.get('/stats', requireAuth, (req, res) => {
         stalled: !!engine.stalled,
         stuck_checks: engine.stuckChecks || 0,
       } : null,
+      // v2.33.0 — مؤشر بوت تلجرام (شغّال/واقف + السبب): قراءة ذاكرة + إعدادات فقط بلا شبكة.
+      bot: (() => {
+        try { return require('../services/telegram-bot.service').getBotStatus(); }
+        catch (e) { return null; }
+      })(),
       devices_active: devicesCount,
       system: {
         platform: os.platform(),           // 'linux' | 'win32' …

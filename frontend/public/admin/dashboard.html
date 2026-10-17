@@ -448,10 +448,13 @@
 
         <div class="nm-sub-section">
           <div class="nm-sub-head">📨 تلجرام</div>
-          <label class="nm-check">
-            <input type="checkbox" id="ntf-telegram_enabled" />
-            <span>القناة مفعّلة</span>
-          </label>
+          <div class="nm-row">
+            <label class="nm-check">
+              <input type="checkbox" id="ntf-telegram_enabled" />
+              <span>القناة مفعّلة</span>
+            </label>
+            <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط">🔔 اختبار هذه القناة</button>
+          </div>
           <div class="form-grid cols-2">
             <label>توكن البوت <small class="nm-muted">(Bot Token)</small>
               <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" />
@@ -464,10 +467,13 @@
 
         <div class="nm-sub-section">
           <div class="nm-sub-head">📟 واتساب</div>
-          <label class="nm-check">
-            <input type="checkbox" id="ntf-whatsapp_enabled" />
-            <span>القناة مفعّلة</span>
-          </label>
+          <div class="nm-row">
+            <label class="nm-check">
+              <input type="checkbox" id="ntf-whatsapp_enabled" />
+              <span>القناة مفعّلة</span>
+            </label>
+            <button type="button" class="btn btn-sm" id="ntf-test-whatsapp-btn" title="إرسال إشعار تجريبي على واتساب فقط">🔔 اختبار هذه القناة</button>
+          </div>
           <div class="form-grid cols-3">
             <label>رابط الـ API <small class="nm-muted">(URL)</small>
               <input type="text" id="ntf-whatsapp_api_url" />
@@ -483,10 +489,13 @@
 
         <div class="nm-sub-section">
           <div class="nm-sub-head">📱 إشعارات الهاتف (PWA)</div>
-          <label class="nm-check">
-            <input type="checkbox" id="ntf-mobile_enabled" />
-            <span>القناة مفعّلة</span>
-          </label>
+          <div class="nm-row">
+            <label class="nm-check">
+              <input type="checkbox" id="ntf-mobile_enabled" />
+              <span>القناة مفعّلة</span>
+            </label>
+            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف (PWA) فقط">🔔 اختبار هذه القناة</button>
+          </div>
           <div class="form-grid cols-2">
             <label>مفتاح FCM Server Key
               <input type="password" id="ntf-fcm_server_key" placeholder="AAAA…" autocomplete="off" />
@@ -663,6 +672,13 @@
         <div class="nm-card-head">
           <h3 class="nm-card-title">📋 سجل الإشعارات</h3>
           <div class="nm-row">
+            <label class="nm-sub" for="logs-filter-status">الحالة:</label>
+            <select id="logs-filter-status" class="nm-select" style="min-width:180px;" title="إظهار كل الإشعارات أو الناجحة أو الفاشلة فقط">
+              <option value="">كل الحالات</option>
+              <option value="sent">✅ تم الإرسال</option>
+              <option value="failed">❌ فشل الإرسال</option>
+              <option value="maintenance">🛠️ مكتوم (صيانة)</option>
+            </select>
             <label class="nm-sub" for="filter-sort-logs">ترتيب:</label>
             <select id="filter-sort-logs" class="nm-select" style="min-width:190px;">
               <option value="sent_at_desc">🔽 الأحدث أولًا</option>
@@ -999,6 +1015,8 @@
         <div class="nm-sub-section">
           <b>⏱️ صحة محرك المراقبة</b>
           <div id="sys-engine" class="nm-sub" style="margin-top:0.5rem;">—</div>
+          <b style="display:block; margin-top:0.7rem;">🤖 بوت تلجرام</b>
+          <div id="sys-bot" class="nm-sub" style="margin-top:0.35rem;">—</div>
         </div>
 
         <div id="sys-status" class="nm-sub" style="margin-top:0.6rem;"></div>

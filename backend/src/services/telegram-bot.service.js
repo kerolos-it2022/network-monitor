@@ -19,6 +19,18 @@ let running = false;
 let offset = 0;
 let unauthorizedWarnedAt = 0;
 
+// v2.33.0 — حالة مرئية للمالك (مؤشر «البوت شغّال / واقف» في تبويب حالة النظام):
+//   mode: 'idle'    = لم تبدأ الحلقة بعد
+//         'waiting' = القناة معطّلة أو الاعتمادات ناقصة (الحلقة تفحص كل 10 ثوانٍ)
+//         'running' = يستمع فعليًّا (Long Polling)
+let botMode = 'idle';
+let startedAt = null;      // لحظة بدء الحلقة
+let lastPollAt = null;     // آخر محاولة استقبال (نجحت أو فشلت)
+let lastPollOk = null;     // هل آخر محاولة نجحت؟
+let lastError = null;      // آخر خطأ (نصّ مختصر)
+let updatesHandled = 0;    // عدد التحديثات (أوامر/أزرار) المُعالَجة منذ الإقلاع
+let commandsEnabled = false;
+
 // esc(s): ترميز HTML لأسماء الأجهزة (وضع parse_mode:'HTML' في تلجرام).
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -189,7 +201,10 @@ async function startTelegramBot() {
   try { s = await getSettings(); } catch (e) { console.warn('[tg-bot] تعذّر قراءة الإعدادات:', e.message); return; }
   let token = s.telegram_bot_token;
   let chatId = s.telegram_chat_id;
+  startedAt = startedAt || Date.now();
   if (!s.telegram_enabled || !token || !chatId) {
+    botMode = 'waiting';
+    commandsEnabled = !!Number(s.bot_commands_enabled === undefined ? 1 : s.bot_commands_enabled);
     console.log('[tg-bot] بدء متوقف مؤقتًا (القناة معطلة أو اعتمادات ناقصة) — الحلقة ستفحص كل دورة وتُشغّل ذاتها تلقائيًا عند التفعيل.');
     // نبدأ الحلقة بوضع خامل: تفحص المفاتيح كل دورة دون استهلاك تحديثات.
     token = token || ''; chatId = chatId || '';
@@ -204,6 +219,8 @@ async function startTelegramBot() {
             continue;
           }
           token = cs.telegram_bot_token; chatId = cs.telegram_chat_id;
+          commandsEnabled = true;
+          botMode = 'running';
           break;
         } catch (e) { await new Promise((r) => setTimeout(r, 10000)); }
       }
@@ -231,15 +248,19 @@ async function startTelegramBot() {
           timeout: 25,
           allowed_updates: ['message', 'callback_query'],
         }, 35000);
+        lastPollAt = Date.now(); lastPollOk = true; lastError = null;
         const updates = data.result || [];
         for (const u of updates) {
           offset = Math.max(offset, Number(u.update_id || 0) + 1);
+          updatesHandled += 1;
           try { await handleUpdate(u, tk, chId); }
           catch (e) { console.error('[tg-bot] خطأ معالجة تحديث:', e.message); }
         }
       } catch (e) {
         // انقطاع شبكة/سهم مؤقت ⇒ تراجع قصير (أطول لو 409: عميل آخر على نفس التوكن).
         const conflict = /409/.test(String(e.message));
+        lastPollAt = Date.now(); lastPollOk = false;
+        lastError = (conflict ? 'التوكن مستخدم من عميل آخر: ' : 'خطأ شبكة: ') + String(e.message || '').slice(0, 160);
         console.error('[tg-bot]', conflict ? 'توكن مستخدم من عميل آخر — تأخير أطول' : 'خطأ شبكة — إعادة محاولة', e.message);
         await new Promise((r) => setTimeout(r, conflict ? 30000 : 5000));
       }
@@ -247,8 +268,40 @@ async function startTelegramBot() {
   };
   // v2.14.2 — مسار البدء المباشر: القناة مفعّلة والاعتمادات جاهزة عند الإقلاع.
   running = true;
+  botMode = 'running';
+  commandsEnabled = true;
   console.log('[tg-bot] البوت بدأ الاستماع (Long Polling) للأوامر: /status /down /recent /help');
   loop(token, chatId).catch((e) => { console.error('[tg-bot] توقفت الحلقة:', e.message); });
 }
 
-module.exports = { startTelegramBot, handleCommand, tgButtons };
+// getBotStatus(): لقطة حالة البوت للواجهة (قراءة ذاكرة + قراءة إعدادات فقط — بلا شبكة ولا كتابة).
+// تُقرأ القناة/المفتاح/الـ chat من الإعدادات أيضًا كي يعرف المالك **سبب** التوقف لا مجرّد أنه متوقف.
+function getBotStatus() {
+  let enabled = false, commandsOn = false, hasToken = false, hasChat = false;
+  try {
+    const r = db.prepare('SELECT telegram_enabled, bot_commands_enabled, telegram_bot_token, telegram_chat_id FROM notification_settings WHERE id = 1').get();
+    if (r) {
+      enabled = !!Number(r.telegram_enabled);
+      commandsOn = r.bot_commands_enabled === undefined ? true : !!Number(r.bot_commands_enabled);
+      hasToken = !!String(r.telegram_bot_token || '').trim();
+      hasChat = !!String(r.telegram_chat_id || '').trim();
+    }
+  } catch (e) { /* جدول/عمود غير جاهز بعد */ }
+  const listening = running && botMode === 'running' && enabled && commandsOn && hasToken && hasChat;
+  return {
+    running: running,
+    listening: listening,
+    mode: !running ? 'idle' : (listening ? 'running' : 'waiting'),
+    startedAt: startedAt,
+    lastPollAt: lastPollAt,
+    lastPollOk: lastPollOk,
+    lastError: lastError,
+    updatesHandled: updatesHandled,
+    telegramEnabled: enabled,
+    commandsEnabled: commandsOn,
+    hasToken: hasToken,
+    hasChatId: hasChat,
+  };
+}
+
+module.exports = { startTelegramBot, handleCommand, tgButtons, getBotStatus };

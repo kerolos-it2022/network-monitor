@@ -118,6 +118,30 @@ async function loadSystemStats() {
     : (e.stalled ? '⚠️ المحرك متوقف أو متعثر! آخر دورة قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية — راجع تبويب السجل'
        : '✅ سليم — آخر دورة فحص قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية · أجهزة نشطة: ' + (d.devices_active !== null ? d.devices_active : (e.active_devices || '—')) + ' · فحوص جارية: ' + (e.inflight_checks || 0));
 
+  // 🤖 بوت تلجرام (v2.33.0): شغّال/واقف + السبب — أوضح إشارة للمالك عند تعطّل الأوامر
+  const botEl = document.getElementById('sys-bot');
+  if (botEl) {
+    const b = d.bot;
+    if (!b) botEl.textContent = '— (الخدمة غير محمّلة)';
+    else if (b.listening) {
+      const age = b.lastPollAt ? Math.round((Date.now() - b.lastPollAt) / 1000) : null;
+      const ageTxt = age === null ? 'لم تبدأ بعد' : (age < 60 ? 'قبل ' + age + ' ثانية' : 'قبل ' + Math.round(age / 60) + ' دقيقة');
+      botEl.innerHTML = '✅ <b>يعمل</b> — يستمع للأوامر والأزرار (آخر استقبال ' + esc(ageTxt)
+        + ' · أوامر مُنفَّذة منذ الإقلاع: <bdi>' + esc(b.updatesHandled) + '</bdi>)'
+        + (b.lastPollOk === false && b.lastError ? ' · ⚠️ آخر خطأ: ' + esc(b.lastError) : '');
+    } else {
+      // السبب الدقيق بدل «متوقف» المبهمة
+      const reasons = [];
+      if (!b.telegramEnabled) reasons.push('قناة تلجرام غير مفعّلة');
+      if (!b.hasToken) reasons.push('توكن البوت غير مضبوط');
+      if (!b.hasChatId) reasons.push('معرّف المحادثة (Chat ID) غير مضبوط');
+      if (b.hasToken && b.hasChatId && b.telegramEnabled && !b.commandsEnabled) reasons.push('مفتاح «بوت تلجرام التفاعلي» مُطفأ');
+      if (reasons.length === 0 && b.running) reasons.push('في انتظار أول دورة استقبال');
+      botEl.innerHTML = '⛔ <b>متوقف</b>'
+        + (reasons.length ? ' — السبب: ' + esc(reasons.join(' · ')) : ' — الحلقة لم تبدأ بعد')
+        + (b.lastError ? ' · آخر خطأ: ' + esc(b.lastError) : '');
+    }
+  }
   sysSetStatus('آخر تحديث: ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();

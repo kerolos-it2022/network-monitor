@@ -1,6 +1,8 @@
 // admin-notifications.js: تحميل وحفظ إعدادات الإشعارات + عرض سجل الإشعارات عند فتح التبويب.
 // ملاحظة: esc و api مُعرّفتان في admin-utils.js (يُحمَّل أولاً).
-let currentLogsSort = 'sent_at_desc'; // متغير عام لتخزين الترتيب الحالي للسجلات
+let currentLogsSort = 'sent_at_desc';
+// v2.33.0 — فلتر حالة سجل الإشعارات: '' = كل الحالات · sent · failed · maintenance
+let logsFilterStatus = '';
 
 async function loadNotificationSettings() {
   const r = await api('/api/notifications/settings');
@@ -101,14 +103,21 @@ async function saveNotificationSettings() {
 // v2.13.0 — الردّ صار يحمل نتيجة كل قناة بسببها، فنعرض سبب كل قناة بدل «فشل الإرسال»
 // المبهم (مع دعم خادم أقدم يردّ { sent } فقط — تراجُع آمن). والتفصيل يُعرض حتى عندما
 // تكون success=false (القنوات مفعّلة لكن الإرسال فشل) فلا نستبدله برسالة عامة.
-async function testNotification() {
+// channel (اختياري، v2.33.0) — 'telegram' | 'whatsapp' | 'mobile' لاختبار قناة واحدة
+// (أزرار «🔔 اختبار هذه القناة» داخل كل قسم)؛ بلا مُعامل ⇒ كل القنوات المفعّلة كما كان.
+async function testNotification(channel) {
   const statusEl = document.getElementById('ntf-status');
+  const only = channel ? { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف (PWA)' }[channel] || channel : null;
   statusEl.style.color = 'var(--online)';
-  statusEl.textContent = '🔔 جارٍ إرسال إشعار تجريبي عبر القنوات المفعّلة…';
+  statusEl.textContent = only
+    ? ('🔔 جارٍ إرسال إشعار تجريبي على ' + only + ' فقط…')
+    : '🔔 جارٍ إرسال إشعار تجريبي عبر القنوات المفعّلة…';
   try {
     const r = await fetch('/api/notifications/test', {
       method: 'POST',
       credentials: 'include',
+      headers: channel ? { 'Content-Type': 'application/json' } : undefined,
+      body: channel ? JSON.stringify({ channel: channel }) : undefined,
     });
     const data = await r.json();
     const results = data.data && Array.isArray(data.data.results) ? data.data.results : null;
@@ -187,16 +196,27 @@ async function loadNotificationLogs() {
     if (c === 'mobile') return 'هاتف (PWA)';
     return c;
   };
+  // v2.33.0 — فلتر الحالة (كل / تم الإرسال / فشل / مكتوم صيانة) قبل العرض
+  const statusText = (s) => (s === 'sent' ? 'تم الإرسال' : (s === 'failed' ? 'فشل' : (s === 'maintenance' ? 'مكتوم (صيانة)' : (s || '—'))));
+  const shownData = logsFilterStatus
+    ? sortedData.filter((l) => String(l.status || '') === logsFilterStatus)
+    : sortedData;
   const emptyBox = document.getElementById('logs-empty');
-  if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
+  if (emptyBox) {
+    const filtered = !!logsFilterStatus && sortedData.length > 0 && shownData.length === 0;
+    emptyBox.classList.toggle('hidden', shownData.length > 0);
+    emptyBox.innerHTML = filtered
+      ? '<span class="nm-empty-icon">🔍</span>لا توجد إشعارات بحالة «' + esc(statusText(logsFilterStatus)) + '» — اختر «كل الحالات» لعرض الكل.'
+      : '<span class="nm-empty-icon">📭</span>لا توجد إشعارات مسجَّلة بعد — تظهر هنا كل رسالة يُرسلها النظام (انقطاع/تعافٍ/تصعيد/تقرير).';
+  }
 
-  for (const l of sortedData) {
+  for (const l of shownData) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="col-ltr">${esc(l.sent_at ? NMFormat.dateTime(l.sent_at) : '—')}</td>
       <td>${esc(l.device_name || '—')}</td>
       <td class="col-center">${esc(channelText(l.channel))}</td>
-      <td class="col-status">${esc(l.status === 'sent' ? 'تم الإرسال' : 'فشل')}</td>
+      <td class="col-status">${esc(statusText(l.status))}</td>
       <td>${esc(l.message)}</td>
       <td>${esc(l.error || '—')}</td>
     `;
@@ -208,9 +228,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadNotificationSettings();
   document.getElementById('ntf-save-btn').addEventListener('click', saveNotificationSettings);
   const testBtn = document.getElementById('ntf-test-btn');
-  if (testBtn) testBtn.addEventListener('click', testNotification);
+  if (testBtn) testBtn.addEventListener('click', () => testNotification());
+  // v2.33.0 — زر اختبار مستقل لكل قناة (تلجرام / واتساب / الهاتف)
+  const perChannelTests = [
+    ['ntf-test-telegram-btn', 'telegram'],
+    ['ntf-test-whatsapp-btn', 'whatsapp'],
+    ['ntf-test-mobile-btn', 'mobile'],
+  ];
+  perChannelTests.forEach(([id, ch]) => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', () => testNotification(ch));
+  });
   // عند فتح تبويب السجل: تحميل السجل تلقائياً.
   document.getElementById('tab-logs').addEventListener('click', loadNotificationLogs);
+  // v2.33.0 — فلتر حالة السجل (كل الحالات / تم الإرسال / فشل / مكتوم صيانة)
+  const filterStatusEl = document.getElementById('logs-filter-status');
+  if (filterStatusEl) {
+    filterStatusEl.addEventListener('change', (e) => {
+      logsFilterStatus = e.target.value;
+      loadNotificationLogs();
+    });
+  }
   // مستمع تغيير الترتيب للسجل
   const sortLogsEl = document.getElementById('filter-sort-logs');
   if (sortLogsEl) {

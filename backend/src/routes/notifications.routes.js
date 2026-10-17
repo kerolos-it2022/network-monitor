@@ -214,13 +214,29 @@ router.delete('/register', (req, res) => {
 
 // POST /api/notifications/test  🔒 — v2.13.0: يجرّب **القنوات المفعّلة** كلها ويُعيد نتيجة كل
 // قناة بسببها (كان يجرّب إشعارات الهاتف وحدها ويردّ «فشل الإرسال» بلا أي تفصيل).
+// v2.33.0 — جسم اختياري { channel: 'telegram'|'whatsapp'|'mobile' } لاختبار قناة واحدة
+// (زر اختبار مستقل لكل قناة في اللوحة)؛ بلا channel ⇒ كل القنوات كما كان (توافق خلفي).
 // success = نجح إرسال فعلي لقناة واحدة على الأقل؛ والتفصيل الكامل في data.results.
 router.post('/test', requireAuth, async (req, res) => {
   const notifier = require('../services/notifier.service');
   try {
-    const results = await notifier.testAllChannels('🔔 إشعار تجريبي من نظام مراقبة الشبكة');
+    const wanted = (req.body && req.body.channel !== undefined && req.body.channel !== null)
+      ? String(req.body.channel).trim().toLowerCase()
+      : '';
+    if (wanted && !notifier.testChannelNames().includes(wanted)) {
+      return res.status(400).json({
+        success: false,
+        error: 'قناة غير معروفة: ' + wanted + ' — المتاح: ' + notifier.testChannelNames().join(' · '),
+      });
+    }
+    const message = wanted
+      ? ('🔔 إشعار تجريبي (' + wanted + ') من نظام مراقبة الشبكة')
+      : '🔔 إشعار تجريبي من نظام مراقبة الشبكة';
+    const results = wanted
+      ? [await notifier.testChannel(wanted, message)]
+      : await notifier.testAllChannels(message);
     const sent = results.some((r) => r.ok);
-    return res.json({ success: sent, data: { sent: sent, results: results } });
+    return res.json({ success: sent, data: { sent: sent, channel: wanted || null, results: results } });
   } catch (e) {
     return res.status(500).json({ success: false, error: 'فشل الإرسال: ' + e.message });
   }
