@@ -183,7 +183,7 @@
         });
         setValue('st-upload', up.toFixed(1) + ' Mbps');
       } else {
-        setValue('st-upload', 'غير متاح');
+        setValue('st-upload', T('s3b.not_available', 'غير متاح'));
         setProgress(100);
       }
 

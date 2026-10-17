@@ -34,7 +34,7 @@
         ☀️ وضع نهاري
       </button>
       <button class="btn-action" id="btn-audio" onclick="toggleAudioAlert()" title="تشغيل تنبيه صوتي عند انقطاع أي جهاز">
-        <span id="audio-icon">🔔</span> تنبيه صوتي
+        <span id="audio-icon">🔔</span> <span data-i18n="noc.sound">تنبيه صوتي</span>
       </button>
       <button class="btn-action" onclick="toggleFullscreen()" data-i18n="noc.fullscreen">
         ⛶ ملء الشاشة
@@ -52,7 +52,7 @@
   <div class="outage-overlay" id="outage-overlay" role="alert" aria-live="assertive">
     <div class="oo-title">⚠️ انقطاع جهاز</div>
     <div class="oo-list" id="outage-overlay-list"></div>
-    <button type="button" class="oo-close" id="outage-overlay-close">أعرف — إخفاء التنبيه</button>
+    <button type="button" class="oo-close" id="outage-overlay-close"><span data-i18n="s3.got_it_hide_the_alert">أعرف — إخفاء التنبيه</span></button>
   </div>
 
   <!-- Counters Bar -->
@@ -85,16 +85,16 @@
       <!-- v2.33.0 — حُذف تبويبا «🪟 مقسّوم (خريطة + أنواع الأجهزة)» و«🔗 مسار الإنترنت» (قرار المالك:
            مكرّران — للخريطة ولأنواع الأجهزة تبويبان مستقلان، وسلسلة مسار الإنترنت تظهر داخل «عرض شامل»). -->
       <button class="tab-btn active" data-view="all" onclick="setViewMode('all')">عرض شامل</button>
-      <button class="tab-btn" data-view="map" onclick="setViewMode('map')">🗺️ خريطة المباني</button>
+      <button class="tab-btn" data-view="map" onclick="setViewMode('map')"><span data-i18n="s3.building_map">🗺️ خريطة المباني</span></button>
       <button class="tab-btn" data-view="grid" onclick="setViewMode('grid')">🖧 أنواع الأجهزة</button>
       <!-- v2.8.6 — لوحة وضع الرسم انتقلت لتبويب مستقل (لا تزاحم «خريطة المباني») -->
-      <button class="tab-btn" data-view="draw" onclick="setViewMode('draw')">✏️ التخطيط المرسوم</button>
+      <button class="tab-btn" data-view="draw" onclick="setViewMode('draw')"><span data-i18n="s3.drawn_plan">✏️ التخطيط المرسوم</span></button>
     </div>
     <div class="filter-controls">
       <input type="text" id="search-input" class="search-box" placeholder="🔍 بحث بالاسم أو الآي بي..." oninput="onSearchOrFilterChange()">
       <button class="filter-pill active" data-st="all" onclick="setStatusFilter('all')" data-i18n="common.all">الكل</button>
-      <button class="filter-pill" data-st="down" onclick="setStatusFilter('down')">🔴 المنقطع فقط</button>
-      <button class="filter-pill" data-st="up" onclick="setStatusFilter('up')">🟢 المتصل</button>
+      <button class="filter-pill" data-st="down" onclick="setStatusFilter('down')"><span data-i18n="s3.offline_only">🔴 المنقطع فقط</span></button>
+      <button class="filter-pill" data-st="up" onclick="setStatusFilter('up')"><span data-i18n="s3.online">🟢 المتصل</span></button>
     </div>
   </div>
 
@@ -122,7 +122,7 @@
       </div>
       <div class="map-container">
         <div id="map-empty-note" class="noc-board-note" hidden>
-          لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.
+          <span data-i18n="s2j.no_locations_or_devices_yet_add_them_from_th">لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.</span>
         </div>
         <div id="noc-map-grid" class="map-grid" role="list" aria-label="شبكة المباني"></div>
       </div>
@@ -151,7 +151,7 @@
           <button type="button" class="map-btn" id="draw-zoom-in" title="تكبير" onclick="zoomMap(0.15)">+</button>
           <button type="button" class="map-btn" id="draw-zoom-out" title="تصغير" onclick="zoomMap(-0.15)">−</button>
           <button type="button" class="map-btn wide" id="draw-zoom-reset" title="إعادة ضبط 100%" onclick="resetMapZoom()">↺ 100%</button>
-          <button type="button" class="map-btn wide" id="draw-zoom-fit" title="ملاءمة الشاشة" onclick="fitMapToScreen()">⛶ عرض كامل</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-fit" title="ملاءمة الشاشة" onclick="fitMapToScreen()"><span data-i18n="s2.full_view">⛶ عرض كامل</span></button>
         </div>
       </div>
       <div class="map-container">

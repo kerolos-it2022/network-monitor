@@ -110,11 +110,11 @@
   const KIND_LABELS = {
     'building': '🏢 مبنى إداري',
     'internet': '🌐 بوابة إنترنت',
-    'floor':    T('s2.floor', '📐 طابق'),
-    'room':     T('s2.room', '🚪 غرفة'),
+    'floor':    T('s2.floor', T('s3.floor', '📐 طابق')),
+    'room':     T('s2.room', T('s3.room', '🚪 غرفة')),
     'rack':     '🗄️ خزانة رك',
     'site':     '🏛️ موقع / عنبر',
-    'zone':     T('s2.zone', '📍 منطقة')
+    'zone':     T('s2.zone', T('s3.zone', '📍 منطقة'))
   };
 
   function esc(s) {
@@ -982,7 +982,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     } catch (_) { return String(s); }
   }
   function statusBadgeText(status) {
-    return status === 'online' ? T('s2x.online', 'متصل') : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
+    return status === 'online' ? T('s2x.online', T('s3b.online_2', 'متصل')) : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
   }
   // MON-02 — نص الحالة العامة: يميّز «متصل مع خدمة متوقفة» (DEGRADED) بدل الأخضر الكاذب.
   function overallHealthText(d) {
@@ -1025,7 +1025,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
           <div class="details-field"><span class="df-label">${T('s2.status', 'الحالة')}</span><span class="df-value">${esc(overallHealthText(d))}</span></div>
           ${d.services_total ? `<div class="details-field"><span class="df-label">الخدمات</span><span class="df-value">${Number(d.services_down_count) || 0} متوقفة من ${Number(d.services_total)}</span></div>` : ''}
           <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
-          <div class="details-field"><span class="df-label">زمن الاستجابة</span><span class="df-value">${d.response_time_ms != null ? esc(d.response_time_ms) + ' ms' : '—'}</span></div>
+          <div class="details-field"><span class="df-label">${T('s3.response_time', 'زمن الاستجابة')}</span><span class="df-value">${d.response_time_ms != null ? esc(d.response_time_ms) + ' ms' : '—'}</span></div>
           <div class="details-field"><span class="df-label">${T('s2.last_check', 'آخر فحص')}</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
         `;
       }
@@ -1319,7 +1319,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       return;
     }
     el.textContent = liveConnected
-      ? 'مراقبة حية — تحديث فوري (SSE)'
+      ? T('s3.live_real_time_updates_sse', 'مراقبة حية — تحديث فوري (SSE)')
       : 'مراقبة حية — تحديث دوري كل ' + Math.round(pollIntervalMs / 1000) + ' ثانية';
   }
 
@@ -1367,7 +1367,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       renderAll();
       const now = new Date();
       const el = document.getElementById('last-updated-time');
-      if (el) el.textContent = T('s2j.last_updated', 'آخر تحديث:') + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
+      if (el) el.textContent = T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
     }, 150);
   }
 
@@ -1494,7 +1494,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         
         const now = new Date();
         document.getElementById('last-updated-time').textContent = 
-          T('s2j.last_updated', 'آخر تحديث:') + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
+          T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
         if (updateStatusEl) refreshStatusText(true);
         updateEngineAlertFromHealth(healthRes);
       }
@@ -1520,7 +1520,8 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   function applyNocTheme(isDay) {
     document.documentElement.classList.toggle('noc-day', !!isDay);
     const btn = document.getElementById('noc-theme-toggle');
-    if (btn) btn.textContent = isDay ? '🌙 وضع ليلي' : '☀️ وضع نهاري';
+    // نصّ الزرّ من القاموس (يتغيّر مع اللغة)
+    if (btn) btn.textContent = isDay ? T('noc.themeDark', '🌙 وضع ليلي') : T('noc.themeLight', '☀️ وضع نهاري');
   }
   window.nocToggleTheme = function () {
     const isDay = !document.documentElement.classList.contains('noc-day');

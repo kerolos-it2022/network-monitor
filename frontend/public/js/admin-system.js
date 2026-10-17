@@ -105,12 +105,12 @@ async function loadSystemStats() {
   const kvRow = (label, value) => '<div class="nm-kv"><span class="k">' + label + '</span><span class="v">' + value + '</span></div>';
   const s = d.system;
   document.getElementById('sys-details').innerHTML =
-    kvRow('💻 النظام:', ltr(String(s.type || s.platform || '—') + ' ' + String(s.release || '')))
-    + kvRow('🧱 المعمارية:', ltr(s.arch || '—'))
-    + kvRow('🖥️ الجهاز:', ltr(s.hostname || '—'))
-    + kvRow('🟢 إصدار Node:', ltr(s.node_version || '—'))
-    + kvRow('⏰ خدمة المراقبة مفتوحة منذ:', esc(sysFmtUptime(s.app_uptime_seconds)))
-    + kvRow('🔋 نظام التشغيل منذ:', esc(sysFmtUptime(s.os_uptime_seconds)));
+    kvRow(T('s3.os', '💻 النظام:'), ltr(String(s.type || s.platform || '—') + ' ' + String(s.release || '')))
+    + kvRow(T('s3.architecture', '🧱 المعمارية:'), ltr(s.arch || '—'))
+    + kvRow(T('s3.host', '🖥️ الجهاز:'), ltr(s.hostname || '—'))
+    + kvRow(T('s3.node_version', '🟢 إصدار Node:'), ltr(s.node_version || '—'))
+    + kvRow(T('s3.monitoring_service_up_for', '⏰ خدمة المراقبة مفتوحة منذ:'), esc(sysFmtUptime(s.app_uptime_seconds)))
+    + kvRow(T('s3.os_up_for', '🔋 نظام التشغيل منذ:'), esc(sysFmtUptime(s.os_uptime_seconds)));
 
   // ⏱️ المحرك
   const e = d.engine;
@@ -160,7 +160,7 @@ async function loadSystemStats() {
         + '<br><span class="nm-sub">بايتات مُرسَلة منذ الإقلاع: ' + esc(NMFormat.bytes(s.bytesSent)) + '</span>';
     }
   }
-  sysSetStatus(T('s2j.last_updated', 'آخر تحديث:') + ' ' + NMFormat.time(d.ts), false);
+  sysSetStatus(T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();
 }

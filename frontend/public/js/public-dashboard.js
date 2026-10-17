@@ -21,7 +21,7 @@ let internalView = false;   // true ⇒ نقرأ المسارات الداخلي
 function applyDisplayModeUi() {
   var searchEl = document.getElementById('search-input');
   if (searchEl) {
-    searchEl.placeholder = internalView ? 'بحث بالاسم أو IP…' : 'بحث بالاسم…';
+    searchEl.placeholder = internalView ? 'بحث بالاسم أو IP…' : T('s3.search_by_name', 'بحث بالاسم…');
   }
   var ipOption = document.querySelector('#filter-sort option[value="ip"]');
   if (ipOption) {
@@ -672,13 +672,15 @@ async function init() {
   try {
     if (localStorage.getItem(THEME_STORAGE_KEY) === 'dark') {
       document.body.classList.add('dark');
-      themeBtn.textContent = '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a';
+      themeBtn.textContent = T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a');
     }
   } catch (e) {}
+  document.addEventListener('nm:lang', function () { try { themeBtn.textContent = document.body.classList.contains('dark') ? T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a') : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a'); } catch (e) {} });
   themeBtn.addEventListener('click', function () {
     document.body.classList.toggle('dark');
     var isDark = document.body.classList.contains('dark');
-    themeBtn.textContent = isDark ? '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a' : '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u062a\u064a\u0644\u064a';
+    // نصّ الزرّ من القاموس (ومعه إصلاح خطأ إملائي قديم: «لتليلي» ⇒ «ليلي»)
+    themeBtn.textContent = isDark ? T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a') : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
     try { localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light'); } catch (e) {}
   });
   // ===== زر تفعيل إشعارات الموبايل (Web Push + VAPID) =====

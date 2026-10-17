@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!confirm("حذف المستخدم " + username + "؟")) return;
     const r = await api("/api/auth/users/" + encodeURIComponent(username), { method: "DELETE" });
     const st = document.getElementById("usr-status");
-    if (st) { st.textContent = (r && r.success) ? "✅ تم الحذف" : "✗ " + ((r && r.error) || "فشل"); st.style.color = (r && r.success) ? "var(--online)" : "var(--offline)"; }
+    if (st) { st.textContent = (r && r.success) ? "✅ تم الحذف" : "✗ " + ((r && r.error) || T('s3.failed', "فشل")); st.style.color = (r && r.success) ? "var(--online)" : "var(--offline)"; }
     loadUsers();
   }
   const addB = document.getElementById("usr-add-btn");

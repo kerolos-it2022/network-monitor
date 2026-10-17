@@ -24,13 +24,13 @@
   <!-- شريط علوي بالعنوان وملخص الحالة -->
   <header class="topbar">
     <div class="topbar-title">
-      <h1>مراقبة أجهزة الشبكة</h1>
+      <h1><span data-i18n="public.title">مراقبة أجهزة الشبكة</span></h1>
       <a href="admin/login.html" class="admin-link" id="admin-link" data-i18n="topbar.dashboard">لوحة التحكم</a>
     </div>
     <div id="summary-bar" class="summary-bar">جارٍ التحميل…</div>
     <button id="theme-toggle" class="theme-toggle" type="button" data-i18n="topbar.themeDark">🌙 وضع ليلي</button>
     <button id="notify-btn" class="theme-toggle" type="button" title="تفعيل إشعارات الهاتف" data-i18n="public.notifyOn">🔔 تفعيل الإشعارات</button>
-    <a id="noc-link" class="noc-link-btn" href="/noc.html" target="_blank" title="شاشة عرض كبيرة للحالة — للـ TV وغرفة المراقبة">📺 عرض الشاشة <span class="noc-tv-badge">TV</span></a>
+    <a id="noc-link" class="noc-link-btn" href="/noc.html" target="_blank" title="شاشة عرض كبيرة للحالة — للـ TV وغرفة المراقبة"><span data-i18n="public.tvScreen">📺 عرض الشاشة</span> <span class="noc-tv-badge">TV</span></a>
   </header>
 
   <!-- أدوات الفلترة والبحث + مبدّل نمط العرض + الترتيب -->
@@ -71,7 +71,7 @@
         <button id="tools-clear-btn" class="btn hidden" type="button" title="مسح المخرجات" data-i18n="public.tools.clear">🗑️ مسح</button>
       </div>
       <div class="tools-status hidden" id="tools-status">
-        <span id="tools-status-text">جاري التنفيذ...</span>
+        <span id="tools-status-text"><span data-i18n="s2j.working">جاري التنفيذ...</span></span>
         <span class="tools-spinner"></span>
       </div>
       <pre id="tools-output" class="tools-output hidden"></pre>
@@ -89,13 +89,13 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th class="col-status">الحالة</th>
-              <th>الاسم</th>
+              <th class="col-status"><span data-i18n="s2.status">الحالة</span></th>
+              <th><span data-i18n="s2.name">الاسم</span></th>
               <th class="col-ltr">IP</th>
-              <th>النوع</th>
-              <th>الموقع</th>
-              <th class="col-ltr">آخر فحص</th>
-              <th class="col-center">آخر انقطاع</th>
+              <th><span data-i18n="s2.type">النوع</span></th>
+              <th><span data-i18n="devices.th.location">الموقع</span></th>
+              <th class="col-ltr"><span data-i18n="s2.last_check">آخر فحص</span></th>
+              <th class="col-center"><span data-i18n="s3.last_outage">آخر انقطاع</span></th>
               <th class="col-actions">فتح</th>
               <th class="col-actions" data-i18n="common.details">تفاصيل</th>
             </tr>
@@ -117,7 +117,7 @@
       <div class="modal-chart-wrap">
         <canvas id="modal-chart-canvas" height="120"></canvas>
       </div>
-      <h3>آخر الانقطاعات</h3>
+      <h3><span data-i18n="s3.recent_outages">آخر الانقطاعات</span></h3>
       <ul id="modal-downtime-list" class="downtime-list"></ul>
     </div>
   </div>
@@ -136,7 +136,7 @@
         </select>
       </div>
       <div class="speedtest-results">
-        <div class="st-item"><span class="st-value" id="st-ping">—</span><span class="st-label">زمن الاستجابة</span></div>
+        <div class="st-item"><span class="st-value" id="st-ping">—</span><span class="st-label"><span data-i18n="s3.response_time">زمن الاستجابة</span></span></div>
         <div class="st-item"><span class="st-value" id="st-download">—</span><span class="st-label">تنزيل ↓</span></div>
         <div class="st-item"><span class="st-value" id="st-upload">—</span><span class="st-label">رفع ↑</span></div>
       </div>

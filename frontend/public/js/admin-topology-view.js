@@ -22,10 +22,10 @@
   function statusInfo(n) {
     if (n.type === 'location') return { cls: 'location', st: '' };
     const status = n.status;
-    if (status === 'offline') return { cls: 'down', st: '🔴 منقطع' };
-    if (status === 'paused') return { cls: 'paused', st: '⏸ موقوف' };
+    if (status === 'offline') return { cls: 'down', st: T('s3b.offline', '🔴 منقطع') };
+    if (status === 'paused') return { cls: 'paused', st: T('s3b.paused', '⏸ موقوف') };
     if (status === 'unknown') return { cls: 'unknown', st: '❔ غير معروف' };
-    return { cls: 'up', st: '🟢 متصل' };
+    return { cls: 'up', st: T('s3b.online', '🟢 متصل') };
   }
 
   // إضافة مؤشرات الترقيم (_idx/_parent) لكل عقدة لبناء المسار الرقمي الهرمي (1.2.3).
@@ -51,13 +51,13 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return T('s2.building', '🏢 مبنى');
+    if (kind === 'building') return T('s2.building', T('s3.building', '🏢 مبنى'));
     if (kind === 'internet') return '🌐 بوابة إنترنت';
-    if (kind === 'floor') return T('s2.floor', '📐 طابق');
-    if (kind === 'room') return T('s2.room', '🚪 غرفة');
-    if (kind === 'rack') return T('s2.rack', '🗄️ خزانة');
-    if (kind === 'site') return T('s2.site', '🏛️ موقع');
-    return T('s2.zone', '📍 منطقة');
+    if (kind === 'floor') return T('s2.floor', T('s3.floor', '📐 طابق'));
+    if (kind === 'room') return T('s2.room', T('s3.room', '🚪 غرفة'));
+    if (kind === 'rack') return T('s2.rack', T('s3.rack', '🗄️ خزانة'));
+    if (kind === 'site') return T('s2.site', T('s3.site', '🏛️ موقع'));
+    return T('s2.zone', T('s3.zone', '📍 منطقة'));
   }
 
   // v2.10.2 — أيقونة النوع (نفس أيقونات «خريطة المواقع»).

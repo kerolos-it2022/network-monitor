@@ -208,7 +208,7 @@ function renderDevicesView() {
       <td class="col-status">${statusPill(d.current_status)}</td>
       <td class="col-actions">
         ${openBtn}
-        <button class="btn btn-sm" data-hist="${d.id}" title="${T('s2x.device_uptime_24_h_7_d_30_d_coverage', "تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)")}">📈 تشغيل</button>
+        <button class="btn btn-sm" data-hist="${d.id}" title="${T('s2x.device_uptime_24_h_7_d_30_d_coverage', "تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)")}">${T('s3.uptime', '📈 تشغيل')}</button>
         <button class="btn btn-sm" data-edit="${d.id}" title="${T('s2x.edit_the_device', "تعديل الجهاز")}">${T('common.edit', '✏️ تعديل')}</button>
         <button class="btn btn-sm btn-danger" data-del="${d.id}" title="${T('s2x.delete_the_device', "حذف الجهاز")}">${T('common.delete', '🗑️ حذف')}</button>
       </td>

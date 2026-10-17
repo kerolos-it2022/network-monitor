@@ -45,7 +45,7 @@
   }
 
   function renderHistory(data) {
-    const qualityAr = { complete: 'بيانات كاملة', partial: 'بيانات جزئية', insufficient: 'بيانات غير كافية' };
+    const qualityAr = { complete: T('s3b.complete_data', 'بيانات كاملة'), partial: T('s3b.partial_data', 'بيانات جزئية'), insufficient: T('s3b.insufficient_data', 'بيانات غير كافية') };
     const qEl = el('history-quality');
     if (qEl) {
       qEl.textContent = '· ' + (qualityAr[data.data_quality] || data.data_quality || '—')
@@ -74,7 +74,7 @@
       } else {
         for (const ev of events) {
           const li = document.createElement('li');
-          const end = ev.ended_at ? NMFormat.dateTime(ev.ended_at) : 'مستمر الآن';
+          const end = ev.ended_at ? NMFormat.dateTime(ev.ended_at) : T('s3b.ongoing_now', 'مستمر الآن');
           li.textContent = 'من ' + NMFormat.dateTime(ev.started_at) + ' إلى ' + end
             + ' — المدة: ' + NMFormat.duration(ev.duration_seconds);
           list.appendChild(li);

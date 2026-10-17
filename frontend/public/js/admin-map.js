@@ -921,7 +921,7 @@ function deviceIcon(deviceType) {
 }
 
 function statusBadgeHtml(status, idAttr) {
-  const text = status === 'online' ? T('s2x.online', 'متصل') : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
+  const text = status === 'online' ? T('s2x.online', T('s3b.online_2', 'متصل')) : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
   const id = idAttr ? `id="${idAttr}" ` : '';
   return `<span ${id}class="details-status-badge ${status || 'unknown'}">${text}</span>`;
 }
@@ -974,7 +974,7 @@ async function showDeviceDetails(deviceId) {
       <div class="details-field"><span class="df-label">فترة الفحص</span><span class="df-value">${esc(d.check_interval_seconds ?? '—')} ث</span></div>
       <div class="details-field"><span class="df-label">${T('device.field.threshold', 'حد التنبيه')}</span><span class="df-value">${esc(d.failure_threshold ?? '—')}</span></div>
       <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
-      <div class="details-field"><span class="df-label">زمن الاستجابة</span><span class="df-value">${d.last_response_time_ms != null ? esc(d.last_response_time_ms) + ' ms' : '—'}</span></div>
+      <div class="details-field"><span class="df-label">${T('s3.response_time', 'زمن الاستجابة')}</span><span class="df-value">${d.last_response_time_ms != null ? esc(d.last_response_time_ms) + ' ms' : '—'}</span></div>
       <div class="details-field"><span class="df-label">${T('s2.last_check', 'آخر فحص')}</span><span class="df-value">${fmtDate(d.last_checked_at)}</span></div>
     `;
   }

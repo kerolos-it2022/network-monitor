@@ -172,7 +172,7 @@ function renderDiscoveryTable(devices) {
       </td>
       <td class="dsc-adv">
         <select class="discovery-type-select" title="${T('s2.type', "النوع")}"></select>
-        <select class="discovery-location-select" title="الموقع"></select>
+        <select class="discovery-location-select" title=${T('s3.location', "الموقع")}></select>
         <details><summary>فحص</summary>
           <div class="adv-row">
             <select class="discovery-proto-select" title="طريقة الفحص المقترحة">
@@ -730,7 +730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     out.style.color = 'var(--muted)';
     try {
       const r = await api('/api/scan/name-diag?ip=' + encodeURIComponent(ip));
-      if (!r || !r.success) throw new Error((r && r.error) || 'فشل');
+      if (!r || !r.success) throw new Error((r && r.error) || T('s3.failed', 'فشل'));
       const d = r;
       const parts = [
         'NBNS: ' + (d.nbns ? '✅ ' + d.nbns : '✗ (' + d.nbns_ms + 'ms)'),

@@ -108,7 +108,7 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th data-i18n="devices.th.name"><span data-i18n="s2.name">الاسم</span></th><th class="col-ltr" data-i18n="devices.th.ip">IP</th><th data-i18n="devices.th.type"><span data-i18n="s2.type">النوع</span></th><th data-i18n="devices.th.location">الموقع</th><th class="col-status" data-i18n="devices.th.status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th class="col-actions" data-i18n="devices.th.actions"><span data-i18n="s2.actions">إجراءات</span></th></tr>
+              <tr><th data-i18n="devices.th.name"><span data-i18n="s2.name">الاسم</span></th><th class="col-ltr" data-i18n="devices.th.ip">IP</th><th data-i18n="devices.th.type"><span data-i18n="s2.type">النوع</span></th><th data-i18n="devices.th.location">الموقع</th><th class="col-status" data-i18n="devices.th.status"><span data-i18n="s2.status">الحالة</span></th><th class="col-actions" data-i18n="devices.th.actions"><span data-i18n="s2.actions">إجراءات</span></th></tr>
             </thead>
             <tbody id="devices-table-body"></tbody>
           </table>
@@ -323,7 +323,7 @@
             <th><span data-i18n="s2.source">المصدر</span></th>
             <th class="sortable col-ltr" data-sort="last_seen_at" data-label="آخر رؤية" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.last_seen">آخر رؤية ↕</span></th>
             <th class="sortable col-center" data-sort="seen_count" data-label="التكرار" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.duplicates">التكرار ↕</span></th>
-            <th class="col-status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th class="col-actions"><span data-i18n="s2.actions">إجراءات</span></th>
+            <th class="col-status"><span data-i18n="s2.status">الحالة</span></th><th class="col-actions"><span data-i18n="s2.actions">إجراءات</span></th>
           </tr>
         </thead>
         <tbody id="discovered-table-body"></tbody>
@@ -361,7 +361,7 @@
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="sched-save-btn" title="حفظ وتطبيق الإعدادات" data-i18n-attr="title:s2.save_and_apply_settings"><span data-i18n="s2.save_and_apply">💾 حفظ وتطبيق</span></button>
           <button type="button" class="btn" id="sched-run-now-btn" title="تشغيل مسح فوري الآن" data-i18n-attr="title:s2.run_a_scan_right_now"><span data-i18n="s2.run_now">⚡ شَغّل الآن</span></button>
-          <button type="button" class="btn" id="sched-stop-btn" title="إيقاف المسح الدوري" data-i18n-attr="title:s2.stop_the_periodic_scan"><span data-i18n="s2.stop_2"><span data-i18n="s2.stop">⏹️ إيقاف</span></span></button>
+          <button type="button" class="btn" id="sched-stop-btn" title="إيقاف المسح الدوري" data-i18n-attr="title:s2.stop_the_periodic_scan"><span data-i18n="s2.stop">⏹️ إيقاف</span></button>
         </div>
       </div>
       <div class="nm-note" style="margin:1rem 0;">
@@ -370,7 +370,7 @@
       <h3><span data-i18n="s2.recent_scan_history">📋 سجل المسحات الأخيرة</span></h3>
       <table class="data-table">
         <thead>
-          <tr><th class="col-center"><span data-i18n="s2.id">المعرّف</span></th><th class="col-ltr"><span data-i18n="s2.network">الشبكة</span></th><th class="col-ltr"><span data-i18n="s2.started">البدء</span></th><th class="col-ltr"><span data-i18n="s2.finished">الانتهاء</span></th><th class="col-center"><span data-i18n="s2.found">وُجدت</span></th><th class="col-center"><span data-i18n="s2.added">أُضيفت</span></th><th class="col-center"><span data-i18n="s2.lost">ضاعت</span></th><th class="col-status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th><span data-i18n="s2.error">الخطأ</span></th></tr>
+          <tr><th class="col-center"><span data-i18n="s2.id">المعرّف</span></th><th class="col-ltr"><span data-i18n="s2.network">الشبكة</span></th><th class="col-ltr"><span data-i18n="s2.started">البدء</span></th><th class="col-ltr"><span data-i18n="s2.finished">الانتهاء</span></th><th class="col-center"><span data-i18n="s2.found">وُجدت</span></th><th class="col-center"><span data-i18n="s2.added">أُضيفت</span></th><th class="col-center"><span data-i18n="s2.lost">ضاعت</span></th><th class="col-status"><span data-i18n="s2.status">الحالة</span></th><th><span data-i18n="s2.error">الخطأ</span></th></tr>
         </thead>
         <tbody id="sched-runs-table-body"></tbody>
       </table>
@@ -487,10 +487,10 @@
             <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط" data-i18n="admin.testChannel">🔔 اختبار هذه القناة</button>
           </div>
           <div class="form-grid cols-2">
-            <label>توكن البوت
+            <label><span data-i18n="notify.telegram.token">توكن البوت</span>
               <input type="text" id="ntf-telegram_bot_token" placeholder="123456:ABC-…" />
             </label>
-            <label>معرّف المحادثة
+            <label><span data-i18n="notify.telegram.chatId">معرّف المحادثة</span>
               <input type="text" id="ntf-telegram_chat_id" />
             </label>
           </div>
@@ -503,16 +503,16 @@
               <input type="checkbox" id="ntf-whatsapp_enabled" />
               <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-whatsapp-btn" title="إرسال إشعار تجريبي على واتساب فقط">🔔 اختبار هذه القناة</button>
+            <button type="button" class="btn btn-sm" id="ntf-test-whatsapp-btn" title="إرسال إشعار تجريبي على واتساب فقط"><span data-i18n="admin.testChannel">🔔 اختبار هذه القناة</span></button>
           </div>
           <div class="form-grid cols-3">
-            <label>رابط الـ API <small class="nm-muted">(URL)</small>
+            <label><span data-i18n="notify.whatsapp.url">رابط الـ API</span> <small class="nm-muted">(URL)</small>
               <input type="text" id="ntf-whatsapp_api_url" />
             </label>
-            <label>التوكن
+            <label><span data-i18n="notify.whatsapp.token">التوكن</span>
               <input type="text" id="ntf-whatsapp_api_token" />
             </label>
-            <label>رقم المستلم
+            <label><span data-i18n="notify.whatsapp.to">رقم المستلم</span>
               <input type="text" id="ntf-whatsapp_to_number" />
             </label>
           </div>
@@ -525,10 +525,10 @@
               <input type="checkbox" id="ntf-mobile_enabled" />
               <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف فقط">🔔 اختبار هذه القناة</button>
+            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف فقط"><span data-i18n="admin.testChannel">🔔 اختبار هذه القناة</span></button>
           </div>
           <div class="form-grid cols-2">
-            <label>مفتاح FCM Server Key
+            <label><span data-i18n="notify.fcm.key">مفتاح FCM Server Key</span>
               <input type="password" id="ntf-fcm_server_key" placeholder="AAAA…" autocomplete="off" />
             </label>
           </div>
@@ -553,13 +553,13 @@
             <div class="nm-option-card">
               <label class="nm-check">
                 <input type="checkbox" id="ntf-storm_digest_enabled" />
-                <span class="nm-option-title">⚡ تجميع عواصف الانقطاع</span>
+                <span class="nm-option-title"><span data-i18n="s3.outage_storm_digest">⚡ تجميع عواصف الانقطاع</span></span>
               </label>
               <span class="nm-option-desc">عند انقطاع عدة أجهزة معًا: رسالة واحدة بدل إغراق الهاتف + السبب المشترك من سلسلة الشبكة.</span>
             </div>
 
             <div class="nm-option-card">
-              <div class="nm-option-title">⏱️ مدة تجميع العاصفة (ثوانٍ)</div>
+              <div class="nm-option-title"><span data-i18n="s3.storm_window_seconds">⏱️ مدة تجميع العاصفة (ثوانٍ)</span></div>
               <input type="number" class="nm-input nm-inline-num" id="ntf-storm_window_seconds" min="15" max="600" value="90" />
               <span class="nm-option-desc">بين 15 و600 — خلالها تتجمّع الانقطاعات المتلاحقة.</span>
             </div>
@@ -567,13 +567,13 @@
             <div class="nm-option-card">
               <label class="nm-check">
                 <input type="checkbox" id="ntf-daily_report_enabled" />
-                <span class="nm-option-title">📊 تقرير يومي مجدول</span>
+                <span class="nm-option-title"><span data-i18n="notify.daily.title">📊 تقرير يومي مجدول</span></span>
               </label>
               <span class="nm-option-desc">ملخص 24 ساعة كل صباح: الانقطاعات وأطولها وأسوأ جهاز.</span>
             </div>
 
             <div class="nm-option-card">
-              <div class="nm-option-title">⏰ ساعة التقرير اليومي</div>
+              <div class="nm-option-title"><span data-i18n="notify.daily.hour">⏰ ساعة التقرير اليومي</span></div>
               <input type="time" class="nm-input nm-inline-num" id="ntf-daily_report_hour" value="08:00" />
             </div>
 
@@ -588,38 +588,38 @@
             <div class="nm-option-card">
               <label class="nm-check">
                 <input type="checkbox" id="ntf-escalation_enabled" />
-                <span class="nm-option-title">🚨 تصعيد الانقطاعات</span>
+                <span class="nm-option-title"><span data-i18n="notify.escalation.title">🚨 تصعيد الانقطاعات</span></span>
               </label>
               <span class="nm-option-desc">جهاز ما زال واقعًا بعد العتبة ⇒ تنبيه ثانٍ (وتذكير دوري اختياري) حتى يُحلَّ — يُرسل عبر القنوات المفعّلة أعلاه.</span>
             </div>
 
             <div class="nm-option-card">
-              <div class="nm-option-title">⏱️ عتبة التصعيد ودوريته (دقائق)</div>
+              <div class="nm-option-title"><span data-i18n="notify.escalation.after">⏱️ عتبة التصعيد ودوريته (دقائق)</span></div>
               <div class="nm-row">
-                <label class="nm-field">بعد
+                <label class="nm-field"><span data-i18n="notify.escalation.afterLabel">بعد</span>
                   <input type="number" class="nm-input" id="ntf-escalation_after_minutes" min="1" max="1440" value="30" />
                 </label>
-                <label class="nm-field">تذكير كل
+                <label class="nm-field"><span data-i18n="notify.escalation.repeatLabel">تذكير كل</span>
                   <input type="number" class="nm-input" id="ntf-escalation_repeat_minutes" min="0" max="1440" value="0" />
                 </label>
               </div>
-              <span class="nm-option-desc">«تذكير كل 0» = تنبيه تصعيد واحد فقط — وأي قيمة أخرى = تذكير دوري حتى يُحلّ الانقطاع (وكتم الصيانة يُطبَّق كالمعتاد).</span>
+              <span class="nm-option-desc"><span data-i18n="notify.escalation.hint">«تذكير كل 0» = تنبيه تصعيد واحد فقط — وأي قيمة أخرى = تذكير دوري حتى يُحلّ الانقطاع (وكتم الصيانة يُطبَّق كالمعتاد).</span></span>
             </div>
 
             <div class="nm-option-card">
               <label class="nm-check">
                 <input type="checkbox" id="ntf-maintenance_enabled" />
-                <span class="nm-option-title">🛠️ كتم الإشعارات أثناء الصيانة</span>
+                <span class="nm-option-title"><span data-i18n="notify.maintenance.on">🛠️ كتم الإشعارات أثناء الصيانة</span></span>
               </label>
               <div class="nm-row">
-                <label class="nm-field">🗓️ من
+                <label class="nm-field"><span data-i18n="notify.maintenance.from">🗓️ من</span>
                   <input type="time" class="nm-input" id="ntf-maintenance_from" value="02:00" />
                 </label>
-                <label class="nm-field">🗓️ إلى
+                <label class="nm-field"><span data-i18n="notify.maintenance.to">🗓️ إلى</span>
                   <input type="time" class="nm-input" id="ntf-maintenance_to" value="04:00" />
                 </label>
               </div>
-              <span class="nm-option-desc">تدعم عبور منتصف الليل (مثل 23:00 إلى 06:00). خلال النافذة تُسجَّل الأحداث بهدوء في السجل بدل إنذار الهاتف.</span>
+              <span class="nm-option-desc"><span data-i18n="notify.maintenance.hint">تدعم عبور منتصف الليل (مثل 23:00 إلى 06:00). خلال النافذة تُسجَّل الأحداث بهدوء في السجل بدل إنذار الهاتف.</span></span>
             </div>
           </div>
         </div>
@@ -725,7 +725,7 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th class="col-ltr" data-i18n="logs.th.time">الوقت</th><th data-i18n="logs.th.device">الجهاز</th><th class="col-center" data-i18n="logs.th.channel">القناة</th><th class="col-status" data-i18n="logs.th.status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th data-i18n="logs.th.message">الرسالة</th><th data-i18n="logs.th.reason">السبب</th></tr>
+              <tr><th class="col-ltr" data-i18n="logs.th.time">الوقت</th><th data-i18n="logs.th.device">الجهاز</th><th class="col-center" data-i18n="logs.th.channel">القناة</th><th class="col-status" data-i18n="logs.th.status"><span data-i18n="s2.status">الحالة</span></th><th data-i18n="logs.th.message">الرسالة</th><th data-i18n="logs.th.reason">السبب</th></tr>
             </thead>
             <tbody id="logs-table-body"></tbody>
           </table>
@@ -834,8 +834,7 @@
           <h3 class="nm-card-title" data-i18n="backup.card.main"><span data-i18n="s2.database_backup_and_restore">💾 النسخ الاحتياطي واستعادة قاعدة البيانات</span></h3>
         </div>
         <p class="nm-card-desc">
-          تصدير نسخة احتياطية كاملة من قاعدة البيانات كملف SQLite أصلي (.db)، أو استعادة نسخة سابقة.
-          يتم إنشاء نسخة أمنية تلقائيًا قبل أي استعادة.
+          <span data-i18n="s2.export_a_full_backup_of_the_database_as_a">تصدير نسخة احتياطية كاملة من قاعدة البيانات كملف SQLite أصلي (.db)، أو استعادة نسخة سابقة. يتم إنشاء نسخة أمنية تلقائيًا قبل أي استعادة.</span>
         </p>
 
         <!-- بطاقة معلومات القاعدة الحالية -->
@@ -1102,7 +1101,7 @@
             <div class="nm-kpi-sub" id="upd-latest-sub"></div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></div>
+            <div class="nm-kpi-label"><span data-i18n="s2.status">الحالة</span></div>
             <div class="nm-kpi-value" id="upd-state"><span data-i18n="s2.checking">⏳ جارٍ الفحص…</span></div>
           </div>
           <div class="nm-kpi">
@@ -1251,7 +1250,7 @@
           <button type="button" class="btn" id="remote-update-btn" title="تنزيل أحدث إصدار stable واستبدال الثنائي الحالي" data-i18n-attr="title:s2.download_the_latest_stable_release_and_rep"><span data-i18n="s2.update_ngrok">⬆️ تحديث ngrok</span></button>
           <button type="button" class="btn btn-primary" id="remote-start-btn"><span data-i18n="s2.start">▶️ تشغيل</span></button>
           <button type="button" class="btn" id="remote-restart-btn"><span data-i18n="s2.restart">🔁 إعادة تشغيل</span></button>
-          <button type="button" class="btn" id="remote-stop-btn"><span data-i18n="s2.stop_2"><span data-i18n="s2.stop">⏹️ إيقاف</span></span></button>
+          <button type="button" class="btn" id="remote-stop-btn"><span data-i18n="s2.stop">⏹️ إيقاف</span></button>
           <button type="button" class="btn" id="remote-auto-on-btn"><span data-i18n="s2.enable_auto_start">🔒 تفعيل التشغيل التلقائي</span></button>
           <button type="button" class="btn" id="remote-auto-off-btn"><span data-i18n="s2.disable_auto_start">🔓 تعطيل التشغيل التلقائي</span></button>
         </div>
@@ -1314,13 +1313,13 @@
   <div id="device-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
       <button type="button" class="modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close title:common.cancel" title="إلغاء">✕</button>
-      <h3 id="device-form-title">إضافة جهاز</h3>
+      <h3 id="device-form-title"><span data-i18n="device.form.add">إضافة جهاز</span></h3>
       <form id="device-form">
         <input type="hidden" id="device-form-id" />
         <div class="form-grid">
-          <label><span data-i18n="device.field.name"><span data-i18n="s2.name">الاسم</span></span> <input type="text" id="df-name" required /></label>
+          <label><span data-i18n="s2.name">الاسم</span> <input type="text" id="df-name" required /></label>
           <label>IP <input type="text" id="df-ip" required placeholder="192.168.1.10" /></label>
-          <label><span data-i18n="device.field.type"><span data-i18n="s2.type">النوع</span></span>
+          <label><span data-i18n="s2.type">النوع</span>
             <select id="df-device_type_id" required></select>
           </label>
           <label><span data-i18n="device.field.location">الموقع</span>
@@ -1347,7 +1346,7 @@
           </label>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary" data-i18n-attr="title:device.form.saveTitle" title="حفظ الجهاز"><span data-i18n="common.save"><span data-i18n="s2.save">💾 حفظ</span></span></button>
+          <button type="submit" class="btn btn-primary" data-i18n-attr="title:device.form.saveTitle" title="حفظ الجهاز"><span data-i18n="s2.save">💾 حفظ</span></button>
           <button type="button" class="btn" id="device-form-cancel" data-i18n-attr="title:device.form.cancelTitle" title="إلغاء العملية"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         </div>
       </form>
@@ -1363,7 +1362,7 @@
           <summary style="cursor:pointer;font-size:0.9rem;" data-i18n="device.services.add">➕ إضافة خدمة</summary>
           <div class="form-grid" style="margin-top:0.6rem;">
             <label><span data-i18n="device.services.name">اسم الخدمة</span> <input type="text" id="dfs-name" placeholder="Odoo ERP" /></label>
-            <label><span data-i18n="device.services.kind"><span data-i18n="s2.type">النوع</span></span>
+            <label><span data-i18n="s2.type">النوع</span>
               <select id="dfs-kind">
                 <option value="tcp">TCP (منفذ)</option>
                 <option value="http">HTTP</option>
@@ -1442,7 +1441,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
-        <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
       </div>
     </div>
   </div>
@@ -1459,7 +1458,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع">💾 حفظ النوع</button>
-        <button type="button" class="btn" id="type-cancel-btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" class="btn" id="type-cancel-btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
       </div>
     </div>
   </div>
@@ -1506,7 +1505,7 @@
         </label>
       </div>
       <div class="confirm-modal-actions">
-        <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         <button type="button" id="cleanup-select-ok-btn" class="btn btn-danger" title="تأكيد المسح">🗑️ تَأكيد المَسح</button>
       </div>
     </div>
@@ -1520,7 +1519,7 @@
       <h3 class="confirm-modal-title" id="confirm-modal-title">—</h3>
       <p class="confirm-modal-message" id="confirm-modal-message">—</p>
       <div class="confirm-modal-actions">
-        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء">✖️ إلغاء</button>
+        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد">✓ تأكيد</button>
       </div>
     </div>

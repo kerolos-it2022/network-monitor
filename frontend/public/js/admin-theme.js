@@ -10,7 +10,8 @@ function applyTheme(isDark) {
   }
   var btn = document.getElementById('theme-toggle');
   if (btn) {
-    btn.textContent = isDark ? '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a' : '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a';
+    // نصّ الزر من القاموس (يتغيّر مع اللغة) — والاحتياط العربي كما هو.
+  btn.textContent = isDark ? T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a') : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
   }
 }
 
@@ -37,4 +38,9 @@ document.addEventListener('DOMContentLoaded', function () {
   if (btn) {
     btn.addEventListener('click', toggleTheme);
   }
+});
+
+// تبديل اللغة يُعيد كتابة نصّ الزرّ بلغتها
+document.addEventListener('nm:lang', function () {
+  applyTheme(document.body.classList.contains('dark'));
 });

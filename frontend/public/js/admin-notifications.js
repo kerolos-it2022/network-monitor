@@ -107,7 +107,7 @@ async function saveNotificationSettings() {
 // (أزرار «🔔 اختبار هذه القناة» داخل كل قسم)؛ بلا مُعامل ⇒ كل القنوات المفعّلة كما كان.
 async function testNotification(channel) {
   const statusEl = document.getElementById('ntf-status');
-  const only = channel ? { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف' }[channel] || channel : null;
+  const only = channel ? { telegram: T('s3.telegram', 'تلجرام'), whatsapp: T('s3.whatsapp', 'واتساب'), mobile: 'هاتف' }[channel] || channel : null;
   statusEl.style.color = 'var(--online)';
   statusEl.textContent = only
     ? ('🔔 جارٍ إرسال إشعار تجريبي على ' + only + ' فقط…')
@@ -135,7 +135,7 @@ async function testNotification(channel) {
       }
       return;
     }
-    const labels = { telegram: 'تلجرام', whatsapp: 'واتساب', mobile: 'هاتف' };
+    const labels = { telegram: T('s3.telegram', 'تلجرام'), whatsapp: T('s3.whatsapp', 'واتساب'), mobile: 'هاتف' };
     const lines = results.map((res) => {
       const name = labels[res.channel] || res.channel;
       if (res.ok) return name + ': ✅ تم الإرسال';
@@ -191,13 +191,13 @@ async function loadNotificationLogs() {
   });
   
   const channelText = (c) => {
-    if (c === 'telegram') return 'تلجرام';
-    if (c === 'whatsapp') return 'واتساب';
+    if (c === 'telegram') return T('s3.telegram', 'تلجرام');
+    if (c === 'whatsapp') return T('s3.whatsapp', 'واتساب');
     if (c === 'mobile') return 'هاتف';
     return c;
   };
   // v2.33.0 — فلتر الحالة (كل / تم الإرسال / فشل / مكتوم صيانة) قبل العرض
-  const statusText = (s) => (s === 'sent' ? 'تم الإرسال' : (s === 'failed' ? 'فشل' : (s === 'maintenance' ? 'مكتوم (صيانة)' : (s || '—'))));
+  const statusText = (s) => (s === 'sent' ? T('s3.sent', 'تم الإرسال') : (s === 'failed' ? T('s3.failed', 'فشل') : (s === 'maintenance' ? T('s3.muted_maintenance', 'مكتوم (صيانة)') : (s || '—'))));
   const shownData = logsFilterStatus
     ? sortedData.filter((l) => String(l.status || '') === logsFilterStatus)
     : sortedData;
