@@ -516,18 +516,26 @@ table.nm-table tbody tr:hover { background: var(--nm-hover); }
 }
 .admin-topbar .btn, .admin-topbar .admin-link { min-height: var(--nm-control-h-sm); padding: 0.3rem 0.65rem; font-size: var(--nm-fs-xs); }
 
-/* القائمة الجانبية: العنصر النشط واضح (خلفية بلون الهوية + نص غامق) بدل خط رقيق */
+/* القائمة الجانبية: عنصر نشط واضح — «بطاقة» مستديرة + شريط لوني جانبي سميك (طلب المالك،
+   بنفس ستايل بطاقة العدّاد لكن الشريط على الجانب). **موضع الشريط: اليمين** (طلب المالك) =
+   inline-start في RTL. الشريط موجود على **كل** العناصر بشفافية كاملة حتى لا تتزحزح العناوين
+   عند التبديل، فيتلوّن وحده في العنصر النشط. */
 .sidebar .tab-btn {
   width: calc(100% - 0.7rem);
   margin: 0.12rem 0.35rem;
   padding: 0.6rem 0.75rem;
-  border-inline-end: 0;
+  border: 0;
+  border-inline-start: 4px solid transparent;
   border-radius: var(--nm-r-md);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
+.sidebar .tab-btn:hover { background: var(--nm-hover); }
 .sidebar .tab-btn.active {
   background: var(--nm-info-soft);
   color: var(--accent);
   font-weight: 700;
+  border-inline-start-color: var(--accent);
+  box-shadow: var(--nm-shadow);
 }
 body.dark .sidebar .tab-btn.active { background: rgba(59, 130, 246, 0.18); }
 body.sidebar-collapsed .sidebar .tab-btn { padding-inline: 0; }
