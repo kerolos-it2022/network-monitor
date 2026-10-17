@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="topbar.dashboard">لوحة التحكم</title>
   <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui3" />
+  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui4" />
 </head>
 <body>
   <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
@@ -792,11 +792,24 @@
         <div class="nm-card-head">
           <h3 class="nm-card-title" data-i18n="backup.card.schedule">⏰ النسخ الاحتياطي التلقائي المجدول</h3>
         </div>
-        <!-- طلب المالك: «اقسمهم على سطرين» — سطر لمفتاح التفعيل (بعرض البطاقة) وسطر للحقلين معًا. -->
-        <div class="form-grid cols-2">
-          <label class="nm-check span-all">تفعيل النسخ التلقائي اليومي <input type="checkbox" id="bk-sched-enabled" /></label>
-          <label>🕒 ساعة النسخ اليومي <input type="time" id="bk-sched-hour" value="03:30" /></label>
-          <label>🗄️ عدد النسخ المحفوظة <input type="number" id="bk-sched-keep" min="1" max="30" value="7" /></label>
+        <!-- طلب المالك: «اقسمهم على سطرين» + «خد التنسيق من أي شاشة تانية»
+             ⇒ نفس نمط بطاقة الإشعارات بالحرف: صفّ مفتاح (مثل «القناة مفعّلة») ثم صفّ حقول مدمج
+             (.nm-row > .nm-field) بعرض مريح لا يتمدّد على عرض البطاقة. -->
+        <div class="nm-row">
+          <!-- المربّع **يمين** النصّ ومنفصل عنه: المربّع أولًا في الوسم (= يمين في العربي) ثم النصّ —
+               نفس ترتيب صفوف قنوات الإشعارات و«إعدادات العرض» بالحرف (طلب المالك: «هات الcheckbox يمين وافصلة عن الكلام»). -->
+          <label class="nm-check">
+            <input type="checkbox" id="bk-sched-enabled" />
+            <span>تفعيل النسخ التلقائي اليومي</span>
+          </label>
+        </div>
+        <div class="nm-row" style="max-width:430px; margin-top:0.6rem;">
+          <label class="nm-field">🕒 ساعة النسخ اليومي
+            <input type="time" class="nm-input" id="bk-sched-hour" value="03:30" />
+          </label>
+          <label class="nm-field">🗄️ عدد النسخ المحفوظة
+            <input type="number" class="nm-input" id="bk-sched-keep" min="1" max="30" value="7" />
+          </label>
         </div>
         <div class="nm-actions">
           <button type="button" class="btn btn-primary" id="bk-sched-save">💾 حفظ الجدولة</button>
