@@ -178,10 +178,14 @@ function renderDevices(devicesList) {
     // SEC-02 — العرض العام بلا عناوين: زر «فتح» لا يظهر إلا لو توفّر IP (لا يتوفر للزوار).
     if (d.ip && d.https_accessible == 1) {
       var url = 'https://' + d.ip + portSuffix + '/';
-      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTPS' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')" type="button">🔒 فتح HTTPS</button>';
+      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
+        T('devices.openUiHttps', 'فتح واجهة الجهاز (HTTPS)') + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        ' type="button">' + T('s2x.open_https', '🔒 فتح HTTPS') + '</button>';
     } else if (d.ip && d.http_accessible == 1) {
       var url = 'http://' + d.ip + portSuffix + '/';
-      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح واجهة الجهاز (HTTP' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')" type="button">🌐 فتح HTTP</button>';
+      openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
+        T('devices.openUiHttp', 'فتح واجهة الجهاز (HTTP)') + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        ' type="button">' + T('s2x.open_http', '🌐 فتح HTTP') + '</button>';
     }
 
     const card = document.createElement('div');
@@ -190,9 +194,9 @@ function renderDevices(devicesList) {
     card.innerHTML =
       '<div class="name">' + escapeHtml(d.name) + '</div>' +
       (d.ip ? '<div class="ip">' + escapeHtml(d.ip) + '</div>' : '') +
-      '<div class="meta">\u0627\u0644\u0646\u0648\u0639: ' + escapeHtml(d.device_type_name || '-') + '</div>' +
-      '<div class="meta">\u0627\u0644\u0645\u0648\u0642\u0639: ' + escapeHtml(d.location_name || '-') + '</div>' +
-      '<div class="meta">\u0622\u062e\u0631 \u0641\u062d\u0635: ' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
+      '<div class="meta">' + T('public.kvType', '\u0627\u0644\u0646\u0648\u0639: ') + '' + escapeHtml(d.device_type_name || '-') + '</div>' +
+      '<div class="meta">' + T('public.kvLocation', '\u0627\u0644\u0645\u0648\u0642\u0639: ') + '' + escapeHtml(d.location_name || '-') + '</div>' +
+      '<div class="meta">' + T('public.kvLastCheck', '\u0622\u062e\u0631 \u0641\u062d\u0635: ') + '' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
       '<span class="status-badge ' + badgeClass + '">' + overallStatusText(d) + '</span>' +
       (openBtnHtml ? '<div class="card-actions">' + openBtnHtml + '</div>' : '');
     card.addEventListener('click', function (e) {
@@ -251,15 +255,19 @@ function renderTable(devicesList) {
     // SEC-02 — بلا IP في العرض العام ⇒ لا زر فتح (نفس منطق البطاقات).
     if (d.ip && d.https_accessible == 1) {
       const url = 'https://' + d.ip + tPortSuffix + '/';
-      openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
+      openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
+        T('devices.openUiHttpsShort', 'فتح الواجهة (HTTPS)') + (tPortSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        ' type="button">' + T('s2x.open_https', '🔒 فتح HTTPS') + '</button>';
     } else if (d.ip && d.http_accessible == 1) {
       const url = 'http://' + d.ip + tPortSuffix + '/';
-      openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
+      openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
+        T('devices.openUiHttpShort', 'فتح الواجهة (HTTP)') + (tPortSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        ' type="button">' + T('s2x.open_http', '🌐 فتح HTTP') + '</button>';
     }
     const tr = document.createElement('tr');
     tr.className = 'public-row';
     tr.innerHTML =
-      `<td class="col-${T('unit.status', ' status')}"><span class="status-dot ` + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
+      `<td class="col-status"><span class="status-dot ` + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
       '<td>' + escapeHtml(d.name) + '</td>' +
       '<td class="col-ltr">' + escapeHtml(d.ip || '—') + '</td>' +
       '<td>' + escapeHtml(d.device_type_name || '—') + '</td>' +
@@ -293,7 +301,7 @@ function updateSummaryBar(devicesList) {
   const online = devicesList.filter(function (d) { return d.current_status === 'online'; }).length;
   const offline = devicesList.filter(function (d) { return d.current_status === 'offline'; }).length;
   document.getElementById('summary-bar').textContent =
-    '\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: ' + total + '  \u2022  \u0645\u062a\u0635\u0644: ' + online + '  \u2022  \u0645\u062a\u0648\u0642\u0641: ' + offline;
+    NMI18N.t('public.summary', { total: total, online: online, offline: offline });
 
   // v2.7.5 — تحديث شريط نِسبة التَشغيل في عرض البطاقات والجدول (نفس أسلوب map-uptime-bar).
   updateUptimeBars(total, online, offline);
@@ -306,18 +314,16 @@ function updateUptimeBars(total, online, offline) {
     var bar = document.getElementById(ids[i]);
     if (!bar) continue;
     if (total <= 0) {
-      bar.innerHTML = '<span class="uptime-text">\u0644\u0627 \u0623\u062c\u0647\u0632\u0629 \u0644\u0650\u0640 \u062d\u0650\u0633\u0627\u0628 \u0627\u0644\u0646\u0650\u0633\u0628\u0629.</span>';
+      bar.innerHTML = '<span class="uptime-text">' + T('public.noDevicesForUptime', 'لا أجهزة لِـ حِساب النِسبة.') + '</span>';
       continue;
     }
     var pct = Math.round((online / total) * 1000) / 10;
-    var pctClass = pct >= 90 ? '' : (pct >= 50 ? 'mid' : 'low');
     bar.innerHTML =
       '<div class="uptime-bar"><div class="uptime-fill" style="width:' + pct + '%"></div></div>' +
-      '<span class="uptime-text">\u0646\u0650\u0633\u0628\u0629 \u0627\u0644\u062a\u064e\u0634\u063a\u064a\u0644: \ud83d\udfe2 <span class="uptime-pct ' + pctClass + '">' + pct + '%</span> ' +
-      '(' + online + '/' + total + T('status.online', ' \u0645\u062a\u0635\u0644') +
-      (offline > 0 ? ' \u2014 \ud83d\udd34 ' + offline + T('status.offline', ' \u0645\u062a\u0648\u0642\u0641') : '') +
-      (unknown > 0 ? ' \u2014 \u26aa ' + unknown + T('status.unknown', ' \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641') : '') +
-      ')</span>';
+      '<span class="uptime-text">' + T('public.uptimeLabel', 'نسبة التشغيل:') + ' ' + pct + '% ' +
+      '<bdi>(' + online + '/' + total + ' ' + T('status.online', 'متصل') +
+      (unknown > 0 ? ' — ' + unknown + ' ' + T('status.unknown', 'غير معروف') : '') +
+      (offline > 0 ? ' — ' + offline + ' ' + T('status.offline', 'متوقف') : '') + ')</bdi></span>';
   }
 }
 

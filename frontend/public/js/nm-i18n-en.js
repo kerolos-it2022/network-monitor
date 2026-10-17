@@ -243,6 +243,17 @@
     // ── Tail: the remaining page texts ──
 
     // ── Merged fragments (counters and units) ──
+    'public.uptimeLabel': 'Uptime:',
+    'public.noDevicesForUptime': 'No devices to compute the ratio.',
+    'public.summary': '{total} total  •  {online} online  •  {offline} offline',
+    'public.kvType': 'Type: ',
+    'public.kvLocation': 'Location: ',
+    'public.kvLastCheck': 'Last check: ',
+    'devices.openUiHttps': 'Open the device web UI (HTTPS)',
+    'devices.openUiHttp': 'Open the device web UI (HTTP)',
+    'devices.openUiHttpsShort': 'Open the web UI (HTTPS)',
+    'devices.openUiHttpShort': 'Open the web UI (HTTP)',
+    'devices.onPort': 'on port',
     'loc.unspecified': 'not specified',
     'loc.unassigned': 'Unassigned devices',
     'noc.drawEmpty': 'No locations drawn on the plan board yet — draw them from the dashboard → draw mode (💾 Save the layout).',

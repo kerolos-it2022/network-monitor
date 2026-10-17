@@ -233,7 +233,7 @@ async function saveLocation() {
   if (kind === 'internet' && parentSel && parentSel.value) {
     const ok = await confirmAction({
       title: T('s2j.notice_the_internet_kind', 'تَنبيه: نوع «internet»'),
-      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟'))))))),
+      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟')))))))),
       confirmText: '✓ مُتابعة',
     });
     if (!ok) return;

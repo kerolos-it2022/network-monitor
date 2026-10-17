@@ -89,13 +89,13 @@ async function saveSchedulerSettings() {
     new_device_alert: document.getElementById('sched-new-device-alert').checked ? 1 : 0,
   };
   if (!patch.subnets) {
-    showToast(T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', 'الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24'))))))), { type: 'warning' });
+    showToast(T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', 'الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24')))))))), { type: 'warning' });
     return;
   }
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ وتطبيق إعدادات المسح الدوري.
   const ok = await confirmAction({
     title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
-    message: T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟'))))))),
+    message: T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟')))))))),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
@@ -105,7 +105,7 @@ async function saveSchedulerSettings() {
     body: JSON.stringify(patch),
   });
   if (r && r.success) {
-    showToast(T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', 'تم حفظ إعدادات المسح الدوري وتطبيقها.'))))))), { type: 'success' });
+    showToast(T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', 'تم حفظ إعدادات المسح الدوري وتطبيقها.')))))))), { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
@@ -116,7 +116,7 @@ async function saveSchedulerSettings() {
 async function runSchedulerNow() {
   const r = await api('/api/scan-scheduler/run-now', { method: 'POST' });
   if (r && r.success) {
-    showToast(T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', 'بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.'))))))), { type: 'success' });
+    showToast(T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', 'بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.')))))))), { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {

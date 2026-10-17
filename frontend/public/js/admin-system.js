@@ -79,7 +79,7 @@ async function loadSystemStats() {
       'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
   } else {
     sysSetBar('sys-disk-bar', null);
-    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة')))))));
+    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة'))))))));
   }
   document.getElementById('sys-db-size').innerHTML =
     '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))

@@ -25,7 +25,7 @@
       r = await fetch('/api/health', { credentials: 'same-origin', cache: 'no-store' });
     } catch (e) {
       fetchFails += 1;
-      if (fetchFails >= 2) show(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'))))))));
+      if (fetchFails >= 2) show(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.')))))))));
       return;
     }
     fetchFails = 0;

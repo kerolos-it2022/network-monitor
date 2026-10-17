@@ -18,7 +18,7 @@
     });
   }
 
-  const MODE_AR = { lan: T('tail.status_map_no_addresses', 'الحالة + الخريطة (بلا عناوين)'), minimal: T('tail.status_only_no_map_no_addresses', 'الحالة فقط (بلا خريطة/عناوين)'), off: T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', 'ممنوع تمامًا (الزائر يُرفض)'))))))) };
+  const MODE_AR = { lan: T('tail.status_map_no_addresses', 'الحالة + الخريطة (بلا عناوين)'), minimal: T('tail.status_only_no_map_no_addresses', 'الحالة فقط (بلا خريطة/عناوين)'), off: T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', T('tail.fully_disabled_visitors_are_refused', 'ممنوع تمامًا (الزائر يُرفض)')))))))) };
   const SRC_AR = { database: T('tail.saved_from_the_dashboard', 'محفوظ من اللوحة'), env: T('tail.from_the_server_environment', 'من متغيرات السيرفر'), default: 'الافتراضي' };
 
   async function load() {
@@ -48,7 +48,7 @@
     // (1) وضع الزوار
     const pubMode = el('disp-public-mode').value;
     const r1 = await jsonApi('/api/settings/public-display', 'PUT', { mode: pubMode });
-    if (!r1 || !r1.success) { showToast((r1 && r1.error) || T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', 'تعذّر حفظ وضع العرض العام'))))))), { type: 'error' }); return; }
+    if (!r1 || !r1.success) { showToast((r1 && r1.error) || T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', T('tail.could_not_save_the_public_display_mode', 'تعذّر حفظ وضع العرض العام')))))))), { type: 'error' }); return; }
 
     // (2) ما يراه المستخدم المسجَّل
     const nocMode = el('disp-noc-internal').checked ? 'full' : 'off';
@@ -63,7 +63,7 @@
     });
     if (!r3 || !r3.success) { showToast((r3 && r3.error) || T('tail.could_not_save_the_tools_policy', 'تعذّر حفظ سياسة الأدوات'), { type: 'error' }); return; }
 
-    showToast(T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', '✅ تم حفظ إعدادات العرض والأدوات — تُطبَّق فورًا ومُسجَّلة في التدقيق'))))))));
+    showToast(T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', T('s2j.display_and_tools_settings_saved_applied_ins', '✅ تم حفظ إعدادات العرض والأدوات — تُطبَّق فورًا ومُسجَّلة في التدقيق')))))))));
     load();
   }
 
@@ -82,7 +82,7 @@
     }
     const devs = (st && st.success && Array.isArray(st.data)) ? st.data : [];
     const hasIp = JSON.stringify(devs).includes('"ip"') || JSON.stringify(devs).match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
-    const stAr = { online: T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))), offline: T('s2x.offline', T('status.offline', 'متوقف')), unknown: T('status.unknown', 'غير معروف'), paused: T('status.paused', 'موقوف') };
+    const stAr = { online: T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل')))))))))))))))))))))), offline: T('s2x.offline', T('status.offline', 'متوقف')), unknown: T('status.unknown', 'غير معروف'), paused: T('status.paused', 'موقوف') };
     const sample = devs.slice(0, 5).map((d) => {
       const extra = d.overall_health === 'degraded' ? ' · خدمة متوقفة' : '';
       return '• ' + d.name + ' — ' + (stAr[d.status] || d.status || '؟') + extra;

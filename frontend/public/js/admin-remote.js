@@ -256,7 +256,7 @@ async function remoteAction(action, label, value) {
       const diag = '⚠️ الطلب مكتوب لكن مساعد الجهاز (nm-remote) لم ينفّذه — غالبًا وحدة المراقبة متوقفة.\n'
         + 'من كونسول الجهاز أو SSH (sysadmin): sudo systemctl enable --now nm-remote.path && sudo systemctl restart nm-remote.service';
       rStatus('⚠️ لم يُنفَّذ بعد ' + (Math.round(25)) + ' ثانية — مساعد الجهاز لا يستهلك الطلبات (انظر التشخيص بالسجل)', true);
-      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path'))))))), { type: 'warning', duration: 10000 });
+      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path')))))))), { type: 'warning', duration: 10000 });
       console.warn('[remote] ' + diag);
     }
   } finally {

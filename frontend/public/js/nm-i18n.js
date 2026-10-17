@@ -249,6 +249,17 @@
       // ── الذيل: نصوص الصفحات الثلاث ──
 
       // ── أجزاء/كلمات مدمجة (عدّادات ووحدات) ──
+      'public.uptimeLabel': 'نسبة التشغيل:',
+      'public.noDevicesForUptime': 'لا أجهزة لِـ حِساب النِسبة.',
+      'public.summary': 'الإجمالي: {total}  •  متصل: {online}  •  متوقف: {offline}',
+      'public.kvType': 'النوع: ',
+      'public.kvLocation': 'الموقع: ',
+      'public.kvLastCheck': 'آخر فحص: ',
+      'devices.openUiHttps': 'فتح واجهة الجهاز (HTTPS)',
+      'devices.openUiHttp': 'فتح واجهة الجهاز (HTTP)',
+      'devices.openUiHttpsShort': 'فتح الواجهة (HTTPS)',
+      'devices.openUiHttpShort': 'فتح الواجهة (HTTP)',
+      'devices.onPort': 'على البورت',
       'loc.unspecified': 'غير محدد',
       'loc.unassigned': 'أَجهزة غير مُعَيَّن',
       'noc.drawEmpty': 'لا توجد مواقع مرسومة على لوحة وضع الرسم بعد — ارسمها من لوحة التحكم ← وضع الرسم (💾 حفظ التخطيط).',

@@ -29,7 +29,7 @@ function ipSortKey(ip) {
 // نصوص الحالة من القاموس (تتغيّر مع اللغة) — والقيم البرمجية ('online' …) تبقى كما هي.
 function __t(k, fb) { try { return (window.NMI18N && NMI18N.t(k)) || fb; } catch (e) { return fb; } }
 function statusText(status) {
-  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))));
+  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل')))))))))))))))))))))));
   if (status === 'offline') return __t('status.offline', T('s2x.offline', T('status.offline', 'متوقف')));
   if (status === 'paused') return __t('status.paused', T('status.paused', 'موقوف'));
   return __t('status.unknown', T('status.unknown', 'غير معروف'));

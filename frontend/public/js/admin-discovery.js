@@ -416,7 +416,7 @@ function connectSSE(scanId) {
     consecutiveErrors += 1;
     if (consecutiveErrors >= MAX_SSE_ERRORS) {
       eventSource.close();
-      showError(T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', 'انقطع الاتصال بالخادم — تعذّرت إعادة الاتصال بعد عدة محاولات'))))))));
+      showError(T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', T('tail.lost_the_connection_to_the_server_retries_fa', 'انقطع الاتصال بالخادم — تعذّرت إعادة الاتصال بعد عدة محاولات')))))))));
       resetStartButton();
     }
   });
@@ -446,7 +446,7 @@ async function fetchResults(scanId, attempt) {
         renderDiscoveryTable(r.data || []);
         resetStartButton();
         if ((r.data || []).length === 0) {
-          showToast(T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', '✅ اكتمل المسح: لم يُعثر على أجهزة مستجيبة في هذا النطاق.'))))))), { type: 'info', duration: 6000 });
+          showToast(T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', T('s2j.scan_finished_no_responding_devices_were_fou', '✅ اكتمل المسح: لم يُعثر على أجهزة مستجيبة في هذا النطاق.')))))))), { type: 'info', duration: 6000 });
         }
         return;
       }
@@ -501,10 +501,10 @@ async function stopDiscovery() {
   resetStartButton();
 
   if (cancelRequested) {
-    showToast(T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', '⏹ أُلغِي المسح — تُعرض أي نتائج وصلت قبل الإلغاء.'))))))), { type: 'info', duration: 6000 });
+    showToast(T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', T('s2j.scan_cancelled_any_results_received_before_c', '⏹ أُلغِي المسح — تُعرض أي نتائج وصلت قبل الإلغاء.')))))))), { type: 'info', duration: 6000 });
     if (scanId) fetchResults(scanId);
   } else {
-    showToast(T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', 'أُخفي شريط التقدّم. قد يكون المسح اكتمل بالفعل — استخدم «📄 آخر نتيجة مسح».'))))))), { type: 'info', duration: 6000 });
+    showToast(T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', 'أُخفي شريط التقدّم. قد يكون المسح اكتمل بالفعل — استخدم «📄 آخر نتيجة مسح».')))))))), { type: 'info', duration: 6000 });
   }
 }
 
@@ -516,7 +516,7 @@ async function loadLastScan() {
     const r = await api('/api/scan/last');
     const data = (r && r.success) ? r.data : null;
     if (!data) {
-      showToast(T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', 'لا توجد نتيجة مسح محفوظة بعد — ابدأ مسحًا جديدًا.'))))))), { type: 'warning' });
+      showToast(T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', T('s2j.no_saved_scan_result_yet_start_a_new_scan', 'لا توجد نتيجة مسح محفوظة بعد — ابدأ مسحًا جديدًا.')))))))), { type: 'warning' });
       return;
     }
     discoveryScanId = data.scanId || null;
@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!btn || !ipIn || !out) return;
   btn.addEventListener('click', async () => {
     const ip = (ipIn.value || '').trim();
-    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) { out.textContent = T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', '✗ أدخل IP صالحًا مثل 192.168.88.3'))))))); out.style.color = 'var(--offline)'; return; }
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) { out.textContent = T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', T('s2j.enter_a_valid_ip_such_as_192_168_88_3', '✗ أدخل IP صالحًا مثل 192.168.88.3')))))))); out.style.color = 'var(--offline)'; return; }
     out.textContent = '⏳ جارٍ اختبار الطرق الثلاث على ' + ip + ' … (حتى ~4 ثوانٍ)';
     out.style.color = 'var(--muted)';
     try {

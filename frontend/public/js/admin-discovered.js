@@ -140,7 +140,7 @@ async function openApproveModal(id, detectedType) {
     row = (r && r.success) ? r.data : null;
   } catch (e) { /* fallback: تُعرض النافذة بقيم افتراضية */ }
   if (!row) {
-    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.'))))))), { type: 'error' });
+    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.')))))))), { type: 'error' });
     return;
   }
   discoveredApproveId = id;
@@ -196,7 +196,7 @@ async function submitApprove(quick) {
     const port = portRaw ? Number(portRaw) : null;
     const webPort = webRaw ? Number(webRaw) : null;
     if (protocol !== 'ping' && !port) {
-      showToast(T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.'))))))), { type: 'warning' });
+      showToast(T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.')))))))), { type: 'warning' });
       return;
     }
     body = {

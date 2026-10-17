@@ -71,7 +71,7 @@ async function saveAiSettings() {
   const model = document.getElementById('ai-model').value.trim();
   // تحقق لطيف قبل الحفظ: العنوان لا يساوي فراغًا ولا يفشل صامتًا.
   if (base && !/^https?:\/\//i.test(base)) {
-    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://'))))))), true);
+    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://')))))))), true);
     return;
   }
   const r = await api('/api/ai/settings', {
