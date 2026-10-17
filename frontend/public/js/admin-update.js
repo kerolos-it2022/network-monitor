@@ -72,6 +72,8 @@ function updRenderLast(ts) {
 const UPD_STEPS = [
   [['بدأ التحديث'], 'start', 10],
   [['ملفات التطبيق', 'تنزيل', 'الأرشيف'], 'files', 40],
+  // v2.33.0 — خطوة ترقية Node (nm-node-upgrade) قبل التبعيات: الأبلاينس القديم = Node 18
+  [['تجهيز node', 'ترقية node', 'nodesource', 'node جاهز'], 'node', 55],
   [['التبعيات', 'npm'], 'deps', 70],
   [['أدوات النظام'], 'tools', 85],
   [['إعادة تشغيل', 'restart'], 'restart', 95],

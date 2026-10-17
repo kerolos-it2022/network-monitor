@@ -11,5 +11,6 @@ chmod 644 /etc/systemd/system/nm-update.service /etc/systemd/system/nm-update.pa
 chmod 644 /etc/systemd/system/nm-remote.service /etc/systemd/system/nm-remote.path 2>/dev/null || true
 # v2.11.9 — سكريبت حراسة المحرك + وحدتاه
 chmod +x /usr/local/sbin/nm-healthcheck 2>/dev/null || true
+chmod +x /usr/local/sbin/nm-node-upgrade 2>/dev/null || true
 chmod 644 /etc/systemd/system/nm-healthcheck.service /etc/systemd/system/nm-healthcheck.timer 2>/dev/null || true
 chmod 644 /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null || true

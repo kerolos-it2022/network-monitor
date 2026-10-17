@@ -104,6 +104,27 @@ unzip -q -o "$ZIP" -d "$TMP_ROOT/work/src" || fail "فشل فك الأرشيف"
 SRC="$(find "$TMP_ROOT/work/src" -maxdepth 1 -mindepth 1 -type d | head -n1)"
 { [ -n "$SRC" ] && [ -d "$SRC/backend" ] && [ -d "$SRC/frontend" ]; } || fail "محتوى الأرشيف غير متوقّع (لا يوجد backend/frontend)"
 
+# ── v2.33.0 — ضمان Node ≥ 22 قبل أي تغيير في ملفات التطبيق ──
+# الأبلاينس المُبنى من ISO قديم = Node 18، وتبعية 2.33.0 (better-sqlite3@13) لا تعمل عليه.
+# نُرقّي هنا **قبل** نسخ الملفات: لو تعذّرت الترقية نتوقف بلا أن نلمس الكود العامل
+# (الخدمة تبقى شغالة على النسخة القديمة، ويظهر السبب للمالك في اللوحة).
+# الرموز: 0 = جاهز · 3 = تعذّرت (بيئة/شبكة) · 1 = الترقية لم تحقّق الحد ⇒ الحالتان تُوقفان التحديث.
+ensure_node_ready() {
+  command -v nm-node-upgrade >/dev/null 2>&1 || return 0   # أداة غير مثبّتة (نسخة أقدم) ⇒ لا نُعطّل التحديث
+  status in_progress "تجهيز Node (أدوات النظام)" "$TAG"
+  local rc=0
+  NM_NODE_MIN_MAJOR="${NM_NODE_MIN_MAJOR:-22}" nm-node-upgrade >>"$LOG_FILE" 2>&1 || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    log "Node جاهز للتحديث ($(node -v 2>/dev/null || echo '?'))"
+    return 0
+  fi
+  if [ "$rc" -eq 3 ]; then
+    fail "Node على الجهاز أقدم من 22 وتعذّرت ترقيته تلقائيًا — أُوقف التحديث قبل لمس الملفات. راجع سجل nm-node-upgrade ثم رقِّ Node يدويًا (انظر DEPLOY.md → ترقية الأبلاينس) وأعد المحاولة"
+  fi
+  fail "فشلت ترقية Node (الرمز $rc) — أُوقف التحديث قبل لمس الملفات. راجع $LOG_FILE"
+}
+ensure_node_ready
+
 # ── نسخ ملفات التطبيق (بدون أي قاعدة/نسخ احتياطية داخل الأرشيف) ──
 status in_progress "تحديث ملفات التطبيق" "$TAG"
 command -v rsync >/dev/null 2>&1 || fail "rsync غير مثبّت (مطلوب للتحديث الآمن)"
@@ -138,7 +159,7 @@ SRC_APP="$SRC/appliance/config/includes.chroot"
 if [ -d "$SRC_APP" ]; then
   status in_progress "تحديث أدوات النظام (المساعدون والوحدات)" "$TAG"
   UPDATED_TOOLS=0
-  for f in nm-update nm-remote nm-healthcheck; do
+  for f in nm-update nm-remote nm-healthcheck nm-node-upgrade; do
     if [ -f "$SRC_APP/usr/local/sbin/$f" ]; then
       install -m0755 "$SRC_APP/usr/local/sbin/$f" "/usr/local/sbin/$f" 2>/dev/null && UPDATED_TOOLS=1 || true
     fi
