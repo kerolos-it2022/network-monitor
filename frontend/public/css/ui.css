@@ -886,8 +886,12 @@ table.data-table td.col-status, table.data-table th.col-status { text-align: rig
 
 /* جدول الصفحة العامة: نفس هوامش البطاقات والفلاتر (كان ملتصقًا بحافة الشاشة) */
 #devices-table-view { padding: 0 1.5rem 2rem; }
+/* شريط نسبة التشغيل في نمط البطاقات كان خارج الحاوية المبطّنة (فرق 1.5rem عن نمط الجدول)
+   ⇒ نُطابق حاشيته الجانبية بحاشية شبكة البطاقات/الجدول ليكون الشكل واحدًا في النمطين. */
+#cards-uptime-bar { margin-inline: 1.5rem; }
 #devices-table-view .map-uptime-bar { margin-bottom: 1rem; }
 @media (max-width: 600px) { #devices-table-view { padding: 0 0.5rem 1.5rem; } }
+@media (max-width: 600px) { #cards-uptime-bar { margin-inline: 0.5rem; } }
 
 /* ═══════════════════════════ 13) محاذاة يمين لكل ما كان في المنتصف (طلب المالك) ═══════════════════════════ */
 /* السبب الجذري لكروت «ذكاء الإشعارات»: قاعدة قديمة في style.css (‎.form-grid label { flex-direction: column }‎)
