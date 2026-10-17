@@ -819,3 +819,43 @@ body:not(.page-noc) input[readonly] { background: var(--card-bg); color: var(--m
 }
 /* ملاحظات/حالات داخل بطاقة: عرض متراصّ للقراءة */
 .nm-note.is-info { color: var(--text); }
+
+/* ═══════════════════════════ 12) محاذاة صفوف الجداول — نموذج واحد لكل الصفحات ═══════════════════════════ */
+/* القاعدة: أعمدة النصوص (الأسماء/المواقع/الرسائل) تبدأ من اليمين، وأعمدة القيم القصيرة
+   (IP · MAC · وقت · رقم · شارة · أزرار) في وسط العمود — والرأس يتبع نفس محاذاة قيمه
+   حتى لا يظهر عنوان «IP» في جهة وقيمه في جهة أخرى. */
+table.data-table th, table.nm-table th { vertical-align: middle !important; }
+table.data-table td, table.nm-table td { vertical-align: middle; }
+
+table.data-table .col-center, table.nm-table .col-center { text-align: center; }
+table.data-table th.col-center, table.nm-table th.col-center { text-align: center; }
+
+table.data-table .col-ltr, table.nm-table .col-ltr {
+  text-align: center;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+table.data-table th.col-ltr, table.nm-table th.col-ltr { text-align: center; }
+
+table.data-table .col-actions, table.nm-table .col-actions { text-align: center; white-space: nowrap; }
+table.data-table th.col-actions, table.nm-table th.col-actions { text-align: center; }
+table.data-table .col-actions .btn, table.nm-table .col-actions .btn { margin: 0 0.12rem; }
+
+table.data-table td.is-empty, table.nm-table td.is-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 1.2rem 0.75rem;
+  font-size: var(--nm-fs-sm);
+}
+
+/* خلية حالة الجهاز (نقطة/شارة) — مرتّبة في وسط العمود مع رأسها */
+table.data-table td.col-status, table.data-table th.col-status { text-align: center; }
+
+/* الجدول على الشاشات الصغيرة: تمرير أفقي محترم بلا كسر الأعمدة */
+.nm-table-wrap > table.data-table { min-width: 640px; }
+
+/* جدول الصفحة العامة: نفس هوامش البطاقات والفلاتر (كان ملتصقًا بحافة الشاشة) */
+#devices-table-view { padding: 0 1.5rem 2rem; }
+#devices-table-view .map-uptime-bar { margin-bottom: 1rem; }
+@media (max-width: 600px) { #devices-table-view { padding: 0 0.5rem 1.5rem; } }

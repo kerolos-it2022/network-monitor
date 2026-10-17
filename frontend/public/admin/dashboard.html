@@ -79,7 +79,7 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>الاسم</th><th>IP</th><th>النوع</th><th>الموقع</th><th>الحالة</th><th>إجراءات</th></tr>
+              <tr><th>الاسم</th><th class="col-ltr">IP</th><th>النوع</th><th>الموقع</th><th class="col-status">الحالة</th><th class="col-actions">إجراءات</th></tr>
             </thead>
             <tbody id="devices-table-body"></tbody>
           </table>
@@ -117,7 +117,7 @@
       </div>
       <div class="nm-table-wrap">
         <table class="data-table">
-          <thead><tr><th>المعرّف</th><th>الاسم</th><th>النوع</th><th>الأَب</th><th>التَرتيب</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th class="col-center">المعرّف</th><th>الاسم</th><th>النوع</th><th>الأَب</th><th class="col-center">التَرتيب</th><th class="col-actions">إجراءات</th></tr></thead>
           <tbody id="locations-table-body"></tbody>
         </table>
       </div>
@@ -148,7 +148,7 @@
         </div>
         <div class="nm-table-wrap">
           <table class="data-table">
-            <thead><tr><th>المعرّف</th><th>الاسم</th><th>الأيقونة</th><th>إجراءات</th></tr></thead>
+            <thead><tr><th class="col-center">المعرّف</th><th>الاسم</th><th class="col-center">الأيقونة</th><th class="col-actions">إجراءات</th></tr></thead>
             <tbody id="types-table-body"></tbody>
           </table>
         </div>
@@ -285,16 +285,16 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th><input type="checkbox" id="discovered-select-all" title="تحديد الكل" /></th>
-            <th class="sortable" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز">IP ↕</th>
-            <th>MAC</th>
+            <th class="col-center"><input type="checkbox" id="discovered-select-all" title="تحديد الكل" /></th>
+            <th class="sortable col-ltr" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز">IP ↕</th>
+            <th class="col-ltr">MAC</th>
             <th class="sortable" data-sort="hostname" data-label="الاسم" style="cursor:pointer;" title="انقر للفرز">الاسم ↕</th>
             <th class="sortable" data-sort="vendor" data-label="الصانع" style="cursor:pointer;" title="انقر للفرز">الصانع ↕</th>
             <th class="sortable" data-sort="detected_type" data-label="النوع المتوقَّع" style="cursor:pointer;" title="انقر للفرز">النوع المتوقَّع ↕</th>
             <th>المصدر</th>
-            <th class="sortable" data-sort="last_seen_at" data-label="آخر رؤية" style="cursor:pointer;" title="انقر للفرز">آخر رؤية ↕</th>
-            <th class="sortable" data-sort="seen_count" data-label="التكرار" style="cursor:pointer;" title="انقر للفرز">التكرار ↕</th>
-            <th>الحالة</th><th>إجراءات</th>
+            <th class="sortable col-ltr" data-sort="last_seen_at" data-label="آخر رؤية" style="cursor:pointer;" title="انقر للفرز">آخر رؤية ↕</th>
+            <th class="sortable col-center" data-sort="seen_count" data-label="التكرار" style="cursor:pointer;" title="انقر للفرز">التكرار ↕</th>
+            <th class="col-status">الحالة</th><th class="col-actions">إجراءات</th>
           </tr>
         </thead>
         <tbody id="discovered-table-body"></tbody>
@@ -341,7 +341,7 @@
       <h3>📋 سجل المسحات الأخيرة</h3>
       <table class="data-table">
         <thead>
-          <tr><th>المعرّف</th><th>الشبكة</th><th>البدء</th><th>الانتهاء</th><th>وُجدت</th><th>أُضيفت</th><th>ضاعت</th><th>الحالة</th><th>الخطأ</th></tr>
+          <tr><th class="col-center">المعرّف</th><th class="col-ltr">الشبكة</th><th class="col-ltr">البدء</th><th class="col-ltr">الانتهاء</th><th class="col-center">وُجدت</th><th class="col-center">أُضيفت</th><th class="col-center">ضاعت</th><th class="col-status">الحالة</th><th>الخطأ</th></tr>
         </thead>
         <tbody id="sched-runs-table-body"></tbody>
       </table>
@@ -679,7 +679,7 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>الوقت</th><th>الجهاز</th><th>القناة</th><th>الحالة</th><th>الرسالة</th><th>السبب</th></tr>
+              <tr><th class="col-ltr">الوقت</th><th>الجهاز</th><th class="col-center">القناة</th><th class="col-status">الحالة</th><th>الرسالة</th><th>السبب</th></tr>
             </thead>
             <tbody id="logs-table-body"></tbody>
           </table>

@@ -38,17 +38,17 @@ async function loadDiscovered() {
     const tr = document.createElement('tr');
     const statusText = d.is_approved === 1 ? '✅ معتمد' : (d.is_approved === -1 ? '❌ مرفوض' : '⏳ بانتظار');
     tr.innerHTML = `
-      <td><input type="checkbox" class="discovered-row-check" data-id="${esc(d.id)}" /></td>
-      <td>${esc(d.ip)}</td>
-      <td>${esc(d.mac || '—')}</td>
+      <td class="col-center"><input type="checkbox" class="discovered-row-check" data-id="${esc(d.id)}" /></td>
+      <td class="col-ltr">${esc(d.ip)}</td>
+      <td class="col-ltr">${esc(d.mac || '—')}</td>
       <td>${esc(d.hostname || '—')}</td>
       <td>${esc(d.vendor || '—')}</td>
       <td>${esc(d.detected_type || '—')}</td>
-      <td>${esc(d.source || '—')}</td>
-      <td>${esc(d.last_seen_at || '—')}</td>
-      <td>${esc(d.seen_count || 0)}</td>
-      <td>${statusText}</td>
-      <td>
+      <td class="col-center">${esc(d.source || '—')}</td>
+      <td class="col-ltr">${esc(d.last_seen_at ? NMFormat.dateTime(d.last_seen_at) : '—')}</td>
+      <td class="col-center">${esc(d.seen_count || 0)}</td>
+      <td class="col-status">${statusText}</td>
+      <td class="col-actions">
         <button class="btn btn-sm btn-approve" data-id="${esc(d.id)}" data-detected="${esc(d.detected_type || '')}" title="اعتماد ونقل إلى الأجهزة (مع اختيار النوع/الموقع)">✅ اعتماد</button>
         <button class="btn btn-sm btn-reject" data-id="${esc(d.id)}" title="رفض">❌ رفض</button>
         <button class="btn btn-sm btn-delete" data-id="${esc(d.id)}" title="حذف نهائي">🗑️ حذف</button>

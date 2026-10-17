@@ -83,22 +83,24 @@
     <!-- نمط الجدول (مخفي افتراضياً) -->
     <div id="devices-table-view" class="hidden">
       <div id="table-uptime-bar" class="map-uptime-bar" aria-live="polite" aria-atomic="true"></div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>الحالة</th>
-            <th>الاسم</th>
-            <th>IP</th>
-            <th>النوع</th>
-            <th>الموقع</th>
-            <th>آخر فحص</th>
-            <th>آخر انقطاع</th>
-            <th>فتح</th>
-            <th>تفاصيل</th>
-          </tr>
-        </thead>
-        <tbody id="devices-table-body"></tbody>
-      </table>
+      <div class="nm-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-status">الحالة</th>
+              <th>الاسم</th>
+              <th class="col-ltr">IP</th>
+              <th>النوع</th>
+              <th>الموقع</th>
+              <th class="col-ltr">آخر فحص</th>
+              <th class="col-center">آخر انقطاع</th>
+              <th class="col-actions">فتح</th>
+              <th class="col-actions">تفاصيل</th>
+            </tr>
+          </thead>
+          <tbody id="devices-table-body"></tbody>
+        </table>
+      </div>
     </div>
 
   </main>

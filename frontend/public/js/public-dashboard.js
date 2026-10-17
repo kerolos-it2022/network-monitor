@@ -235,7 +235,7 @@ function renderTable(devicesList) {
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
   if (!devicesList || devicesList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:1rem;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u062c\u0647\u0632\u0629 \u0645\u0637\u0627\u0628\u0642\u0629.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="is-empty">لا توجد أجهزة مطابقة — جرّب تغيير الفلاتر أو البحث.</td></tr>';
     return;
   }
   for (const d of devicesList) {
@@ -247,23 +247,23 @@ function renderTable(devicesList) {
     // SEC-02 — بلا IP في العرض العام ⇒ لا زر فتح (نفس منطق البطاقات).
     if (d.ip && d.https_accessible == 1) {
       const url = 'https://' + d.ip + tPortSuffix + '/';
-      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
+      openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTPS' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
     } else if (d.ip && d.http_accessible == 1) {
       const url = 'http://' + d.ip + tPortSuffix + '/';
-      openBtnHtml = '<button class="btn open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
+      openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="فتح الواجهة (HTTP' + (tPortSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
     }
     const tr = document.createElement('tr');
     tr.className = 'public-row';
     tr.innerHTML =
-      '<td><span class="status-dot ' + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
+      '<td class="col-status"><span class="status-dot ' + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
       '<td>' + escapeHtml(d.name) + '</td>' +
-      '<td style="direction:ltr;text-align:center;font-size:0.85rem;">' + escapeHtml(d.ip || '—') + '</td>' +
-      '<td>' + escapeHtml(d.device_type_name || '-') + '</td>' +
-      '<td>' + escapeHtml(d.location_name || '-') + '</td>' +
-      '<td class="nm-ltr" style="font-size:0.85rem;color:var(--muted);">' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '—') + '</td>' +
-      '<td style="font-size:0.85rem;color:var(--muted);">' + fmtLastOutage(d) + '</td>' +
-      '<td>' + (openBtnHtml || '') + '</td>' +
-      '<td><button class="btn" data-detail="' + d.id + '">\u062a\u0641\u0627\u0635\u064a\u0644</button></td>';
+      '<td class="col-ltr">' + escapeHtml(d.ip || '—') + '</td>' +
+      '<td>' + escapeHtml(d.device_type_name || '—') + '</td>' +
+      '<td>' + escapeHtml(d.location_name || '—') + '</td>' +
+      '<td class="col-ltr nm-muted">' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '—') + '</td>' +
+      '<td class="col-center nm-muted">' + fmtLastOutage(d) + '</td>' +
+      '<td class="col-actions">' + (openBtnHtml || '') + '</td>' +
+      '<td class="col-actions"><button class="btn btn-sm" data-detail="' + d.id + '">تفاصيل</button></td>';
     // إضافة مستمع للزر التفاصيل
     tr.querySelector('[data-detail]').addEventListener('click', function (e) {
       e.stopPropagation();

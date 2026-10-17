@@ -147,12 +147,12 @@ async function loadLocations() {
     const sortOrderDisplay = (l.sort_order != null) ? esc(String(l.sort_order)) : '<span style="color:var(--muted);">—</span>';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${l.id}</td>
+      <td class="col-center">${l.id}</td>
       <td>${esc(l.name)}</td>
-      <td>${kl.icon} ${kl.label} <span style="color:var(--muted); font-size:0.85em;">(${l.kind || 'zone'})</span></td>
-      <td>${parentName ? esc(parentName) : '<span style="color:var(--muted);">—</span>'}</td>
-      <td style="text-align:center;">${sortOrderDisplay}</td>
-      <td>
+      <td>${kl.icon} ${kl.label} <span class="nm-sub" style="font-size:0.85em;">(<span class="nm-ltr">${esc(l.kind || 'zone')}</span>)</span></td>
+      <td>${parentName ? esc(parentName) : '<span class="nm-muted">—</span>'}</td>
+      <td class="col-center">${sortOrderDisplay}</td>
+      <td class="col-actions">
         <button class="btn" data-edit="${l.id}" title="تعديل الموقع">✏️ تعديل</button>
         <button class="btn btn-danger" data-del="${l.id}" title="حذف الموقع">🗑️ حذف</button>
       </td>
@@ -319,10 +319,10 @@ async function loadTypes() {
     const tr = document.createElement('tr');
     const iconEmoji = getIconEmoji(t.icon) || inferByName(t.name);
     tr.innerHTML = `
-      <td>${t.id}</td>
+      <td class="col-center">${t.id}</td>
       <td>${esc(t.name)}</td>
-      <td class="nm-center" style="font-size:1.2rem;">${iconEmoji}</td>
-      <td>
+      <td class="col-center" style="font-size:1.2rem;">${iconEmoji}</td>
+      <td class="col-actions">
         <button class="btn btn-sm" data-edit="${t.id}" title="تعديل النوع">✏️ تعديل</button>
         <button class="btn btn-sm btn-danger" data-del="${t.id}" title="حذف النوع">🗑️ حذف</button>
       </td>

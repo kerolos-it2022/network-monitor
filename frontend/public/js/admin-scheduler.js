@@ -65,14 +65,14 @@ async function loadSchedulerRuns() {
       ? ' <span style="background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:0 0.3rem; font-size:0.7rem; color:var(--muted);">✋ يدوي</span>'
       : '';
     return `<tr>
-      <td>${esc(row.id)}</td>
-      <td>${esc(row.subnet)}${sourceBadge}</td>
-      <td>${esc(row.started_at || '—')}</td>
-      <td>${esc(row.ended_at || '—')}</td>
-      <td>${esc(row.devices_found)}</td>
-      <td>${esc(row.devices_added)}</td>
-      <td>${esc(row.devices_lost)}</td>
-      <td>${statusBadge}</td>
+      <td class="col-center">${esc(row.id)}</td>
+      <td class="col-ltr">${esc(row.subnet)}${sourceBadge}</td>
+      <td class="col-ltr">${esc(row.started_at ? NMFormat.dateTime(row.started_at) : '—')}</td>
+      <td class="col-ltr">${esc(row.ended_at ? NMFormat.dateTime(row.ended_at) : '—')}</td>
+      <td class="col-center">${esc(row.devices_found)}</td>
+      <td class="col-center">${esc(row.devices_added)}</td>
+      <td class="col-center">${esc(row.devices_lost)}</td>
+      <td class="col-status">${statusBadge}</td>
       <td>${esc(row.error_message || '—')}</td>
     </tr>`;
   }).join('');

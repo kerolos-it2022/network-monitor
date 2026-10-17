@@ -193,10 +193,10 @@ async function loadNotificationLogs() {
   for (const l of sortedData) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="nm-ltr" style="white-space:nowrap;">${esc(l.sent_at ? NMFormat.dateTime(l.sent_at) : '—')}</td>
+      <td class="col-ltr">${esc(l.sent_at ? NMFormat.dateTime(l.sent_at) : '—')}</td>
       <td>${esc(l.device_name || '—')}</td>
-      <td>${esc(channelText(l.channel))}</td>
-      <td>${esc(l.status === 'sent' ? 'تم الإرسال' : 'فشل')}</td>
+      <td class="col-center">${esc(channelText(l.channel))}</td>
+      <td class="col-status">${esc(l.status === 'sent' ? 'تم الإرسال' : 'فشل')}</td>
       <td>${esc(l.message)}</td>
       <td>${esc(l.error || '—')}</td>
     `;

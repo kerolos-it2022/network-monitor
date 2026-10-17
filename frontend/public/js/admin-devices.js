@@ -126,11 +126,11 @@ async function loadDevices() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${esc(d.name)}${d.asset_id ? `<div class="nm-sub nm-ltr" style="display:block; font-size:0.72rem;">${esc(d.asset_id)}</div>` : ''}</td>
-      <td class="nm-ltr">${esc(d.ip)}</td>
-      <td>${esc(d.device_type_name || '-')}</td>
-      <td>${esc(d.location_name || '-')}</td>
-      <td>${esc(statusText(d.current_status))}</td>
-      <td>
+      <td class="col-ltr">${esc(d.ip)}</td>
+      <td>${esc(d.device_type_name || '—')}</td>
+      <td>${esc(d.location_name || '—')}</td>
+      <td class="col-status">${esc(statusText(d.current_status))}</td>
+      <td class="col-actions">
         ${openBtn}
         <button class="btn btn-sm" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>
         <button class="btn btn-sm" data-asset="${esc(d.asset_id || d.id)}" title="الأصل: الهوية الثابتة + واجهات MAC + سجل IP + تعارضات">🔖 أصل</button>
