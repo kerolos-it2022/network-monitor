@@ -125,19 +125,20 @@ async function loadSystemStats() {
     else if (b.listening) {
       const age = b.lastPollAt ? Math.round((Date.now() - b.lastPollAt) / 1000) : null;
       const ageTxt = age === null ? 'لم تبدأ بعد' : (age < 60 ? 'قبل ' + age + T('unit.s', ' ثانية') : 'قبل ' + Math.round(age / 60) + T('unit.min', ' دقيقة'));
-      botEl.innerHTML = '✅ <b>يعمل</b> — يستمع للأوامر والأزرار (آخر استقبال ' + esc(ageTxt)
-        + ' · أوامر مُنفَّذة منذ الإقلاع: <bdi>' + esc(b.updatesHandled) + '</bdi>)'
-        + (b.lastPollOk === false && b.lastError ? ' · ⚠️ آخر خطأ: ' + esc(b.lastError) : '');
+      botEl.innerHTML = '✅ <b>' + T('bot.working', 'يعمل') + '</b> — ' + T('bot.listening', 'يستمع للأوامر والأزرار')
+        + ' (' + T('bot.lastReceived', 'آخر استقبال') + ' ' + esc(ageTxt)
+        + ' · ' + T('bot.commandsHandled', 'أوامر مُنفَّذة منذ الإقلاع:') + ' <bdi>' + esc(b.updatesHandled) + '</bdi>)'
+        + (b.lastPollOk === false && b.lastError ? ' · ' + T('bot.lastError', '⚠️ آخر خطأ:') + ' ' + esc(b.lastError) : '');
     } else {
       // السبب الدقيق بدل «متوقف» المبهمة
       const reasons = [];
-      if (!b.telegramEnabled) reasons.push('قناة تلجرام غير مفعّلة');
-      if (!b.hasToken) reasons.push('توكن البوت غير مضبوط');
-      if (!b.hasChatId) reasons.push('معرّف المحادثة غير مضبوط');
-      if (b.hasToken && b.hasChatId && b.telegramEnabled && !b.commandsEnabled) reasons.push('مفتاح «بوت تلجرام التفاعلي» مُطفأ');
-      if (reasons.length === 0 && b.running) reasons.push('في انتظار أول دورة استقبال');
+      if (!b.telegramEnabled) reasons.push(T('bot.reasonChannelOff', 'قناة تلجرام غير مفعّلة'));
+      if (!b.hasToken) reasons.push(T('bot.reasonNoToken', 'توكن البوت غير مضبوط'));
+      if (!b.hasChatId) reasons.push(T('bot.reasonNoChatId', 'معرّف المحادثة غير مضبوط'));
+      if (b.hasToken && b.hasChatId && b.telegramEnabled && !b.commandsEnabled) reasons.push(T('bot.reasonCommandsOff', 'مفتاح «بوت تلجرام التفاعلي» مُطفأ'));
+      if (reasons.length === 0 && b.running) reasons.push(T('bot.reasonWaiting', 'في انتظار أول دورة استقبال'));
       botEl.innerHTML = `⛔ <b>${T('status.offline', 'متوقف')}</b>`
-        + (reasons.length ? ' — السبب: ' + esc(reasons.join(' · ')) : ' — الحلقة لم تبدأ بعد')
+        + (reasons.length ? ' — ' + T('bot.reasonLabel', 'السبب:') + ' ' + esc(reasons.join(' · ')) : ' — ' + T('bot.loopNotStarted', 'الحلقة لم تبدأ بعد'))
         + (b.lastError ? ' · آخر خطأ: ' + esc(b.lastError) : '');
     }
   }
@@ -150,9 +151,9 @@ async function loadSystemStats() {
     else {
       const parts = [
         T('system.streamsOpen', 'شاشات مفتوحة الآن:') + ' <bdi>' + esc(s.clients) + '</bdi> / ' + esc(s.maxClients),
-        T('system.peak', '/ 100 · أقصى عدد وصل:') + ' <bdi>' + esc(s.peak) + '</bdi>',
-        T('system.dropped', '· مُسقَطون (شاشات بطيئة):') + ' <bdi>' + esc(s.droppedSlow) + '</bdi>',
-        T('system.refused', '· مرفوضون (تجاوز الحد):') + ' <bdi>' + esc(s.rejectedLimit) + '</bdi>',
+        T('system.peak', 'أقصى عدد وصل:') + ' <bdi>' + esc(s.peak) + '</bdi>',
+        T('system.dropped', 'مُسقَطون (شاشات بطيئة):') + ' <bdi>' + esc(s.droppedSlow) + '</bdi>',
+        T('system.refused', 'مرفوضون (تجاوز الحد):') + ' <bdi>' + esc(s.rejectedLimit) + '</bdi>',
       ];
       if (s.closedByPolicy) parts.push(T('system.closedByPolicy', 'أُغلقوا بعد إيقاف العرض:') + ' <bdi>' + esc(s.closedByPolicy) + '</bdi>');
       sseEl.innerHTML = parts.join(' · ')
