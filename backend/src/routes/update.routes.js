@@ -47,16 +47,10 @@ function getArchiveUrl(tag) {
 }
 
 // ── وضع الـ appliance: فحص وتحديث عبر GitHub API + أرشيف الإصدار (بدون git/PM2) ──
-// مقارنة semver حقيقية (وليس نصية) — العلة الميدانية: 2.4.0 قدم كـ"تحديث" لـ2.5.3
-function semverParts(v) {
-  const m = String(v).replace(/^v/i, '').trim().match(/^(\d+)\.(\d+)\.(\d+)/);
-  return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0];
-}
-function isNewerVersion(a, b) {
-  const pa = semverParts(a), pb = semverParts(b);
-  for (let i = 0; i < 3; i++) { if (pa[i] !== pb[i]) return pa[i] > pb[i]; }
-  return false;
-}
+// v2.33.0 — منطق الإصدارات في خدمة واحدة (services/update-version.service.js) لتُختبَر مباشرة:
+// مقارنة semver حقيقية (وليس نصية). نسخة المستودع المحلي قد تكون أحدث من آخر تاج منشور
+// (العمل على إصدار لم يُرفع بعد) — وهذا **طبيعي** ويُعرَض كما هو، مع منع أي تنزيل نازل.
+const { semverParts, isNewerVersion, compareVersions } = require('../services/update-version.service');
 async function getLatestTagFromApi() {
   try {
     const { owner, repo } = getRepoConfig();
@@ -288,18 +282,25 @@ async function checkForUpdates(branch = 'main') {
       const sorted = await getLatestTagFromApi();
       const latestTag = sorted[0] || null;                       // الأحدث semver
       const latestVersion = latestTag ? latestTag.replace(/^v/i, '') : currentVersion;
-      // تحديث فقط إذا كان الأحدث في الحقيقة (وليس مجرد "مختلف")
-      const hasUpdate = latestTag ? isNewerVersion(latestTag, currentVersion) : false;
+      // سلوك المشروع: نُبلّغ بكل فرق بين نسختنا وآخر ما نُشِر على GitHub (hasUpdate)،
+      // والقابل للتنزيل/التثبيت هو الأحدث فعلًا فقط (remoteNewer) ⇒ لا تنزيل نازل.
+      const cmp = compareVersions(currentVersion, latestVersion);
+      const hasUpdate = cmp.differenceFromGithub;
       return {
         success: true,
         isGitRepo: false,
         viaArchive: true,
         hasUpdate,
+        remoteNewer: cmp.remoteNewer,
+        localNewer: cmp.localNewer,
         currentVersion,
         latestVersion,
         branch,
-        changelog: hasUpdate ? `تحديث متاح (${latestVersion}) — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)` : (latestTag ? 'أنت على أحدث إصدار أو أحدث من المتاح' : 'لا توجد تاجات إصدارات على GitHub'),
-        updateAvailable: hasUpdate
+        changelog: cmp.remoteNewer
+          ? `تحديث متاح (${latestVersion}) — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)`
+          : (latestTag ? cmp.note : 'لا توجد تاجات إصدارات على GitHub'),
+        note: cmp.note,
+        updateAvailable: cmp.remoteNewer
       };
     }
     // ملاحظة: checkBranchExists يَنفّذ `git ls-remote` (read-only عبر الشبكة، لا يَكتب .git/).
@@ -356,14 +357,15 @@ async function checkForUpdates(branch = 'main') {
       };
     }
 
-    // v2.33.0 — كان المقارنة «مختلف» (currentVersion !== latestVersion) فيظهر «تحديث متاح»
-    // حتى لو نسختك المحلية أحدث من آخر تاج منشور. المقارنة الآن semver حقيقية: تحديث فقط
-    // عندما يكون التاج البعيد أحدث فعلًا (مطابق لِسلوك وضع الأبلاينس فوق).
-    const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+    // v2.33.0 — الفحص يبلّغ بكل فرق بين نسختنا وآخر ما نُشِر على GitHub (سلوك المشروع الأصلي)،
+    // ويُبيّن **اتجاه** الفرق: على GitHub أحدث ⇒ يوجد ما يُثبَّت، ونسختنا أحدث ⇒ لا شيء يُنزَّل
+    // (وضع طبيعي أثناء العمل على إصدار لم يُرفع بعد). بذلك لا يظهر زر تنزيل نازل أبدًا.
+    const cmp = compareVersions(currentVersion, latestVersion);
+    const hasUpdate = cmp.differenceFromGithub;
 
-    // الحصول على ملخص التغييرات
+    // الحصول على ملخص التغييرات (عند وجود إصدار أحدث على GitHub فقط)
     let changelog = '';
-    if (hasUpdate) {
+    if (cmp.remoteNewer) {
       await new Promise((resolve) => {
         exec(`git log --oneline --graph --decorate v${currentVersion}..v${latestVersion}`, { cwd: REPO_DIR }, (err, stdout) => {
           changelog = err ? 'غير متاح' : stdout.trim();
@@ -375,14 +377,14 @@ async function checkForUpdates(branch = 'main') {
     return {
       success: true,
       hasUpdate,
+      remoteNewer: cmp.remoteNewer,
+      localNewer: cmp.localNewer,
       currentVersion,
       latestVersion,
       branch,
-      // لو النسخة المحلية أحدث من المتاح: نوضّح ذلك بدل رسالة «لا توجد تغييرات» الغامضة
-      changelog: changelog || (isNewerVersion(currentVersion, latestVersion)
-        ? `نسختك المحلية (v${currentVersion}) أحدث من آخر إصدار منشور على GitHub (v${latestVersion})`
-        : 'لا توجد تغييرات'),
-      updateAvailable: hasUpdate
+      changelog: changelog || (cmp.localNewer ? cmp.note : 'لا توجد تغييرات'),
+      note: cmp.note,
+      updateAvailable: cmp.remoteNewer
     };
   } catch (error) {
     // تصنيف الخطأ إلى رسالة عربية واضحة بدل "الفرع main غير موجود" المُضلِّلة
@@ -475,16 +477,21 @@ router.get('/status', requireAuth, async (req, res) => {
       const sortedTags = await getLatestTagFromApi();
       const latestTagV = sortedTags[0] || null;
       const latestVersion = latestTagV ? latestTagV.replace(/^v/i, '') : currentVersion;
-      const updateAvailable = latestTagV ? isNewerVersion(latestTagV, currentVersion) : false;
+      const cmpStatus = compareVersions(currentVersion, latestVersion);
       const viaArchiveResult = {
         success: true,
         isGitRepo: false,
         viaArchive: true,
-        hasUpdate: updateAvailable,
+        hasUpdate: cmpStatus.differenceFromGithub,
+        remoteNewer: cmpStatus.remoteNewer,
+        localNewer: cmpStatus.localNewer,
         currentVersion,
         latestVersion,
-        updateAvailable,
-        changelog: updateAvailable ? 'تحديث متاح (' + latestVersion + ') — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)' : 'أنت على أحدث إصدار أو أحدث من المتاح',
+        updateAvailable: cmpStatus.remoteNewer,
+        note: cmpStatus.note,
+        changelog: cmpStatus.remoteNewer
+          ? 'تحديث متاح (' + latestVersion + ') — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)'
+          : cmpStatus.note,
       };
       return res.json(viaArchiveResult);
     }

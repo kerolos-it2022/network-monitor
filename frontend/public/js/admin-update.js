@@ -268,25 +268,38 @@ async function updCheck(silent = false) {
     updLastCheck = r;
     const cur = String(r.currentVersion || '—').replace(/^v/i, '');
     const lat = String(r.latestVersion || '—').replace(/^v/i, '');
+    // سلوك المشروع: نُبلّغ بكل فرق مع ما هو منشور على GitHub (has). ونسخة المستودع المحلي قد تكون
+    // أحدث من آخر تاج منشور أثناء العمل على إصدار لم يُرفع بعد ⇒ نُسمّي الاتجاه بصراحة،
+    // وأزرار التنزيل/التثبيت لا تظهر إلا لو كان على GitHub إصدار أحدث فعلًا (canInstall).
     const has = !!(r.hasUpdate || r.updateAvailable);
+    const remoteNewer = (r.remoteNewer !== undefined) ? !!r.remoteNewer : has;
+    const localNewer = (r.localNewer !== undefined) ? !!r.localNewer : (!has && updIsNewer(cur, lat));
+    const canInstall = remoteNewer;
     updSet('upd-current', 'v' + cur, 'upd-hero-value');
-    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
-    // لو نسختنا المحلية أحدث من آخر تاج منشور: نقولها بصراحة بدل «أنت على أحدث إصدار» المُربكة
-    const curNewer = !has && updIsNewer(cur, lat);
-    updSet('upd-latest-sub', has ? 'يتوفّر تحديث جديد 🟠' : (curNewer ? 'نسختك المحلية أحدث من المتاح ✓' : 'أنت على أحدث إصدار ✓'), 'upd-hero-sub');
-    updSet('upd-state', has ? '🟠 تحديث متاح' : '🟢 محدَّث', 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
+    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (remoteNewer ? 'upd-warn' : 'upd-ok'));
+    updSet('upd-latest-sub',
+      remoteNewer ? 'يتوفّر تحديث جديد 🟠'
+        : (localNewer ? 'منشور على GitHub — ونسختك المحلية أحدث منه ✓' : 'أنت على أحدث إصدار ✓'),
+      'upd-hero-sub');
+    updSet('upd-state',
+      remoteNewer ? '🟠 تحديث متاح' : (localNewer ? '🟠 فرق إصدارات (محليًا أحدث)' : '🟢 محدَّث'),
+      'upd-hero-value ' + (remoteNewer ? 'upd-warn' : 'upd-ok'));
+    // تفسير الفرق في صندوق الملاحظة (جملة عربية جاهزة من الخادم)
+    if (has && r.note) updNote(r.note);
     const now = Date.now();
     try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
     updRenderLast(now);
     updBadge(has);
-    // v2.10.5 — إشعار بنتيجة الفحص (وإلا تبدو الصفحة صامتة)؛ ويظهر أيضًا في الفحص التلقائي لو وُجد تحديث
+    // v2.10.5 — إشعار بنتيجة الفحص (وإلا تبدو الصفحة صامتة)؛ ويظهر أيضًا في الفحص التلقائي لو وُجد فرق
     if (!silent || has) {
-      showToast(has ? ('🟠 يتوفّر تحديث جديد: v' + lat) : ('🟢 أنت على أحدث إصدار (v' + cur + ')'),
+      showToast(!has ? ('🟢 أنت على أحدث إصدار (v' + cur + ')')
+        : (remoteNewer ? ('🟠 يتوفّر تحديث جديد: v' + lat)
+          : ('🟠 GitHub عليه v' + lat + ' — ونسختك المحلية v' + cur + ' أحدث (لم تُرفع بعد)')),
         { type: has ? 'warning' : 'success', duration: has ? 6000 : 3000 });
     }
     updShow('upd-changelog-btn', has);
-    updShow('upd-safe-btn', has && updMode === 'appliance');
-    if (updMode === 'plain') { updShow('upd-download-btn', has); updShow('upd-apply-btn', has); }
+    updShow('upd-safe-btn', canInstall && updMode === 'appliance');
+    if (updMode === 'plain') { updShow('upd-download-btn', canInstall); updShow('upd-apply-btn', canInstall); }
     return r;
   } catch (e) {
     updSet('upd-state', '❌ خطأ', 'upd-hero-value upd-bad');
