@@ -6,6 +6,8 @@ const requireAuth = require('../middleware/requireAuth');
 // SEC-03 — سجل تدقيق: نجاح/فشل الدخول، القفل، الخروج، تغيير كلمات المرور وإدارة المستخدمين.
 const audit = require('../services/audit.service');
 const { bindSession, revokeSessions } = require('../services/session-auth.service');
+// كلمة مرور واحدة لكل الأبواب على الأبلاينس: تغييرها من اللوحة يحدّث شاشة الكونسول ودخول لينكس.
+const { syncSystemPassword } = require('../services/console-password.service');
 
 const router = express.Router();
 
@@ -154,7 +156,14 @@ router.put('/change-password', requireAuth, (req, res) => {
     revokeSessions(user.username, req.sessionID);
   })();
   bindSession(req.session, { ...user, password_hash: newHash });
-  audit.record('password_change', req, { target: user.username });
+
+  // مزامنة الأبواب النظامية (شاشة الكونسول على tty1 + دخول لينكس):
+  // أفضل جهد — لو كان المساعد غير موجود (تطوير/ويندوز) أو فشل، تظل كلمة مرور اللوحة قد تغيّرت فعلًا.
+  const sysSync = syncSystemPassword(new_password);
+  audit.record('password_change', req, {
+    target: user.username,
+    system_sync: sysSync.ok ? 'ok' : (sysSync.skipped ? 'skipped' : 'failed'),
+  });
 
   return res.json({ success: true, data: null });
 });

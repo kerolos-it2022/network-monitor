@@ -3,3 +3,6 @@ Network Monitor Appliance — Network Monitoring System
 Web UI:   http://<device-IP>/
 Service:  systemctl status network-monitor
 
+Console:  the menu on tty1 asks for your password (same as the web admin).
+Linux:    login user is 'sysadmin' — same password (SSH, or any login prompt).
+          'root' has no password by design: log in as sysadmin, then use sudo.

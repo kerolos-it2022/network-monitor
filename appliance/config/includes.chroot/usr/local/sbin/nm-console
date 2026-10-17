@@ -210,10 +210,10 @@ change_admin_password() {
   local DBP
   DBP=$(db_path)
   if (cd "$APP_DIR" && DEFAULT_ADMIN_USERNAME=admin DEFAULT_ADMIN_PASSWORD="$P1" DB_PATH="$DBP" /usr/bin/node src/seedAdmin.js); then
-    # Keep the console gate in sync — one credential, two doors.
-    printf 'CONSOLE_HASH=%s\n' "$(printf '%s' "$P1" | sha512sum | cut -d' ' -f1)" > /etc/nm-console.conf
-    chmod 600 /etc/nm-console.conf
-    echo "  [OK] Admin password updated (web UI + console) — use it on the next login."
+    # One credential, three doors: the web DB above, then the SAME helper the web UI calls
+    # (console gate + Linux login user) so the password can never drift between doors.
+    printf '%s\n' "$P1" | /usr/local/sbin/nm-sync-console-password || warn "  (system doors not updated — see log)"
+    echo "  [OK] Admin password updated (web UI + console + Linux login) — use it on the next login."
   else
     warn "  Failed to update — see [2] service log."
   fi
@@ -470,16 +470,16 @@ console_auth() {
     if [ -z "$STORED" ]; then
       # First run (or upgraded install without a gate) — set it now.
       bold "── First run: choose a console password ──"
-      echo "  (this also becomes the web admin password)"
+      echo "  (the same password becomes the web admin password and the Linux login)"
       read -rs -p "New password (min 4 chars): " P1
       echo
       if [ "${#P1}" -lt 4 ]; then warn "  Too short — try again."; sleep 2; continue; fi
       read -rs -p "Confirm password: " P2
       echo
       if [ "$P1" != "$P2" ]; then warn "  Passwords do not match — try again."; sleep 2; continue; fi
-      printf 'CONSOLE_HASH=%s\n' "$(printf '%s' "$P1" | sha512sum | cut -d' ' -f1)" > /etc/nm-console.conf
-      chmod 600 /etc/nm-console.conf
       (cd "$APP_DIR" && DEFAULT_ADMIN_USERNAME=admin DEFAULT_ADMIN_PASSWORD="$P1" DB_PATH="$(db_path)" /usr/bin/node src/seedAdmin.js) >/dev/null 2>&1 || true
+      # Same helper as every other door ⇒ gate + Linux login follow automatically.
+      printf '%s\n' "$P1" | /usr/local/sbin/nm-sync-console-password || warn "  (system doors not updated — see log)"
       echo "  [OK] Console protected."
       return 0
     fi

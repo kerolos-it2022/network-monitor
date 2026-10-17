@@ -12,5 +12,11 @@ chmod 644 /etc/systemd/system/nm-remote.service /etc/systemd/system/nm-remote.pa
 # v2.11.9 — سكريبت حراسة المحرك + وحدتاه
 chmod +x /usr/local/sbin/nm-healthcheck 2>/dev/null || true
 chmod +x /usr/local/sbin/nm-node-upgrade 2>/dev/null || true
+# v2.33.x — مساعد مزامنة كلمة مرور الأبواب (شاشة الكونسول + دخول لينكس) وقاعدة sudo الخاصة به:
+# قاعدة sudo تُتجاهل تمامًا لو لم تكن root:root وبصلاحية 440 أو أقل ⇒ الضبط هنا لا في git
+# (git على ويندوز لا يحفظ أنماط الملفات).
+chmod +x /usr/local/sbin/nm-sync-console-password 2>/dev/null || true
+chown root:root /etc/sudoers.d/nm-console-sync 2>/dev/null || true
+chmod 440 /etc/sudoers.d/nm-console-sync 2>/dev/null || true
 chmod 644 /etc/systemd/system/nm-healthcheck.service /etc/systemd/system/nm-healthcheck.timer 2>/dev/null || true
 chmod 644 /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null || true

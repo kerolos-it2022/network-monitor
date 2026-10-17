@@ -210,14 +210,27 @@ fi
 [ -z "$ADMIN_PASS" ] && ADMIN_PASS=$(openssl rand -base64 12 | tr -d '/+=' | cut -c1-12)
 echo "── Creating admin account…"
 
-# Console gate: store a SHA-512 hash of the SAME password (root-only file).
-# The console menu will require it at every boot — one credential, two doors.
-printf 'CONSOLE_HASH=%s\n' "$(printf '%s' "$ADMIN_PASS" | sha512sum | cut -d' ' -f1)" > "$MOUNT/etc/nm-console.conf"
-chmod 600 "$MOUNT/etc/nm-console.conf"
-
-# Linux admin user for SSH + sudo (same password as web/console).
+# ── Linux login account (SSH / other TTYs) ──
+# The name matters: this is the user you type at a Linux login prompt — and the password is
+# the SAME as the web admin (one credential for every door: web UI, console menu, Linux login).
 chroot "$MOUNT" useradd -m -s /bin/bash -G sudo sysadmin 2>/dev/null || true
-echo "sysadmin:$ADMIN_PASS" | chroot "$MOUNT" chpasswd >/dev/null 2>&1
+
+# ── Drop the Debian-live default account ──
+# The image is built with live-build, which ships the well-known 'user' account (password 'live',
+# often with sudo). Installing copies that /etc/passwd to disk, so anyone standing at the machine
+# could log in on tty2/SSH with a publicly known password — bypassing the console gate entirely.
+if chroot "$MOUNT" getent passwd user >/dev/null 2>&1; then
+  chroot "$MOUNT" deluser --remove-home user >/dev/null 2>&1 \
+    || chroot "$MOUNT" userdel -r user >/dev/null 2>&1 || true
+  rm -f "$MOUNT/etc/sudoers.d/live" "$MOUNT/etc/sudoers.d/user" 2>/dev/null || true
+  echo "   ℹ removed the default live account 'user' (known password) — logins: sysadmin only"
+fi
+
+# ── Console gate + Linux password: ONE source of truth ──
+# Same helper the console menu [6] and the web UI use, so all three doors always carry the same
+# password (gate hash + sysadmin) — never written by hand in two places.
+printf '%s\n' "$ADMIN_PASS" | chroot "$MOUNT" /usr/local/sbin/nm-sync-console-password
+
 chroot "$MOUNT" /usr/bin/env \
   DEFAULT_ADMIN_USERNAME=admin \
   DEFAULT_ADMIN_PASSWORD="$ADMIN_PASS" \
@@ -233,12 +246,16 @@ if [ "$PASS_CHOSEN" = 1 ]; then PASS_LINE="(the password you chose during instal
 cat > "$MOUNT/var/lib/network-monitor/FIRST-LOGIN.txt" << EOF
 Network Monitor Appliance — login credentials
 ====================================================
-URL      : http://${DISPLAY_IP}:${PORT}/
-Username : admin
-Password : ${PASS_LINE}
+Web UI   : http://${DISPLAY_IP}:${PORT}/
+  Username : admin
+  Password : ${PASS_LINE}
+
+Linux    : same password everywhere (SSH, and any login prompt)
+  Username : sysadmin   (type this name at the Linux login prompt, not "admin")
 ====================================================
-NOTE: change the password (Profile -> change password),
-  then delete this file: rm /var/lib/network-monitor/FIRST-LOGIN.txt
+NOTE: change the password (Profile -> change password) — the console menu and the
+  Linux login are updated with it automatically.
+  Then delete this file: rm /var/lib/network-monitor/FIRST-LOGIN.txt
 EOF
 chroot "$MOUNT" chown -R netmon:netmon /var/lib/network-monitor
 
@@ -285,6 +302,7 @@ if [ "$PASS_CHOSEN" = 1 ]; then
 else
   echo "     Password:  ${ADMIN_PASS}"
 fi
+echo "     Linux   :  user 'sysadmin' — the SAME password (SSH / login prompt)"
 echo
 echo "  ─────────────────────────────────────────────────────────"
 echo "     WARNING: write the password down — it is NOT shown again"
