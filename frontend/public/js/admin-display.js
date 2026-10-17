@@ -26,7 +26,7 @@
     const pub = await api('/api/settings/public-display');
     if (pub && pub.success) {
       if (el('disp-public-mode')) el('disp-public-mode').value = pub.data.mode;
-      if (el('disp-status')) el('disp-status').textContent = 'الحالة الآن: ' + (MODE_AR[pub.data.mode] || pub.data.mode) + ' · المصدر: ' + (SRC_AR[pub.data.source] || pub.data.source || '—');
+      if (el('disp-status')) el('disp-status').textContent = T('s2j.status_now', 'الحالة الآن:') + ' ' + (MODE_AR[pub.data.mode] || pub.data.mode) + ' · المصدر: ' + (SRC_AR[pub.data.source] || pub.data.source || '—');
     }
     // 2) ما يراه المستخدم المسجَّل
     const noc = await api('/api/settings/noc-display');
@@ -39,7 +39,7 @@
       if (el('tools-allow-public')) el('tools-allow-public').checked = !!d.allow_public;
       if (el('tools-allowed-cidrs')) el('tools-allowed-cidrs').value = d.allowed_cidrs || '';
       if (el('tools-effective')) {
-        el('tools-effective').textContent = 'الساري الآن — المستخدمون: ' + d.effective.who_can_use + ' · الأهداف: ' + d.effective.targets + ' · المجهول: ' + d.effective.anonymous;
+        el('tools-effective').textContent = T('s2j.in_effect_now_users', 'الساري الآن — المستخدمون:') + ' ' + d.effective.who_can_use + ' · الأهداف: ' + d.effective.targets + ' · المجهول: ' + d.effective.anonymous;
       }
     }
   }
@@ -63,7 +63,7 @@
     });
     if (!r3 || !r3.success) { showToast((r3 && r3.error) || 'تعذّر حفظ سياسة الأدوات', { type: 'error' }); return; }
 
-    showToast('✅ تم حفظ إعدادات العرض والأدوات — تُطبَّق فورًا ومُسجَّلة في التدقيق');
+    showToast(T('s2j.display_and_tools_settings_saved_applied_ins', '✅ تم حفظ إعدادات العرض والأدوات — تُطبَّق فورًا ومُسجَّلة في التدقيق'));
     load();
   }
 
@@ -72,7 +72,7 @@
     const out = el('guest-preview-out');
     if (!out) return;
     out.classList.remove('hidden');
-    out.textContent = '…جارٍ التجهيز';
+    out.textContent = T('s2j.preparing', '…جارٍ التجهيز');
     const mode = await api('/api/settings/public-display');
     const st = await api('/api/public/status');
     const modeNow = (mode && mode.success && mode.data.mode) || 'lan';
@@ -82,12 +82,12 @@
     }
     const devs = (st && st.success && Array.isArray(st.data)) ? st.data : [];
     const hasIp = JSON.stringify(devs).includes('"ip"') || JSON.stringify(devs).match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
-    const stAr = { online: 'متصل', offline: 'متوقف', unknown: 'غير معروف', paused: 'موقوف' };
+    const stAr = { online: T('s2x.online', 'متصل'), offline: T('s2x.offline', 'متوقف'), unknown: 'غير معروف', paused: 'موقوف' };
     const sample = devs.slice(0, 5).map((d) => {
       const extra = d.overall_health === 'degraded' ? ' · خدمة متوقفة' : '';
       return '• ' + d.name + ' — ' + (stAr[d.status] || d.status || '؟') + extra;
     }).join('\n');
-    out.textContent = '👁️ كما يراها الزائر الآن: ' + (MODE_AR[modeNow] || modeNow) + '\n'
+    out.textContent = T('s2j.as_a_visitor_sees_it_right_now', '👁️ كما يراها الزائر الآن:') + ' ' + (MODE_AR[modeNow] || modeNow) + '\n'
       + 'عدد الأجهزة الظاهرة: ' + devs.length + '   |   هل تحوي عناوين؟ ' + (hasIp ? '⚠️ نعم (راجع!)' : 'لا ✓ — العناوين محجوبة تمامًا') + '\n\n'
       + (sample || 'لا أجهزة للعرض.\n')
       + '\n(للتجربة الفعلية بالكامل: افتح الصفحة العامة في نافذة متخفّية)';

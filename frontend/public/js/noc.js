@@ -110,11 +110,11 @@
   const KIND_LABELS = {
     'building': '🏢 مبنى إداري',
     'internet': '🌐 بوابة إنترنت',
-    'floor':    '📐 طابق',
-    'room':     '🚪 غرفة',
+    'floor':    T('s2.floor', '📐 طابق'),
+    'room':     T('s2.room', '🚪 غرفة'),
     'rack':     '🗄️ خزانة رك',
     'site':     '🏛️ موقع / عنبر',
-    'zone':     '📍 منطقة'
+    'zone':     T('s2.zone', '📍 منطقة')
   };
 
   function esc(s) {
@@ -149,7 +149,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const list = document.getElementById('outage-overlay-list');
     if (!list) return;
     list.innerHTML = overlayDevices.map((d) => `
-      <div class="oo-device">${esc((d.name || 'جهاز') + ' · ' + (d.ip || '—'))}
+      <div class="oo-device">${esc((d.name || T('s2x.device', 'جهاز')) + ' · ' + (d.ip || '—'))}
         <span class="oo-age">منقطع منذ ${esc(downtimeAge(d.offline_since))}</span>
       </div>`).join('');
     const ov = document.getElementById('outage-overlay');
@@ -658,7 +658,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const name = (dev && dev.name) || '';
     const ip = node.ip || (dev && dev.ip) || '';
     if (name && ip) return `${name} (${ip})`;
-    return name || ip || 'جهاز';
+    return name || ip || T('s2x.device', 'جهاز');
   }
   // مفتاح ترتيب صفوف الأجهزة = IP رقمي بالأوكتِتات (v2.13.5 — كان بالاسم واحدة).
   function mapDevSortKey(node) {
@@ -700,7 +700,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       <span class="map-device-dot" aria-hidden="true"></span>
       <span class="map-device-ic">${icon}</span>
       <span class="map-device-name">${esc(mapDevLabel(node))}</span>
-      <span class="map-device-meta">${esc(node.device_type || 'جهاز')}</span>
+      <span class="map-device-meta">${esc(node.device_type || T('s2x.device', 'جهاز'))}</span>
       ${dtBadge}
     </button>`;
   }
@@ -921,7 +921,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     if (!mapRootData) {
       grid.innerHTML = '';
-      if (note) { note.textContent = '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.'; note.hidden = false; }
+      if (note) { note.textContent = T('s2j.could_not_load_the_building_map_check_the_co', '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.'); note.hidden = false; }
       if (badge) badge.textContent = '—';
       return;
     }
@@ -936,7 +936,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const res = renderZonesGrid(mapRootData);
     if (!res.html) {
       grid.innerHTML = '';
-      if (note) { note.textContent = 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.'; note.hidden = false; }
+      if (note) { note.textContent = T('s2j.no_locations_or_devices_yet_add_them_from_th', 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.'); note.hidden = false; }
       if (badge) badge.textContent = '—';
       return;
     }
@@ -982,15 +982,15 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     } catch (_) { return String(s); }
   }
   function statusBadgeText(status) {
-    return status === 'online' ? 'متصل' : (status === 'offline' ? 'متوقف' : 'غير معروف');
+    return status === 'online' ? T('s2x.online', 'متصل') : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
   }
   // MON-02 — نص الحالة العامة: يميّز «متصل مع خدمة متوقفة» (DEGRADED) بدل الأخضر الكاذب.
   function overallHealthText(d) {
     if (d.overall_health === 'degraded') return 'متصل — خدمة متوقفة';
-    if (d.status === 'offline' || d.overall_health === 'offline') return 'متوقف';
+    if (d.status === 'offline' || d.overall_health === 'offline') return T('s2x.offline', 'متوقف');
     if (d.status === 'paused') return 'موقوف';
     if ((d.status || d.overall_health) === 'unknown') return 'غير معروف';
-    return 'متصل';
+    return T('s2x.online', 'متصل');
   }
   async function openDeviceDetails(deviceId) {
     const modal = document.getElementById('noc-device-modal');
@@ -1020,13 +1020,13 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       if (fieldsEl) {
         fieldsEl.innerHTML = `
           ${d.ip ? `<div class="details-field"><span class="df-label">IP</span><span class="df-value">${esc(d.ip)}</span></div>` : ''}
-          <div class="details-field"><span class="df-label">النوع</span><span class="df-value">${esc(d.device_type_name || '—')}</span></div>
-          <div class="details-field"><span class="df-label">الموقع</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
-          <div class="details-field"><span class="df-label">الحالة</span><span class="df-value">${esc(overallHealthText(d))}</span></div>
+          <div class="details-field"><span class="df-label">${T('s2.type', 'النوع')}</span><span class="df-value">${esc(d.device_type_name || '—')}</span></div>
+          <div class="details-field"><span class="df-label">${T('devices.th.location', 'الموقع')}</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
+          <div class="details-field"><span class="df-label">${T('s2.status', 'الحالة')}</span><span class="df-value">${esc(overallHealthText(d))}</span></div>
           ${d.services_total ? `<div class="details-field"><span class="df-label">الخدمات</span><span class="df-value">${Number(d.services_down_count) || 0} متوقفة من ${Number(d.services_total)}</span></div>` : ''}
-          <div class="details-field"><span class="df-label">مفعّل</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
+          <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
           <div class="details-field"><span class="df-label">زمن الاستجابة</span><span class="df-value">${d.response_time_ms != null ? esc(d.response_time_ms) + ' ms' : '—'}</span></div>
-          <div class="details-field"><span class="df-label">آخر فحص</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
+          <div class="details-field"><span class="df-label">${T('s2.last_check', 'آخر فحص')}</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
         `;
       }
       // v2.15.3 — أزرار فتح واجهة الجهاز (نفس منطق الصفحة العامة):
@@ -1130,7 +1130,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
           <div class="mv-inner-row ${isDown ? 'down' : ''}" data-device-id="${Number(d.id)}" role="button" tabindex="0"
                title="${esc(d.name)} — انقر لعرض التفاصيل">
             <span class="mv-dot ${dotCls}"></span>
-            <span class="mv-inner-type">${esc(d.device_type_name || 'جهاز')}</span>
+            <span class="mv-inner-type">${esc(d.device_type_name || T('s2x.device', 'جهاز'))}</span>
             <span class="mv-inner-nm" title="${esc(d.name)}">${esc(d.name)}</span>
             <span class="mv-inner-ip">${esc(d.ip || '—')}</span>
             ${dtBadge}
@@ -1367,7 +1367,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       renderAll();
       const now = new Date();
       const el = document.getElementById('last-updated-time');
-      if (el) el.textContent = 'آخر تحديث: ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
+      if (el) el.textContent = T('s2j.last_updated', 'آخر تحديث:') + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
     }, 150);
   }
 
@@ -1494,7 +1494,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         
         const now = new Date();
         document.getElementById('last-updated-time').textContent = 
-          'آخر تحديث: ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
+          T('s2j.last_updated', 'آخر تحديث:') + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
         if (updateStatusEl) refreshStatusText(true);
         updateEngineAlertFromHealth(healthRes);
       }

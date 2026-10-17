@@ -82,9 +82,9 @@ async function fetchApi(url) {
 }
 
 function statusText(status) {
-  if (status === 'online') return '\u0645\u062a\u0635\u0644';
-  if (status === 'offline') return '\u0645\u062a\u0648\u0642\u0641';
-  return '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641';
+  if (status === 'online') return T('status.online', T('s2x.online', '\u0645\u062a\u0635\u0644'));
+  if (status === 'offline') return T('status.offline', T('s2x.offline', '\u0645\u062a\u0648\u0642\u0641'));
+  return T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641');
 }
 
 function statusDotClass(d) {
@@ -106,7 +106,7 @@ function overallStatusText(d) {
 }
 
 function formatDuration(seconds) {
-  if (seconds == null || isNaN(seconds)) return '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641';
+  if (seconds == null || isNaN(seconds)) return T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641');
   const s = Math.max(0, Math.floor(seconds));
   if (s < 60) return s + ' \u062b\u0627\u0646\u064a\u0629';
   if (s < 3600) return Math.floor(s / 60) + ' \u062f\u0642\u064a\u0642\u0629';
@@ -531,7 +531,7 @@ async function init() {
       currentAbortController.abort();
       currentAbortController = null;
     }
-    toolsStatusText.textContent = 'تم الإيقاف';
+    toolsStatusText.textContent = T('s2j.stopped', 'تم الإيقاف');
     finishTool();
   });
   document.getElementById('tools-clear-btn').addEventListener('click', function () {
@@ -544,7 +544,7 @@ async function init() {
     toolsOutput.textContent = '';
     toolsOutput.classList.remove('hidden');
     toolsStatus.classList.remove('hidden');
-    toolsStatusText.textContent = 'جاري التنفيذ...';
+    toolsStatusText.textContent = T('s2j.working', 'جاري التنفيذ...');
     toolsStopBtn.classList.remove('hidden');
     toolsPingBtn.disabled = true;
     toolsTracertBtn.disabled = true;
@@ -630,7 +630,7 @@ async function init() {
           }
 
           if (eventType === 'start') {
-            toolsStatusText.textContent = 'جاري ' + (tool === 'ping' ? 'Ping' : 'Tracert') + ' إلى ' + target + '...';
+            toolsStatusText.textContent = T('s2j.running', 'جاري') + ' ' + (tool === 'ping' ? 'Ping' : 'Tracert') + ' إلى ' + target + '...';
           } else if (eventType === 'line') {
             try {
               var lineText = JSON.parse(data);
@@ -648,7 +648,7 @@ async function init() {
               toolsOutput.textContent += '\n❌ ' + data + '\n';
             }
           } else if (eventType === 'done') {
-            toolsStatusText.textContent = 'اكتمل ✓';
+            toolsStatusText.textContent = T('s2j.done', 'اكتمل ✓');
             finishTool();
             return;
           }

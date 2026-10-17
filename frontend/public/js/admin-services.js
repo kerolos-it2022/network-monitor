@@ -92,7 +92,7 @@
     el('dfs-failure_threshold').value = '2';
     const crit = document.getElementById('dfs-is_critical'); if (crit) crit.checked = false;
     el('dfs-verify_tls').checked = true;
-    el('dfs-save').textContent = '➕ إضافة الخدمة';
+    el('dfs-save').textContent = T('s2j.add_the_service', '➕ إضافة الخدمة');
     el('dfs-cancel-edit').classList.add('hidden');
   }
 
@@ -107,7 +107,7 @@
     el('dfs-failure_threshold').value = s.failure_threshold || 2;
     const crit = document.getElementById('dfs-is_critical'); if (crit) crit.checked = !!s.is_critical;
     el('dfs-verify_tls').checked = !!s.verify_tls;
-    el('dfs-save').textContent = '💾 حفظ التعديلات';
+    el('dfs-save').textContent = T('s2j.save_changes', '💾 حفظ التعديلات');
     el('dfs-cancel-edit').classList.remove('hidden');
     const det = el('df-service-add'); if (det) det.open = true;
   }
@@ -115,7 +115,7 @@
   async function save() {
     if (!currentDeviceId) return;
     const body = readForm();
-    if (!body.name) { showToast('اسم الخدمة مطلوب', { type: 'error' }); return; }
+    if (!body.name) { showToast(T('s2j.service_name_is_required', 'اسم الخدمة مطلوب'), { type: 'error' }); return; }
     const r = editingServiceId
       ? await jsonApi('/api/devices/' + currentDeviceId + '/services/' + editingServiceId, 'PUT', body)
       : await jsonApi('/api/devices/' + currentDeviceId + '/services', 'POST', body);
@@ -134,11 +134,11 @@
     const act = btn.dataset.act;
 
     if (act === 'del') {
-      const ok = await confirmAction({ message: 'حذف هذه الخدمة نهائيًّا؟ (سيختفي تمييز «خدمة متوقفة» عنها)' });
+      const ok = await confirmAction({ message: T('s2j.delete_this_service_permanently_the_service', 'حذف هذه الخدمة نهائيًّا؟ (سيختفي تمييز «خدمة متوقفة» عنها)') });
       if (!ok) return;
       const r = await jsonApi('/api/devices/' + currentDeviceId + '/services/' + sid, 'DELETE');
       if (!r.success) { showToast(r.error || 'تعذّر الحذف', { type: 'error' }); return; }
-      showToast('تم حذف الخدمة');
+      showToast(T('s2j.service_deleted', 'تم حذف الخدمة'));
       refresh();
       return;
     }

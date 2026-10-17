@@ -29,8 +29,8 @@ function ipSortKey(ip) {
 // نصوص الحالة من القاموس (تتغيّر مع اللغة) — والقيم البرمجية ('online' …) تبقى كما هي.
 function __t(k, fb) { try { return (window.NMI18N && NMI18N.t(k)) || fb; } catch (e) { return fb; } }
 function statusText(status) {
-  if (status === 'online') return __t('status.online', 'متصل');
-  if (status === 'offline') return __t('status.offline', 'متوقف');
+  if (status === 'online') return __t('status.online', T('s2x.online', 'متصل'));
+  if (status === 'offline') return __t('status.offline', T('s2x.offline', 'متوقف'));
   if (status === 'paused') return __t('status.paused', 'موقوف');
   return __t('status.unknown', 'غير معروف');
 }
@@ -208,9 +208,9 @@ function renderDevicesView() {
       <td class="col-status">${statusPill(d.current_status)}</td>
       <td class="col-actions">
         ${openBtn}
-        <button class="btn btn-sm" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>
-        <button class="btn btn-sm" data-edit="${d.id}" title="تعديل الجهاز">✏️ تعديل</button>
-        <button class="btn btn-sm btn-danger" data-del="${d.id}" title="حذف الجهاز">🗑️ حذف</button>
+        <button class="btn btn-sm" data-hist="${d.id}" title="${T('s2x.device_uptime_24_h_7_d_30_d_coverage', "تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)")}">📈 تشغيل</button>
+        <button class="btn btn-sm" data-edit="${d.id}" title="${T('s2x.edit_the_device', "تعديل الجهاز")}">${T('common.edit', '✏️ تعديل')}</button>
+        <button class="btn btn-sm btn-danger" data-del="${d.id}" title="${T('s2x.delete_the_device', "حذف الجهاز")}">${T('common.delete', '🗑️ حذف')}</button>
       </td>
     `;
     // مستمع زر الفتح
@@ -366,8 +366,8 @@ async function submitDeviceForm(e) {
   // v2.7.1 (مَطلب 5) — تَأكيد الحفظ فقط في وضع التعديل (id موجود). للإِضافة لا يَلزم.
   if (id) {
     const ok = await confirmAction({
-      title: 'تَأكيد حفظ التعديل',
-      message: 'تَأكيد حفظ تعديل الجهاز: ' + (body.name || '#' + id) + '؟',
+      title: T('s2j.confirm_saving_the_changes', 'تَأكيد حفظ التعديل'),
+      message: T('s2j.confirm_saving_the_device_changes', 'تَأكيد حفظ تعديل الجهاز:') + ' ' + (body.name || '#' + id) + '؟',
       confirmText: '✓ تَأكيد الحفظ',
     });
     if (!ok) return;
@@ -383,7 +383,7 @@ async function submitDeviceForm(e) {
   if (r.success) {
     closeEditModal(document.getElementById('device-modal'));
     await loadDevices();
-    showToast('✅ تَم حِفظ الجهاز', { type: 'success' });
+    showToast(T('s2j.device_saved', '✅ تَم حِفظ الجهاز'), { type: 'success' });
   } else {
     // لو الخطأ يتعلق بتكرار IP، نظهر رسالة واضحة بدلاً من toast عام.
     const errMsg = r.error || 'فشل الحفظ';
@@ -400,16 +400,16 @@ async function submitDeviceForm(e) {
 
 async function deleteDevice(id, name) {
   const ok = await confirmAction({
-    title: 'تَأكيد حذف الجهاز',
-    message: 'تَأكيد حذف الجهاز: ' + name + '؟',
-    confirmText: '🗑️ حذف',
+    title: T('s2j.confirm_deleting_the_device', 'تَأكيد حذف الجهاز'),
+    message: T('s2j.confirm_deleting_the_device_2', 'تَأكيد حذف الجهاز:') + ' ' + name + '؟',
+    confirmText: T('common.delete', '🗑️ حذف'),
     danger: true,
   });
   if (!ok) return;
   const r = await api('/api/devices/' + id, { method: 'DELETE' });
   if (r.success) {
     await loadDevices();
-    showToast('✅ تَم حَذف الجهاز', { type: 'success' });
+    showToast(T('s2j.device_deleted', '✅ تَم حَذف الجهاز'), { type: 'success' });
   } else {
     showToast(r.error || 'فشل الحذف', { type: 'error' });
   }
@@ -428,9 +428,9 @@ async function exportDevicesExcel() {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
-    showToast('✅ تَم تَصدير الملف', { type: 'success' });
+    showToast(T('s2j.file_exported', '✅ تَم تَصدير الملف'), { type: 'success' });
   } catch (e) {
-    showToast('خطأ في التصدير: ' + e.message, { type: 'error' });
+    showToast(T('s2j.export_error', 'خطأ في التصدير:') + ' ' + e.message, { type: 'error' });
   }
 }
 
@@ -452,10 +452,10 @@ async function importDevicesExcel(file) {
       showToast(msg, { type: imported > 0 ? 'success' : 'warning', duration: 6000 });
       await loadDevices();
     } else {
-      showToast('فشل الاستيراد: ' + (data.error || 'خطأ غير معروف'), { type: 'error' });
+      showToast(T('s2j.import_failed', 'فشل الاستيراد:') + ' ' + (data.error || 'خطأ غير معروف'), { type: 'error' });
     }
   } catch (e) {
-    showToast('خطأ في الاستيراد: ' + e.message, { type: 'error' });
+    showToast(T('s2j.import_error', 'خطأ في الاستيراد:') + ' ' + e.message, { type: 'error' });
   }
 }
 

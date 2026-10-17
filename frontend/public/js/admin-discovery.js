@@ -171,7 +171,7 @@ function renderDiscoveryTable(devices) {
         ${d.mac ? '<small style="color:var(--muted); display:block;" dir="ltr">' + esc(d.mac) + '</small>' : ''}
       </td>
       <td class="dsc-adv">
-        <select class="discovery-type-select" title="النوع"></select>
+        <select class="discovery-type-select" title="${T('s2.type', "النوع")}"></select>
         <select class="discovery-location-select" title="الموقع"></select>
         <details><summary>فحص</summary>
           <div class="adv-row">
@@ -325,7 +325,7 @@ async function startDiscovery() {
   const scanPorts = document.getElementById('discovery-scan-ports').checked;
 
   if (!cidr) {
-    showToast('الرجاء إدخال نطاق الشبكة (CIDR)', { type: 'warning' });
+    showToast(T('s2j.enter_the_network_range_cidr', 'الرجاء إدخال نطاق الشبكة (CIDR)'), { type: 'warning' });
     return;
   }
 
@@ -339,12 +339,12 @@ async function startDiscovery() {
 
   // إظهار شريط التقدم
   document.getElementById('discovery-progress').classList.remove('hidden');
-  document.getElementById('discovery-progress-text').textContent = 'جاري بدء المسح...';
+  document.getElementById('discovery-progress-text').textContent = T('s2j.starting_the_scan', 'جاري بدء المسح...');
   document.getElementById('discovery-progress-count').textContent = '';
 
   const startBtn = document.getElementById('discovery-start-btn');
   startBtn.disabled = true;
-  startBtn.textContent = '⏳ جاري المسح...';
+  startBtn.textContent = T('s2j.scanning', '⏳ جاري المسح...');
 
   try {
     const r = await api('/api/scan/subnet', {
@@ -446,7 +446,7 @@ async function fetchResults(scanId, attempt) {
         renderDiscoveryTable(r.data || []);
         resetStartButton();
         if ((r.data || []).length === 0) {
-          showToast('✅ اكتمل المسح: لم يُعثر على أجهزة مستجيبة في هذا النطاق.', { type: 'info', duration: 6000 });
+          showToast(T('s2j.scan_finished_no_responding_devices_were_fou', '✅ اكتمل المسح: لم يُعثر على أجهزة مستجيبة في هذا النطاق.'), { type: 'info', duration: 6000 });
         }
         return;
       }
@@ -486,7 +486,7 @@ async function stopDiscovery() {
     discoveryAbortController = null;
   }
   const stopBtn = document.getElementById('discovery-stop-btn');
-  if (stopBtn) { stopBtn.disabled = true; stopBtn.textContent = '⏹ جارٍ الإلغاء…'; }
+  if (stopBtn) { stopBtn.disabled = true; stopBtn.textContent = T('s2j.cancelling', '⏹ جارٍ الإلغاء…'); }
 
   let cancelRequested = false;
   if (scanId) {
@@ -497,26 +497,26 @@ async function stopDiscovery() {
   }
 
   document.getElementById('discovery-progress').classList.add('hidden');
-  if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = '⏹ إيقاف'; }
+  if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = T('s2.stop', '⏹ إيقاف'); }
   resetStartButton();
 
   if (cancelRequested) {
-    showToast('⏹ أُلغِي المسح — تُعرض أي نتائج وصلت قبل الإلغاء.', { type: 'info', duration: 6000 });
+    showToast(T('s2j.scan_cancelled_any_results_received_before_c', '⏹ أُلغِي المسح — تُعرض أي نتائج وصلت قبل الإلغاء.'), { type: 'info', duration: 6000 });
     if (scanId) fetchResults(scanId);
   } else {
-    showToast('أُخفي شريط التقدّم. قد يكون المسح اكتمل بالفعل — استخدم «📄 آخر نتيجة مسح».', { type: 'info', duration: 6000 });
+    showToast(T('s2j.the_progress_bar_was_hidden_the_scan_may_hav', 'أُخفي شريط التقدّم. قد يكون المسح اكتمل بالفعل — استخدم «📄 آخر نتيجة مسح».'), { type: 'info', duration: 6000 });
   }
 }
 
 // v2.11.7 — عرض آخر نتيجة مسح محفوظة على الخادم (لا تُفقد بعد إعادة تحميل الصفحة).
 async function loadLastScan() {
   const btn = document.getElementById('discovery-last-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري التحميل…'; }
+  if (btn) { btn.disabled = true; btn.textContent = T('s2j.loading', '⏳ جاري التحميل…'); }
   try {
     const r = await api('/api/scan/last');
     const data = (r && r.success) ? r.data : null;
     if (!data) {
-      showToast('لا توجد نتيجة مسح محفوظة بعد — ابدأ مسحًا جديدًا.', { type: 'warning' });
+      showToast(T('s2j.no_saved_scan_result_yet_start_a_new_scan', 'لا توجد نتيجة مسح محفوظة بعد — ابدأ مسحًا جديدًا.'), { type: 'warning' });
       return;
     }
     discoveryScanId = data.scanId || null;
@@ -529,16 +529,16 @@ async function loadLastScan() {
       (data.cidr || '—') + ' · ' + (data.deviceCount || 0) + ' جهاز · ' + when,
       { type: 'info', duration: 7000 });
   } catch (e) {
-    showToast('تعذّر تحميل آخر نتيجة: ' + (e.message || e), { type: 'error' });
+    showToast(T('s2j.could_not_load_the_last_result', 'تعذّر تحميل آخر نتيجة:') + ' ' + (e.message || e), { type: 'error' });
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '📄 آخر نتيجة مسح'; }
+    if (btn) { btn.disabled = false; btn.textContent = T('s2.last_scan_result', '📄 آخر نتيجة مسح'); }
   }
 }
 
 function resetStartButton() {
   const startBtn = document.getElementById('discovery-start-btn');
   startBtn.disabled = false;
-  startBtn.textContent = '🚀 بدء المسح';
+  startBtn.textContent = T('s2.start_scan', '🚀 بدء المسح');
 }
 
 function showError(message) {
@@ -551,7 +551,7 @@ function showError(message) {
 async function addSelectedDevices() {
   const checkboxes = document.querySelectorAll('.discovery-checkbox:checked:not(:disabled)');
   if (checkboxes.length === 0) {
-    showToast('لم يتم تحديد أي أجهزة', { type: 'warning' });
+    showToast(T('s2j.no_devices_selected', 'لم يتم تحديد أي أجهزة'), { type: 'warning' });
     return;
   }
 
@@ -565,12 +565,12 @@ async function addSelectedDevices() {
     const portInput = tr.querySelector('.discovery-port-input');
 
     if (!nameInput.value.trim()) {
-      showToast('الرجاء إدخال اسم للجهاز: ' + cb.dataset.ip, { type: 'warning' });
+      showToast(T('s2j.enter_a_name_for_the_device', 'الرجاء إدخال اسم للجهاز:') + ' ' + cb.dataset.ip, { type: 'warning' });
       nameInput.focus();
       return;
     }
     if (!typeSelect.value) {
-      showToast('الرجاء اختيار نوع للجهاز: ' + cb.dataset.ip, { type: 'warning' });
+      showToast(T('s2j.choose_a_device_type', 'الرجاء اختيار نوع للجهاز:') + ' ' + cb.dataset.ip, { type: 'warning' });
       typeSelect.focus();
       return;
     }
@@ -578,7 +578,7 @@ async function addSelectedDevices() {
     const protocol = protoSelect ? protoSelect.value : 'ping';
     const port = protocol === 'ping' ? null : (portInput && portInput.value ? Number(portInput.value) : null);
     if (protocol !== 'ping' && !port) {
-      showToast('حدّد المنفذ لطريقة الفحص: ' + cb.dataset.ip, { type: 'warning' });
+      showToast(T('s2j.enter_the_port_for_the_check_method', 'حدّد المنفذ لطريقة الفحص:') + ' ' + cb.dataset.ip, { type: 'warning' });
       if (portInput) portInput.focus();
       return;
     }
@@ -599,7 +599,7 @@ async function addSelectedDevices() {
 
   const btn = document.getElementById('discovery-add-selected-btn');
   btn.disabled = true;
-  btn.textContent = '⏳ جاري الإضافة...';
+  btn.textContent = T('s2j.adding', '⏳ جاري الإضافة...');
 
   try {
     const r = await api('/api/scan/bulk-add', {
@@ -639,7 +639,7 @@ async function addSelectedDevices() {
     showToast('❌ خطأ: ' + e.message, { type: 'error' });
   } finally {
     btn.disabled = false;
-    btn.textContent = '✅ إضافة المحددة للمراقبة';
+    btn.textContent = T('s2j.add_the_selected_to_monitoring', '✅ إضافة المحددة للمراقبة');
     updateSelectionButtons();
   }
 }
@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!btn || !ipIn || !out) return;
   btn.addEventListener('click', async () => {
     const ip = (ipIn.value || '').trim();
-    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) { out.textContent = '✗ أدخل IP صالحًا مثل 192.168.88.3'; out.style.color = 'var(--offline)'; return; }
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) { out.textContent = T('s2j.enter_a_valid_ip_such_as_192_168_88_3', '✗ أدخل IP صالحًا مثل 192.168.88.3'); out.style.color = 'var(--offline)'; return; }
     out.textContent = '⏳ جارٍ اختبار الطرق الثلاث على ' + ip + ' … (حتى ~4 ثوانٍ)';
     out.style.color = 'var(--muted)';
     try {
@@ -740,7 +740,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       out.textContent = (d.resolved ? '✅ الاسم: ' + d.resolved + ' ← [مسار ' + (d.nbns ? 'NBNS' : d.smb ? 'SMB' : 'DNS') + '] · ' : '') + parts.join(' · ');
       out.style.color = d.resolved ? 'var(--online)' : 'var(--offline)';
     } catch (e) {
-      out.textContent = '✗ فشل الاتصال: ' + (e.message || e);
+      out.textContent = T('s2j.connection_failed', '✗ فشل الاتصال:') + ' ' + (e.message || e);
       out.style.color = 'var(--offline)';
     }
   });

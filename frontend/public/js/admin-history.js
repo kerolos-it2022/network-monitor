@@ -90,7 +90,7 @@
       b.classList.toggle('btn-primary', b.dataset.hrange === currentRange);
     });
     const sEl = el('history-summary');
-    if (sEl) sEl.textContent = '…جارٍ الحساب';
+    if (sEl) sEl.textContent = T('s2j.calculating', '…جارٍ الحساب');
     const r = await api('/api/devices/' + currentDeviceId + '/history?range=' + currentRange);
     if (!r || !r.success) {
       if (sEl) sEl.textContent = '⚠️ ' + ((r && r.error) || 'تعذّر جلب السجل');
@@ -102,7 +102,7 @@
   function open(deviceId, deviceName) {
     currentDeviceId = Number(deviceId);
     const title = el('history-modal-title');
-    if (title) title.textContent = '📈 تشغيل الجهاز — ' + (deviceName || ('#' + deviceId));
+    if (title) title.textContent = T('s2j.device_uptime', '📈 تشغيل الجهاز —') + ' ' + (deviceName || ('#' + deviceId));
     const modal = el('history-modal');
     if (modal) {
       modal.classList.remove('hidden');

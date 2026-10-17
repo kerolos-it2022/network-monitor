@@ -15,7 +15,7 @@ async function loadNotificationSettings() {
   const placeholderFor = (masked, from, envName) => {
     if (masked) return masked;
     if (from === 'env') return 'يُقرأ من ' + envName + ' في .env — اكتب قيمة هنا لاستبداله';
-    return 'غير مضبوط';
+    return T('s2.not_set', 'غير مضبوط');
   };
   document.getElementById('ntf-telegram_enabled').checked = !!d.telegram_enabled;
   // نعرض المفتاح المقنّع فقط كـ placeholder؛ المستخدم يمكنه إدخال قيمة جديدة.
@@ -41,27 +41,27 @@ async function loadNotificationSettings() {
   document.getElementById('ntf-escalation_after_minutes').value = Number(d.escalation_after_minutes) || 30;
   document.getElementById('ntf-escalation_repeat_minutes').value = Number(d.escalation_repeat_minutes) || 0;
   document.getElementById('ntf-noc_alert_screen').checked = (d.noc_alert_screen_enabled === undefined || d.noc_alert_screen_enabled === null) ? true : !!d.noc_alert_screen_enabled;
-  document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || 'غير مضبوط';
+  document.getElementById('ntf-fcm_server_key').placeholder = d.fcm_server_key || T('s2.not_set', 'غير مضبوط');
   document.getElementById('ntf-fcm_server_key').value = '';
   // v2.13.0 — تنبيه صريح لو مفاتيح Web Push غير جاهزة (سبب رسالة «الإشعارات غير مُهيّأة»).
   const vapidEl = document.getElementById('ntf-status');
   if (vapidEl && d.vapid_public_key_ready === false) {
     vapidEl.style.color = 'var(--offline)';
-    vapidEl.textContent = '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.';
+    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.');
   }
 }
 
 async function saveNotificationSettings() {
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ إعدادات الإِشعارات (إِجراء حسّاس).
   const ok = await confirmAction({
-    title: 'تَأكيد حفظ الإِعدادات',
-    message: 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟',
+    title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
+    message: T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟'),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
   const statusEl = document.getElementById('ntf-status');
   statusEl.style.color = 'var(--online)';
-  statusEl.textContent = 'جارٍ الحفظ…';
+  statusEl.textContent = T('s2j.saving_2', 'جارٍ الحفظ…');
   const body = {
     telegram_enabled: document.getElementById('ntf-telegram_enabled').checked,
     telegram_bot_token: document.getElementById('ntf-telegram_bot_token').value.trim(),
@@ -91,7 +91,7 @@ async function saveNotificationSettings() {
     body: JSON.stringify(body),
   });
   if (r.success) {
-    statusEl.textContent = '✅ تم الحفظ';
+    statusEl.textContent = T('s2j.saved', '✅ تم الحفظ');
     await loadNotificationSettings();
   } else {
     statusEl.style.color = 'var(--offline)';
@@ -147,7 +147,7 @@ async function testNotification(channel) {
     statusEl.innerHTML = lines.map(esc).join('<br>');
   } catch (e) {
     statusEl.style.color = 'var(--offline)';
-    statusEl.textContent = '❌ خطأ في الاتصال بالخادم';
+    statusEl.textContent = T('s2j.server_connection_error', '❌ خطأ في الاتصال بالخادم');
   }
 }
 
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (logsTruncateStatusBtn) logsTruncateStatusBtn.addEventListener('click', async () => {
     const typeLabel = cleanupLabels['status-logs-all'] || 'نَقاط فحص الحالة';
     const ok = await confirmAction({
-      title: '⚠️ تَفْرِيغ كامل لِـ نَقاط فحص الحالة',
+      title: T('s2j.full_truncation_of_status_checks', '⚠️ تَفْرِيغ كامل لِـ نَقاط فحص الحالة'),
       message: 'سيتم حذف كُلّ صُفوف status_logs بِالكامِل ثُمّ VACUUM لِتَقْليص حجم القاعدة.\n⚠️ سيُفقِد ذلك تاريخ Uptime والرسوم البيانية في الصفحة العامة (لِنّ الجَدول هُو مصْدَرها). لا يمكن التَراجُع. مُتابعة؟',
       confirmText: '⚠️ تَفْرِيغ كامل',
       danger: true,
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('❌ ' + ((data && data.error) || 'فشل التَفْرِيغ'), { type: 'error' });
       }
     } catch (e) {
-      showToast('❌ خطأ في الاتصال بالخادم', { type: 'error' });
+      showToast(T('s2j.server_connection_error', '❌ خطأ في الاتصال بالخادم'), { type: 'error' });
     }
   });
 
@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ri = rangeInfo(range);
     const typeLabel = cleanupLabels[type] || 'السجل';
     const ok = await confirmAction({
-      title: 'تَأكيد مَسح ' + typeLabel,
+      title: T('s2j.confirm_clearing', 'تَأكيد مَسح') + ' ' + typeLabel,
       message: `سيتم مَسح ${typeLabel} الأَقدم من ${ri.text}.\nلا يمكن التَراجُع عن هذا الإِجراء. مُتابعة؟`,
       confirmText: '🗑️ مَسح',
       danger: true,
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('❌ ' + ((data && data.error) || 'فشل المَسح'), { type: 'error' });
       }
     } catch (e) {
-      showToast('❌ خطأ في الاتصال بالخادم', { type: 'error' });
+      showToast(T('s2j.server_connection_error', '❌ خطأ في الاتصال بالخادم'), { type: 'error' });
     }
   });
 });

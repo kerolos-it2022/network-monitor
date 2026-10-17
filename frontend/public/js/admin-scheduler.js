@@ -29,7 +29,7 @@ async function loadSchedulerStatus() {
   const el = document.getElementById('sched-current-status');
   if (!el) return;
   if (!r || !r.success) {
-    el.textContent = 'تعذّر جلب الحالة.';
+    el.textContent = T('s2j.could_not_fetch_the_status', 'تعذّر جلب الحالة.');
     return;
   }
   const d = r.data || {};
@@ -89,13 +89,13 @@ async function saveSchedulerSettings() {
     new_device_alert: document.getElementById('sched-new-device-alert').checked ? 1 : 0,
   };
   if (!patch.subnets) {
-    showToast('الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24', { type: 'warning' });
+    showToast(T('s2j.enter_at_least_one_subnet_cidr_example_192_1', 'الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24'), { type: 'warning' });
     return;
   }
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ وتطبيق إعدادات المسح الدوري.
   const ok = await confirmAction({
-    title: 'تَأكيد حفظ الإِعدادات',
-    message: 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟',
+    title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
+    message: T('s2j.save_and_apply_the_periodic_scan_settings', 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟'),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
@@ -105,34 +105,34 @@ async function saveSchedulerSettings() {
     body: JSON.stringify(patch),
   });
   if (r && r.success) {
-    showToast('تم حفظ إعدادات المسح الدوري وتطبيقها.', { type: 'success' });
+    showToast(T('s2j.periodic_scan_settings_were_saved_and_applie', 'تم حفظ إعدادات المسح الدوري وتطبيقها.'), { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
-    showToast('فشل الحفظ: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.save_failed', 'فشل الحفظ:') + ' ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function runSchedulerNow() {
   const r = await api('/api/scan-scheduler/run-now', { method: 'POST' });
   if (r && r.success) {
-    showToast('بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.', { type: 'success' });
+    showToast(T('s2j.the_scan_has_started_watch_the_results_in_th', 'بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.'), { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
-    showToast('فشل بدء المسح الفوري: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.could_not_start_the_scan', 'فشل بدء المسح الفوري:') + ' ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function stopScheduler() {
   const r = await api('/api/scan-scheduler/stop', { method: 'POST' });
   if (r && r.success) {
-    showToast('تم إيقاف المسح الدوري.', { type: 'success' });
+    showToast(T('s2j.the_periodic_scan_was_stopped', 'تم إيقاف المسح الدوري.'), { type: 'success' });
     // أَيضًا نُحدّث checkbox يدويًّا
     document.getElementById('sched-enabled').checked = false;
     await loadSchedulerStatus();
   } else {
-    showToast('فشل الإيقاف: ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.stop_failed', 'فشل الإيقاف:') + ' ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 

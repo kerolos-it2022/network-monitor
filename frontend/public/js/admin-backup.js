@@ -96,7 +96,7 @@ async function exportBackup() {
   const exportBtn = document.getElementById('backup-export-btn');
   if (exportBtn) {
     exportBtn.disabled = true;
-    exportBtn.textContent = '⏳ جاري إنشاء النسخة...';
+    exportBtn.textContent = T('s2j.creating_the_copy', '⏳ جاري إنشاء النسخة...');
   }
   showBackupStatus('⏳ جاري إنشاء نسخة احتياطية من قاعدة البيانات...', false);
 
@@ -131,7 +131,7 @@ async function exportBackup() {
   } finally {
     if (exportBtn) {
       exportBtn.disabled = false;
-      exportBtn.textContent = '⬇️ تصدير نسخة احتياطية (.db)';
+      exportBtn.textContent = T('s2.export_a_backup_db', '⬇️ تصدير نسخة احتياطية (.db)');
     }
   }
 }
@@ -154,7 +154,7 @@ async function restoreBackup() {
 
   // تأكيد ثنائي نظراً لأن العملية خطيرة
   const confirmed = await confirmAction({
-    title: '⚠️ تَأكيد استعادة النَسخة',
+    title: T('s2j.confirm_restoring_the_copy', '⚠️ تَأكيد استعادة النَسخة'),
     message:
       '⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالكامل بالملف المختار.\n\n' +
       '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
@@ -168,7 +168,7 @@ async function restoreBackup() {
 
   if (restoreBtn) {
     restoreBtn.disabled = true;
-    restoreBtn.textContent = '⏳ جاري الاستعادة...';
+    restoreBtn.textContent = T('s2j.restoring', '⏳ جاري الاستعادة...');
   }
   showBackupOutput(true);
   document.getElementById('backup-log').textContent = '';
@@ -221,7 +221,7 @@ async function restoreBackup() {
     showBackupStatus('❌ خطأ في الاستعادة: ' + e.message, true);
     if (restoreBtn) {
       restoreBtn.disabled = false;
-      restoreBtn.textContent = '⬆️ استعادة النسخة';
+      restoreBtn.textContent = T('s2.restore_the_copy', '⬆️ استعادة النسخة');
     }
   }
 }
@@ -229,7 +229,7 @@ async function restoreBackup() {
 // استعادة نسخة موجودة من مجلد backups/
 async function restoreFromExisting(filename) {
   const confirmed = await confirmAction({
-    title: '⚠️ تَأكيد استعادة نَسخة موجودة',
+    title: T('s2j.confirm_restoring_an_existing_copy', '⚠️ تَأكيد استعادة نَسخة موجودة'),
     message:
       `⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالنسخة:\n${filename}\n\n` +
       '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
@@ -242,7 +242,7 @@ async function restoreFromExisting(filename) {
   showBackupOutput(true);
   document.getElementById('backup-log').textContent = '';
   appendBackupLog(`🔄 استعادة من النسخة الموجودة: ${filename}...`);
-  showBackupStatus('⏳ جاري الاستعادة...', false);
+  showBackupStatus(T('s2j.restoring', '⏳ جاري الاستعادة...'), false);
 
   try {
     const data = await backupApi('/api/backup/restore-existing', {
@@ -279,9 +279,9 @@ async function restoreFromExisting(filename) {
 // حذف نسخة أمنية
 async function deleteBackup(filename, rowEl) {
   const confirmed = await confirmAction({
-    title: 'تَأكيد حذف النَسخة',
+    title: T('s2j.confirm_deleting_the_copy', 'تَأكيد حذف النَسخة'),
     message: `هل أَنت متأَكّد من حذف النَسخة:\n${filename}\n\nلا يمكن التَراجُع عن هذا الإجراء.`,
-    confirmText: '🗑️ حذف',
+    confirmText: T('common.delete', '🗑️ حذف'),
     danger: true,
   });
   if (!confirmed) return;
@@ -336,13 +336,13 @@ async function loadBackupList() {
     const restoreB = document.createElement('button');
     restoreB.type = 'button';
     restoreB.className = 'btn btn-primary btn-sm';
-    restoreB.textContent = '↩️ استعادة';
+    restoreB.textContent = T('s2j.restore', '↩️ استعادة');
     restoreB.addEventListener('click', () => restoreFromExisting(b.filename));
 
     const deleteB = document.createElement('button');
     deleteB.type = 'button';
     deleteB.className = 'btn btn-danger btn-sm';
-    deleteB.textContent = '🗑️ حذف';
+    deleteB.textContent = T('common.delete', '🗑️ حذف');
     deleteB.addEventListener('click', () => deleteBackup(b.filename, row));
 
     actions.appendChild(restoreB);
@@ -374,7 +374,7 @@ function initBackupTab() {
         if (labelEl) labelEl.textContent = `${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`;
         if (restoreBtn) restoreBtn.disabled = false;
       } else {
-        if (labelEl) labelEl.textContent = 'لم يتم اختيار ملف';
+        if (labelEl) labelEl.textContent = T('s2.no_file_selected', 'لم يتم اختيار ملف');
         if (restoreBtn) restoreBtn.disabled = true;
       }
     });

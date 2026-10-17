@@ -51,13 +51,13 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return '🏢 مبنى';
+    if (kind === 'building') return T('s2.building', '🏢 مبنى');
     if (kind === 'internet') return '🌐 بوابة إنترنت';
-    if (kind === 'floor') return '📐 طابق';
-    if (kind === 'room') return '🚪 غرفة';
-    if (kind === 'rack') return '🗄️ خزانة';
-    if (kind === 'site') return '🏛️ موقع';
-    return '📍 منطقة';
+    if (kind === 'floor') return T('s2.floor', '📐 طابق');
+    if (kind === 'room') return T('s2.room', '🚪 غرفة');
+    if (kind === 'rack') return T('s2.rack', '🗄️ خزانة');
+    if (kind === 'site') return T('s2.site', '🏛️ موقع');
+    return T('s2.zone', '📍 منطقة');
   }
 
   // v2.10.2 — أيقونة النوع (نفس أيقونات «خريطة المواقع»).
@@ -157,7 +157,7 @@
     btn.id = 'topo-view-reload';
     btn.className = 'btn btn-secondary';
     btn.title = 'إعادة تحميل السلسلة';
-    btn.textContent = '↻ تحديث';
+    btn.textContent = T('s2j.refresh', '↻ تحديث');
     btn.style.marginInlineStart = '12px';
     btn.addEventListener('click', load);
     h2.appendChild(btn);

@@ -28,8 +28,17 @@
   function apply(code, opts) {
     const n = i18n();
     if (!n) return 'ar';
+    const before = n.getLang();
     const next = n.setLang(code, opts);
     paintButton();
+    // صفوف الجداول المبنية بالجافاسكربت تُرسم بلغة لحظة الرسم ⇒ نُعيد رسم القسم المفتوح حتى تصير
+    // الإنجليزية كاملة (إعادة نقر التبويب النشط تُشغّل مُحمِّل القسم نفسه — بلا منطق مكرّر).
+    if (before !== next) {
+      try {
+        const active = document.querySelector('.sidebar .tab-btn.active');
+        if (active) setTimeout(() => { try { active.click(); } catch (e) {} }, 30);
+      } catch (e) {}
+    }
     return next;
   }
 

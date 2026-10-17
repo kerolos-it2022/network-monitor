@@ -79,7 +79,7 @@ async function loadSystemStats() {
       'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
   } else {
     sysSetBar('sys-disk-bar', null);
-    document.getElementById('sys-disk-text').textContent = 'قياس قرص الجذر غير متاح على هذه المنصة';
+    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة');
   }
   document.getElementById('sys-db-size').innerHTML =
     '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
@@ -122,7 +122,7 @@ async function loadSystemStats() {
   const botEl = document.getElementById('sys-bot');
   if (botEl) {
     const b = d.bot;
-    if (!b) botEl.textContent = '— (الخدمة غير محمّلة)';
+    if (!b) botEl.textContent = T('s2j.service_not_loaded', '— (الخدمة غير محمّلة)');
     else if (b.listening) {
       const age = b.lastPollAt ? Math.round((Date.now() - b.lastPollAt) / 1000) : null;
       const ageTxt = age === null ? 'لم تبدأ بعد' : (age < 60 ? 'قبل ' + age + ' ثانية' : 'قبل ' + Math.round(age / 60) + ' دقيقة');
@@ -147,7 +147,7 @@ async function loadSystemStats() {
   const sseEl = document.getElementById('sys-sse');
   if (sseEl) {
     const s = d.sse;
-    if (!s) sseEl.textContent = '— (الخدمة غير محمّلة)';
+    if (!s) sseEl.textContent = T('s2j.service_not_loaded', '— (الخدمة غير محمّلة)');
     else {
       const parts = [
         'شاشات مفتوحة الآن: <bdi>' + esc(s.clients) + '</bdi> / ' + esc(s.maxClients),
@@ -160,7 +160,7 @@ async function loadSystemStats() {
         + '<br><span class="nm-sub">بايتات مُرسَلة منذ الإقلاع: ' + esc(NMFormat.bytes(s.bytesSent)) + '</span>';
     }
   }
-  sysSetStatus('آخر تحديث: ' + NMFormat.time(d.ts), false);
+  sysSetStatus(T('s2j.last_updated', 'آخر تحديث:') + ' ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();
 }

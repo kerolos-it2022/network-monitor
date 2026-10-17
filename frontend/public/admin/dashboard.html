@@ -67,7 +67,7 @@
           <select id="filter-location-devices" class="nm-select" style="max-width:190px;" data-i18n-attr="title:devices.filterLocationTitle" title="تصفية الأَجهزة حسب الموقع">
             <option value="" data-i18n="devices.allLocations">📍 كل المواقع</option>
           </select>
-          <label class="nm-sub" for="filter-sort-devices" data-i18n="devices.filterSort">ترتيب:</label>
+          <label class="nm-sub" for="filter-sort-devices" data-i18n="devices.filterSort"><span data-i18n="s2.sort">ترتيب:</span></label>
           <select id="filter-sort-devices" class="nm-select" style="max-width:190px;">
             <option value="name" data-i18n="devices.sort.name">🔑 حسب الاسم</option>
             <option value="ip" data-i18n="devices.sort.ip">🌐 حسب IP</option>
@@ -108,7 +108,7 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th data-i18n="devices.th.name">الاسم</th><th class="col-ltr" data-i18n="devices.th.ip">IP</th><th data-i18n="devices.th.type">النوع</th><th data-i18n="devices.th.location">الموقع</th><th class="col-status" data-i18n="devices.th.status">الحالة</th><th class="col-actions" data-i18n="devices.th.actions">إجراءات</th></tr>
+              <tr><th data-i18n="devices.th.name"><span data-i18n="s2.name">الاسم</span></th><th class="col-ltr" data-i18n="devices.th.ip">IP</th><th data-i18n="devices.th.type"><span data-i18n="s2.type">النوع</span></th><th data-i18n="devices.th.location">الموقع</th><th class="col-status" data-i18n="devices.th.status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th class="col-actions" data-i18n="devices.th.actions"><span data-i18n="s2.actions">إجراءات</span></th></tr>
             </thead>
             <tbody id="devices-table-body"></tbody>
           </table>
@@ -124,35 +124,35 @@
     <section id="section-locations" class="hidden">
       <div class="nm-card">
       <div class="nm-toolbar">
-        <button id="add-location-btn" type="button" class="btn btn-primary" title="إضافة موقع جديد">➕ إضافة موقع</button>
+        <button id="add-location-btn" type="button" class="btn btn-primary" title="إضافة موقع جديد" data-i18n-attr="title:s2.add_a_new_location"><span data-i18n="s2.add_location">➕ إضافة موقع</span></button>
         <span class="spacer"></span>
-        <label class="nm-sub" for="filter-kind-locations">فلتر النوع:</label>
-        <select id="filter-kind-locations" class="nm-select" style="max-width:200px;" title="تصفية المواقع حسب النوع">
-          <option value="">🏝️ كل الأَنواع</option>
-          <option value="internet" data-i18n="kind.internet">🌐 إنترنت</option>
-          <option value="zone" data-i18n="kind.zone">📍 منطقة</option>
-          <option value="site" data-i18n="kind.site">🏛️ موقع</option>
-          <option value="building" data-i18n="kind.building">🏢 مبنى</option>
-          <option value="floor" data-i18n="kind.floor">📐 طابق</option>
-          <option value="room" data-i18n="kind.room">🚪 غرفة</option>
-          <option value="rack" data-i18n="kind.rack">🗄️ خزانة</option>
+        <label class="nm-sub" for="filter-kind-locations"><span data-i18n="s2.kind">فلتر النوع:</span></label>
+        <select id="filter-kind-locations" class="nm-select" style="max-width:200px;" title="تصفية المواقع حسب النوع" data-i18n-attr="title:s2.filter_locations_by_kind">
+          <option value=""><span data-i18n="s2.all_kinds">🏝️ كل الأَنواع</span></option>
+          <option value="internet" data-i18n="kind.internet"><span data-i18n="s2.internet">🌐 إنترنت</span></option>
+          <option value="zone" data-i18n="kind.zone"><span data-i18n="s2.zone">📍 منطقة</span></option>
+          <option value="site" data-i18n="kind.site"><span data-i18n="s2.site">🏛️ موقع</span></option>
+          <option value="building" data-i18n="kind.building"><span data-i18n="s2.building">🏢 مبنى</span></option>
+          <option value="floor" data-i18n="kind.floor"><span data-i18n="s2.floor">📐 طابق</span></option>
+          <option value="room" data-i18n="kind.room"><span data-i18n="s2.room">🚪 غرفة</span></option>
+          <option value="rack" data-i18n="kind.rack"><span data-i18n="s2.rack">🗄️ خزانة</span></option>
         </select>
-        <label class="nm-sub" for="filter-sort-locations">ترتيب:</label>
+        <label class="nm-sub" for="filter-sort-locations"><span data-i18n="s2.sort">ترتيب:</span></label>
         <select id="filter-sort-locations" class="nm-select" style="max-width:200px;">
-          <option value="name">📝 حسب الاسم</option>
-          <option value="id">🆔 حسب المعرف</option>
-          <option value="sort_order">🔢 حسب تَرتيب العرض</option>
+          <option value="name"><span data-i18n="s2.by_name">📝 حسب الاسم</span></option>
+          <option value="id"><span data-i18n="s2.by_id">🆔 حسب المعرف</span></option>
+          <option value="sort_order"><span data-i18n="s2.by_display_order">🔢 حسب تَرتيب العرض</span></option>
         </select>
       </div>
       <div class="nm-table-wrap">
         <table class="data-table">
-          <thead><tr><th class="col-center">المعرّف</th><th>الاسم</th><th>النوع</th><th>الأَب</th><th class="col-center">التَرتيب</th><th class="col-actions">إجراءات</th></tr></thead>
+          <thead><tr><th class="col-center"><span data-i18n="s2.id">المعرّف</span></th><th><span data-i18n="s2.name">الاسم</span></th><th><span data-i18n="s2.type">النوع</span></th><th><span data-i18n="s2.parent">الأَب</span></th><th class="col-center"><span data-i18n="s2.order">التَرتيب</span></th><th class="col-actions"><span data-i18n="s2.actions">إجراءات</span></th></tr></thead>
           <tbody id="locations-table-body"></tbody>
         </table>
       </div>
       <div id="locations-empty" class="nm-empty hidden" style="margin-top:0.7rem;">
         <span class="nm-empty-icon">📍</span>
-        لا توجد مواقع مطابقة — أضف موقعًا بزر «➕ إضافة موقع» أو غيّر الفلتر.
+        <span data-i18n="s2.no_matching_locations_add_one_with_add_loc">لا توجد مواقع مطابقة — أضف موقعًا بزر «➕ إضافة موقع» أو غيّر الفلتر.</span>
       </div>
       </div>
     </section>
@@ -161,29 +161,29 @@
     <section id="section-types" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="card.types.title">🏷️ أنواع الأجهزة</h3>
+          <h3 class="nm-card-title" data-i18n="card.types.title"><span data-i18n="s2.device_types">🏷️ أنواع الأجهزة</span></h3>
         </div>
         <p class="nm-card-desc">
-          الأنواع هنا تُصنّف الأجهزة تلقائيًا في شاشة NOC (أقسام «أنواع الأجهزة») وفي الفلاتر — الأيقونة الظاهرة إلى جوار كل نوع تُستنتج من اسمه تلقائيًا إن لم تُحدَّد يدويًا.
+          <span data-i18n="s2.types_classify_devices_automatically_on_th">الأنواع هنا تُصنّف الأجهزة تلقائيًا في شاشة NOC (أقسام «أنواع الأجهزة») وفي الفلاتر — الأيقونة الظاهرة إلى جوار كل نوع تُستنتج من اسمه تلقائيًا إن لم تُحدَّد يدويًا.</span>
         </p>
         <div class="nm-toolbar" style="margin-bottom:0.75rem;">
-          <button id="add-type-btn" type="button" class="btn btn-primary" title="إضافة نوع جهاز جديد">➕ إضافة نوع</button>
+          <button id="add-type-btn" type="button" class="btn btn-primary" title="إضافة نوع جهاز جديد" data-i18n-attr="title:s2.add_a_new_device_type"><span data-i18n="s2.add_type">➕ إضافة نوع</span></button>
           <span class="spacer"></span>
-          <label class="nm-sub" for="filter-sort-types">ترتيب:</label>
+          <label class="nm-sub" for="filter-sort-types"><span data-i18n="s2.sort">ترتيب:</span></label>
           <select id="filter-sort-types" class="nm-select" style="max-width:190px;">
-            <option value="name">📝 حسب الاسم</option>
-            <option value="id">🆔 حسب المعرف</option>
+            <option value="name"><span data-i18n="s2.by_name">📝 حسب الاسم</span></option>
+            <option value="id"><span data-i18n="s2.by_id">🆔 حسب المعرف</span></option>
           </select>
         </div>
         <div class="nm-table-wrap">
           <table class="data-table">
-            <thead><tr><th class="col-center">المعرّف</th><th>الاسم</th><th class="col-center">الأيقونة</th><th class="col-actions">إجراءات</th></tr></thead>
+            <thead><tr><th class="col-center"><span data-i18n="s2.id">المعرّف</span></th><th><span data-i18n="s2.name">الاسم</span></th><th class="col-center"><span data-i18n="s2.icon">الأيقونة</span></th><th class="col-actions"><span data-i18n="s2.actions">إجراءات</span></th></tr></thead>
             <tbody id="types-table-body"></tbody>
           </table>
         </div>
         <div id="types-empty" class="nm-empty hidden" style="margin-top:0.7rem;">
           <span class="nm-empty-icon">🏷️</span>
-          لا توجد أنواع بعد — أضف نوعًا واحدًا على الأقل لتظهر الأجهزة مفصّلة في NOC.
+          <span data-i18n="s2.no_types_yet_add_at_least_one_so_devices_s">لا توجد أنواع بعد — أضف نوعًا واحدًا على الأقل لتظهر الأجهزة مفصّلة في NOC.</span>
         </div>
       </div>
     </section>
@@ -203,15 +203,15 @@
     <section id="section-discovery-content" class="hidden">
       <div style="margin-top:1rem;">
       <div class="form-card">
-        <h3>🔍 اكتشاف الأجهزة في الشبكة</h3>
+        <h3><span data-i18n="s2.discover_devices_on_the_network">🔍 اكتشاف الأجهزة في الشبكة</span></h3>
         <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">
-          امسح نطاق الشبكة لاكتشاف الأجهزة المتصلة تلقائياً وتحديد نوعها من المنافذ المفتوحة ومعلومات MAC.
+          <span data-i18n="s2.scan_your_network_range_to_discover_connec">امسح نطاق الشبكة لاكتشاف الأجهزة المتصلة تلقائياً وتحديد نوعها من المنافذ المفتوحة ومعلومات MAC.</span>
         </p>
         <div style="display:flex; flex-direction:column; gap:0.9rem;">
           <!-- صف المسح الرئيسي: نطاق + خيار المنافذ + زر البدء -->
           <div style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
             <label style="display:flex; flex-direction:column; gap:0.3rem; flex:1; min-width:260px;">
-              <span style="font-size:0.85rem; color:var(--muted);">🌐 نطاق الشبكة (CIDR)</span>
+              <span style="font-size:0.85rem; color:var(--muted);"><span data-i18n="s2.network_range_cidr">🌐 نطاق الشبكة (CIDR)</span></span>
               <input type="text" id="discovery-cidr" list="cidr-history" placeholder="192.168.1.0/24" value="192.168.1.0/24" required style="flex:1;" />
               <datalist id="cidr-history">
                 <option value="192.168.1.0/24">
@@ -221,17 +221,17 @@
             </label>
             <label class="nm-check" style="height:fit-content;">
               <input type="checkbox" id="discovery-scan-ports" />
-              <span>مسح المنافذ الشائعة</span>
+              <span><span data-i18n="s2.scan_common_ports">مسح المنافذ الشائعة</span></span>
             </label>
-            <button type="button" class="btn btn-primary" id="discovery-start-btn">🚀 بدء المسح</button>
+            <button type="button" class="btn btn-primary" id="discovery-start-btn"><span data-i18n="s2.start_scan">🚀 بدء المسح</span></button>
           </div>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-            <button type="button" class="btn" id="discovery-last-btn" title="عرض آخر نتيجة مسح محفوظة على الخادم (تبقى بعد إعادة تحميل الصفحة)">📄 آخر نتيجة مسح</button>
+            <button type="button" class="btn" id="discovery-last-btn" title="عرض آخر نتيجة مسح محفوظة على الخادم (تبقى بعد إعادة تحميل الصفحة)" data-i18n-attr="title:s2.show_the_last_scan_result_stored_on_the_se"><span data-i18n="s2.last_scan_result">📄 آخر نتيجة مسح</span></button>
             <details style="flex:1; min-width:300px; border:1px solid var(--border); border-radius:8px; padding:0.45rem 0.75rem; background:var(--card-bg);">
-              <summary style="cursor:pointer; font-size:0.85rem; color:var(--muted);">🧪 أدوات التشخيص — اختبار استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS)</summary>
+              <summary style="cursor:pointer; font-size:0.85rem; color:var(--muted);"><span data-i18n="s2.diagnostics_test_name_resolution_for_a_sin">🧪 أدوات التشخيص — اختبار استخراج الاسم لجهاز مفرد (NBNS/SMB/DNS)</span></summary>
               <div style="display:flex; gap:0.5rem; align-items:center; margin-top:0.55rem; flex-wrap:wrap;">
-                <input type="text" id="discovery-name-diag-ip" placeholder="IP مثل 192.168.88.3" style="max-width:230px;" />
-                <button type="button" class="btn" id="discovery-name-diag-btn">🧪 فحص</button>
+                <input type="text" id="discovery-name-diag-ip" placeholder="IP مثل 192.168.88.3" style="max-width:230px;" data-i18n-attr="placeholder:s2.ip_e_g_192_168_88_3" />
+                <button type="button" class="btn" id="discovery-name-diag-btn"><span data-i18n="s2.test">🧪 فحص</span></button>
                 <span id="discovery-name-diag-out" style="font-size:0.85rem; color:var(--muted);"></span>
               </div>
             </details>
@@ -242,40 +242,40 @@
       <div id="discovery-progress" class="form-card hidden" style="margin-top:1rem;">
         <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
           <div class="tools-spinner" style="width:24px; height:24px; border-width:3px;"></div>
-          <span id="discovery-progress-text" style="font-weight:600;">جاري المسح...</span>
+          <span id="discovery-progress-text" style="font-weight:600;"><span data-i18n="s2.scanning">جاري المسح...</span></span>
           <span id="discovery-progress-count" style="color:var(--muted);">0 / 0</span>
           <div style="flex:1;"></div>
-          <button type="button" class="btn btn-danger" id="discovery-stop-btn" title="إلغاء المسح الجاري — يتوقف خلال ثوانٍ وتُحفظ أي نتائج وصلت" data-i18n="public.tools.stop">⏹ إيقاف</button>
+          <button type="button" class="btn btn-danger" id="discovery-stop-btn" title="إلغاء المسح الجاري — يتوقف خلال ثوانٍ وتُحفظ أي نتائج وصلت" data-i18n="public.tools.stop" data-i18n-attr="title:s2.cancel_the_running_scan_it_stops_within_se"><span data-i18n="s2.stop">⏹ إيقاف</span></button>
         </div>
       </div>
 
       <div id="discovery-results" class="hidden" style="margin-top:1rem;">
         <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap;">
-          <span style="font-weight:600;">الأجهزة المكتشفة:</span>
+          <span style="font-weight:600;"><span data-i18n="s2.discovered_devices">الأجهزة المكتشفة:</span></span>
           <span id="discovery-count" style="color:var(--accent);"></span>
           <span id="discovery-summary" style="color:var(--muted); font-size:0.85rem;"></span>
           <div style="flex:1;"></div>
-          <input type="text" id="discovery-search" class="search-box" placeholder="🔎 بحث بالاسم أو IP أو الشركة..." style="max-width:240px;" title="بحث فوري داخل نتائج المسح" />
-          <select id="discovery-filter" class="sort-select" title="فلترة الصفوف">
-            <option value="all" data-i18n="common.all">الكل</option>
-            <option value="new">الجديد فقط</option>
-            <option value="existing">الموجود فقط</option>
+          <input type="text" id="discovery-search" class="search-box" placeholder="🔎 بحث بالاسم أو IP أو الشركة..." style="max-width:240px;" title="بحث فوري داخل نتائج المسح" data-i18n-attr="placeholder:s2.search_by_name_ip_or_vendor title:s2.instant_search_inside_the_scan_results" />
+          <select id="discovery-filter" class="sort-select" title="فلترة الصفوف" data-i18n-attr="title:s2.filter_rows">
+            <option value="all" data-i18n="common.all"><span data-i18n="s2.all">الكل</span></option>
+            <option value="new"><span data-i18n="s2.new_only">الجديد فقط</span></option>
+            <option value="existing"><span data-i18n="s2.already_known">الموجود فقط</span></option>
           </select>
         </div>
         <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
-          <button type="button" class="btn btn-primary" id="discovery-add-selected-btn" disabled title="إضافة الأجهزة المحددة للمراقبة">➕ إضافة للمراقبة</button>
-          <button type="button" class="btn" id="discovery-select-all-btn" title="تحديد جميع الأجهزة">☑️ تحديد الكل</button>
-          <button type="button" class="btn" id="discovery-clear-selection-btn" title="إلغاء تحديد الكل">☐ إلغاء التحديد</button>
+          <button type="button" class="btn btn-primary" id="discovery-add-selected-btn" disabled title="إضافة الأجهزة المحددة للمراقبة" data-i18n-attr="title:s2.add_the_selected_devices_to_monitoring"><span data-i18n="s2.add_to_monitoring">➕ إضافة للمراقبة</span></button>
+          <button type="button" class="btn" id="discovery-select-all-btn" title="تحديد جميع الأجهزة" data-i18n-attr="title:s2.select_all_devices"><span data-i18n="s2.select_all">☑️ تحديد الكل</span></button>
+          <button type="button" class="btn" id="discovery-clear-selection-btn" title="إلغاء تحديد الكل" data-i18n-attr="title:s2.clear_the_selection"><span data-i18n="s2.clear_selection">☐ إلغاء التحديد</span></button>
         </div>
         <table class="data-table">
           <thead>
             <tr>
               <th style="width:36px;"><input type="checkbox" id="discovery-select-all-checkbox" /></th>
-              <th class="sortable" data-sort="name" data-label="الاسم" style="cursor:pointer;" title="يُقرأ من إعلانات NBNS/mDNS/DNS — انقر للفرز">الاسم ↕</th>
+              <th class="sortable" data-sort="name" data-label="الاسم" style="cursor:pointer;" title="يُقرأ من إعلانات NBNS/mDNS/DNS — انقر للفرز" data-i18n-attr="title:s2.read_from_nbns_mdns_dns_announcements_clic"><span data-i18n="s2.name_2">الاسم ↕</span></th>
               <th class="sortable" data-sort="ip" data-label="IP" style="cursor:pointer;">IP ↕</th>
-              <th>الشركة / MAC</th>
-              <th>النوع / الموقع</th>
-              <th title="طريقة الفحص المقترحة والمنفذ">فحص مقترح</th>
+              <th><span data-i18n="s2.vendor_mac">الشركة / MAC</span></th>
+              <th><span data-i18n="s2.type_location">النوع / الموقع</span></th>
+              <th title="طريقة الفحص المقترحة والمنفذ" data-i18n-attr="title:s2.suggested_check_method_and_port"><span data-i18n="s2.suggested_check">فحص مقترح</span></th>
             </tr>
           </thead>
           <tbody id="discovery-table-body"></tbody>
@@ -289,88 +289,88 @@
     <!-- ============ قسم الأجهزة المُكتشَفة ============ -->
     <section id="section-discovered" class="hidden">
       <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-        <button id="discovered-refresh-btn" type="button" class="btn" title="تحديث القائمة" data-i18n="admin.refresh">🔄 تحديث</button>
-        <select id="discovered-filter-source" class="sort-select" title="تصفية حسب المصدر">
-          <option value="">كل المصادر</option>
-          <option value="scan">المسح الدوري</option>
+        <button id="discovered-refresh-btn" type="button" class="btn" title="تحديث القائمة" data-i18n="admin.refresh" data-i18n-attr="title:s2.refresh_the_list"><span data-i18n="s2.refresh">🔄 تحديث</span></button>
+        <select id="discovered-filter-source" class="sort-select" title="تصفية حسب المصدر" data-i18n-attr="title:s2.filter_by_source">
+          <option value=""><span data-i18n="s2.all_sources">كل المصادر</span></option>
+          <option value="scan"><span data-i18n="s2.periodic_scan">المسح الدوري</span></option>
           <option value="mikrotik">MikroTik</option>
           <option value="sophos">Sophos</option>
           <option value="snmp">SNMP</option>
           <option value="lldp">LLDP</option>
         </select>
-        <select id="discovered-filter-status" class="sort-select" title="تصفية حسب الحالة">
-          <option value="" data-i18n="public.filter.status">كل الحالات</option>
-          <option value="0">بانتظار الاعتماد</option>
-          <option value="1">تم اعتماده</option>
-          <option value="-1">مرفوض</option>
+        <select id="discovered-filter-status" class="sort-select" title="تصفية حسب الحالة" data-i18n-attr="title:s2.filter_by_status">
+          <option value="" data-i18n="public.filter.status"><span data-i18n="s2.all_statuses">كل الحالات</span></option>
+          <option value="0"><span data-i18n="s2.pending_approval">بانتظار الاعتماد</span></option>
+          <option value="1"><span data-i18n="s2.approved">تم اعتماده</span></option>
+          <option value="-1"><span data-i18n="s2.rejected">مرفوض</span></option>
         </select>
-        <button id="discovered-bulk-approve-btn" type="button" class="btn btn-primary" title="اعتماد جميع الأجهزة المحددة">✅ اعتماد المحدد</button>
-        <input type="text" id="discovered-search" class="search-box" placeholder="🔎 بحث بـ IP أو اسم أو صانع..." style="max-width:230px;" title="بحث على الخادم داخل الأجهزة المُكتشَفة" />
+        <button id="discovered-bulk-approve-btn" type="button" class="btn btn-primary" title="اعتماد جميع الأجهزة المحددة" data-i18n-attr="title:s2.approve_all_selected_devices"><span data-i18n="s2.approve_selected">✅ اعتماد المحدد</span></button>
+        <input type="text" id="discovered-search" class="search-box" placeholder="🔎 بحث بـ IP أو اسم أو صانع..." style="max-width:230px;" title="بحث على الخادم داخل الأجهزة المُكتشَفة" data-i18n-attr="placeholder:s2.search_by_ip_name_or_vendor title:s2.server_side_search_inside_discovered_devic" />
         <div style="flex:1;"></div>
         <span id="discovered-page-info" style="color:var(--muted); font-size:0.85rem;"></span>
-        <button id="discovered-prev-btn" type="button" class="btn" title="الصفحة السابقة">◀ السابق</button>
-        <button id="discovered-next-btn" type="button" class="btn" title="الصفحة التالية">التالي ▶</button>
+        <button id="discovered-prev-btn" type="button" class="btn" title="الصفحة السابقة" data-i18n-attr="title:s2.previous_page"><span data-i18n="s2.previous">◀ السابق</span></button>
+        <button id="discovered-next-btn" type="button" class="btn" title="الصفحة التالية" data-i18n-attr="title:s2.next_page"><span data-i18n="s2.next">التالي ▶</span></button>
       </div>
       <table class="data-table">
         <thead>
           <tr>
             <th class="col-center"><input type="checkbox" id="discovered-select-all" title="تحديد الكل" /></th>
-            <th class="sortable col-ltr" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز">IP ↕</th>
+            <th class="sortable col-ltr" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort">IP ↕</th>
             <th class="col-ltr">MAC</th>
-            <th class="sortable" data-sort="hostname" data-label="الاسم" style="cursor:pointer;" title="انقر للفرز">الاسم ↕</th>
-            <th class="sortable" data-sort="vendor" data-label="الصانع" style="cursor:pointer;" title="انقر للفرز">الصانع ↕</th>
-            <th class="sortable" data-sort="detected_type" data-label="النوع المتوقَّع" style="cursor:pointer;" title="انقر للفرز">النوع المتوقَّع ↕</th>
-            <th>المصدر</th>
-            <th class="sortable col-ltr" data-sort="last_seen_at" data-label="آخر رؤية" style="cursor:pointer;" title="انقر للفرز">آخر رؤية ↕</th>
-            <th class="sortable col-center" data-sort="seen_count" data-label="التكرار" style="cursor:pointer;" title="انقر للفرز">التكرار ↕</th>
-            <th class="col-status">الحالة</th><th class="col-actions">إجراءات</th>
+            <th class="sortable" data-sort="hostname" data-label="الاسم" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.name_2">الاسم ↕</span></th>
+            <th class="sortable" data-sort="vendor" data-label="الصانع" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.vendor">الصانع ↕</span></th>
+            <th class="sortable" data-sort="detected_type" data-label="النوع المتوقَّع" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.likely_type">النوع المتوقَّع ↕</span></th>
+            <th><span data-i18n="s2.source">المصدر</span></th>
+            <th class="sortable col-ltr" data-sort="last_seen_at" data-label="آخر رؤية" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.last_seen">آخر رؤية ↕</span></th>
+            <th class="sortable col-center" data-sort="seen_count" data-label="التكرار" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.duplicates">التكرار ↕</span></th>
+            <th class="col-status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th class="col-actions"><span data-i18n="s2.actions">إجراءات</span></th>
           </tr>
         </thead>
         <tbody id="discovered-table-body"></tbody>
       </table>
-      <p id="discovered-empty" class="nm-empty hidden">لا توجد أجهزة مُكتشَفة حالياً. شَغّل المسح الدوري أو المسح الفوري.</p>
+      <p id="discovered-empty" class="nm-empty hidden"><span data-i18n="s2.no_discovered_devices_right_now_start_the">لا توجد أجهزة مُكتشَفة حالياً. شَغّل المسح الدوري أو المسح الفوري.</span></p>
     </section>
 
     <!-- ============ قسم المسح الدوري ============ -->
     <section id="section-scheduler" class="hidden">
       <div class="form-card">
-        <h3>⏱️ إعدادات المسح الدوري</h3>
+        <h3><span data-i18n="s2.periodic_scan_settings">⏱️ إعدادات المسح الدوري</span></h3>
         <div class="form-grid">
-          <label>تَفعيل المسح الدوري
+          <label><span data-i18n="s2.enable_the_periodic_scan">تَفعيل المسح الدوري</span>
             <input type="checkbox" id="sched-enabled" />
           </label>
-          <label>الفترة (دقيقة)
+          <label><span data-i18n="s2.interval_minutes">الفترة (دقيقة)</span>
             <input type="number" id="sched-interval" min="5" max="1440" value="15" />
           </label>
-          <label>الشبكات الفرعية (CIDR مفصولة بفاصلة)
+          <label><span data-i18n="s2.subnets_comma_separated_cidr">الشبكات الفرعية (CIDR مفصولة بفاصلة)</span>
             <input type="text" id="sched-subnets" placeholder="192.168.1.0/24,10.0.0.0/24" />
           </label>
-          <label>مسح المنافذ
+          <label><span data-i18n="s2.port_scan">مسح المنافذ</span>
             <input type="checkbox" id="sched-scan-ports" />
           </label>
-          <label>مسح SNMP
+          <label><span data-i18n="s2.snmp_scan">مسح SNMP</span>
             <input type="checkbox" id="sched-scan-snmp" />
           </label>
           <label>SNMP Community
             <input type="text" id="sched-snmp-community" value="public" />
           </label>
-          <label>تنبيه عند جهاز جديد
+          <label><span data-i18n="s2.alert_on_a_new_device">تنبيه عند جهاز جديد</span>
             <input type="checkbox" id="sched-new-device-alert" checked />
           </label>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="sched-save-btn" title="حفظ وتطبيق الإعدادات">💾 حفظ وتطبيق</button>
-          <button type="button" class="btn" id="sched-run-now-btn" title="تشغيل مسح فوري الآن">⚡ شَغّل الآن</button>
-          <button type="button" class="btn" id="sched-stop-btn" title="إيقاف المسح الدوري">⏹️ إيقاف</button>
+          <button type="button" class="btn btn-primary" id="sched-save-btn" title="حفظ وتطبيق الإعدادات" data-i18n-attr="title:s2.save_and_apply_settings"><span data-i18n="s2.save_and_apply">💾 حفظ وتطبيق</span></button>
+          <button type="button" class="btn" id="sched-run-now-btn" title="تشغيل مسح فوري الآن" data-i18n-attr="title:s2.run_a_scan_right_now"><span data-i18n="s2.run_now">⚡ شَغّل الآن</span></button>
+          <button type="button" class="btn" id="sched-stop-btn" title="إيقاف المسح الدوري" data-i18n-attr="title:s2.stop_the_periodic_scan"><span data-i18n="s2.stop_2"><span data-i18n="s2.stop">⏹️ إيقاف</span></span></button>
         </div>
       </div>
       <div class="nm-note" style="margin:1rem 0;">
-        <b>الحالة الحالية:</b> <span id="sched-current-status" data-i18n="common.none">—</span>
+        <b><span data-i18n="s2.current_status">الحالة الحالية:</span></b> <span id="sched-current-status" data-i18n="common.none">—</span>
       </div>
-      <h3>📋 سجل المسحات الأخيرة</h3>
+      <h3><span data-i18n="s2.recent_scan_history">📋 سجل المسحات الأخيرة</span></h3>
       <table class="data-table">
         <thead>
-          <tr><th class="col-center">المعرّف</th><th class="col-ltr">الشبكة</th><th class="col-ltr">البدء</th><th class="col-ltr">الانتهاء</th><th class="col-center">وُجدت</th><th class="col-center">أُضيفت</th><th class="col-center">ضاعت</th><th class="col-status">الحالة</th><th>الخطأ</th></tr>
+          <tr><th class="col-center"><span data-i18n="s2.id">المعرّف</span></th><th class="col-ltr"><span data-i18n="s2.network">الشبكة</span></th><th class="col-ltr"><span data-i18n="s2.started">البدء</span></th><th class="col-ltr"><span data-i18n="s2.finished">الانتهاء</span></th><th class="col-center"><span data-i18n="s2.found">وُجدت</span></th><th class="col-center"><span data-i18n="s2.added">أُضيفت</span></th><th class="col-center"><span data-i18n="s2.lost">ضاعت</span></th><th class="col-status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th><span data-i18n="s2.error">الخطأ</span></th></tr>
         </thead>
         <tbody id="sched-runs-table-body"></tbody>
       </table>
@@ -379,7 +379,7 @@
     <!-- ============ قسم خريطة المواقع (شجرة هرمية) ============ -->
     <section id="section-map" class="hidden">
       <div class="form-card">
-        <h3>🗺️ شجرة المواقع والأَجهزة</h3>
+        <h3><span data-i18n="s2.location_and_device_tree">🗺️ شجرة المواقع والأَجهزة</span></h3>
         <p class="map-help nm-card-desc">
           عرض «بطاقات مُربّعة» لِـ شبكة المواقع: كُلّ <b>📍 <span class="nm-ltr">zone</span></b> بطاقة قابلة لِـ طي/تَوسيع،
           تَحوي أَجهزتها (و <span class="nm-ltr">sub-zones</span> لو وُجدت: <b>🏢 <span class="nm-ltr">building</span></b> /
@@ -392,9 +392,9 @@
         <!-- صف 1: أَزرار التَحكم + ملخص تفاعلي (chips) -->
         <div class="map-toolbar">
           <div class="map-toolbar-group">
-            <button type="button" class="btn" id="map-refresh-btn" title="تحديث الشجرة الآن" aria-label="تحديث الشجرة الآن">🔄 تحديث</button>
-            <button type="button" class="btn" id="map-expand-btn" title="تَوسيع كل المواقع" aria-label="تَوسيع كل المواقع">⤢ تَوسيع الكل</button>
-            <button type="button" class="btn" id="map-collapse-btn" title="طي كل المواقع" aria-label="طي كل المواقع">⤧ طي الكل</button>
+            <button type="button" class="btn" id="map-refresh-btn" title="تحديث الشجرة الآن" aria-label="تحديث الشجرة الآن" data-i18n-attr="aria-label:s2.refresh_the_tree_now title:s2.refresh_the_tree_now"><span data-i18n="s2.refresh">🔄 تحديث</span></button>
+            <button type="button" class="btn" id="map-expand-btn" title="تَوسيع كل المواقع" aria-label="تَوسيع كل المواقع" data-i18n-attr="aria-label:s2.expand_all_locations title:s2.expand_all_locations"><span data-i18n="s2.expand_all">⤢ تَوسيع الكل</span></button>
+            <button type="button" class="btn" id="map-collapse-btn" title="طي كل المواقع" aria-label="طي كل المواقع" data-i18n-attr="aria-label:s2.collapse_all_locations title:s2.collapse_all_locations"><span data-i18n="s2.collapse_all">⤧ طي الكل</span></button>
           </div>
           <div id="map-summary" class="map-summary" aria-live="polite" aria-atomic="true"></div>
         </div>
@@ -403,21 +403,21 @@
         <div class="map-toolbar">
           <input type="search" id="map-search" class="map-search sort-select"
                  placeholder="🔍 اِبحث: اسم موقع / اسم جهاز / IP…"
-                 autocomplete="off" aria-label="بحث في الشبكة" aria-controls="map-grid" />
-          <label class="map-filter-label" for="map-filter-status">فلتر الحالة:</label>
-          <select id="map-filter-status" class="nm-select" style="max-width:190px;" aria-label="فلترة بحالة الجهاز">
-            <option value="">📶 كل الحالات</option>
-            <option value="online">🟢 المتصلة فقط</option>
-            <option value="offline">🔴 المتوقفة فقط</option>
-            <option value="unknown">⚪ بلا نتيجة</option>
+                 autocomplete="off" aria-label="بحث في الشبكة" aria-controls="map-grid" / data-i18n-attr="placeholder:s2.search_location_device_name_or_ip aria-label:s2.search_the_network">
+          <label class="map-filter-label" for="map-filter-status"><span data-i18n="s2.status_2">فلتر الحالة:</span></label>
+          <select id="map-filter-status" class="nm-select" style="max-width:190px;" aria-label="فلترة بحالة الجهاز" data-i18n-attr="aria-label:s2.filter_by_device_status">
+            <option value=""><span data-i18n="s2.all_statuses_2">📶 كل الحالات</span></option>
+            <option value="online"><span data-i18n="s2.online_only">🟢 المتصلة فقط</span></option>
+            <option value="offline"><span data-i18n="s2.offline_only">🔴 المتوقفة فقط</span></option>
+            <option value="unknown"><span data-i18n="s2.no_result">⚪ بلا نتيجة</span></option>
           </select>
-          <button type="button" class="btn map-clear-btn" id="map-clear-filters" title="مَسح البحث و الفلتر" aria-label="مَسح البحث و الفلتر">✖ مَسح</button>
+          <button type="button" class="btn map-clear-btn" id="map-clear-filters" title="مَسح البحث و الفلتر" aria-label="مَسح البحث و الفلتر" data-i18n-attr="aria-label:s2.clear_search_and_filters title:s2.clear_search_and_filters"><span data-i18n="s2.clear">✖ مَسح</span></button>
         </div>
 
-        <div id="map-grid" class="map-grid" role="list" aria-label="شبكة المواقع" style="width:100%; min-height:300px;">
-          <p id="tree-loading" class="map-loading" hidden>⏳ جَلب شجرة المواقع…</p>
+        <div id="map-grid" class="map-grid" role="list" aria-label="شبكة المواقع" style="width:100%; min-height:300px;" data-i18n-attr="aria-label:s2.location_grid">
+          <p id="tree-loading" class="map-loading" hidden><span data-i18n="s2.loading_the_location_tree">⏳ جَلب شجرة المواقع…</span></p>
           <p id="tree-empty" class="map-empty">
-            لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.
+            <span data-i18n="s2.no_data_yet_add_locations_and_devices_firs">لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.</span>
           </p>
         </div>
       </div>
@@ -444,21 +444,21 @@
     <section id="section-topology" class="hidden">
       <!-- وضع الرسم: اسحب البطاقات، حدد «متصل عبر»، ثم 💾 حفظ التخطيط — يُعرض كما رسمته في NOC -->
       <div class="topo-draw-toolbar">
-        <h3>✏️ وضع الرسم — رتّب السلسلة كما تريد أن تظهر في NOC</h3>
-        <p class="muted">اسحب البطاقة بالمؤشر لتحريكها، وغيّر «متصل عبر» من القائمة داخل البطاقة، ثم اضغط 💾 حفظ. ✕ يُخرج الجهاز من اللوحة (يُضاف من القائمة بالأسفل).</p>
+        <h3><span data-i18n="s2.draw_mode_arrange_the_chain_the_way_you_wa">✏️ وضع الرسم — رتّب السلسلة كما تريد أن تظهر في NOC</span></h3>
+        <p class="muted"><span data-i18n="s2.drag_a_card_with_the_mouse_to_move_it_chan">اسحب البطاقة بالمؤشر لتحريكها، وغيّر «متصل عبر» من القائمة داخل البطاقة، ثم اضغط 💾 حفظ. ✕ يُخرج الجهاز من اللوحة (يُضاف من القائمة بالأسفل).</span></p>
         <div class="topo-draw-actions">
           <!-- v2.8.2 — قائمتان منفصلتان: أجهزة / مباني (زي خريطة المواقع) -->
-          <select id="topo-add-loc-select" class="sort-select" aria-label="إضافة مبنى للوحة">
-            <option value="">🏢 أضف مبنى/موقع للوحة…</option>
+          <select id="topo-add-loc-select" class="sort-select" aria-label="إضافة مبنى للوحة" data-i18n-attr="aria-label:s2.add_a_building_to_the_board">
+            <option value=""><span data-i18n="s2.add_a_building_location_to_the_board">🏢 أضف مبنى/موقع للوحة…</span></option>
           </select>
-          <button type="button" class="btn" id="topo-reload-btn" title="إعادة التحميل والترتيب التلقائي">↻ إعادة تحميل</button>
-          <button type="button" class="btn btn-primary" id="topo-save-btn" title="حفظ مواضع البطاقات كما رسمتها">💾 حفظ التخطيط</button>
-          <span id="topo-dirty" class="hidden muted">● تعديلات غير محفوظة</span>
+          <button type="button" class="btn" id="topo-reload-btn" title="إعادة التحميل والترتيب التلقائي" data-i18n-attr="title:s2.reload_and_auto_arrange"><span data-i18n="s2.reload">↻ إعادة تحميل</span></button>
+          <button type="button" class="btn btn-primary" id="topo-save-btn" title="حفظ مواضع البطاقات كما رسمتها" data-i18n-attr="title:s2.save_the_card_positions_as_drawn"><span data-i18n="s2.save_the_layout">💾 حفظ التخطيط</span></button>
+          <span id="topo-dirty" class="hidden muted"><span data-i18n="s2.unsaved_changes">● تعديلات غير محفوظة</span></span>
           <div class="topo-zoom-controls" style="display:inline-flex; gap:4px; margin-inline-start:auto;">
-            <button type="button" class="btn" id="topo-zoom-in" title="تكبير">+</button>
-            <button type="button" class="btn" id="topo-zoom-out" title="تصغير">−</button>
-            <button type="button" class="btn" id="topo-zoom-reset" title="إعادة ضبط 100%">↺ 100%</button>
-            <button type="button" class="btn" id="topo-zoom-fit" title="ملاءمة الشاشة">⛶ عرض كامل</button>
+            <button type="button" class="btn" id="topo-zoom-in" title="تكبير" data-i18n-attr="title:s2.zoom_in">+</button>
+            <button type="button" class="btn" id="topo-zoom-out" title="تصغير" data-i18n-attr="title:s2.zoom_out">−</button>
+            <button type="button" class="btn" id="topo-zoom-reset" title="إعادة ضبط 100%" data-i18n-attr="title:s2.reset_to_100">↺ 100%</button>
+            <button type="button" class="btn" id="topo-zoom-fit" title="ملاءمة الشاشة" data-i18n-attr="title:s2.fit_to_screen"><span data-i18n="s2.full_view">⛶ عرض كامل</span></button>
           </div>
         </div>
       </div>
@@ -466,7 +466,7 @@
            فلا نُغيّرهما مع لغة الواجهة — يُصلَحان جذريًّا في مرحلة لاحقة (docs/i18n.md). -->
       <div class="topo-canvas-wrap" dir="rtl">
         <svg id="topology-links" xmlns="http://www.w3.org/2000/svg"></svg>
-        <div id="topology-canvas" aria-label="لوحة رسم السلسلة"></div>
+        <div id="topology-canvas" aria-label="لوحة رسم السلسلة" data-i18n-attr="aria-label:s2.network_chain_drawing_board"></div>
       </div>
     </section>
 
@@ -625,7 +625,7 @@
         </div>
 
         <div class="nm-actions">
-          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات" data-i18n="common.saveSettings">💾 حفظ الإعدادات</button>
+          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات" data-i18n="common.saveSettings"><span data-i18n="s2.save_settings">💾 حفظ الإعدادات</span></button>
           <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)" data-i18n="admin.testNotification">🔔 اختبار الإشعار</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
@@ -634,62 +634,61 @@
     <!-- ============ قسم شات AI (v2.21.0) ============ -->
     <section id="section-ai" class="hidden">
       <div class="form-card">
-        <h3>🤖 شات AI — اسأل عن شبكتك بالعربية</h3>
+        <h3><span data-i18n="s2.ai_chat_ask_about_your_network">🤖 شات AI — اسأل عن شبكتك بالعربية</span></h3>
         <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.75rem 0;">
-          يجيب المساعد من بياناتك المحلية (الأجهزة، الحالات، سجل الانقطاعات، سلسلة الشبكة) لحظة سؤالك.
-          الميزة اختيارية: بلا مفتاح API تبقى معطّلة والنظام يعمل كالمعتاد. الاستشارة فقط — التنفيذ يبقى بأيدٍ بشرية.
+          <span data-i18n="s2x.the_assistant_answers_from_your_local_data_d">يجيب المساعد من بياناتك المحلية (الأجهزة، الحالات، سجل الانقطاعات، سلسلة الشبكة) لحظة سؤالك. الميزة اختيارية: بلا مفتاح API تبقى معطّلة والنظام يعمل كالمعتاد. الاستشارة فقط — التنفيذ يبقى بأيدٍ بشرية.</span>
         </p>
 
         <!-- نافذة المحادثة -->
         <div id="ai-chat-box" style="height:380px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--nm-r-lg, 12px); padding:0.75rem; background:var(--bg); display:flex; flex-direction:column; gap:0.6rem; margin-bottom:0.75rem;">
           <div id="ai-chat-empty" style="margin:auto 0; text-align:start; color:var(--muted); font-size:0.9rem; line-height:1.9;">
             <div style="font-size:2rem;">🤖</div>
-            اكتب سؤالك أسفل… مثل: «إيه اللي واقع دلوقتي؟» أو «جنّاح الكاميرات طايح؟» أو «أكثر جهاز بيقع؟»
+            <span data-i18n="s2.type_your_question_below_e_g_what_is_down">اكتب سؤالك أسفل… مثل: «إيه اللي واقع دلوقتي؟» أو «جنّاح الكاميرات طايح؟» أو «أكثر جهاز بيقع؟»</span>
           </div>
         </div>
 
         <div class="nm-row" style="align-items:flex-start;">
-          <textarea id="ai-input" class="nm-textarea" rows="2" placeholder="اكتب سؤالك عن الشبكة… (Enter للإرسال · Shift+Enter سطر جديد)" style="flex:1 1 320px; min-height:46px;"></textarea>
-          <button type="button" class="btn btn-primary" id="ai-send-btn" title="إرسال السؤال">➤ إرسال</button>
-          <button type="button" class="btn" id="ai-clear-btn" title="محو المحادثة الحالية">🧹 محو</button>
+          <textarea id="ai-input" class="nm-textarea" rows="2" placeholder="اكتب سؤالك عن الشبكة… (Enter للإرسال · Shift+Enter سطر جديد)" style="flex:1 1 320px; min-height:46px;" data-i18n-attr="placeholder:s2.type_your_question_about_the_network_enter"></textarea>
+          <button type="button" class="btn btn-primary" id="ai-send-btn" title="إرسال السؤال" data-i18n-attr="title:s2.send_the_question"><span data-i18n="s2.send">➤ إرسال</span></button>
+          <button type="button" class="btn" id="ai-clear-btn" title="محو المحادثة الحالية" data-i18n-attr="title:s2.clear_the_current_conversation"><span data-i18n="s2.clear_2">🧹 محو</span></button>
         </div>
         <div id="ai-status" class="nm-sub" style="margin-top:0.5rem;"></div>
       </div>
 
       <div class="form-card" style="margin-top:1rem;">
-        <h3>⚙️ إعدادات شات AI</h3>
+        <h3><span data-i18n="s2.ai_chat_settings">⚙️ إعدادات شات AI</span></h3>
         <label class="checkbox-label" style="margin-bottom:0.75rem;">
           <input type="checkbox" id="ai-enabled" />
-          <span style="font-weight:600;">شات AI مفعّل</span>
+          <span style="font-weight:600;"><span data-i18n="s2.ai_chat_enabled">شات AI مفعّل</span></span>
         </label>
         <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:0.6rem;">
-          <label>مفتاح API <small style="color:var(--muted);">(يُحفظ ولا يُعرض — اكتب قيمة جديدة لاستبداله)</small>
-            <input type="password" id="ai-api-key" autocomplete="off" placeholder="غير مضبوط" />
+          <label><span data-i18n="s2.api_key">مفتاح API</span> <small style="color:var(--muted);"><span data-i18n="s2x.stored_and_never_displayed_type_a_new_value">(يُحفظ ولا يُعرض — اكتب قيمة جديدة لاستبداله)</span></small>
+            <input type="password" id="ai-api-key" autocomplete="off" placeholder="غير مضبوط" data-i18n-attr="placeholder:s2.not_set" />
           </label>
-          <label>اسم النموذج
+          <label><span data-i18n="s2.model_name">اسم النموذج</span>
             <input type="text" id="ai-model" value="glm-4-flash" />
           </label>
         </div>
-        <label class="nm-field" style="margin-top:0.6rem;">عنوان الخدمة <small style="color:var(--muted);">(أي endpoint متوافق OpenAI — يشمل /chat/completions تلقائيًّا)</small>
+        <label class="nm-field" style="margin-top:0.6rem;"><span data-i18n="s2.service_endpoint">عنوان الخدمة</span> <small style="color:var(--muted);">(أي endpoint متوافق OpenAI — يشمل /chat/completions تلقائيًّا)</small>
           <input type="text" id="ai-base-url" value="https://api.z.ai/api/paas/v4" dir="ltr" style="text-align:left;" />
         </label>
         <div class="form-actions" style="margin-top:1rem;">
-          <button type="button" class="btn btn-primary" id="ai-save-btn" title="حفظ الإعدادات">💾 حفظ الإعدادات</button>
+          <button type="button" class="btn btn-primary" id="ai-save-btn" title="حفظ الإعدادات" data-i18n-attr="title:s2.save_settings"><span data-i18n="s2.save_settings">💾 حفظ الإعدادات</span></button>
         </div>
         <div id="ai-settings-status" style="font-size:0.85rem; margin-top:0.5rem;"></div>
 
         <!-- AI-02 — تنقيح العناوين الداخلية + معاينة ما سيُرسَل فعلًا -->
         <label class="checkbox-label" style="margin-top:0.6rem; font-weight:bold;">
           <input type="checkbox" id="ai-redact-internal" checked />
-          <span>🛡️ تنقيح العناوين الداخلية وMAC قبل الإرسال (مستحسن — يستبدلها برموز ip-1/mac-1)</span>
+          <span><span data-i18n="s2.redact_internal_addresses_and_macs_before">🛡️ تنقيح العناوين الداخلية وMAC قبل الإرسال (مستحسن — يستبدلها برموز ip-1/mac-1)</span></span>
         </label>
         <div style="margin-top:0.5rem;">
-          <button type="button" class="btn" id="ai-preview-btn" title="اعرض بالضبط ما سيُرسَل لمزوّد النموذج">👁️ معاينة ما سيُرسَل</button>
+          <button type="button" class="btn" id="ai-preview-btn" title="اعرض بالضبط ما سيُرسَل لمزوّد النموذج" data-i18n-attr="title:s2.show_exactly_what_will_be_sent_to_the_mode"><span data-i18n="s2.preview_what_will_be_sent">👁️ معاينة ما سيُرسَل</span></button>
           <pre id="ai-preview-out" class="hidden" style="margin-top:0.5rem; max-height:240px; overflow:auto; font-size:0.75rem; direction:ltr; text-align:left; background:var(--card-bg, rgba(0,0,0,0.04)); padding:0.5rem; border-radius:8px;"></pre>
         </div>
         <p style="font-size:0.78rem; color:var(--muted); margin:0.75rem 0 0 0;">
-          🔐 الخصوصية: مع كل سؤال يُرسل موجز من بيانات الشبكة إلى مزوّد النموذج المختار فقط، ولا يُرسل شيء لأي طرف آخر.
-          <b>وضع AI معطّل ⇒ إجابات «بقواعد محلية» بلا أي إرسال خارجي إطلاقًا.</b> حذف المفتاح يوقف الإرسال فورًا.
+          <span data-i18n="s2.privacy_each_question_sends_a_short_summar">🔐 الخصوصية: مع كل سؤال يُرسل موجز من بيانات الشبكة إلى مزوّد النموذج المختار فقط، ولا يُرسل شيء لأي طرف آخر.</span>
+          <b><span data-i18n="s2.ai_off_answers_come_from_local_rules_with">وضع AI معطّل ⇒ إجابات «بقواعد محلية» بلا أي إرسال خارجي إطلاقًا.</span></b> <span data-i18n="s2.deleting_the_key_stops_sending_immediately">حذف المفتاح يوقف الإرسال فورًا.</span>
         </p>
       </div>
     </section>
@@ -705,12 +704,12 @@
           <div class="nm-row">
             <label class="nm-sub" for="logs-filter-status" data-i18n="logs.filterStatus">الحالة:</label>
             <select id="logs-filter-status" class="nm-select" style="min-width:180px;" data-i18n-attr="title:logs.filterStatusTitle" title="إظهار كل الإشعارات أو الناجحة أو الفاشلة فقط">
-              <option value="" data-i18n="logs.status.all">كل الحالات</option>
+              <option value="" data-i18n="logs.status.all"><span data-i18n="s2.all_statuses">كل الحالات</span></option>
               <option value="sent" data-i18n="logs.status.sent">✅ تم الإرسال</option>
               <option value="failed" data-i18n="logs.status.failed">❌ فشل الإرسال</option>
               <option value="maintenance" data-i18n="logs.status.maintenance">🛠️ مكتوم (صيانة)</option>
             </select>
-            <label class="nm-sub" for="filter-sort-logs" data-i18n="logs.filterSort">ترتيب:</label>
+            <label class="nm-sub" for="filter-sort-logs" data-i18n="logs.filterSort"><span data-i18n="s2.sort">ترتيب:</span></label>
             <select id="filter-sort-logs" class="nm-select" style="min-width:190px;">
               <option value="sent_at_desc" data-i18n="logs.sort.newest">🔽 الأحدث أولًا</option>
               <option value="sent_at_asc" data-i18n="logs.sort.oldest">🔼 الأقدم أولًا</option>
@@ -726,7 +725,7 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th class="col-ltr" data-i18n="logs.th.time">الوقت</th><th data-i18n="logs.th.device">الجهاز</th><th class="col-center" data-i18n="logs.th.channel">القناة</th><th class="col-status" data-i18n="logs.th.status">الحالة</th><th data-i18n="logs.th.message">الرسالة</th><th data-i18n="logs.th.reason">السبب</th></tr>
+              <tr><th class="col-ltr" data-i18n="logs.th.time">الوقت</th><th data-i18n="logs.th.device">الجهاز</th><th class="col-center" data-i18n="logs.th.channel">القناة</th><th class="col-status" data-i18n="logs.th.status"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></th><th data-i18n="logs.th.message">الرسالة</th><th data-i18n="logs.th.reason">السبب</th></tr>
             </thead>
             <tbody id="logs-table-body"></tbody>
           </table>
@@ -744,48 +743,48 @@
       <!-- v2.20.0 — إدارة المستخدمين (admin فقط؛ يظهر فارغًا/مخفيًا للحسابات الأخرى) -->
       <div class="nm-card" id="users-card" style="display:none;">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="users.card.title">👥 إدارة المستخدمين</h3>
+          <h3 class="nm-card-title" data-i18n="users.card.title"><span data-i18n="s2.user_management">👥 إدارة المستخدمين</span></h3>
         </div>
         <p class="nm-card-desc">
-          «مدير»: كل الصلاحيات · «عرض فقط»: يتصفح ويستقبل الإشعارات لكن كل التعديلات تُرفض (403).
+          <span data-i18n="s2.admin_full_permissions_viewer_can_browse_a">«مدير»: كل الصلاحيات · «عرض فقط»: يتصفح ويستقبل الإشعارات لكن كل التعديلات تُرفض (403).</span>
         </p>
         <div class="form-grid" style="grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); align-items:end;">
-          <label>اسم المستخدم <input type="text" id="usr-new-username" placeholder="user1" autocomplete="off" /></label>
-          <label>كلمة المرور <input type="password" id="usr-new-password" placeholder="6 أحرف على الأقل" autocomplete="new-password" /></label>
-          <label>الدور
+          <label><span data-i18n="s2.username">اسم المستخدم</span> <input type="text" id="usr-new-username" placeholder="user1" autocomplete="off" /></label>
+          <label><span data-i18n="s2.password">كلمة المرور</span> <input type="password" id="usr-new-password" placeholder="6 أحرف على الأقل" autocomplete="new-password" data-i18n-attr="placeholder:s2.at_least_6_characters" /></label>
+          <label><span data-i18n="s2.role">الدور</span>
             <select id="usr-new-role">
-              <option value="viewer">عرض فقط</option>
-              <option value="admin">مدير</option>
+              <option value="viewer"><span data-i18n="s2.viewer">عرض فقط</span></option>
+              <option value="admin"><span data-i18n="s2.admin">مدير</span></option>
             </select>
           </label>
-          <button type="button" class="btn btn-primary" id="usr-add-btn">➕ إضافة مستخدم</button>
+          <button type="button" class="btn btn-primary" id="usr-add-btn"><span data-i18n="s2.add_user">➕ إضافة مستخدم</span></button>
         </div>
         <div id="usr-list" style="margin-top:0.9rem;"></div>
         <div id="usr-status" class="nm-sub" style="margin-top:0.4rem;"></div>
       </div>
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="users.card.password">🔐 تغيير كلمة المرور</h3>
+          <h3 class="nm-card-title" data-i18n="users.card.password"><span data-i18n="s2.change_password_2">🔐 تغيير كلمة المرور</span></h3>
         </div>
         <form id="change-password-form">
           <div class="form-grid cols-3">
-            <label>كلمة المرور الحالية <input type="password" id="cp-current" required /></label>
-            <label>كلمة المرور الجديدة <input type="password" id="cp-new" required minlength="6" /></label>
-            <label>تأكيد كلمة المرور الجديدة <input type="password" id="cp-confirm" required minlength="6" /></label>
+            <label><span data-i18n="s2.current_password">كلمة المرور الحالية</span> <input type="password" id="cp-current" required /></label>
+            <label><span data-i18n="s2.new_password">كلمة المرور الجديدة</span> <input type="password" id="cp-new" required minlength="6" /></label>
+            <label><span data-i18n="s2.confirm_the_new_password">تأكيد كلمة المرور الجديدة</span> <input type="password" id="cp-confirm" required minlength="6" /></label>
           </div>
           <div class="nm-actions">
-            <button type="submit" class="btn btn-primary" title="تغيير كلمة المرور">🔐 تغيير كلمة المرور</button>
+            <button type="submit" class="btn btn-primary" title="تغيير كلمة المرور" data-i18n-attr="title:s2.change_password"><span data-i18n="s2.change_password_2">🔐 تغيير كلمة المرور</span></button>
           </div>
           <div id="cp-status" class="error-msg" style="margin-top:0.5rem;"></div>
         </form>
       </div>
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="users.card.info">🪪 معلومات الحساب</h3>
+          <h3 class="nm-card-title" data-i18n="users.card.info"><span data-i18n="s2.account_info">🪪 معلومات الحساب</span></h3>
         </div>
         <div class="form-grid cols-2">
-          <label>اسم المستخدم <input type="text" id="profile-username" readonly /></label>
-          <label>الدور <input type="text" id="profile-role" readonly /></label>
+          <label><span data-i18n="s2.username">اسم المستخدم</span> <input type="text" id="profile-username" readonly /></label>
+          <label><span data-i18n="s2.role">الدور</span> <input type="text" id="profile-role" readonly /></label>
         </div>
       </div>
     </section>
@@ -794,7 +793,7 @@
     <section id="section-backup" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="backup.card.schedule">⏰ النسخ الاحتياطي التلقائي المجدول</h3>
+          <h3 class="nm-card-title" data-i18n="backup.card.schedule"><span data-i18n="s2.scheduled_automatic_backup">⏰ النسخ الاحتياطي التلقائي المجدول</span></h3>
         </div>
         <!-- طلب المالك: «اقسمهم على سطرين» + «خد التنسيق من أي شاشة تانية»
              ⇒ نفس نمط بطاقة الإشعارات بالحرف: صفّ مفتاح (مثل «القناة مفعّلة») ثم صفّ حقول مدمج
@@ -804,24 +803,24 @@
                نفس ترتيب صفوف قنوات الإشعارات و«إعدادات العرض» بالحرف (طلب المالك: «هات الcheckbox يمين وافصلة عن الكلام»). -->
           <label class="nm-check">
             <input type="checkbox" id="bk-sched-enabled" />
-            <span>تفعيل النسخ التلقائي اليومي</span>
+            <span><span data-i18n="s2.enable_the_daily_automatic_backup">تفعيل النسخ التلقائي اليومي</span></span>
           </label>
         </div>
         <div class="nm-row" style="max-width:430px; margin-top:0.6rem;">
-          <label class="nm-field">🕒 ساعة النسخ اليومي
+          <label class="nm-field"><span data-i18n="s2.daily_backup_hour">🕒 ساعة النسخ اليومي</span>
             <input type="time" class="nm-input" id="bk-sched-hour" value="03:30" />
           </label>
-          <label class="nm-field">🗄️ عدد النسخ المحفوظة
+          <label class="nm-field"><span data-i18n="s2.copies_to_keep">🗄️ عدد النسخ المحفوظة</span>
             <input type="number" class="nm-input" id="bk-sched-keep" min="1" max="30" value="7" />
           </label>
         </div>
         <div class="nm-actions">
-          <button type="button" class="btn btn-primary" id="bk-sched-save">💾 حفظ الجدولة</button>
-          <button type="button" class="btn" id="downtimes-export-btn" title="تصدير آخر 30/90/365 يومًا من الانقطاعات">📊 تصدير الانقطاعات (CSV)</button>
+          <button type="button" class="btn btn-primary" id="bk-sched-save"><span data-i18n="s2.save_the_schedule">💾 حفظ الجدولة</span></button>
+          <button type="button" class="btn" id="downtimes-export-btn" title="تصدير آخر 30/90/365 يومًا من الانقطاعات" data-i18n-attr="title:s2.export_the_last_30_90_365_days_of_outages"><span data-i18n="s2.export_outages_csv">📊 تصدير الانقطاعات (CSV)</span></button>
           <select id="downtimes-export-days" class="nm-select" style="max-width:170px;">
-            <option value="30">آخر 30 يومًا</option>
-            <option value="90" selected>آخر 90 يومًا</option>
-            <option value="365">آخر سنة</option>
+            <option value="30"><span data-i18n="s2.last_30_days">آخر 30 يومًا</span></option>
+            <option value="90" selected><span data-i18n="s2.last_90_days">آخر 90 يومًا</span></option>
+            <option value="365"><span data-i18n="s2.last_year">آخر سنة</span></option>
           </select>
           <span id="bk-sched-status" class="nm-sub"></span>
         </div>
@@ -832,7 +831,7 @@
 
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="backup.card.main">💾 النسخ الاحتياطي واستعادة قاعدة البيانات</h3>
+          <h3 class="nm-card-title" data-i18n="backup.card.main"><span data-i18n="s2.database_backup_and_restore">💾 النسخ الاحتياطي واستعادة قاعدة البيانات</span></h3>
         </div>
         <p class="nm-card-desc">
           تصدير نسخة احتياطية كاملة من قاعدة البيانات كملف SQLite أصلي (.db)، أو استعادة نسخة سابقة.
@@ -842,15 +841,15 @@
         <!-- بطاقة معلومات القاعدة الحالية -->
         <div class="nm-kpi-grid">
           <div class="nm-kpi">
-            <div class="nm-kpi-label">حجم القاعدة</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.database_size">حجم القاعدة</span></div>
             <div class="nm-kpi-value" id="backup-db-size">—</div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">عدد الجداول</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.tables">عدد الجداول</span></div>
             <div class="nm-kpi-value" id="backup-table-count">—</div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">آخر تعديل</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.last_modified">آخر تعديل</span></div>
             <div class="nm-kpi-value" id="backup-last-modified" style="font-size:0.95rem;">—</div>
           </div>
         </div>
@@ -858,10 +857,10 @@
         <!-- تفاصيل الجداول -->
         <div class="nm-sub-section" style="margin-top:0.85rem;">
           <div class="nm-row-between" style="margin-bottom:0.5rem;">
-            <b>📋 تفاصيل الجداول (عدد الصفوف)</b>
+            <b><span data-i18n="s2.table_details_row_counts">📋 تفاصيل الجداول (عدد الصفوف)</span></b>
             <select id="backup-tables-sort" class="nm-select" style="max-width:190px;" onchange="backupSortTables(this.value)">
-              <option value="name">ترتيب: اسم الجدول</option>
-              <option value="rows_desc">ترتيب: الأكثر صفوفًا</option>
+              <option value="name"><span data-i18n="s2.sort_table_name">ترتيب: اسم الجدول</span></option>
+              <option value="rows_desc"><span data-i18n="s2.sort_most_rows">ترتيب: الأكثر صفوفًا</span></option>
             </select>
           </div>
           <ul id="backup-table-list" class="nm-list-rows" style="max-height:240px; overflow:auto;"></ul>
@@ -869,32 +868,32 @@
 
         <!-- ===== أزرار تَنظيف الجداول الكبيرة (نَقْل من تبويب السجل — v2.7.x) ===== -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head" data-i18n="backup.card.cleanup">🧹 تَنظيف جداول السِّجلّات الكبيرة</div>
+          <div class="nm-sub-head" data-i18n="backup.card.cleanup"><span data-i18n="s2.clean_up_large_log_tables">🧹 تَنظيف جداول السِّجلّات الكبيرة</span></div>
           <small class="nm-hint" style="display:block; margin-bottom:0.7rem;">
-            تَحْرير مَساحة عبر حذف نُقاط/أَحداث قَدِيمة. يُؤثّر في الرسوم البيانية ونِسَب Uptime الظاهرة في الصفحة العامة (تُحدَّث عند إِعادَة تَحميلها).
+            <span data-i18n="s2.free_space_by_deleting_old_checks_events_i">تَحْرير مَساحة عبر حذف نُقاط/أَحداث قَدِيمة. يُؤثّر في الرسوم البيانية ونِسَب Uptime الظاهرة في الصفحة العامة (تُحدَّث عند إِعادَة تَحميلها).</span>
           </small>
           <div class="nm-row">
-            <button id="logs-clear-downtime-btn" class="btn btn-danger btn-sm" title="مسح سجل الانقطاعات القديمة">🗑️ مسح الانقطاعات</button>
-            <button id="logs-clear-status-btn" class="btn btn-danger btn-sm" title="مسح نَقاط فحص الحالة القديمة (status_logs — يُحرّر مساحة كبيرة)">🗑️ مسح نَقاط الفحص</button>
+            <button id="logs-clear-downtime-btn" class="btn btn-danger btn-sm" title="مسح سجل الانقطاعات القديمة" data-i18n-attr="title:s2.delete_old_outage_records"><span data-i18n="s2.clear_outages">🗑️ مسح الانقطاعات</span></button>
+            <button id="logs-clear-status-btn" class="btn btn-danger btn-sm" title="مسح نَقاط فحص الحالة القديمة (status_logs — يُحرّر مساحة كبيرة)" data-i18n-attr="title:s2.delete_old_status_checks_status_logs_frees"><span data-i18n="s2.clear_status_checks">🗑️ مسح نَقاط الفحص</span></button>
             <!-- v2.7.x — زِرّ «تَفْرِيغ الكُلّ»: DELETE FROM status_logs ثم VACUUM لِـ تَقليص حجم DB فعليًّا.
                  إِجراء هَدّام بِالكامل — سيُفقِد تاريخ Uptime/الرسوم البيانية. كن حَذِراً. -->
-            <button id="logs-truncate-status-btn" class="btn btn-danger btn-sm" title="تفريغ جدول نَقاط الفحص بالكامل + VACUUM (إجراء هدّام — سيفقد تاريخ Uptime والرسوم البيانية)">⚠️ تَفْرِيغ الكُلّ</button>
+            <button id="logs-truncate-status-btn" class="btn btn-danger btn-sm" title="تفريغ جدول نَقاط الفحص بالكامل + VACUUM (إجراء هدّام — سيفقد تاريخ Uptime والرسوم البيانية)" data-i18n-attr="title:s2.truncate_the_whole_status_logs_table_vacuu"><span data-i18n="s2.truncate_everything">⚠️ تَفْرِيغ الكُلّ</span></button>
           </div>
         </div>
 
         <!-- تصدير / استيراد -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head" data-i18n="backup.card.io">⬆️⬇️ تصدير واستعادة ملف</div>
+          <div class="nm-sub-head" data-i18n="backup.card.io"><span data-i18n="s2.export_and_restore_a_file">⬆️⬇️ تصدير واستعادة ملف</span></div>
           <div class="nm-actions" style="margin-top:0;">
-            <button type="button" class="btn btn-primary" id="backup-export-btn" title="تنزيل ملف .db يحتوي على كامل قاعدة البيانات">⬇️ تصدير نسخة احتياطية (.db)</button>
+            <button type="button" class="btn btn-primary" id="backup-export-btn" title="تنزيل ملف .db يحتوي على كامل قاعدة البيانات" data-i18n-attr="title:s2.download_a_db_file_with_the_complete_datab"><span data-i18n="s2.export_a_backup_db">⬇️ تصدير نسخة احتياطية (.db)</span></button>
           </div>
           <div class="nm-note is-bad" style="margin-top:0.7rem;">
-            ⚠️ <b>الاستعادة تستبدل قاعدة البيانات الحالية بالكامل.</b> يُنشأ النظام نسخة أمنية تلقائيًا من القاعدة الحالية قبل الاستبدال، ثم يُعاد تشغيل الخادم تلقائيًا.
+            ⚠️ <b><span data-i18n="s2.restoring_replaces_the_current_database_co">الاستعادة تستبدل قاعدة البيانات الحالية بالكامل.</span></b> <span data-i18n="s2.the_system_creates_a_safety_copy_of_the_cu">يُنشأ النظام نسخة أمنية تلقائيًا من القاعدة الحالية قبل الاستبدال، ثم يُعاد تشغيل الخادم تلقائيًا.</span>
           </div>
           <div class="nm-row" style="margin-top:0.7rem;">
             <input type="file" id="backup-restore-file" accept=".db" class="nm-input" style="flex:1; min-width:220px;" />
-            <span id="backup-file-name" class="nm-sub">لم يتم اختيار ملف</span>
-            <button type="button" class="btn btn-primary" id="backup-restore-btn" disabled title="استبدال القاعدة الحالية بالملف المختار">⬆️ استعادة النسخة</button>
+            <span id="backup-file-name" class="nm-sub"><span data-i18n="s2.no_file_selected">لم يتم اختيار ملف</span></span>
+            <button type="button" class="btn btn-primary" id="backup-restore-btn" disabled title="استبدال القاعدة الحالية بالملف المختار" data-i18n-attr="title:s2.replace_the_current_database_with_the_sele"><span data-i18n="s2.restore_the_copy">⬆️ استعادة النسخة</span></button>
           </div>
         </div>
 
@@ -903,18 +902,18 @@
 
         <!-- منطقة سجل العملية -->
         <div id="backup-output" class="hidden" style="margin-top:1rem;">
-          <div style="font-weight:700; margin-bottom:0.5rem;">📋 سجل العملية</div>
+          <div style="font-weight:700; margin-bottom:0.5rem;"><span data-i18n="s2.operation_log">📋 سجل العملية</span></div>
           <pre id="backup-log" class="nm-pre" style="max-height:300px;"></pre>
         </div>
 
         <!-- قائمة النسخ الأمنية التلقائية -->
         <div class="nm-sub-section" style="margin-top:1rem;">
           <div class="nm-row-between" style="margin-bottom:0.6rem;">
-            <b>🗂️ النسخ الأمنية التلقائية</b>
-            <button type="button" class="btn btn-sm" id="backup-refresh-list-btn" title="إعادة تحميل القائمة">🔄 تحديث</button>
+            <b><span data-i18n="s2.automatic_safety_copies">🗂️ النسخ الأمنية التلقائية</span></b>
+            <button type="button" class="btn btn-sm" id="backup-refresh-list-btn" title="إعادة تحميل القائمة" data-i18n-attr="title:s2.reload_the_list"><span data-i18n="s2.refresh">🔄 تحديث</span></button>
           </div>
           <small class="nm-hint" style="display:block; margin-bottom:0.7rem;">
-            تُحفظ هذه النسخ تلقائيًا في مجلد <code class="nm-ltr">database/backups/</code> عند كل عملية استعادة. يمكن استعادتها أو حذفها من هنا.
+            تُحفظ هذه النسخ تلقائيًا في مجلد <code class="nm-ltr">database/backups/</code> <span data-i18n="s2.before_every_restore_you_can_restore_or_de">عند كل عملية استعادة. يمكن استعادتها أو حذفها من هنا.</span>
           </small>
           <div id="backup-list" style="max-height:420px; overflow:auto;"></div>
         </div>
@@ -926,62 +925,62 @@
     <section id="section-display" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="card.display.title">🎛️ إعدادات العرض والأدوات</h3>
-          <span class="nm-chip is-info">تُطبَّق فورًا · بلا إعادة تشغيل</span>
+          <h3 class="nm-card-title" data-i18n="card.display.title"><span data-i18n="s2.display_and_tools_settings">🎛️ إعدادات العرض والأدوات</span></h3>
+          <span class="nm-chip is-info"><span data-i18n="s2.applied_instantly_no_restart">تُطبَّق فورًا · بلا إعادة تشغيل</span></span>
         </div>
         <p class="nm-card-desc">
           كل ما هنا يُطبَّق <b>فورًا</b> ويُسجَّل في سجل التدقيق. والمبدأ العام:
-          <b>الزائر بلا تسجيل دخول لا يرى أي عنوان أبدًا</b>، والقرار للمستخدم المسجَّل.
+          <b><span data-i18n="s2.a_visitor_without_a_session_never_sees_any">الزائر بلا تسجيل دخول لا يرى أي عنوان أبدًا</span></b>، والقرار للمستخدم المسجَّل.
         </p>
 
         <!-- (1) ما يراه الزائر -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head" data-i18n="display.guestHeading">🧑‍🤝‍🧑 ما يراه الزائر (بدون تسجيل دخول)</div>
-          <label class="nm-field" style="max-width:560px;">وضع الصفحة العامة للزائر
+          <div class="nm-sub-head" data-i18n="display.guestHeading"><span data-i18n="s2.what_a_visitor_sees_not_signed_in">🧑‍🤝‍🧑 ما يراه الزائر (بدون تسجيل دخول)</span></div>
+          <label class="nm-field" style="max-width:560px;"><span data-i18n="s2.public_page_mode_for_visitors">وضع الصفحة العامة للزائر</span>
             <select id="disp-public-mode" class="nm-select">
-              <option value="lan" data-i18n="display.mode.lan">🏠 البطاقات + خريطة المواقع (الافتراضي للشبكة الداخلية)</option>
-              <option value="minimal" data-i18n="display.mode.minimal">🔒 الحالة فقط بلا خريطة (الأنسب للرابط المكشوف على الإنترنت)</option>
-              <option value="off" data-i18n="display.mode.off">⛔ إيقاف العرض العام تمامًا (أي زائر يُرفض)</option>
+              <option value="lan" data-i18n="display.mode.lan"><span data-i18n="s2.cards_location_map_default_for_the_interna">🏠 البطاقات + خريطة المواقع (الافتراضي للشبكة الداخلية)</span></option>
+              <option value="minimal" data-i18n="display.mode.minimal"><span data-i18n="s2.status_only_no_map_best_for_the_public_int">🔒 الحالة فقط بلا خريطة (الأنسب للرابط المكشوف على الإنترنت)</span></option>
+              <option value="off" data-i18n="display.mode.off"><span data-i18n="s2.turn_the_public_page_off_completely_every">⛔ إيقاف العرض العام تمامًا (أي زائر يُرفض)</span></option>
             </select>
           </label>
-          <small class="nm-hint">الزائر لا يرى أي عنوان IP/MAC في كل الأوضاع — الفرق بين الأوضاع في كمية المعلومة لا في الخصوصية.</small>
+          <small class="nm-hint"><span data-i18n="s2.a_visitor_sees_no_ip_mac_in_any_mode_the_m">الزائر لا يرى أي عنوان IP/MAC في كل الأوضاع — الفرق بين الأوضاع في كمية المعلومة لا في الخصوصية.</span></small>
           <p id="disp-status" class="nm-sub" style="margin:0.4rem 0 0;"></p>
         </div>
 
         <!-- (2) ما يراه المستخدم المسجَّل -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head" data-i18n="display.userHeading">🙋 ما يراه المستخدم المسجَّل (مدير أو عرض)</div>
+          <div class="nm-sub-head" data-i18n="display.userHeading"><span data-i18n="s2.what_a_signed_in_user_sees_admin_or_viewer">🙋 ما يراه المستخدم المسجَّل (مدير أو عرض)</span></div>
           <label class="nm-check">
             <input type="checkbox" id="disp-noc-internal" />
-            <span>عرض <b>عناوين IP</b> على الصفحة العامة وشاشة NOC — <b>لأي مستخدم مسجَّل</b> (الزوار محجوبون دائمًا)</span>
+            <span><span data-i18n="s2.show">عرض</span> <b><span data-i18n="s2.ip_addresses">عناوين IP</span></b> على الصفحة العامة وشاشة NOC — <b>لأي مستخدم مسجَّل</b> <span data-i18n="s2.visitors_are_always_blocked">(الزوار محجوبون دائمًا)</span></span>
           </label>
-          <small class="nm-hint">ألغِ التحديد لو الشاشة معلّقة في مكان عام وبها جلسة مسجّلة — عندها تُعرض الحالة بلا عناوين للجميع.</small>
+          <small class="nm-hint"><span data-i18n="s2.clear_the_box_if_the_screen_hangs_in_a_pub">ألغِ التحديد لو الشاشة معلّقة في مكان عام وبها جلسة مسجّلة — عندها تُعرض الحالة بلا عناوين للجميع.</span></small>
         </div>
 
         <!-- (3) أدوات التشخيص -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head" data-i18n="display.toolsHeading">🛠️ أدوات التشخيص (Ping / Tracert)</div>
+          <div class="nm-sub-head" data-i18n="display.toolsHeading"><span data-i18n="s2.diagnostics_tools_ping_tracert">🛠️ أدوات التشخيص (Ping / Tracert)</span></div>
           <div class="nm-grid" style="max-width:640px;">
-            <label class="nm-field">مَن يستطيع الاستخدام؟
+            <label class="nm-field"><span data-i18n="s2.who_can_use_it">مَن يستطيع الاستخدام؟</span>
               <select id="tools-min-role" class="nm-select">
-                <option value="admin">🔒 المدير فقط</option>
-                <option value="viewer">👥 أي مستخدم مسجَّل (مدير أو عرض)</option>
+                <option value="admin"><span data-i18n="s2.admin_only">🔒 المدير فقط</span></option>
+                <option value="viewer"><span data-i18n="s2.any_signed_in_user_admin_or_viewer">👥 أي مستخدم مسجَّل (مدير أو عرض)</span></option>
               </select>
             </label>
-            <label class="nm-field">نطاقات مخصّصة — اختياري (CIDR مفصولة بفواصل)
+            <label class="nm-field"><span data-i18n="s2.custom_ranges_optional_comma_separated_cid">نطاقات مخصّصة — اختياري (CIDR مفصولة بفواصل)</span>
               <input type="text" id="tools-allowed-cidrs" class="nm-input nm-ltr" placeholder="192.168.88.0/23, 10.0.0.0/8" style="text-align:left;" />
             </label>
           </div>
           <label class="nm-check" style="margin-top:0.5rem;">
             <input type="checkbox" id="tools-allow-public" />
-            <span>🌍 السماح بفحص <b>عناوين عامة</b> على الإنترنت (مثل 8.8.8.8) — للمستخدمين المسجّلين فقط</span>
+            <span><span data-i18n="s2.allow_scanning">🌍 السماح بفحص</span> <b><span data-i18n="s2.public_addresses">عناوين عامة</span></b> <span data-i18n="s2.on_the_internet_e_g_8_8_8_8_for_signed_in">على الإنترنت (مثل 8.8.8.8) — للمستخدمين المسجّلين فقط</span></span>
           </label>
           <p id="tools-effective" class="nm-note is-info" style="margin:0.6rem 0 0;"></p>
         </div>
 
         <div class="nm-actions">
-          <button type="button" class="btn btn-primary" id="disp-save">💾 حفظ الإعدادات</button>
-          <button type="button" class="btn" id="guest-preview-btn" title="يعرض بالضبط ما سيصل للزائر الآن (بلا عناوين)">👁️ معاينة ما يراه الزائر</button>
+          <button type="button" class="btn btn-primary" id="disp-save"><span data-i18n="s2.save_settings">💾 حفظ الإعدادات</span></button>
+          <button type="button" class="btn" id="guest-preview-btn" title="يعرض بالضبط ما سيصل للزائر الآن (بلا عناوين)" data-i18n-attr="title:s2.shows_exactly_what_a_visitor_receives_righ"><span data-i18n="s2.preview_what_a_visitor_sees">👁️ معاينة ما يراه الزائر</span></button>
         </div>
         <pre id="guest-preview-out" class="nm-pre hidden" style="max-height:260px; margin-top:0.6rem;"></pre>
       </div>
@@ -990,10 +989,10 @@
     <section id="section-system" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="card.system.title">🖥️ حالة النظام — الاستهلاك الحي</h3>
+          <h3 class="nm-card-title" data-i18n="card.system.title"><span data-i18n="s2.system_status_live_usage">🖥️ حالة النظام — الاستهلاك الحي</span></h3>
           <label class="nm-check">
             <input type="checkbox" id="sys-auto-refresh" checked />
-            <span>تحديث ذاتي (كل 5 ثوانٍ)</span>
+            <span><span data-i18n="s2.auto_refresh_every_5_seconds">تحديث ذاتي (كل 5 ثوانٍ)</span></span>
           </label>
         </div>
 
@@ -1001,32 +1000,32 @@
         <div class="nm-kpi-grid">
 
           <div class="nm-kpi">
-            <div class="nm-kpi-label">🧠 ذاكرة الجهاز (RAM)</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.device_memory_ram">🧠 ذاكرة الجهاز (RAM)</span></div>
             <div class="nm-bar" id="sys-memory-bar"><div style="width:0%"></div></div>
             <div class="nm-kpi-value is-muted" id="sys-memory-text" style="font-size:0.9rem; font-weight:600;">—</div>
             <div class="nm-kpi-sub" id="sys-process">—</div>
           </div>
 
           <div class="nm-kpi">
-            <div class="nm-kpi-label">⚡ المعالج (CPU)</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.cpu">⚡ المعالج (CPU)</span></div>
             <div class="nm-bar" id="sys-cpu-bar"><div style="width:0%"></div></div>
             <div class="nm-kpi-value is-muted" id="sys-cpu-text" style="font-size:0.9rem; font-weight:600;">—</div>
             <div class="nm-kpi-sub" id="sys-loadavg">—</div>
           </div>
 
           <div class="nm-kpi">
-            <div class="nm-kpi-label">💾 القرص (الهارد)</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.disk">💾 القرص (الهارد)</span></div>
             <div class="nm-bar" id="sys-disk-bar"><div style="width:0%"></div></div>
             <div class="nm-kpi-value is-muted" id="sys-disk-text" style="font-size:0.9rem; font-weight:600;">—</div>
             <div class="nm-kpi-sub" id="sys-db-size">—</div>
           </div>
 
           <div class="nm-kpi" id="sys-network-card">
-            <div class="nm-kpi-label">🌐 الشبكة</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.network">🌐 الشبكة</span></div>
             <div class="nm-kpi-value is-muted" style="font-size:0.9rem; font-weight:600;">
               ⬇️ <span id="sys-net-rx-rate">—</span> · ⬆️ <span id="sys-net-tx-rate">—</span>
             </div>
-            <div class="nm-kpi-sub">منذ الإقلاع: ⬇️ <span id="sys-net-rx-total">—</span> · ⬆️ <span id="sys-net-tx-total">—</span></div>
+            <div class="nm-kpi-sub"><span data-i18n="s2.since_boot">منذ الإقلاع: ⬇️</span> <span id="sys-net-rx-total">—</span> · ⬆️ <span id="sys-net-tx-total">—</span></div>
             <div class="nm-kpi-sub" id="sys-net-ifaces">—</div>
           </div>
 
@@ -1035,34 +1034,34 @@
         <!-- v2.26.0 — الرسم الزمني (آخر ساعة تقريبًا من عينات شاشة الحالة) -->
         <div class="nm-sub-section" style="margin-top:0.75rem;">
           <div class="nm-row-between">
-            <b>📈 الاتجاه الزمني</b>
-            <small class="nm-sub">🟣 معالج % · 🔵 رام %</small>
+            <b><span data-i18n="s2.trend_over_time">📈 الاتجاه الزمني</span></b>
+            <small class="nm-sub"><span data-i18n="s2.cpu_ram">🟣 معالج % · 🔵 رام %</span></small>
           </div>
           <canvas id="sys-history-canvas" width="900" height="190" style="width:100%; height:190px; margin-top:0.5rem; border:1px dashed var(--border); border-radius:8px; background:var(--bg);"></canvas>
           <div id="sys-history-empty" class="nm-empty hidden" style="margin-top:0.5rem;">
             <span class="nm-empty-icon">📈</span>
-            لا توجد قياسات كافية بعد — تُجمع عيّنة كل دقيقة؛ اترك الشاشة مفتوحة قليلًا ليظهر الرسم.
+            <span data-i18n="s2.not_enough_samples_yet_one_is_collected_ev">لا توجد قياسات كافية بعد — تُجمع عيّنة كل دقيقة؛ اترك الشاشة مفتوحة قليلًا ليظهر الرسم.</span>
           </div>
-          <small class="nm-hint">طالما هذه الشاشة مفتوحة تُجمع العيّنات (حتى ~ساعة). معدّل الشبكة لا يُرسم هنا (تقلّبه كبير) — الأرقام الحية فوق تكفي؛ هذا الرسم للرام والمعالج لرصد التدهور/التسريب.</small>
+          <small class="nm-hint"><span data-i18n="s2.samples_are_collected_while_this_screen_is">طالما هذه الشاشة مفتوحة تُجمع العيّنات (حتى ~ساعة). معدّل الشبكة لا يُرسم هنا (تقلّبه كبير) — الأرقام الحية فوق تكفي؛ هذا الرسم للرام والمعالج لرصد التدهور/التسريب.</span></small>
         </div>
 
         <!-- تفاصيل النظام -->
         <div class="nm-sub-section">
           <div class="nm-row-between">
-            <b>📋 تفاصيل النظام</b>
+            <b><span data-i18n="s2.system_details">📋 تفاصيل النظام</span></b>
             <!-- v2.26.0 — تقرير أسبوعي جاهز للطباعة/حفظ PDF (للإدارة) -->
-            <a class="btn btn-sm" href="../reports/weekly" target="_blank" rel="noopener">📄 التقرير الأسبوعي (إدارة)</a>
+            <a class="btn btn-sm" href="../reports/weekly" target="_blank" rel="noopener"><span data-i18n="s2.weekly_report_admin">📄 التقرير الأسبوعي (إدارة)</span></a>
           </div>
           <div id="sys-details" class="nm-grid" style="margin-top:0.6rem; font-size:0.85rem;">—</div>
         </div>
 
         <!-- صحة المحرك -->
         <div class="nm-sub-section">
-          <b>⏱️ صحة محرك المراقبة</b>
+          <b><span data-i18n="s2.monitoring_engine_health">⏱️ صحة محرك المراقبة</span></b>
           <div id="sys-engine" class="nm-sub" style="margin-top:0.5rem;">—</div>
-          <b style="display:block; margin-top:0.7rem;">🤖 بوت تلجرام</b>
+          <b style="display:block; margin-top:0.7rem;"><span data-i18n="s2.telegram_bot">🤖 بوت تلجرام</span></b>
           <div id="sys-bot" class="nm-sub" style="margin-top:0.35rem;">—</div>
-          <b style="display:block; margin-top:0.7rem;">📡 خطوط البثّ الحيّ (SSE)</b>
+          <b style="display:block; margin-top:0.7rem;"><span data-i18n="s2.live_streams_sse">📡 خطوط البثّ الحيّ (SSE)</span></b>
           <div id="sys-sse" class="nm-sub" style="margin-top:0.35rem;">—</div>
         </div>
 
@@ -1085,52 +1084,52 @@
 
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="card.updates.title">🔄 تحديثات النظام</h3>
+          <h3 class="nm-card-title" data-i18n="card.updates.title"><span data-i18n="s2.system_updates">🔄 تحديثات النظام</span></h3>
         </div>
         <p class="nm-card-desc">
-          فحص الإصدارات من GitHub وتنفيذ التحديث بأمان — الويب لا تنفّذ أوامر، والتنفيذ بصلاحية root عبر «ملف طلب».
+          <span data-i18n="s2.checks_github_releases_and_applies_the_upd">فحص الإصدارات من GitHub وتنفيذ التحديث بأمان — الويب لا تنفّذ أوامر، والتنفيذ بصلاحية root عبر «ملف طلب».</span>
         </p>
 
         <!-- شريط الحالة: مصدر واحد لكل المعلومات والحالة -->
         <div class="nm-kpi-grid">
           <div class="nm-kpi">
-            <div class="nm-kpi-label">الإصدار الحالي</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.current_version">الإصدار الحالي</span></div>
             <div class="nm-kpi-value" id="upd-current">—</div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">آخر إصدار متاح</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.latest_available">آخر إصدار متاح</span></div>
             <div class="nm-kpi-value" id="upd-latest">—</div>
             <div class="nm-kpi-sub" id="upd-latest-sub"></div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">الحالة</div>
-            <div class="nm-kpi-value" id="upd-state">⏳ جارٍ الفحص…</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.status"><span data-i18n="s2.status">الحالة</span></span></div>
+            <div class="nm-kpi-value" id="upd-state"><span data-i18n="s2.checking">⏳ جارٍ الفحص…</span></div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">آخر فحص</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.last_check">آخر فحص</span></div>
             <div class="nm-kpi-value" id="upd-lastcheck" style="font-size:0.95rem;">—</div>
           </div>
         </div>
 
         <div class="nm-actions">
-          <button type="button" class="btn btn-primary" id="upd-check-btn">🔍 فحص التحديثات</button>
-          <button type="button" class="btn btn-primary hidden" id="upd-safe-btn" title="ينشئ نسخة احتياطية ثم ينفّذ التحديث">🛡️ نسخة احتياطية + تحديث</button>
-          <button type="button" class="btn hidden" id="upd-changelog-btn">📋 عرض التغييرات</button>
-          <button type="button" class="btn hidden" id="upd-rollback-btn">↩️ الرجوع لإصدار أقدم</button>
+          <button type="button" class="btn btn-primary" id="upd-check-btn"><span data-i18n="s2.check_for_updates">🔍 فحص التحديثات</span></button>
+          <button type="button" class="btn btn-primary hidden" id="upd-safe-btn" title="ينشئ نسخة احتياطية ثم ينفّذ التحديث" data-i18n-attr="title:s2.creates_a_backup_then_runs_the_update"><span data-i18n="s2.backup_update">🛡️ نسخة احتياطية + تحديث</span></button>
+          <button type="button" class="btn hidden" id="upd-changelog-btn"><span data-i18n="s2.view_changes">📋 عرض التغييرات</span></button>
+          <button type="button" class="btn hidden" id="upd-rollback-btn"><span data-i18n="s2.roll_back_to_an_older_release">↩️ الرجوع لإصدار أقدم</span></button>
         </div>
 
         <!-- مسار التثبيت العادي (غير الأبلاينس) فقط -->
         <div class="nm-actions hidden" id="upd-plain-actions" style="margin-top:0.5rem;">
-          <button type="button" class="btn" id="upd-download-btn">⬇️ تحميل التحديث</button>
-          <button type="button" class="btn btn-primary" id="upd-apply-btn">🚀 تطبيق التحديث</button>
+          <button type="button" class="btn" id="upd-download-btn"><span data-i18n="s2.download_the_update">⬇️ تحميل التحديث</span></button>
+          <button type="button" class="btn btn-primary" id="upd-apply-btn"><span data-i18n="s2.apply_the_update">🚀 تطبيق التحديث</span></button>
         </div>
 
         <div class="nm-note" id="upd-note" style="margin-top:0.85rem;"></div>
 
         <!-- v2.11.1 — التقدّم: شريط نسبة + خطوات مطابقة لمراحل المساعد (nm-update) + بانر إعادة التشغيل -->
         <div class="nm-sub-section hidden" id="upd-progress-card" style="margin-top:1rem;">
-          <div style="font-weight:700; margin-bottom:0.75rem;">⏳ التحديث جارٍ… <span id="upd-elapsed" class="nm-sub"></span></div>
-          <div class="nm-progress" id="upd-bar" role="progressbar" aria-label="نسبة تقدّم التحديث" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div style="font-weight:700; margin-bottom:0.75rem;"><span data-i18n="s2.update_in_progress">⏳ التحديث جارٍ…</span> <span id="upd-elapsed" class="nm-sub"></span></div>
+          <div class="nm-progress" id="upd-bar" role="progressbar" aria-label="نسبة تقدّم التحديث" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-attr="aria-label:s2.update_progress">
             <span id="upd-bar-fill" style="width:0%"></span>
           </div>
           <div class="nm-row-between" style="margin-top:0.35rem;">
@@ -1138,27 +1137,27 @@
             <span class="nm-sub" id="upd-phase">—</span>
           </div>
           <ol class="nm-steps" id="upd-steps" style="margin-top:0.6rem;">
-            <li data-step="start">بدء التحديث (تنزيل الإصدار)</li>
-            <li data-step="files">تحديث ملفات التطبيق</li>
-            <li data-step="node">تجهيز Node (ترقية تلقائية عند الحاجة)</li>
-            <li data-step="deps">تحديث التبعيات (npm ci)</li>
-            <li data-step="tools">تحديث أدوات النظام</li>
-            <li data-step="restart">إعادة تشغيل الخدمة ثم الجهاز</li>
+            <li data-step="start"><span data-i18n="s2.starting_the_update_downloading_the_releas">بدء التحديث (تنزيل الإصدار)</span></li>
+            <li data-step="files"><span data-i18n="s2.updating_application_files">تحديث ملفات التطبيق</span></li>
+            <li data-step="node"><span data-i18n="s2.preparing_node_auto_upgrade_when_needed">تجهيز Node (ترقية تلقائية عند الحاجة)</span></li>
+            <li data-step="deps"><span data-i18n="s2.updating_dependencies_npm_ci">تحديث التبعيات (npm ci)</span></li>
+            <li data-step="tools"><span data-i18n="s2.updating_system_tools">تحديث أدوات النظام</span></li>
+            <li data-step="restart"><span data-i18n="s2.restart_the_service_then_the_device">إعادة تشغيل الخدمة ثم الجهاز</span></li>
           </ol>
           <div class="hidden" id="upd-restart-banner" style="margin-top:0.7rem; padding:0.6rem 0.8rem; border-radius:10px; background:var(--nm-warn-soft, rgba(217,119,6,0.12)); border:1px solid rgba(217,119,6,0.35); font-size:0.9rem;">
-            🔄 <b>إعادة تشغيل الجهاز الآن…</b> تكتمل خلال دقيقة تقريبًا — ستنقطع الشاشة ثم تعود وتُحدَّث الصفحة تلقائيًّا. لا تفصل الكهرباء.
+            🔄 <b><span data-i18n="s2.rebooting_the_device_now">إعادة تشغيل الجهاز الآن…</span></b> <span data-i18n="s2.it_completes_in_about_a_minute_the_screen">تكتمل خلال دقيقة تقريبًا — ستنقطع الشاشة ثم تعود وتُحدَّث الصفحة تلقائيًّا. لا تفصل الكهرباء.</span>
           </div>
           <!-- v2.11.3 — كاشف التعطّل: يظهر لو لم تتحدّث حالة المساعد منذ > 3 دقائق -->
           <div class="hidden" id="upd-stall-banner" style="margin-top:0.7rem; padding:0.6rem 0.8rem; border-radius:10px; background:var(--nm-bad-soft, rgba(239,68,68,0.10)); border:1px solid rgba(239,68,68,0.35); font-size:0.9rem;">
-            ⚠️ <b>لا تقدّم منذ <span id="upd-stall-mins">—</span> دقيقة.</b> التحديث قد يكون بطيئًا (تنزيل أو تثبيت التبعيات) أو متوقفًا — راجع «السجل التفصيلي» بالأسفل، وتأكّد من حالة خدمة <code>nm-update</code> من كونسول الجهاز.
+            ⚠️ <b><span data-i18n="s2.no_progress_for">لا تقدّم منذ</span> <span id="upd-stall-mins">—</span> <span data-i18n="s2.minute">دقيقة.</span></b> التحديث قد يكون بطيئًا (تنزيل أو تثبيت التبعيات) أو متوقفًا — راجع «السجل التفصيلي» بالأسفل، وتأكّد من حالة خدمة <code>nm-update</code> <span data-i18n="s2.from_the_device_console">من كونسول الجهاز.</span>
             <div class="nm-actions" style="margin-top:0.5rem;">
-              <button type="button" class="btn btn-sm" id="upd-stall-check-btn">🔄 فحص الحالة الآن</button>
-              <button type="button" class="btn btn-sm" id="upd-stall-copy-btn">📋 نسخ السجل</button>
+              <button type="button" class="btn btn-sm" id="upd-stall-check-btn"><span data-i18n="s2.check_the_status_now">🔄 فحص الحالة الآن</span></button>
+              <button type="button" class="btn btn-sm" id="upd-stall-copy-btn"><span data-i18n="s2.copy_the_log">📋 نسخ السجل</span></button>
             </div>
           </div>
           <div id="upd-progress-text" class="nm-sub" style="margin-top:0.6rem;"></div>
           <details style="margin-top:0.75rem;">
-            <summary style="cursor:pointer; font-size:0.9rem; color:var(--accent);">📋 عرض السجل التفصيلي</summary>
+            <summary style="cursor:pointer; font-size:0.9rem; color:var(--accent);"><span data-i18n="s2.view_the_detailed_log">📋 عرض السجل التفصيلي</span></summary>
             <pre class="nm-pre" id="upd-log"></pre>
           </details>
         </div>
@@ -1166,28 +1165,28 @@
         <!-- سجل عمليات التحديث -->
         <div class="nm-sub-section" style="margin-top:1rem;">
           <div class="nm-row-between" style="margin-bottom:0.5rem;">
-            <div style="font-weight:700;">🗂️ سجل عمليات التحديث</div>
-            <button type="button" class="btn btn-sm" id="upd-log-copy-btn">📋 نسخ السجل</button>
+            <div style="font-weight:700;"><span data-i18n="s2.update_history">🗂️ سجل عمليات التحديث</span></div>
+            <button type="button" class="btn btn-sm" id="upd-log-copy-btn"><span data-i18n="s2.copy_the_log">📋 نسخ السجل</span></button>
           </div>
           <div id="upd-history" class="nm-sub">—</div>
         </div>
 
         <!-- v2.25.0 — تحديث تلقائي مجدول (اختياري — الافتراضي معطّل) -->
         <div class="nm-sub-section" style="margin-top:1rem;">
-          <div style="font-weight:700; margin-bottom:0.5rem;">⏰ تحديث تلقائي مجدول</div>
+          <div style="font-weight:700; margin-bottom:0.5rem;"><span data-i18n="s2.scheduled_automatic_update">⏰ تحديث تلقائي مجدول</span></div>
           <p class="nm-card-desc" style="margin-bottom:0.6rem;">
             عند الساعة المحددة يوميًا يُطلَب أحدث إصدار تلقائيًّا عبر نفس مسار الجذر الآمن (nm-update) —
-            مع احترام قفل التزامن (لا تشغيل ثانٍ فوق عملية قائمة). <b>معطّل افتراضيًّا.</b>
+            مع احترام قفل التزامن (لا تشغيل ثانٍ فوق عملية قائمة). <b><span data-i18n="s2.disabled_by_default">معطّل افتراضيًّا.</span></b>
           </p>
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="upd-auto-enabled" />
-              <span>تحديث تلقائي مفعّل</span>
+              <span><span data-i18n="s2.automatic_update_enabled">تحديث تلقائي مفعّل</span></span>
             </label>
-            <label class="nm-field" style="max-width:180px;">الساعة اليومية
+            <label class="nm-field" style="max-width:180px;"><span data-i18n="s2.daily_hour">الساعة اليومية</span>
               <input type="time" class="nm-input" id="upd-auto-hour" value="03:30" />
             </label>
-            <button type="button" class="btn btn-primary" id="upd-auto-save-btn" data-i18n="common.save">💾 حفظ</button>
+            <button type="button" class="btn btn-primary" id="upd-auto-save-btn" data-i18n="common.save"><span data-i18n="s2.save">💾 حفظ</span></button>
           </div>
           <div id="upd-auto-status" class="nm-sub" style="margin-top:0.5rem;"></div>
         </div>
@@ -1199,7 +1198,7 @@
     <section id="section-remote" class="hidden">
       <div class="nm-card">
         <div class="nm-card-head">
-          <h3 class="nm-card-title" data-i18n="card.remote.title">🌍 الوصول عن بُعد (ngrok)</h3>
+          <h3 class="nm-card-title" data-i18n="card.remote.title"><span data-i18n="s2.remote_access_ngrok">🌍 الوصول عن بُعد (ngrok)</span></h3>
         </div>
         <p class="nm-card-desc">
           مطابق لقائمة «Remote access (ngrok)» في كونسول الجهاز — بندًا ببند.
@@ -1209,52 +1208,52 @@
         <!-- ═══ كروت الحالة ═══ -->
         <div class="nm-kpi-grid">
           <div class="nm-kpi">
-            <div class="nm-kpi-label">حالة النفق</div>
-            <div class="nm-kpi-value" id="remote-state">⏳ جارٍ الفحص…</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.tunnel_status">حالة النفق</span></div>
+            <div class="nm-kpi-value" id="remote-state"><span data-i18n="s2.checking">⏳ جارٍ الفحص…</span></div>
             <div class="nm-kpi-sub" id="remote-state-sub"></div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">ملف ngrok</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.ngrok_binary">ملف ngrok</span></div>
             <div class="nm-kpi-value" id="remote-binary">—</div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">التشغيل التلقائي عند الإقلاع</div>
+            <div class="nm-kpi-label"><span data-i18n="s2.start_automatically_at_boot">التشغيل التلقائي عند الإقلاع</span></div>
             <div class="nm-kpi-value" id="remote-autostart">—</div>
           </div>
           <div class="nm-kpi">
-            <div class="nm-kpi-label">المفاتيح</div>
-            <div class="nm-kpi-sub">مفتاح الحساب: <b class="nm-ltr" id="remote-key-one">—</b></div>
-            <div class="nm-kpi-sub">مفتاح API: <b class="nm-ltr" id="remote-key-two">—</b></div>
+            <div class="nm-kpi-label"><span data-i18n="s2.keys">المفاتيح</span></div>
+            <div class="nm-kpi-sub"><span data-i18n="s2.account_key">مفتاح الحساب:</span> <b class="nm-ltr" id="remote-key-one">—</b></div>
+            <div class="nm-kpi-sub"><span data-i18n="s2.api_key">مفتاح API:</span> <b class="nm-ltr" id="remote-key-two">—</b></div>
           </div>
         </div>
 
         <!-- ═══ الرابط العام ═══ -->
         <div class="nm-sub-section" style="margin-top:0.85rem;">
-          <div class="nm-sub-head">🔗 الرابط العام</div>
+          <div class="nm-sub-head"><span data-i18n="s2.public_link">🔗 الرابط العام</span></div>
           <div class="nm-row">
             <input id="remote-url" type="text" readonly value="—" class="nm-input nm-ltr nm-mono" style="flex:1; min-width:240px;" />
-            <button type="button" class="btn btn-sm" id="remote-copy-btn">📋 نسخ</button>
-            <button type="button" class="btn btn-sm" id="remote-open-btn">🌐 فتح</button>
-            <button type="button" class="btn btn-sm" id="remote-refresh-btn">🔄 تحديث</button>
+            <button type="button" class="btn btn-sm" id="remote-copy-btn"><span data-i18n="s2.copy">📋 نسخ</span></button>
+            <button type="button" class="btn btn-sm" id="remote-open-btn"><span data-i18n="s2.open">🌐 فتح</span></button>
+            <button type="button" class="btn btn-sm" id="remote-refresh-btn"><span data-i18n="s2.refresh">🔄 تحديث</span></button>
           </div>
           <div id="remote-domain" class="nm-sub" style="margin-top:0.5rem;">—</div>
         </div>
 
         <!-- ═══ المكشوف على الإنترنت ═══ -->
         <div class="nm-note is-ok" style="margin-bottom:0.85rem;">
-          🛡️ <b>المكشوف على الإنترنت:</b> <span id="rep-exposes">واجهة الويب فقط (nginx) — محميّة بكلمة مرور الدخول.</span>
-          <span style="display:block; margin-top:0.25rem;">غير مكشوف: <span id="rep-notexposed">SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span></span>
+          🛡️ <b><span data-i18n="s2.exposed_to_the_internet">المكشوف على الإنترنت:</span></b> <span id="rep-exposes"><span data-i18n="s2.web_ui_only_nginx_protected_by_the_sign_in">واجهة الويب فقط (nginx) — محميّة بكلمة مرور الدخول.</span></span>
+          <span style="display:block; margin-top:0.25rem;"><span data-i18n="s2.not_exposed">غير مكشوف:</span> <span id="rep-notexposed">SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span></span>
         </div>
 
         <!-- ═══ التحكم الرئيسي ═══ -->
         <div class="nm-actions" style="margin-top:0;">
-          <button type="button" class="btn" id="remote-install-btn">⬇️ تثبيت ngrok</button>
-          <button type="button" class="btn" id="remote-update-btn" title="تنزيل أحدث إصدار stable واستبدال الثنائي الحالي">⬆️ تحديث ngrok</button>
-          <button type="button" class="btn btn-primary" id="remote-start-btn">▶️ تشغيل</button>
-          <button type="button" class="btn" id="remote-restart-btn">🔁 إعادة تشغيل</button>
-          <button type="button" class="btn" id="remote-stop-btn">⏹️ إيقاف</button>
-          <button type="button" class="btn" id="remote-auto-on-btn">🔒 تفعيل التشغيل التلقائي</button>
-          <button type="button" class="btn" id="remote-auto-off-btn">🔓 تعطيل التشغيل التلقائي</button>
+          <button type="button" class="btn" id="remote-install-btn"><span data-i18n="s2.install_ngrok">⬇️ تثبيت ngrok</span></button>
+          <button type="button" class="btn" id="remote-update-btn" title="تنزيل أحدث إصدار stable واستبدال الثنائي الحالي" data-i18n-attr="title:s2.download_the_latest_stable_release_and_rep"><span data-i18n="s2.update_ngrok">⬆️ تحديث ngrok</span></button>
+          <button type="button" class="btn btn-primary" id="remote-start-btn"><span data-i18n="s2.start">▶️ تشغيل</span></button>
+          <button type="button" class="btn" id="remote-restart-btn"><span data-i18n="s2.restart">🔁 إعادة تشغيل</span></button>
+          <button type="button" class="btn" id="remote-stop-btn"><span data-i18n="s2.stop_2"><span data-i18n="s2.stop">⏹️ إيقاف</span></span></button>
+          <button type="button" class="btn" id="remote-auto-on-btn"><span data-i18n="s2.enable_auto_start">🔒 تفعيل التشغيل التلقائي</span></button>
+          <button type="button" class="btn" id="remote-auto-off-btn"><span data-i18n="s2.disable_auto_start">🔓 تعطيل التشغيل التلقائي</span></button>
         </div>
 
         <!-- v2.14.5 — قسم إدارة الدومين الثابت مُخفى بقرار المستخدم (الرأي: غير ضروري — الدومين الثابت مُعيَّن بالفعل
@@ -1263,14 +1262,14 @@
      (/api/remote-access/*) تعمل كما هي. -->
         <!-- ═══ المفاتيح (حقول مخفية — لا تُعرض القيم ولا تُسجَّل) ═══ -->
         <div class="nm-sub-section">
-          <div class="nm-sub-head">🔑 المفاتيح (تُكتب بصلاحية root وتُخزَّن محليًّا فقط)</div>
+          <div class="nm-sub-head"><span data-i18n="s2.keys_written_as_root_and_stored_locally_on">🔑 المفاتيح (تُكتب بصلاحية root وتُخزَّن محليًّا فقط)</span></div>
           <div class="nm-row">
-            <input id="remote-key-input" type="password" autocomplete="new-password" placeholder="مفتاح الحساب (authtoken)" class="nm-input nm-mono" style="flex:1; min-width:220px;" />
-            <button type="button" class="btn btn-primary" id="remote-key-save-btn">💾 حفظ مفتاح الحساب</button>
+            <input id="remote-key-input" type="password" autocomplete="new-password" placeholder="مفتاح الحساب (authtoken)" class="nm-input nm-mono" style="flex:1; min-width:220px;"  data-i18n-attr="placeholder:s2.account_key_authtoken" />
+            <button type="button" class="btn btn-primary" id="remote-key-save-btn"><span data-i18n="s2.save_the_account_key">💾 حفظ مفتاح الحساب</span></button>
           </div>
           <div class="nm-row" style="margin-top:0.5rem;">
-            <input id="remote-apikey-input" type="password" autocomplete="new-password" placeholder="مفتاح API (لجلب الدومينات)" class="nm-input nm-mono" style="flex:1; min-width:220px;" />
-            <button type="button" class="btn btn-primary" id="remote-apikey-save-btn">💾 حفظ مفتاح API</button>
+            <input id="remote-apikey-input" type="password" autocomplete="new-password" placeholder="مفتاح API (لجلب الدومينات)" class="nm-input nm-mono" style="flex:1; min-width:220px;"  data-i18n-attr="placeholder:s2.api_key_for_fetching_domains" />
+            <button type="button" class="btn btn-primary" id="remote-apikey-save-btn"><span data-i18n="s2.save_the_api_key">💾 حفظ مفتاح API</span></button>
           </div>
           <small class="nm-hint" style="display:block; margin-top:0.6rem;">
             تُجلَب المفاتيح من لوحة ngrok: مفتاح الحساب من <bdi class="nm-ltr">dashboard.ngrok.com → Your Authtoken</bdi> ·
@@ -1285,25 +1284,25 @@
 
         <!-- ═══ التقرير الكامل (نظير [8] في الكونسول) ═══ -->
         <details class="nm-sub-section" style="margin-bottom:0.85rem;">
-          <summary style="cursor:pointer; font-weight:700;">📋 التقرير الكامل (كل شيء — بلا إخفاء)</summary>
+          <summary style="cursor:pointer; font-weight:700;"><span data-i18n="s2.full_report_everything_nothing_hidden">📋 التقرير الكامل (كل شيء — بلا إخفاء)</span></summary>
           <div style="margin-top:0.75rem;">
-            <div class="nm-kv"><span class="k">الملف التنفيذي:</span> <span class="v nm-ltr nm-mono" id="rep-binary">—</span></div>
-            <div class="nm-kv"><span class="k">ملف الدومين الثابت:</span> <span class="v nm-ltr nm-mono" id="rep-domainfile">—</span></div>
-            <div class="nm-kv"><span class="k">ملف الإعداد (root-only):</span> <span class="v nm-ltr nm-mono" id="rep-config">—</span></div>
-            <div class="nm-kv"><span class="k">وحدة النظام:</span> <span class="v nm-mono" id="rep-unit">—</span></div>
-            <div class="nm-kv"><span class="k">العملية:</span> <span class="v" id="rep-pid">—</span></div>
-            <div class="nm-kv"><span class="k">المكشوف على الإنترنت:</span> <span class="v" id="rep-exposes-2">—</span></div>
-            <div class="nm-kv"><span class="k">ملاحظات الخطة المجانية:</span> <span class="v" id="rep-free">—</span></div>
-            <div class="nm-kv"><span class="k">الملفات ذات الصلة:</span> <span class="v nm-ltr nm-mono" id="rep-files">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.binary">الملف التنفيذي:</span></span> <span class="v nm-ltr nm-mono" id="rep-binary">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.reserved_domain_file">ملف الدومين الثابت:</span></span> <span class="v nm-ltr nm-mono" id="rep-domainfile">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.config_file_root_only">ملف الإعداد (root-only):</span></span> <span class="v nm-ltr nm-mono" id="rep-config">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.system_unit">وحدة النظام:</span></span> <span class="v nm-mono" id="rep-unit">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.process">العملية:</span></span> <span class="v" id="rep-pid">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.exposed_to_the_internet">المكشوف على الإنترنت:</span></span> <span class="v" id="rep-exposes-2">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.free_plan_notes">ملاحظات الخطة المجانية:</span></span> <span class="v" id="rep-free">—</span></div>
+            <div class="nm-kv"><span class="k"><span data-i18n="s2.related_files">الملفات ذات الصلة:</span></span> <span class="v nm-ltr nm-mono" id="rep-files">—</span></div>
           </div>
         </details>
 
         <div class="nm-sub-section hidden" id="remote-log-card" style="max-height:300px; overflow:auto;">
-          <div class="nm-sub-head">📋 آخر عمليات التحكّم</div>
+          <div class="nm-sub-head"><span data-i18n="s2.last_control_operations">📋 آخر عمليات التحكّم</span></div>
           <pre id="remote-log" class="nm-pre"></pre>
         </div>
         <div class="nm-sub-section hidden" id="remote-ngrok-log-card" style="max-height:300px; overflow:auto; margin-top:0.85rem;">
-          <div class="nm-sub-head">📋 آخر سطور سجل ngrok</div>
+          <div class="nm-sub-head"><span data-i18n="s2.last_lines_of_the_ngrok_log">📋 آخر سطور سجل ngrok</span></div>
           <pre id="remote-ngrok-log" class="nm-pre"></pre>
         </div>
       </div>
@@ -1319,9 +1318,9 @@
       <form id="device-form">
         <input type="hidden" id="device-form-id" />
         <div class="form-grid">
-          <label><span data-i18n="device.field.name">الاسم</span> <input type="text" id="df-name" required /></label>
+          <label><span data-i18n="device.field.name"><span data-i18n="s2.name">الاسم</span></span> <input type="text" id="df-name" required /></label>
           <label>IP <input type="text" id="df-ip" required placeholder="192.168.1.10" /></label>
-          <label><span data-i18n="device.field.type">النوع</span>
+          <label><span data-i18n="device.field.type"><span data-i18n="s2.type">النوع</span></span>
             <select id="df-device_type_id" required></select>
           </label>
           <label><span data-i18n="device.field.location">الموقع</span>
@@ -1348,7 +1347,7 @@
           </label>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary" data-i18n-attr="title:device.form.saveTitle" title="حفظ الجهاز"><span data-i18n="common.save">💾 حفظ</span></button>
+          <button type="submit" class="btn btn-primary" data-i18n-attr="title:device.form.saveTitle" title="حفظ الجهاز"><span data-i18n="common.save"><span data-i18n="s2.save">💾 حفظ</span></span></button>
           <button type="button" class="btn" id="device-form-cancel" data-i18n-attr="title:device.form.cancelTitle" title="إلغاء العملية"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         </div>
       </form>
@@ -1364,7 +1363,7 @@
           <summary style="cursor:pointer;font-size:0.9rem;" data-i18n="device.services.add">➕ إضافة خدمة</summary>
           <div class="form-grid" style="margin-top:0.6rem;">
             <label><span data-i18n="device.services.name">اسم الخدمة</span> <input type="text" id="dfs-name" placeholder="Odoo ERP" /></label>
-            <label><span data-i18n="device.services.kind">النوع</span>
+            <label><span data-i18n="device.services.kind"><span data-i18n="s2.type">النوع</span></span>
               <select id="dfs-kind">
                 <option value="tcp">TCP (منفذ)</option>
                 <option value="http">HTTP</option>
@@ -1414,7 +1413,7 @@
       <input type="hidden" id="location-form-id" />
       <div class="form-grid">
         <label>اسم الموقع <input type="text" id="loc-name" placeholder="مصدر الإنترنت / المنطقة الرئيسية…" /></label>
-        <label>النوع
+        <label><span data-i18n="s2.type">النوع</span>
           <select id="loc-kind" title="نوع الموقع في هرم الشبكة">
             <option value="internet">🌐 الإنترنت/الراوتر (قمة الهرم)</option>
             <option value="zone" selected>📍 منطقة (وَسَطية)</option>
@@ -1455,8 +1454,8 @@
       <h3 id="type-form-title">إضافة نوع</h3>
       <input type="hidden" id="type-form-id" />
       <div class="form-grid">
-        <label>الاسم <input type="text" id="type-name" required /></label>
-        <label>الأيقونة <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
+        <label><span data-i18n="s2.name">الاسم</span> <input type="text" id="type-name" required /></label>
+        <label><span data-i18n="s2.icon">الأيقونة</span> <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع">💾 حفظ النوع</button>
@@ -1470,7 +1469,7 @@
   <div id="rollback-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الرجوع لإصدار أقدم">
     <div class="modal-content" style="max-width:560px;">
       <button type="button" class="modal-close" id="rollback-close" aria-label="إغلاق">✕</button>
-      <h3>↩️ الرجوع لإصدار أقدم</h3>
+      <h3><span data-i18n="s2.roll_back_to_an_older_release">↩️ الرجوع لإصدار أقدم</span></h3>
       <p style="font-size:0.88rem; color:var(--muted); margin-bottom:0.75rem;">
         اختر الإصدار الذي تريد الرجوع إليه — سيُنفَّذ بنفس الآلية الآمنة (ملف طلب ← مساعد root).
         <br><strong style="color:var(--text);">يُنصح بعمل نسخة احتياطية أولاً.</strong>

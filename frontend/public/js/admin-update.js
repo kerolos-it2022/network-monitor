@@ -148,7 +148,7 @@ async function updRenderProgress() {
     clearInterval(updProgressTimer); updProgressTimer = null;
     if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
     updStepsAllDone();
-    updSetBar(100, 'اكتمل ✓');
+    updSetBar(100, T('s2j.done', 'اكتمل ✓'));
     updShowStall(false);
     updShowRestartBanner(true);
     updSet('upd-progress-text', '🔄 ' + st.message);
@@ -162,7 +162,7 @@ async function updRenderProgress() {
     } else {
       try { localStorage.setItem(UPD_REBOOT_KEY, atKey); } catch (e) { /* تجاهل */ }
       updNote('🔄 تم التحديث — الجهاز يعيد التشغيل الآن… ستُحدَّث الصفحة تلقائيًا عند عودة النظام (دقيقة تقريبًا).');
-      showToast('🔄 تم التحديث — إعادة تشغيل الجهاز…', { type: 'success', duration: 8000 });
+      showToast(T('s2j.updated_restarting_the_device', '🔄 تم التحديث — إعادة تشغيل الجهاز…'), { type: 'success', duration: 8000 });
       updWaitForReboot();
     }
     return;
@@ -188,7 +188,7 @@ async function updRenderProgress() {
     clearInterval(updProgressTimer); updProgressTimer = null;
     if (updElapsedTimer) { clearInterval(updElapsedTimer); updElapsedTimer = null; }
     updStepsAllDone();
-    updSetBar(100, 'اكتمل ✓');
+    updSetBar(100, T('s2j.done', 'اكتمل ✓'));
     updShowRestartBanner(false);
     updShowStall(false);
     updSet('upd-progress-text', '✅ ' + st.message);
@@ -250,8 +250,8 @@ async function updDetectMode() {
 // ── الفحص ──
 async function updCheck(silent = false) {
   const btn = updEl('upd-check-btn');
-  if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ جارٍ الفحص…'; }
-  if (!silent) updSet('upd-state', '⏳ جارٍ الفحص…', 'upd-hero-value upd-muted');
+  if (btn && !silent) { btn.disabled = true; btn.textContent = T('s2.checking', '⏳ جارٍ الفحص…'); }
+  if (!silent) updSet('upd-state', T('s2.checking', '⏳ جارٍ الفحص…'), 'upd-hero-value upd-muted');
   try {
     const r = await api('/api/update/check', {
       method: 'POST',
@@ -263,7 +263,7 @@ async function updCheck(silent = false) {
       updSet('upd-latest-sub', (r && r.error) ? String(r.error).slice(0, 80) : '');
       if (!silent) {
         updNote('تعذّر فحص التحديثات — تأكّد من الإنترنت أو حدود GitHub API.');
-        showToast('❌ تعذّر فحص التحديثات', { type: 'error', duration: 7000 });
+        showToast(T('s2j.could_not_check_for_updates', '❌ تعذّر فحص التحديثات'), { type: 'error', duration: 7000 });
       }
       return null;
     }
@@ -301,7 +301,7 @@ async function updCheck(silent = false) {
     if (!silent) updNote('خطأ: ' + e.message);
     return null;
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔍 فحص التحديثات'; }
+    if (btn) { btn.disabled = false; btn.textContent = T('s2.check_for_updates', '🔍 فحص التحديثات'); }
   }
 }
 
@@ -335,7 +335,7 @@ function updFollowAppliance() {
 // ── 🛡️ نسخة احتياطية ثم تحديث (ضغطة واحدة) ──
 async function updSafeRun() {
   const ok = await confirmAction({
-    title: '🛡️ نسخة احتياطية + تحديث',
+    title: T('s2.backup_update', '🛡️ نسخة احتياطية + تحديث'),
     message: 'سيتم:\n① إنشاء نسخة احتياطية من قاعدة البيانات\n② تحديث النظام\n③ 🔄 إعادة تشغيل الجهاز بالكامل بعد اكتمال التحديث — ستنقطع الشاشة دقيقة تقريبًا ثم تعود تلقائيًّا\n\nلا تفصل الكهرباء ولا تغلق الصفحة أثناء التنفيذ. متابعة؟',
     confirmText: '🛡️ تنفيذ',
     danger: false,
@@ -343,8 +343,8 @@ async function updSafeRun() {
   if (!ok) return;
   updSetBusy(true);
   try {
-    updNote('⏳ إنشاء نسخة احتياطية…');
-    showToast('⏳ إنشاء نسخة احتياطية…', { type: 'info', duration: 3000 });
+    updNote(T('s2j.creating_a_backup', '⏳ إنشاء نسخة احتياطية…'));
+    showToast(T('s2j.creating_a_backup', '⏳ إنشاء نسخة احتياطية…'), { type: 'info', duration: 3000 });
     const b = await api('/api/backup/create', { method: 'POST' });
     if (!b || !b.success) throw new Error((b && b.error) || 'فشل إنشاء النسخة الاحتياطية');
     updNote('✅ ' + (b.message || 'تم إنشاء النسخة الاحتياطية') + ' — بدء التحديث…');
@@ -390,13 +390,13 @@ async function updOpenRollback() {
   listEl.querySelectorAll('button[data-tag]').forEach((b) => {
     b.addEventListener('click', () => updRollbackTo(b.getAttribute('data-tag')));
   });
-  if (stEl && r && r.cached) stEl.textContent = 'قائمة من الكاش (يُحدَّث كل 10 دقائق).';
+  if (stEl && r && r.cached) stEl.textContent = T('s2j.list_from_cache_refreshed_every_10_minutes', 'قائمة من الكاش (يُحدَّث كل 10 دقائق).');
 }
 
 async function updRollbackTo(tag) {
   const ok = await confirmAction({
-    title: 'الرجوع إلى ' + tag,
-    message: 'سيتم تثبيت الإصدار ' + tag + ' ثم إعادة تشغيل الجهاز بالكامل.\nيُنصح بعمل نسخة احتياطية أولاً.',
+    title: T('s2j.back_to', 'الرجوع إلى') + ' ' + tag,
+    message: T('s2j.version_will_be_installed', 'سيتم تثبيت الإصدار') + ' ' + tag + ' ثم إعادة تشغيل الجهاز بالكامل.\nيُنصح بعمل نسخة احتياطية أولاً.',
     confirmText: '↩️ رجوع',
     danger: true,
   });
@@ -479,7 +479,7 @@ async function updPlainDownload() {
 async function updPlainApply() {
   const ok = await confirmAction({
     title: 'تأكيد تطبيق التحديث',
-    message: 'سيتم سحب الفرع، تثبيت التبعيات، وإعادة تشغيل الخدمة. متابعة؟',
+    message: T('s2j.the_branch_will_be_pulled_dependencies_insta', 'سيتم سحب الفرع، تثبيت التبعيات، وإعادة تشغيل الخدمة. متابعة؟'),
     confirmText: '🚀 متابعة',
     danger: true,
   });
@@ -570,7 +570,7 @@ async function saveAutoUpdateSettings() {
       hour: document.getElementById('upd-auto-hour').value || '03:30',
     }),
   });
-  if (!r.success) { updSet('upd-auto-status', 'فشل الحفظ: ' + (r.error || ''), 1); return; }
+  if (!r.success) { updSet('upd-auto-status', T('s2j.save_failed', 'فشل الحفظ:') + ' ' + (r.error || ''), 1); return; }
   updSet('upd-auto-status', '✅ حُفظ — التحديث التلقائي ' + (r.data.enabled ? 'مفعّل عند ' + r.data.hour + ' يوميًّا' : 'معطّل'));
 }
 
@@ -611,14 +611,14 @@ async function updInit() {
   const stallCheck = updEl('upd-stall-check-btn');
   if (stallCheck) stallCheck.addEventListener('click', async () => {
     await updRenderProgress();
-    showToast('🔄 تم فحص الحالة الآن', { type: 'info', duration: 2500 });
+    showToast(T('s2j.status_checked_now', '🔄 تم فحص الحالة الآن'), { type: 'info', duration: 2500 });
   });
   const stallCopy = updEl('upd-stall-copy-btn');
   if (stallCopy) stallCopy.addEventListener('click', async () => {
     const el = updEl('upd-log');
     const txt = (el && el.textContent) || '';
-    try { await navigator.clipboard.writeText(txt); showToast('📋 تم نسخ السجل', { type: 'success' }); }
-    catch (e) { showToast('تعذّر النسخ — افتح السجل التفصيلي وانسخه يدويًّا', { type: 'warning', duration: 6000 }); }
+    try { await navigator.clipboard.writeText(txt); showToast(T('s2j.log_copied', '📋 تم نسخ السجل'), { type: 'success' }); }
+    catch (e) { showToast(T('s2j.could_not_copy_open_the_detailed_log_and_cop', 'تعذّر النسخ — افتح السجل التفصيلي وانسخه يدويًّا'), { type: 'warning', duration: 6000 }); }
   });
 
   const chBtn = updEl('upd-changelog-btn');

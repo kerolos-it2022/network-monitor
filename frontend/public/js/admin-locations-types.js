@@ -153,8 +153,8 @@ async function loadLocations() {
       <td>${parentName ? esc(parentName) : '<span class="nm-muted">—</span>'}</td>
       <td class="col-center">${sortOrderDisplay}</td>
       <td class="col-actions">
-        <button class="btn" data-edit="${l.id}" title="تعديل الموقع">✏️ تعديل</button>
-        <button class="btn btn-danger" data-del="${l.id}" title="حذف الموقع">🗑️ حذف</button>
+        <button class="btn" data-edit="${l.id}" title="${T('s2x.edit_the_location', "تعديل الموقع")}">${T('common.edit', '✏️ تعديل')}</button>
+        <button class="btn btn-danger" data-del="${l.id}" title="${T('s2x.delete_the_location', "حذف الموقع")}">${T('common.delete', '🗑️ حذف')}</button>
       </td>
     `;
     tr.querySelector('[data-edit]').addEventListener('click', () => editLocation(l));
@@ -215,7 +215,7 @@ async function editLocation(loc) {
 async function saveLocation() {
   const id = document.getElementById('location-form-id').value;
   const name = document.getElementById('loc-name').value.trim();
-  if (!name) { showToast('الاسم مطلوب', { type: 'warning' }); return; }
+  if (!name) { showToast(T('s2j.name_is_required', 'الاسم مطلوب'), { type: 'warning' }); return; }
   const kindSel = document.getElementById('loc-kind');
   const parentSel = document.getElementById('loc-parent_id');
   const sortEl = document.getElementById('loc-sort-order');
@@ -223,8 +223,8 @@ async function saveLocation() {
   // v2.7.1 — عند تعديل موقع موجود (PUT) نَطلب تَأكيد الحفظ (مَطلب 5).
   if (id) {
     const ok = await confirmAction({
-      title: 'تَأكيد حفظ التعديل',
-      message: 'تَأكيد حفظ تعديل الموقع: ' + name + '؟',
+      title: T('s2j.confirm_saving_the_changes', 'تَأكيد حفظ التعديل'),
+      message: T('s2j.confirm_saving_the_location_changes', 'تَأكيد حفظ تعديل الموقع:') + ' ' + name + '؟',
       confirmText: '✓ تَأكيد الحفظ',
     });
     if (!ok) return;
@@ -232,8 +232,8 @@ async function saveLocation() {
   // لو kind=internet فالأَب لا يَُهم (الخادم يَضبط parent_id=null بصمت). أَوَّلًا نُخبر المستخدم.
   if (kind === 'internet' && parentSel && parentSel.value) {
     const ok = await confirmAction({
-      title: 'تَنبيه: نوع «internet»',
-      message: 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟',
+      title: T('s2j.notice_the_internet_kind', 'تَنبيه: نوع «internet»'),
+      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟'),
       confirmText: '✓ مُتابعة',
     });
     if (!ok) return;
@@ -259,7 +259,7 @@ async function saveLocation() {
     await loadLocations();
     // تحديث قائمة المواقع في نموذج الجهاز + فلتر devices إن كان مُحمَّلاً.
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
-    showToast('✅ تَم حِفظ الموقع', { type: 'success' });
+    showToast(T('s2j.location_saved', '✅ تَم حِفظ الموقع'), { type: 'success' });
   } else {
     showToast(r.error || 'فشل الحفظ', { type: 'error' });
   }
@@ -267,9 +267,9 @@ async function saveLocation() {
 
 async function deleteLocation(id, name) {
   const ok = await confirmAction({
-    title: 'تَأكيد حذف الموقع',
-    message: 'تَأكيد حذف الموقع: ' + name + '؟\nملاحظة: الأَبناء يُصبحُون جذورًا، والأَجهزة المُرتبطة تُصبح غير مُعَيَّنة.',
-    confirmText: '🗑️ حذف',
+    title: T('s2j.confirm_deleting_the_location', 'تَأكيد حذف الموقع'),
+    message: T('s2j.confirm_deleting_the_location_2', 'تَأكيد حذف الموقع:') + ' ' + name + '؟\nملاحظة: الأَبناء يُصبحُون جذورًا، والأَجهزة المُرتبطة تُصبح غير مُعَيَّنة.',
+    confirmText: T('common.delete', '🗑️ حذف'),
     danger: true,
   });
   if (!ok) return;
@@ -277,7 +277,7 @@ async function deleteLocation(id, name) {
   if (r.success) {
     await loadLocations();
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
-    showToast('✅ تَم حَذف الموقع', { type: 'success' });
+    showToast(T('s2j.location_deleted', '✅ تَم حَذف الموقع'), { type: 'success' });
   } else {
     showToast(r.error || 'فشل الحذف', { type: 'error' });
   }
@@ -323,8 +323,8 @@ async function loadTypes() {
       <td>${esc(t.name)}</td>
       <td class="col-center" style="font-size:1.2rem;">${iconEmoji}</td>
       <td class="col-actions">
-        <button class="btn btn-sm" data-edit="${t.id}" title="تعديل النوع">✏️ تعديل</button>
-        <button class="btn btn-sm btn-danger" data-del="${t.id}" title="حذف النوع">🗑️ حذف</button>
+        <button class="btn btn-sm" data-edit="${t.id}" title="${T('s2x.edit_the_type', "تعديل النوع")}">${T('common.edit', '✏️ تعديل')}</button>
+        <button class="btn btn-sm btn-danger" data-del="${t.id}" title="${T('s2x.delete_the_type', "حذف النوع")}">${T('common.delete', '🗑️ حذف')}</button>
       </td>
     `;
     tr.querySelector('[data-edit]').addEventListener('click', () => editType(t));
@@ -365,12 +365,12 @@ async function saveType() {
   const id = document.getElementById('type-form-id').value;
   const name = document.getElementById('type-name').value.trim();
   const icon = document.getElementById('type-icon').value.trim();
-  if (!name) { showToast('الاسم مطلوب', { type: 'warning' }); return; }
+  if (!name) { showToast(T('s2j.name_is_required', 'الاسم مطلوب'), { type: 'warning' }); return; }
   // v2.7.1 (مَطلب 5) — تَأكيد الحفظ فقط في وضع التعديل.
   if (id) {
     const ok = await confirmAction({
-      title: 'تَأكيد حفظ التعديل',
-      message: 'تَأكيد حفظ تعديل النوع: ' + name + '؟',
+      title: T('s2j.confirm_saving_the_changes', 'تَأكيد حفظ التعديل'),
+      message: T('s2j.confirm_saving_the_type_changes', 'تَأكيد حفظ تعديل النوع:') + ' ' + name + '؟',
       confirmText: '✓ تَأكيد الحفظ',
     });
     if (!ok) return;
@@ -387,7 +387,7 @@ async function saveType() {
     closeEditModal(document.getElementById('type-modal'));
     await loadTypes();
     if (typeof window.__reloadFormOptions === 'function') window.__reloadFormOptions();
-    showToast('✅ تَم حِفظ النوع', { type: 'success' });
+    showToast(T('s2j.type_saved', '✅ تَم حِفظ النوع'), { type: 'success' });
   } else {
     showToast(r.error || 'فشل الحفظ', { type: 'error' });
   }
@@ -395,16 +395,16 @@ async function saveType() {
 
 async function deleteType(id, name) {
   const ok = await confirmAction({
-    title: 'تَأكيد حذف النوع',
-    message: 'تَأكيد حذف النوع: ' + name + '؟',
-    confirmText: '🗑️ حذف',
+    title: T('s2j.confirm_deleting_the_type', 'تَأكيد حذف النوع'),
+    message: T('s2j.confirm_deleting_the_type_2', 'تَأكيد حذف النوع:') + ' ' + name + '؟',
+    confirmText: T('common.delete', '🗑️ حذف'),
     danger: true,
   });
   if (!ok) return;
   const r = await api('/api/device-types/' + id, { method: 'DELETE' });
   if (r.success) {
     await loadTypes();
-    showToast('✅ تَم حذف النوع', { type: 'success' });
+    showToast(T('s2j.type_deleted', '✅ تَم حذف النوع'), { type: 'success' });
   } else {
     showToast(r.error || 'فشل الحذف', { type: 'error' });
   }

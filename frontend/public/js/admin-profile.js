@@ -24,22 +24,22 @@ async function changePassword(e) {
   const confirm = document.getElementById('cp-confirm').value;
 
   if (!current || !newPass || !confirm) {
-    statusEl.textContent = 'جميع الحقول مطلوبة';
+    statusEl.textContent = T('s2j.all_fields_are_required', 'جميع الحقول مطلوبة');
     statusEl.style.color = 'var(--offline)';
     return;
   }
   if (newPass !== confirm) {
-    statusEl.textContent = 'كلمة المرور الجديدة غير متطابقة';
+    statusEl.textContent = T('s2j.the_new_passwords_do_not_match', 'كلمة المرور الجديدة غير متطابقة');
     statusEl.style.color = 'var(--offline)';
     return;
   }
   if (newPass.length < 6) {
-    statusEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    statusEl.textContent = T('s2j.the_password_must_be_at_least_6_characters', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
     statusEl.style.color = 'var(--offline)';
     return;
   }
 
-  statusEl.textContent = 'جارٍ الحفظ...';
+  statusEl.textContent = T('s2j.saving', 'جارٍ الحفظ...');
   statusEl.style.color = 'var(--muted)';
 
   try {
@@ -49,7 +49,7 @@ async function changePassword(e) {
       body: JSON.stringify({ current_password: current, new_password: newPass }),
     });
     if (r.success) {
-      statusEl.textContent = '✅ تم تغيير كلمة المرور بنجاح';
+      statusEl.textContent = T('s2j.password_changed_successfully', '✅ تم تغيير كلمة المرور بنجاح');
       statusEl.style.color = 'var(--online)';
       document.getElementById('change-password-form').reset();
     } else {
@@ -57,7 +57,7 @@ async function changePassword(e) {
       statusEl.style.color = 'var(--offline)';
     }
   } catch (e) {
-    statusEl.textContent = '❌ خطأ في الاتصال بالخادم';
+    statusEl.textContent = T('s2j.server_connection_error', '❌ خطأ في الاتصال بالخادم');
     statusEl.style.color = 'var(--offline)';
   }
 }
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rows = r.users || [];
     list.innerHTML = rows.map((u) =>
       "<div style=\"display:flex; justify-content:space-between; align-items:center; gap:0.6rem; padding:0.45rem 0.2rem; border-bottom:1px solid var(--border);\">" +
-      "<span><b>" + escName(u.username) + "</b> <small style=\"color:var(--muted);\">(" + (u.role === 'admin' ? "مدير" : "عرض فقط") + ")</small></span>" +
+      "<span><b>" + escName(u.username) + "</b> <small style=\"color:var(--muted);\">(" + (u.role === 'admin' ? T('s2.admin', "مدير") : T('s2.viewer', "عرض فقط")) + ")</small></span>" +
       (u.username === me ? "<small style=\"color:var(--muted);\">(حسابك)</small>" : "<button class=\"btn btn-danger\" data-del-user=\"" + escName(u.username) + "\">🗑️</button>") +
       "</div>").join("");
     list.querySelectorAll("[data-del-user]").forEach((b) => b.addEventListener("click", () => deleteUser(b.getAttribute("data-del-user"))));

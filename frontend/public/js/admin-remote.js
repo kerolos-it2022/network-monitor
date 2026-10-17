@@ -256,7 +256,7 @@ async function remoteAction(action, label, value) {
       const diag = '⚠️ الطلب مكتوب لكن مساعد الجهاز (nm-remote) لم ينفّذه — غالبًا وحدة المراقبة متوقفة.\n'
         + 'من كونسول الجهاز أو SSH (sysadmin): sudo systemctl enable --now nm-remote.path && sudo systemctl restart nm-remote.service';
       rStatus('⚠️ لم يُنفَّذ بعد ' + (Math.round(25)) + ' ثانية — مساعد الجهاز لا يستهلك الطلبات (انظر التشخيص بالسجل)', true);
-      showToast('⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path', { type: 'warning', duration: 10000 });
+      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path'), { type: 'warning', duration: 10000 });
       console.warn('[remote] ' + diag);
     }
   } finally {
@@ -285,7 +285,7 @@ async function remoteSendSecret(inputId, action, label) {
   const ok = await confirmAction({
     title: 'تأكيد ' + label,
     message: 'ستُحفظ القيمة على الجهاز بصلاحية root (ملف إعداد ngrok، صلاحية 0600).\nالقيمة مخفية ولن تُعرض أو تُسجَّل. متابعة؟',
-    confirmText: '💾 حفظ',
+    confirmText: T('s2.save', '💾 حفظ'),
   });
   if (!ok) return;
   if (el) el.value = '';                       // تفريغ فوري قبل الإرسال
@@ -308,7 +308,7 @@ function initRemoteTab() {
 
   on('remote-refresh-btn', async () => {
     await loadRemoteStatus();
-    showToast('🔄 تم تحديث الحالة', { type: 'info', duration: 2000 });
+    showToast(T('s2j.status_refreshed', '🔄 تم تحديث الحالة'), { type: 'info', duration: 2000 });
   });
 
   on('remote-copy-btn', async () => {

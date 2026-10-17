@@ -51,7 +51,7 @@ async function loadDiscovered() {
       <td class="col-actions">
         <button class="btn btn-sm btn-approve" data-id="${esc(d.id)}" data-detected="${esc(d.detected_type || '')}" title="اعتماد ونقل إلى الأجهزة (مع اختيار النوع/الموقع)">✅ اعتماد</button>
         <button class="btn btn-sm btn-reject" data-id="${esc(d.id)}" title="رفض">❌ رفض</button>
-        <button class="btn btn-sm btn-delete" data-id="${esc(d.id)}" title="حذف نهائي">🗑️ حذف</button>
+        <button class="btn btn-sm btn-delete" data-id="${esc(d.id)}" title="حذف نهائي">${T('common.delete', '🗑️ حذف')}</button>
       </td>`;
     tbody.appendChild(tr);
   }
@@ -85,10 +85,10 @@ function ensureApproveModal() {
       <h3>✅ اعتماد جهاز مُكتشَف</h3>
       <p style="color:var(--muted); font-size:0.85rem;">الجهاز: <b id="dsc-ip"></b> <span id="dsc-meta"></span></p>
       <div class="form-grid">
-        <label>الاسم <input type="text" id="dsc-name" /></label>
-        <label>النوع <select id="dsc-type"><option value="">— بدون —</option></select></label>
-        <label>الموقع <select id="dsc-loc"><option value="">— بدون —</option></select></label>
-        <label>طريقة الفحص
+        <label>${T('s2.name', 'الاسم')} <input type="text" id="dsc-name" /></label>
+        <label>${T('s2.type', 'النوع')} <select id="dsc-type"><option value="">${T('device.field.noLocation', '— بدون —')}</option></select></label>
+        <label>${T('devices.th.location', 'الموقع')} <select id="dsc-loc"><option value="">${T('device.field.noLocation', '— بدون —')}</option></select></label>
+        <label>${T('device.field.protocol', 'طريقة الفحص')}
           <select id="dsc-proto">
             <option value="ping">Ping</option>
             <option value="port">Port (TCP)</option>
@@ -140,7 +140,7 @@ async function openApproveModal(id, detectedType) {
     row = (r && r.success) ? r.data : null;
   } catch (e) { /* fallback: تُعرض النافذة بقيم افتراضية */ }
   if (!row) {
-    showToast('تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.', { type: 'error' });
+    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.'), { type: 'error' });
     return;
   }
   discoveredApproveId = id;
@@ -166,7 +166,7 @@ async function openApproveModal(id, detectedType) {
   // تعبئة مسبقة من بيانات الكشف (الاسم/النوع/الصانع)
   el.querySelector('#dsc-ip').textContent = row.ip || '';
   el.querySelector('#dsc-meta').textContent = [row.vendor, row.detected_type, row.last_seen_at].filter(Boolean).join(' · ');
-  el.querySelector('#dsc-name').value = row.hostname || row.vendor || ('جهاز ' + (row.ip || ''));
+  el.querySelector('#dsc-name').value = row.hostname || row.vendor || (T('s2x.device', 'جهاز') + ' ' + (row.ip || ''));
   if (row.detected_type) {
     const match = Array.from(typeSel.options).find((o) => o.textContent.toLowerCase() === String(row.detected_type).toLowerCase());
     if (match) typeSel.value = match.value;
@@ -196,7 +196,7 @@ async function submitApprove(quick) {
     const port = portRaw ? Number(portRaw) : null;
     const webPort = webRaw ? Number(webRaw) : null;
     if (protocol !== 'ping' && !port) {
-      showToast('حدّد المنفذ لطريقة الفحص المختارة.', { type: 'warning' });
+      showToast(T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.'), { type: 'warning' });
       return;
     }
     body = {
@@ -219,7 +219,7 @@ async function submitApprove(quick) {
     await loadDiscovered();
     if (typeof window.loadDevices === 'function') await window.loadDevices();
   } else {
-    showToast('فشل الاعتماد: ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.approval_failed', 'فشل الاعتماد:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
@@ -232,31 +232,31 @@ async function rejectDiscovered(id) {
     showToast(r.message || 'تم الرفض.', { type: 'success' });
     await loadDiscovered();
   } else {
-    showToast('فشل الرفض: ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.rejection_failed', 'فشل الرفض:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function deleteDiscovered(id) {
   const ok = await confirmAction({
-    title: 'تَأكيد الحذف',
-    message: 'هل أَنت متأَكّد من حذف هذا السجل نهائيًّا؟',
-    confirmText: '🗑️ حذف',
+    title: T('s2j.confirm_deletion', 'تَأكيد الحذف'),
+    message: T('s2j.delete_this_record_permanently', 'هل أَنت متأَكّد من حذف هذا السجل نهائيًّا؟'),
+    confirmText: T('common.delete', '🗑️ حذف'),
     danger: true,
   });
   if (!ok) return;
   const r = await api(`/api/discovered/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (r && r.success) {
-    showToast('✅ تَم الحذف', { type: 'success' });
+    showToast(T('s2j.deleted', '✅ تَم الحذف'), { type: 'success' });
     await loadDiscovered();
   } else {
-    showToast('فشل الحذف: ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.delete_failed', 'فشل الحذف:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 
 async function bulkApproveDiscovered() {
   const boxes = Array.from(document.querySelectorAll('.discovered-row-check:checked'));
   if (boxes.length === 0) {
-    showToast('حدّد جهازًا واحدًا على الأقل.', { type: 'warning' });
+    showToast(T('s2j.select_at_least_one_device', 'حدّد جهازًا واحدًا على الأقل.'), { type: 'warning' });
     return;
   }
   const ids = boxes.map((b) => parseInt(b.getAttribute('data-id'), 10)).filter(Boolean);
@@ -270,7 +270,7 @@ async function bulkApproveDiscovered() {
     showToast(r.message || 'تم الاعتماد.', { type: 'success' });
     await loadDiscovered();
   } else {
-    showToast('فشل الاعتماد الجماعي: ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.bulk_approval_failed', 'فشل الاعتماد الجماعي:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
   }
 }
 

@@ -24,13 +24,13 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return '🏢 مبنى';
+    if (kind === 'building') return T('s2.building', '🏢 مبنى');
     if (kind === 'internet') return '🌐 بوابة إنترنت';
-    if (kind === 'floor') return '📐 طابق';
-    if (kind === 'room') return '🚪 غرفة';
-    if (kind === 'rack') return '🗄️ خزانة';
-    if (kind === 'site') return '🏛️ موقع';
-    return '📍 منطقة';
+    if (kind === 'floor') return T('s2.floor', '📐 طابق');
+    if (kind === 'room') return T('s2.room', '🚪 غرفة');
+    if (kind === 'rack') return T('s2.rack', '🗄️ خزانة');
+    if (kind === 'site') return T('s2.site', '🏛️ موقع');
+    return T('s2.zone', '📍 منطقة');
   }
 
   const placed = () => nodes.filter((n) => n.pos_x != null && n.pos_y != null);
@@ -175,7 +175,7 @@
         const kIcon = '🖥️';
         return '<div class="t-inner" data-id="' + esc(k.id) + '">'
           + '<span class="t-dot" style="background:' + ksi.color + '"></span>'
-          + '<span class="t-inner-type">' + kIcon + ' ' + esc(k.device_type_name || 'جهاز') + '</span>'
+          + '<span class="t-inner-type">' + kIcon + ' ' + esc(k.device_type_name || T('s2x.device', 'جهاز')) + '</span>'
           + '<span class="t-inner-nm" title="' + esc(k.name) + '">' + esc(k.name) + '</span>'
           + '<span class="t-inner-ip">' + esc(k.ip) + '</span>'
           + '<span class="t-inner-st">' + ksi.st + '</span>'
@@ -398,7 +398,7 @@
     const ok = await saveLocationPositions([{ id, pos_x: n.pos_x, pos_y: n.pos_y }]);
     if (ok) {
       renderCanvas();
-      showToast('✅ تم إضافة المبنى إلى اللوحة — يمكنك سحبه ثم 💾 حفظ التخطيط', { type: 'success' });
+      showToast(T('s2j.the_building_was_added_to_the_board_drag_it', '✅ تم إضافة المبنى إلى اللوحة — يمكنك سحبه ثم 💾 حفظ التخطيط'), { type: 'success' });
       setTimeout(() => centerOnNodes(true), 50);
     }
     addLocSel.value = '';
@@ -419,7 +419,7 @@
       dirty = false;
       saveBtn.classList.remove('attention');
       dirtyEl.classList.add('hidden');
-      showToast('✅ تم حفظ التخطيط — سيُعرض كما رسمته في شاشة NOC', { type: 'success' });
+      showToast(T('s2j.layout_saved_it_will_appear_exactly_as_drawn', '✅ تم حفظ التخطيط — سيُعرض كما رسمته في شاشة NOC'), { type: 'success' });
     }
   });
   document.getElementById('topo-reload-btn').addEventListener('click', loadAll);
