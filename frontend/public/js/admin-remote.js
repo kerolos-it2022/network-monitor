@@ -88,7 +88,7 @@ function renderRemoteStatus(s) {
 
   // 1) حالة النفق (+ pid والمستخدم والمدة)
   if (!s.installed) {
-    rSet('remote-state', '⚪ غير مثبّت', 'var(--muted)');
+    rSet('remote-state', T('remote.notInstalled', '⚪ غير مثبّت'), 'var(--muted)');
   } else if (s.running) {
     rSet('remote-state', '🟢 شغّال', 'var(--online)');
   } else {
@@ -102,14 +102,14 @@ function renderRemoteStatus(s) {
   rSet('remote-state-sub', bits.join(' · '));
 
   // 2) الملف التنفيذي
-  rSet('remote-binary', s.installed ? ('مثبّت ✓ ' + (s.version ? '(' + s.version + ')' : '')) : 'غير مثبّت ✗',
+  rSet('remote-binary', s.installed ? ('مثبّت ✓ ' + (s.version ? '(' + s.version + ')' : '')) : T('remote.notInstalledX', 'غير مثبّت ✗'),
     s.installed ? 'var(--online)' : 'var(--offline)');
 
   // 3) التشغيل التلقائي
   rSet('remote-autostart', s.autostart ? 'مفعّل ✓' : T('admin.disabled', 'معطّل'), s.autostart ? 'var(--online)' : 'var(--muted)');
 
   // 4) المفاتيح — رموز فقط (set / not_set / unknown) وأبدًا بلا قيم
-  const stateText = (v) => (v === 'set' ? 'مضبوط ✓' : (v === 'not_set' ? 'غير مضبوط ✗' : 'غير معروفة'));
+  const stateText = (v) => (v === 'set' ? 'مضبوط ✓' : (v === 'not_set' ? 'غير مضبوط ✗' : T('remote.unknown', 'غير معروفة')));
   const stateColor = (v) => (v === 'set' ? 'var(--online)' : (v === 'not_set' ? 'var(--offline)' : 'var(--muted)'));
   rSet('remote-key-one', stateText(stOne), stateColor(stOne));
   rSet('remote-key-two', stateText(stTwo), stateColor(stTwo));
@@ -125,7 +125,7 @@ function renderRemoteStatus(s) {
   const domainEl = rEl('remote-domain');
   if (domainEl) {
     const parts = [];
-    parts.push(s.domain ? ('الدومين الثابت: ' + s.domain) : 'الدومين: ديناميكي (يتغيّر مع كل تشغيل)');
+    parts.push(s.domain ? ('الدومين الثابت: ' + s.domain) : T('remote.dynDomain', 'الدومين: ديناميكي (يتغيّر مع كل تشغيل)'));
     if (!s.publicUrl && s.expectedUrl) parts.push('الرابط المتوقّع — النفق متوقف الآن');
     if (s.protocol && s.addr) parts.push('البروتوكول: ' + s.protocol + ' → ' + s.addr);
     domainEl.textContent = parts.join(' · ');
@@ -141,7 +141,7 @@ function renderRemoteStatus(s) {
   rSet('rep-domainfile', rep.domainFile || '—');
   rSet('rep-config', (rep.configFile || '—') + '  (root-only — لا يُقرأ هنا)');
   rSet('rep-unit', (rep.unit || '—') + ' — ' + (rep.unitEnabled ? 'enabled' : 'disabled') + ' / ' + (rep.unitState || '—'));
-  rSet('rep-pid', rep.pid ? (rep.pid + (rep.pidUser ? '  (المستخدم: ' + rep.pidUser + ')' : '') + (up ? '  · منذ ' + up : '')) : 'لا تعمل');
+  rSet('rep-pid', rep.pid ? (rep.pid + (rep.pidUser ? '  (المستخدم: ' + rep.pidUser + ')' : '') + (up ? '  · منذ ' + up : '')) : T('remote.notRunning', 'لا تعمل'));
   rSet('rep-free', (Array.isArray(rep.freePlan) ? rep.freePlan.join('  ·  ') : '—'));
   rSet('rep-files', (Array.isArray(rep.files) ? rep.files.join('   ') : '—'));
 
@@ -256,7 +256,7 @@ async function remoteAction(action, label, value) {
       const diag = '⚠️ الطلب مكتوب لكن مساعد الجهاز (nm-remote) لم ينفّذه — غالبًا وحدة المراقبة متوقفة.\n'
         + 'من كونسول الجهاز أو SSH (sysadmin): sudo systemctl enable --now nm-remote.path && sudo systemctl restart nm-remote.service';
       rStatus('⚠️ لم يُنفَّذ بعد ' + (Math.round(25)) + ' ثانية — مساعد الجهاز لا يستهلك الطلبات (انظر التشخيص بالسجل)', true);
-      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path')))))))), { type: 'warning', duration: 10000 });
+      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path')))))))))), { type: 'warning', duration: 10000 });
       console.warn('[remote] ' + diag);
     }
   } finally {

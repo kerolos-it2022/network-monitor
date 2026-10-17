@@ -142,14 +142,14 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
   function fmtDowntime(iso) {
     const t = Date.now() - new Date(iso).getTime();
-    if (!isFinite(t) || t < 0) return 'الآن';
+    if (!isFinite(t) || t < 0) return T('common.now', 'الآن');
     const s = Math.floor(t / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
     if (d) return d + ' يوم ' + (h % 24) + ' ساعة';
     if (h) return h + T('unit.h', ' ساعة ') + (m % 60) + T('unit.min', ' دقيقة');
     if (m) return m + T('unit.min_2', ' دقيقة ') + (s % 60) + T('unit.s', ' ثانية');
     return T('unit.just_now', 'لحظة — ') + s + T('unit.s', ' ثانية');
   }
-  function downtimeAge(iso) { return iso ? fmtDowntime(iso) : 'الآن'; }
+  function downtimeAge(iso) { return iso ? fmtDowntime(iso) : T('common.now', 'الآن'); }
 
   function showOutageOverlay(devs) {
     for (const d of devs || []) {
@@ -243,7 +243,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     icon.textContent = audioAlertEnabled ? '🔊' : '🔔';
     btn.title = audioAlertEnabled
       ? 'التنبيه الصوتي مُفعَّل — يصفر عند انقطاع جهاز جديد (يبقى مفعّلًا بعد إعادة التحميل)'
-      : T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', 'تشغيل تنبيه صوتي عند انقطاع أي جهاز')))))));
+      : T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', 'تشغيل تنبيه صوتي عند انقطاع أي جهاز')))))))));
   }
 
   // v2.12.0 — تنشيط الصوت بعد إعادة التحميل: المتصفحات تمنع التشغيل قبل تفاعل المستخدم، فنطلب
@@ -931,7 +931,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     if (!mapRootData) {
       grid.innerHTML = '';
-      if (note) { note.textContent = T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.')))))))); note.hidden = false; }
+      if (note) { note.textContent = T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.')))))))))); note.hidden = false; }
       if (badge) badge.textContent = '—';
       return;
     }
@@ -946,7 +946,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const res = renderZonesGrid(mapRootData);
     if (!res.html) {
       grid.innerHTML = '';
-      if (note) { note.textContent = T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.')))))))); note.hidden = false; }
+      if (note) { note.textContent = T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.')))))))))); note.hidden = false; }
       if (badge) badge.textContent = '—';
       return;
     }
@@ -992,7 +992,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     } catch (_) { return String(s); }
   }
   function statusBadgeText(status) {
-    return status === 'online' ? T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', 'متصل'))))))))))))) : (status === 'offline' ? T('s2x.offline', T('status.offline', 'متوقف')) : T('status.unknown', 'غير معروف'));
+    return status === 'online' ? T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', 'متصل')))))))))))))))) : (status === 'offline' ? T('s2x.offline', T('status.offline', 'متوقف')) : T('status.unknown', 'غير معروف'));
   }
   // MON-02 — نص الحالة العامة: يميّز «متصل مع خدمة متوقفة» (DEGRADED) بدل الأخضر الكاذب.
   function overallHealthText(d) {
@@ -1000,7 +1000,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     if (d.status === 'offline' || d.overall_health === 'offline') return T('s2x.offline', T('status.offline', 'متوقف'));
     if (d.status === 'paused') return T('status.paused', 'موقوف');
     if ((d.status || d.overall_health) === 'unknown') return T('status.unknown', 'غير معروف');
-    return T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))))));
+    return T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))))))))))));
   }
   async function openDeviceDetails(deviceId) {
     const modal = document.getElementById('noc-device-modal');
@@ -1285,7 +1285,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
                   </div>
                   <div class="dev-card-meta">
                     <span class="ip">${esc(d.ip || '—')}</span>
-                    <span class="loc-tag" title="${T('devices.th.location', T('s3.location', T('device.field.location', T('devices.th.location', T('device.field.location', 'الموقع')))))}: ${esc(locName)}">📍 ${esc(locName)}</span>
+                    <span class="loc-tag" title="${T('devices.th.location', T('s3.location', T('device.field.location', T('devices.th.location', T('device.field.location', T('s3.location', T('devices.th.location', T('device.field.location', T('s3.location', T('devices.th.location', T('device.field.location', 'الموقع')))))))))))}: ${esc(locName)}">📍 ${esc(locName)}</span>
                   </div>
                   ${d.status === 'offline' ? `<div class="dev-downtime">${T('s3b.down_for', '⏱ منقطع منذ ')} ${esc(downtimeAge(d.offline_since))}</div>` : ''}
                   ${parentDev ? `<div class="parent-info">🔗 ${T('s3.connects_via', 'متصل عبر')}: <b>${esc(parentDev.name)}</b></div>` : ''}
@@ -1329,7 +1329,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       return;
     }
     el.textContent = liveConnected
-      ? T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', 'مراقبة حية — تحديث فوري (SSE)')))))))))))))))
+      ? T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', 'مراقبة حية — تحديث فوري (SSE)')))))))))))))))))))
       : T('unit.live_polling_every', 'مراقبة حية — تحديث دوري كل ') + Math.round(pollIntervalMs / 1000) + T('unit.s', ' ثانية');
   }
 
@@ -1454,7 +1454,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   async function updateEngineAlertFromHealth(healthRes) {
     if (!healthRes || !healthRes.ok) {
       engineFetchFails += 1;
-      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.')))))))));
+      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.')))))))))));
       return;
     }
     engineFetchFails = 0;
@@ -1511,7 +1511,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     } catch (err) {
       refreshStatusText(false);
       engineFetchFails += 1;
-      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'))))))));
+      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'))))))))));
     }
   }
 

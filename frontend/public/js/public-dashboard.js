@@ -82,9 +82,9 @@ async function fetchApi(url) {
 }
 
 function statusText(status) {
-  if (status === 'online') return T('status.online', T('status.online', '\u0645\u062a\u0635\u0644'));
-  if (status === 'offline') return T('status.offline', T('status.offline', '\u0645\u062a\u0648\u0642\u0641'));
-  return T('status.unknown', T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641'));
+  if (status === 'online') return T('status.online', T('status.online', T('status.online', '\u0645\u062a\u0635\u0644')));
+  if (status === 'offline') return T('status.offline', T('status.offline', T('status.offline', '\u0645\u062a\u0648\u0642\u0641')));
+  return T('status.unknown', T('status.unknown', T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641')));
 }
 
 function statusDotClass(d) {
@@ -106,11 +106,11 @@ function overallStatusText(d) {
 }
 
 function formatDuration(seconds) {
-  if (seconds == null || isNaN(seconds)) return T('status.unknown', T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641'));
+  if (seconds == null || isNaN(seconds)) return T('status.unknown', T('status.unknown', T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641')));
   const s = Math.max(0, Math.floor(seconds));
-  if (s < 60) return s + T('s3.seconds', ' \u062b\u0627\u0646\u064a\u0629');
-  if (s < 3600) return Math.floor(s / 60) + T('frag.min', ' \u062f\u0642\u064a\u0642\u0629');
-  return Math.floor(s / 3600) + T('frag.h', ' \u0633\u0627\u0639\u0629 ') + Math.floor((s % 3600) / 60) + T('frag.min', ' \u062f\u0642\u064a\u0642\u0629');
+  if (s < 60) return s + T('s3.seconds', T('s3.seconds', ' \u062b\u0627\u0646\u064a\u0629'));
+  if (s < 3600) return Math.floor(s / 60) + T('frag.min', T('frag.min', ' \u062f\u0642\u064a\u0642\u0629'));
+  return Math.floor(s / 3600) + T('frag.h', T('frag.h', ' \u0633\u0627\u0639\u0629 ')) + Math.floor((s % 3600) / 60) + T('frag.min', T('frag.min', ' \u062f\u0642\u064a\u0642\u0629'));
 }
 
 // ====== \u062f\u0627\u0644\u0629 \u0627\u0644\u062a\u0631\u062a\u064a\u0628 ======
@@ -179,13 +179,13 @@ function renderDevices(devicesList) {
     if (d.ip && d.https_accessible == 1) {
       var url = 'https://' + d.ip + portSuffix + '/';
       openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
-        T('devices.openUiHttps', 'فتح واجهة الجهاز (HTTPS)') + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        T('devices.openUiHttps', T('devices.openHttps', T('devices.openUiHttps', T('devices.openHttps', 'فتح واجهة الجهاز (HTTPS)')))) + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
         ' type="button">' + T('s2x.open_https', '🔒 فتح HTTPS') + '</button>';
     } else if (d.ip && d.http_accessible == 1) {
       var url = 'http://' + d.ip + portSuffix + '/';
       openBtnHtml = '<button class="btn btn-primary open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
-        T('devices.openUiHttp', 'فتح واجهة الجهاز (HTTP)') + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
-        ' type="button">' + T('s2x.open_http', '🌐 فتح HTTP') + '</button>';
+        T('devices.openUiHttp', T('devices.openHttp', T('devices.openUiHttp', T('devices.openHttp', 'فتح واجهة الجهاز (HTTP)')))) + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        ' type="button">' + T('s2x.open_http', T('s3.open_http', '🌐 فتح HTTP')) + '</button>';
     }
 
     const card = document.createElement('div');
@@ -194,9 +194,9 @@ function renderDevices(devicesList) {
     card.innerHTML =
       '<div class="name">' + escapeHtml(d.name) + '</div>' +
       (d.ip ? '<div class="ip">' + escapeHtml(d.ip) + '</div>' : '') +
-      '<div class="meta">' + T('public.kvType', '\u0627\u0644\u0646\u0648\u0639: ') + '' + escapeHtml(d.device_type_name || '-') + '</div>' +
-      '<div class="meta">' + T('public.kvLocation', '\u0627\u0644\u0645\u0648\u0642\u0639: ') + '' + escapeHtml(d.location_name || '-') + '</div>' +
-      '<div class="meta">' + T('public.kvLastCheck', '\u0622\u062e\u0631 \u0641\u062d\u0635: ') + '' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
+      '<div class="meta">' + T('public.kvType', T('s3b.type', '\u0627\u0644\u0646\u0648\u0639: ')) + '' + escapeHtml(d.device_type_name || '-') + '</div>' +
+      '<div class="meta">' + T('public.kvLocation', T('s3b.location', '\u0627\u0644\u0645\u0648\u0642\u0639: ')) + '' + escapeHtml(d.location_name || '-') + '</div>' +
+      '<div class="meta">' + T('public.kvLastCheck', T('s3b.last_check', '\u0622\u062e\u0631 \u0641\u062d\u0635: ')) + '' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
       '<span class="status-badge ' + badgeClass + '">' + overallStatusText(d) + '</span>' +
       (openBtnHtml ? '<div class="card-actions">' + openBtnHtml + '</div>' : '');
     card.addEventListener('click', function (e) {
@@ -225,10 +225,10 @@ function fmtLastOutage(d) {
   if (isNaN(started)) return '\u2014';
   const mins = Math.max(0, Math.floor((Date.now() - started) / 60000));
   let ago;
-  if (mins < 1) ago = '\u0627\u0644\u0622\u0646';
-  else if (mins < 60) ago = T('frag.since', '\u0645\u0646\u0630 ') + mins + ' \u062f';
-  else if (mins < 1440) ago = T('frag.since', '\u0645\u0646\u0630 ') + Math.floor(mins / 60) + ' \u0633 ' + (mins % 60) + ' \u062f';
-  else ago = T('frag.since', '\u0645\u0646\u0630 ') + Math.floor(mins / 1440) + ' \u064a\u0648\u0645';
+  if (mins < 1) ago = T('common.now', '\u0627\u0644\u0622\u0646');
+  else if (mins < 60) ago = T('frag.since', T('frag.since', '\u0645\u0646\u0630 ')) + mins + ' \u062f';
+  else if (mins < 1440) ago = T('frag.since', T('frag.since', '\u0645\u0646\u0630 ')) + Math.floor(mins / 60) + ' \u0633 ' + (mins % 60) + ' \u062f';
+  else ago = T('frag.since', T('frag.since', '\u0645\u0646\u0630 ')) + Math.floor(mins / 1440) + ' \u064a\u0648\u0645';
   let dur = '';
   const s = d.last_outage_seconds;
   if (s != null && s >= 0) {
@@ -256,13 +256,13 @@ function renderTable(devicesList) {
     if (d.ip && d.https_accessible == 1) {
       const url = 'https://' + d.ip + tPortSuffix + '/';
       openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
-        T('devices.openUiHttpsShort', 'فتح الواجهة (HTTPS)') + (tPortSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        T('devices.openUiHttpsShort', T('s3.open_the_device_web_ui_https', T('devices.openUiHttpsShort', T('s3.open_the_device_web_ui_https', 'فتح الواجهة (HTTPS)')))) + (tPortSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
         ' type="button">' + T('s2x.open_https', '🔒 فتح HTTPS') + '</button>';
     } else if (d.ip && d.http_accessible == 1) {
       const url = 'http://' + d.ip + tPortSuffix + '/';
       openBtnHtml = '<button class="btn btn-sm open-device-btn" data-url="' + escapeHtml(url) + '" title="' +
-        T('devices.openUiHttpShort', 'فتح الواجهة (HTTP)') + (tPortSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
-        ' type="button">' + T('s2x.open_http', '🌐 فتح HTTP') + '</button>';
+        T('devices.openUiHttpShort', T('s3.open_the_device_web_ui_http', T('devices.openUiHttpShort', T('s3.open_the_device_web_ui_http', 'فتح الواجهة (HTTP)')))) + (tPortSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '"' +
+        ' type="button">' + T('s2x.open_http', T('s3.open_http', '🌐 فتح HTTP')) + '</button>';
     }
     const tr = document.createElement('tr');
     tr.className = 'public-row';
@@ -321,9 +321,9 @@ function updateUptimeBars(total, online, offline) {
     bar.innerHTML =
       '<div class="uptime-bar"><div class="uptime-fill" style="width:' + pct + '%"></div></div>' +
       '<span class="uptime-text">' + T('public.uptimeLabel', 'نسبة التشغيل:') + ' ' + pct + '% ' +
-      '<bdi>(' + online + '/' + total + ' ' + T('status.online', 'متصل') +
+      '<bdi>(' + online + '/' + total + ' ' + T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل')))))) +
       (unknown > 0 ? ' — ' + unknown + ' ' + T('status.unknown', 'غير معروف') : '') +
-      (offline > 0 ? ' — ' + offline + ' ' + T('status.offline', 'متوقف') : '') + ')</bdi></span>';
+      (offline > 0 ? ' — ' + offline + ' ' + T('status.offline', T('s2x.offline', 'متوقف')) : '') + ')</bdi></span>';
   }
 }
 
@@ -678,15 +678,15 @@ async function init() {
   try {
     if (localStorage.getItem(THEME_STORAGE_KEY) === 'dark') {
       document.body.classList.add('dark');
-      themeBtn.textContent = T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a'));
+      themeBtn.textContent = T('topbar.themeLight', T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a')));
     }
   } catch (e) {}
-  document.addEventListener('nm:lang', function () { try { themeBtn.textContent = document.body.classList.contains('dark') ? T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a')) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a'); } catch (e) {} });
+  document.addEventListener('nm:lang', function () { try { themeBtn.textContent = document.body.classList.contains('dark') ? T('topbar.themeLight', T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a'))) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a'); } catch (e) {} });
   themeBtn.addEventListener('click', function () {
     document.body.classList.toggle('dark');
     var isDark = document.body.classList.contains('dark');
     // نصّ الزرّ من القاموس (ومعه إصلاح خطأ إملائي قديم: «لتليلي» ⇒ «ليلي»)
-    themeBtn.textContent = isDark ? T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a')) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
+    themeBtn.textContent = isDark ? T('topbar.themeLight', T('topbar.themeLight', T('topbar.themeLight', '\u2600\uFE0F \u0648\u0636\u0639 \u0646\u0647\u0627\u0631\u064a'))) : T('topbar.themeDark', '\uD83C\uDF19 \u0648\u0636\u0639 \u0644\u064a\u0644\u064a');
     try { localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light'); } catch (e) {}
   });
   // ===== زر تفعيل إشعارات الموبايل (Web Push + VAPID) =====

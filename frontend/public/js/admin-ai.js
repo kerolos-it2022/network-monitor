@@ -39,7 +39,7 @@ async function loadAiSettings() {
   const redactEl = document.getElementById('ai-redact-internal');
   if (redactEl) redactEl.checked = d.redact_internal == null ? true : !!d.redact_internal;
   if (!d.enabled || !d.has_key) {
-    aiSetStatus('شات AI غير مفعّل — الردود الآن «بقواعد محلية» بلا أي إرسال خارجي. أضف مفتاح API وفعّل وضع النموذج للتحليل الكامل.', false);
+    aiSetStatus(T('ai.chatOffHint', 'شات AI غير مفعّل — الردود الآن «بقواعد محلية» بلا أي إرسال خارجي. أضف مفتاح API وفعّل وضع النموذج للتحليل الكامل.'), false);
   }
 }
 
@@ -71,7 +71,7 @@ async function saveAiSettings() {
   const model = document.getElementById('ai-model').value.trim();
   // تحقق لطيف قبل الحفظ: العنوان لا يساوي فراغًا ولا يفشل صامتًا.
   if (base && !/^https?:\/\//i.test(base)) {
-    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://')))))))), true);
+    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://')))))))))))), true);
     return;
   }
   const r = await api('/api/ai/settings', {

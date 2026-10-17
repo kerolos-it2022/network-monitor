@@ -44,13 +44,13 @@ function inferByName(typeName) {
 // مخبأ لِـ قائمة المواقع الكاملة (يُستَعمل لِـ ملء قائمة parent_id وتحرير الجدول).
 // مفتاح لنوع الموقع حسبّ kind خريطة أَيقونة + تسمية عربية قَصيرة.
 const KIND_LABEL = {
-  internet: { icon: '🌐', label: 'إنترنت' },
-  zone: { icon: '📍', label: 'منطقة' },
+  internet: { icon: '🌐', labelKey: 'kind.internet' },
+  zone: { icon: '📍', labelKey: 'kind.zone' },
   site: { icon: '🏛️', label: T('frag.location', 'موقع') },
-  building: { icon: '🏢', label: 'مبنى' },
-  floor: { icon: '📐', label: 'طابق' },
-  room: { icon: '🚪', label: 'غرفة' },
-  rack: { icon: '🗄️', label: 'خزانة' },
+  building: { icon: '🏢', labelKey: 'kind.building' },
+  floor: { icon: '📐', labelKey: 'kind.floor' },
+  room: { icon: '🚪', labelKey: 'kind.room' },
+  rack: { icon: '🗄️', labelKey: 'kind.rack' },
 };
 let currentLocations = []; // نسخة من آخر قائمة locations لُكلها في parent_id.
 let currentKindFilter = ''; // فلتر النوع الحالي (فارغ = الكل).
@@ -66,7 +66,7 @@ function populateParentSelect(currentId) {
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
     const o = document.createElement('option');
     o.value = l.id;
-    o.textContent = `${kl.icon} ${kl.label} — ${l.name}`;
+    o.textContent = `${kl.icon} ${(kl.labelKey ? T(kl.labelKey, kl.label || '') : (kl.label || ''))} — ${l.name}`;
     sel.appendChild(o);
   }
   // أُعيد القيمة السابقة لو ما زالت موجُودة.
@@ -87,7 +87,7 @@ function populateMapParentSelect(currentId) {
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
     const o = document.createElement('option');
     o.value = l.id;
-    o.textContent = `${kl.icon} ${kl.label} — ${l.name}`;
+    o.textContent = `${kl.icon} ${(kl.labelKey ? T(kl.labelKey, kl.label || '') : (kl.label || ''))} — ${l.name}`;
     sel.appendChild(o);
   }
   if (prevValue && [...sel.options].some((o) => o.value === prevValue)) {
@@ -149,7 +149,7 @@ async function loadLocations() {
     tr.innerHTML = `
       <td class="col-center">${l.id}</td>
       <td>${esc(l.name)}</td>
-      <td>${kl.icon} ${kl.label}</td>
+      <td>${kl.icon} ${(kl.labelKey ? T(kl.labelKey, kl.label || '') : (kl.label || ''))}</td>
       <td>${parentName ? esc(parentName) : '<span class="nm-muted">—</span>'}</td>
       <td class="col-center">${sortOrderDisplay}</td>
       <td class="col-actions">
@@ -233,7 +233,7 @@ async function saveLocation() {
   if (kind === 'internet' && parentSel && parentSel.value) {
     const ok = await confirmAction({
       title: T('s2j.notice_the_internet_kind', 'تَنبيه: نوع «internet»'),
-      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟')))))))),
+      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟')))))))))),
       confirmText: '✓ مُتابعة',
     });
     if (!ok) return;

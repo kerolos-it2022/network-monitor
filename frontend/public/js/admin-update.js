@@ -62,7 +62,7 @@ function updRenderLast(ts) {
   const t = ts || updReadLast();
   if (!t) { updSet('upd-lastcheck', '—'); return; }
   const mins = Math.round((Date.now() - t) / 60000);
-  updSet('upd-lastcheck', mins < 1 ? 'الآن' : (mins < 60 ? `${T('frag.ago', 'قبل ')}${mins} ${T('frag.min', 'دقيقة')}` : `${T('frag.ago', 'قبل ')}${Math.round(mins / 60)} ${T('frag.h', 'ساعة')}`));
+  updSet('upd-lastcheck', mins < 1 ? T('common.now', 'الآن') : (mins < 60 ? `${T('frag.ago', 'قبل ')}${mins} ${T('frag.min', 'دقيقة')}` : `${T('frag.ago', 'قبل ')}${Math.round(mins / 60)} ${T('frag.h', 'ساعة')}`));
 }
 
 // ── خطوات التقدّم (v2.11.1) ──
@@ -243,7 +243,7 @@ async function updDetectMode() {
   updShow('upd-rollback-btn', updMode === 'appliance');
   updNote(updMode === 'appliance'
     ? '🔐 وضع الأبلاينس: التنفيذ بصلاحية root عبر «ملف طلب» (بلا أوامر من الويب) — والتحديث يشمل ملفات التطبيق فقط.'
-    : '💻 تثبيت عادي (Git): التحديث يتم بسحب الفرع + تثبيت التبعيات + إعادة تشغيل الخدمة.');
+    : T('updates.gitHint', '💻 تثبيت عادي (Git): التحديث يتم بسحب الفرع + تثبيت التبعيات + إعادة تشغيل الخدمة.'));
   return updMode;
 }
 
@@ -281,8 +281,8 @@ async function updCheck(silent = false) {
     // النصوص كما كانت في الأصل تمامًا (فحص GitHub: أي فرق = «تحديث متاح»)، وأزرار التنزيل/التثبيت
     // لا تظهر إلا لو كان على GitHub إصدار أحدث فعلًا (حماية من تنزيل نازل يُلغي شغلًا محليًا غير مرفوع).
     updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
-    updSet('upd-latest-sub', has ? 'يتوفّر تحديث جديد 🟠' : 'أنت على أحدث إصدار ✓', 'upd-hero-sub');
-    updSet('upd-state', has ? '🟠 تحديث متاح' : '🟢 محدَّث', 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
+    updSet('upd-latest-sub', has ? T('updates.newAvailable', 'يتوفّر تحديث جديد 🟠') : T('updates.upToDate', 'أنت على أحدث إصدار ✓'), 'upd-hero-sub');
+    updSet('upd-state', has ? T('updates.available', '🟠 تحديث متاح') : T('updates.updated', '🟢 محدَّث'), 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
     const now = Date.now();
     try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
     updRenderLast(now);
@@ -390,7 +390,7 @@ async function updOpenRollback() {
   listEl.querySelectorAll('button[data-tag]').forEach((b) => {
     b.addEventListener('click', () => updRollbackTo(b.getAttribute('data-tag')));
   });
-  if (stEl && r && r.cached) stEl.textContent = T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', 'قائمة من الكاش (يُحدَّث كل 10 دقائق).'))))))));
+  if (stEl && r && r.cached) stEl.textContent = T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', T('s2j.list_from_cache_refreshed_every_10_minutes', 'قائمة من الكاش (يُحدَّث كل 10 دقائق).'))))))))));
 }
 
 async function updRollbackTo(tag) {
@@ -479,7 +479,7 @@ async function updPlainDownload() {
 async function updPlainApply() {
   const ok = await confirmAction({
     title: 'تأكيد تطبيق التحديث',
-    message: T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', 'سيتم سحب الفرع، تثبيت التبعيات، وإعادة تشغيل الخدمة. متابعة؟')))))))),
+    message: T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', T('s2j.the_branch_will_be_pulled_dependencies_insta', 'سيتم سحب الفرع، تثبيت التبعيات، وإعادة تشغيل الخدمة. متابعة؟')))))))))),
     confirmText: '🚀 متابعة',
     danger: true,
   });
@@ -618,7 +618,7 @@ async function updInit() {
     const el = updEl('upd-log');
     const txt = (el && el.textContent) || '';
     try { await navigator.clipboard.writeText(txt); showToast(T('s2j.log_copied', '📋 تم نسخ السجل'), { type: 'success' }); }
-    catch (e) { showToast(T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', 'تعذّر النسخ — افتح السجل التفصيلي وانسخه يدويًّا')))))))), { type: 'warning', duration: 6000 }); }
+    catch (e) { showToast(T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', T('s2j.could_not_copy_open_the_detailed_log_and_cop', 'تعذّر النسخ — افتح السجل التفصيلي وانسخه يدويًّا')))))))))), { type: 'warning', duration: 6000 }); }
   });
 
   const chBtn = updEl('upd-changelog-btn');

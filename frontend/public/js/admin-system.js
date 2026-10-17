@@ -17,8 +17,8 @@ function sysFmtBytes(b) {
 function sysFmtUptime(sec) {
   if (!sec || sec < 0) return '—';
   const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
-  if (d) return d + ' يوم و ' + h + ' ساعة';
-  if (h) return h + ' ساعة و ' + m + T('unit.min', ' دقيقة');
+  if (d) return d + T('unit.dayAnd', ' يوم و ') + h + ' ساعة';
+  if (h) return h + T('unit.hoursAnd', ' ساعة و ') + m + T('unit.min', ' دقيقة');
   return m + ' دقيقة';
 }
 
@@ -79,7 +79,7 @@ async function loadSystemStats() {
       'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
   } else {
     sysSetBar('sys-disk-bar', null);
-    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة'))))))));
+    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة'))))))))));
   }
   document.getElementById('sys-db-size').innerHTML =
     '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
@@ -116,7 +116,7 @@ async function loadSystemStats() {
   const e = d.engine;
   document.getElementById('sys-engine').textContent = !e ? '—'
     : (e.stalled ? '⚠️ المحرك متوقف أو متعثر! آخر دورة قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية — راجع تبويب السجل'
-       : '✅ سليم — آخر دورة فحص قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية · أجهزة نشطة: ' + (d.devices_active !== null ? d.devices_active : (e.active_devices || '—')) + ' · فحوص جارية: ' + (e.inflight_checks || 0));
+       : T('system.healthy', '✅ سليم — آخر دورة فحص قبل ') + Math.round((e.last_tick_age_ms || 0) / 1000) + T('system.secAgoDevices', ' ثانية · أجهزة نشطة: ') + (d.devices_active !== null ? d.devices_active : (e.active_devices || '—')) + T('system.checksRunning', ' · فحوص جارية: ') + (e.inflight_checks || 0));
 
   // 🤖 بوت تلجرام (v2.33.0): شغّال/واقف + السبب — أوضح إشارة للمالك عند تعطّل الأوامر
   const botEl = document.getElementById('sys-bot');

@@ -51,7 +51,7 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', '🏢 مبنى')))))))))))));
+    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', '🏢 مبنى'))))))))))))))));
     if (kind === 'internet') return '🌐 بوابة إنترنت';
     if (kind === 'floor') return T('s2.floor', T('s3.floor', T('kind.floor', '📐 طابق')));
     if (kind === 'room') return T('s2.room', T('s3.room', T('kind.room', '🚪 غرفة')));

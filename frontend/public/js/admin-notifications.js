@@ -47,7 +47,7 @@ async function loadNotificationSettings() {
   const vapidEl = document.getElementById('ntf-status');
   if (vapidEl && d.vapid_public_key_ready === false) {
     vapidEl.style.color = 'var(--offline)';
-    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.'))))))));
+    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.'))))))))));
   }
 }
 
@@ -55,7 +55,7 @@ async function saveNotificationSettings() {
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ إعدادات الإِشعارات (إِجراء حسّاس).
   const ok = await confirmAction({
     title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
-    message: T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟')))))))),
+    message: T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟')))))))))),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
@@ -127,7 +127,7 @@ async function testNotification(channel) {
         const okSent = !!(data.data && data.data.sent);
         statusEl.textContent = okSent
           ? T('tail.sent_check_your_phone', '✅ تم الإرسال (افتح هاتفك للتأكد)')
-          : T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة'))))))));
+          : T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة'))))))))));
         if (!okSent) statusEl.style.color = 'var(--offline)';
       } else {
         statusEl.style.color = 'var(--offline)';

@@ -24,7 +24,7 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', '🏢 مبنى')))))))))))));
+    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', '🏢 مبنى'))))))))))))))));
     if (kind === 'internet') return '🌐 بوابة إنترنت';
     if (kind === 'floor') return T('s2.floor', T('s3.floor', T('kind.floor', '📐 طابق')));
     if (kind === 'room') return T('s2.room', T('s3.room', T('kind.room', '🚪 غرفة')));
@@ -398,7 +398,7 @@
     const ok = await saveLocationPositions([{ id, pos_x: n.pos_x, pos_y: n.pos_y }]);
     if (ok) {
       renderCanvas();
-      showToast(T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', '✅ تم إضافة المبنى إلى اللوحة — يمكنك سحبه ثم 💾 حفظ التخطيط')))))))), { type: 'success' });
+      showToast(T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', T('s2j.the_building_was_added_to_the_board_drag_it', '✅ تم إضافة المبنى إلى اللوحة — يمكنك سحبه ثم 💾 حفظ التخطيط')))))))))), { type: 'success' });
       setTimeout(() => centerOnNodes(true), 50);
     }
     addLocSel.value = '';
@@ -419,7 +419,7 @@
       dirty = false;
       saveBtn.classList.remove('attention');
       dirtyEl.classList.add('hidden');
-      showToast(T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', '✅ تم حفظ التخطيط — سيُعرض كما رسمته في شاشة NOC')))))))), { type: 'success' });
+      showToast(T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', T('s2j.layout_saved_it_will_appear_exactly_as_drawn', '✅ تم حفظ التخطيط — سيُعرض كما رسمته في شاشة NOC')))))))))), { type: 'success' });
     }
   });
   document.getElementById('topo-reload-btn').addEventListener('click', loadAll);

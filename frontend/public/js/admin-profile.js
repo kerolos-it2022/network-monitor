@@ -34,7 +34,7 @@ async function changePassword(e) {
     return;
   }
   if (newPass.length < 6) {
-    statusEl.textContent = T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'))))))));
+    statusEl.textContent = T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', T('s2j.the_password_must_be_at_least_6_characters', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'))))))))));
     statusEl.style.color = 'var(--offline)';
     return;
   }
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     list.innerHTML = rows.map((u) =>
       "<div style=\"display:flex; justify-content:space-between; align-items:center; gap:0.6rem; padding:0.45rem 0.2rem; border-bottom:1px solid var(--border);\">" +
       "<span><b>" + escName(u.username) + "</b> <small style=\"color:var(--muted);\">(" + (u.role === 'admin' ? T('s2.admin', "مدير") : T('s2.viewer', "عرض فقط")) + ")</small></span>" +
-      (u.username === me ? "<small style=\"color:var(--muted);\">(حسابك)</small>" : "<button class=\"btn btn-danger\" data-del-user=\"" + escName(u.username) + "\">🗑️</button>") +
+              (u.username === me ? '<small style="color:var(--muted);">' + T('s2x.you', '(حسابك)') + '</small>' : '<button class="btn btn-danger" data-del-user="' + escName(u.username) + '">🗑️</button>') +
       "</div>").join("");
     list.querySelectorAll("[data-del-user]").forEach((b) => b.addEventListener("click", () => deleteUser(b.getAttribute("data-del-user"))));
   }

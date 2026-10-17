@@ -29,7 +29,7 @@ function ipSortKey(ip) {
 // نصوص الحالة من القاموس (تتغيّر مع اللغة) — والقيم البرمجية ('online' …) تبقى كما هي.
 function __t(k, fb) { try { return (window.NMI18N && NMI18N.t(k)) || fb; } catch (e) { return fb; } }
 function statusText(status) {
-  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل')))))))))))))))))))))));
+  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))))))))))))))));
   if (status === 'offline') return __t('status.offline', T('s2x.offline', T('status.offline', 'متوقف')));
   if (status === 'paused') return __t('status.paused', T('status.paused', 'موقوف'));
   return __t('status.unknown', T('status.unknown', 'غير معروف'));
@@ -180,7 +180,7 @@ function renderDevicesView() {
     emptyBox.classList.toggle('hidden', sortedData.length > 0);
     emptyBox.innerHTML = q
       ? '<span class="nm-empty-icon">🔍</span>لا توجد أجهزة تطابق «' + esc(devicesSearch.trim()) + '» — جرّب جزءًا آخر من الاسم أو الـ IP، أو امسح البحث (Esc).'
-      : '<span class="nm-empty-icon">📱</span>لا توجد أجهزة مطابقة — أضف جهازًا بزر «➕ إضافة جهاز» أو غيّر الفلاتر.';
+      : '<span class="nm-empty-icon">📱</span>' + T('devices.emptyHint', T('devices.empty', 'لا توجد أجهزة مطابقة — أضف جهازًا بزر «➕ إضافة جهاز» أو غيّر الفلاتر.')) + '';
   }
 
   // v2.33.0 — ملخص الحالة أعلى الجدول: يُحسب من **نفس القائمة المعروضة** (فلو فُلتر بموقع،
@@ -194,10 +194,10 @@ function renderDevicesView() {
     let openBtn = '';
     if (d.https_accessible == 1) {
       const url = 'https://' + d.ip + portSuffix + '/';
-      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTPS' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')">🔒 فتح HTTPS</button>';
+      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="' + T('devices.openUiHttpsShort', T('s3.open_the_device_web_ui_https', T('devices.openUiHttpsShort', T('s3.open_the_device_web_ui_https', T('devices.openUiHttpsShort', T('s3.open_the_device_web_ui_https', 'فتح الواجهة (HTTPS)')))))) + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '">' + T('s2x.open_https', '🔒 فتح HTTPS') + '</button>';
     } else if (d.http_accessible == 1) {
       const url = 'http://' + d.ip + portSuffix + '/';
-      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="فتح الواجهة (HTTP' + (portSuffix ? ' على البورت ' + d.web_port : '') + ')">🌐 فتح HTTP</button>';
+      openBtn = '<button class="btn open-device-btn" data-url="' + esc(url) + '" title="' + T('devices.openUiHttpShort', T('s3.open_the_device_web_ui_http', T('devices.openUiHttpShort', T('s3.open_the_device_web_ui_http', T('devices.openUiHttpShort', T('s3.open_the_device_web_ui_http', 'فتح الواجهة (HTTP)')))))) + (portSuffix ? ' ' + T('devices.onPort', 'على البورت') + ' ' + d.web_port : '') + '">' + T('s2x.open_http', T('s3.open_http', '🌐 فتح HTTP')) + '</button>';
     }
     const tr = document.createElement('tr');
     tr.innerHTML = `
