@@ -1538,7 +1538,10 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   (function restoreSavedView() {
     let savedView = 'all';
     try { savedView = localStorage.getItem(VIEW_STORAGE_KEY) || 'all'; } catch (e) {}
-    if (['all', 'hero', 'map', 'grid', 'draw', 'split'].indexOf(savedView) === -1) savedView = 'all';
+    // v2.33.0 — التبويبان «🪟 مقسّوم» و«🔗 مسار الإنترنت» أُزيلا (قرار المالك: مكرّران — للخريطة
+    // وأنواع الأجهزة تبويبان مستقلان، والسلسلة تظهر داخل «عرض شامل»). من كان محفوظًا عنده أحد
+    // التبويبين يعود تلقائيًّا إلى «عرض شامل» بدل شاشة فارغة.
+    if (['all', 'map', 'grid', 'draw'].indexOf(savedView) === -1) savedView = 'all';
     setViewMode(savedView);
     let savedZoom = 1.0;
     try { savedZoom = parseFloat(localStorage.getItem(ZOOM_STORAGE_KEY)); } catch (e) {}
