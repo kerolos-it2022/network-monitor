@@ -152,8 +152,8 @@ function renderDiscoveryTable(devices) {
     tr.dataset.time = (d.responseTime != null) ? String(d.responseTime) : '';
 
     const badge = d.existsInDB
-      ? '<span style="background:var(--warning); color:#000; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.7rem;">موجود في قاعدة البيانات</span>'
-      : '<span style="background:var(--online); color:#fff; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.7rem;">جديد</span>';
+      ? `<span style="background:var(--warning); color:#000; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.7rem;">${T('tail.already_in_the_database', 'موجود في قاعدة البيانات')}</span>`
+      : `<span style="background:var(--online); color:#fff; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.7rem;">${T('tail.new', 'جديد')}</span>`;
     const suggest = suggestCheck(d);
 
     tr.innerHTML = `
@@ -293,7 +293,7 @@ function updateDiscoverySummary(total, shown) {
   if (!el) return;
   const newCount = discoveryDevices.filter(d => !d.existsInDB).length;
   const oldCount = discoveryDevices.length - newCount;
-  let txt = 'جديد ' + newCount + ' · موجود ' + oldCount;
+  let txt = T('tail.new', 'جديد ') + ' ' + newCount + ' · موجود ' + oldCount;
   if (typeof shown === 'number' && shown !== total) txt += ' · معروض ' + shown + '/' + total;
   el.textContent = '· ' + txt;
 }
@@ -354,7 +354,7 @@ async function startDiscovery() {
     });
 
     if (!r.success) {
-      throw new Error(r.error || 'فشل بدء المسح');
+      throw new Error(r.error || T('tail.could_not_start_the_scan', 'فشل بدء المسح'));
     }
 
     // استخدام SSE للتقدم المباشر
@@ -396,7 +396,7 @@ function connectSSE(scanId) {
       const info = e.data ? JSON.parse(e.data) : null;
       if (info && typeof info.deviceCount === 'number') {
         document.getElementById('discovery-progress-text').textContent =
-          '✅ اكتمل المسح! تم العثور على ' + info.deviceCount + ' جهاز';
+          '✅ اكتمل المسح! تم العثور على ' + info.deviceCount + T('tail.devices', ' جهاز');
       }
     } catch (err) { /* تجاهل: لا data أو ليست JSON — نَعتمد على fetchResults */ }
     // جلب النتائج الكاملة من /results/:scanId
@@ -408,7 +408,7 @@ function connectSSE(scanId) {
     // خلاف ذلك EventSource يُعيد الاتصال تلقائيًا فلا نقطعه على الأخطاء العابرة (proxy idle-drop مثلاً).
     if (eventSource.readyState === EventSource.CLOSED) {
       eventSource.close();
-      showError('انقطع الاتصال بالخادم');
+      showError(T('tail.lost_the_connection_to_the_server', 'انقطع الاتصال بالخادم'));
       resetStartButton();
       return;
     }
@@ -416,7 +416,7 @@ function connectSSE(scanId) {
     consecutiveErrors += 1;
     if (consecutiveErrors >= MAX_SSE_ERRORS) {
       eventSource.close();
-      showError('انقطع الاتصال بالخادم — تعذّرت إعادة الاتصال بعد عدة محاولات');
+      showError(T('tail.lost_the_connection_to_the_server_retries_fa', 'انقطع الاتصال بالخادم — تعذّرت إعادة الاتصال بعد عدة محاولات'));
       resetStartButton();
     }
   });
@@ -611,7 +611,7 @@ async function addSelectedDevices() {
     if (r.success) {
       const { imported, skipped, errors } = r.data;
       let msg = '✅ تم إضافة ' + imported + ' جهاز بنجاح';
-      if (skipped > 0) msg += '، تم تخطي ' + skipped;
+      if (skipped > 0) msg += T('tail.skipped', '، تم تخطي ') + ' ' + skipped;
       if (errors.length > 0) msg += '\n\nأخطاء:\n' + errors.join('\n');
       showToast(msg, { type: imported > 0 ? 'success' : 'warning', duration: 6000 });
 
@@ -633,7 +633,7 @@ async function addSelectedDevices() {
         await window.loadDevices();
       }
     } else {
-      showToast('❌ فشل الإضافة: ' + (r.error || 'خطأ غير معروف'), { type: 'error' });
+      showToast('❌ فشل الإضافة: ' + (r.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
     }
   } catch (e) {
     showToast('❌ خطأ: ' + e.message, { type: 'error' });

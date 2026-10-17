@@ -50,7 +50,7 @@ function backupRenderTableRows() {
     : names.sort((a, b) => a.localeCompare(b));
   tableListEl.innerHTML = '';
   if (names.length === 0) {
-    tableListEl.innerHTML = '<li class="nm-muted">لا توجد جداول.</li>';
+    tableListEl.innerHTML = `<li class="nm-muted">${T('tail.no_tables', 'لا توجد جداول.')}</li>`;
     return;
   }
   names.forEach((t) => {
@@ -60,7 +60,7 @@ function backupRenderTableRows() {
     nameSpan.textContent = t;
     const countSpan = document.createElement('span');
     countSpan.className = 'v';
-    countSpan.textContent = backupTableCounts[t] >= 0 ? (NMFormat.num(backupTableCounts[t]) + ' صف') : '—';
+    countSpan.textContent = backupTableCounts[t] >= 0 ? (NMFormat.num(backupTableCounts[t]) + T('tail.rows', ' صف')) : '—';
     li.appendChild(nameSpan);
     li.appendChild(countSpan);
     tableListEl.appendChild(li);
@@ -76,15 +76,15 @@ async function loadBackupInfo() {
   const modifiedEl = document.getElementById('backup-last-modified');
 
   if (!r.success) {
-    if (sizeEl) sizeEl.textContent = 'خطأ';
+    if (sizeEl) sizeEl.textContent = T('tail.error', 'خطأ');
     if (tablesEl) tablesEl.textContent = '—';
     if (modifiedEl) modifiedEl.textContent = '—';
-    showBackupStatus('❌ تعذر تحميل معلومات القاعدة: ' + (r.error || ''), true);
+    showBackupStatus(T('tail.could_not_load_the_database_info', '❌ تعذر تحميل معلومات القاعدة: ') + ' ' + (r.error || ''), true);
     return;
   }
 
   if (sizeEl) sizeEl.textContent = NMFormat.bytes((Number(r.sizeMB) || 0) * 1024 * 1024);
-  if (tablesEl) tablesEl.textContent = NMFormat.num(r.tableCount) + ' جدول';
+  if (tablesEl) tablesEl.textContent = NMFormat.num(r.tableCount) + T('tail.tables', ' جدول');
   if (modifiedEl) modifiedEl.textContent = NMFormat.dateTime(r.lastModified);
 
   backupTableCounts = r.tables || {};
@@ -98,7 +98,7 @@ async function exportBackup() {
     exportBtn.disabled = true;
     exportBtn.textContent = T('s2j.creating_the_copy', '⏳ جاري إنشاء النسخة...');
   }
-  showBackupStatus('⏳ جاري إنشاء نسخة احتياطية من قاعدة البيانات...', false);
+  showBackupStatus(T('tail.creating_a_database_backup', '⏳ جاري إنشاء نسخة احتياطية من قاعدة البيانات...'), false);
 
   try {
     const response = await fetch('/api/backup/download', { credentials: 'include' });
@@ -127,7 +127,7 @@ async function exportBackup() {
     showBackupStatus(`✅ تم تنزيل النسخة الاحتياطية: ${filename}`, false);
   } catch (e) {
     console.error('[BACKUP] export error:', e);
-    showBackupStatus('❌ خطأ في التصدير: ' + e.message, true);
+    showBackupStatus(T('tail.export_error', '❌ خطأ في التصدير: ') + ' ' + e.message, true);
   } finally {
     if (exportBtn) {
       exportBtn.disabled = false;
@@ -142,13 +142,13 @@ async function restoreBackup() {
   const restoreBtn = document.getElementById('backup-restore-btn');
 
   if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-    showBackupStatus('⚠️ الرجاء اختيار ملف .db أولاً', true);
+    showBackupStatus(T('tail.choose_a_db_file_first', '⚠️ الرجاء اختيار ملف .db أولاً'), true);
     return;
   }
 
   const file = fileInput.files[0];
   if (!file.name.toLowerCase().endsWith('.db')) {
-    showBackupStatus('⚠️ الملف يجب أن يكون بصيغة .db', true);
+    showBackupStatus(T('tail.the_file_must_be_a_db', '⚠️ الملف يجب أن يكون بصيغة .db'), true);
     return;
   }
 
@@ -160,7 +160,7 @@ async function restoreBackup() {
       '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
       '• سيتم إعادة تشغيل الخادم بعد الانتهاء.\n' +
       `• حجم الملف: ${(file.size / 1024 / 1024).toFixed(2)} ميجابايت\n\n` +
-      'هل تريد المتابعة؟',
+      T('tail.continue', 'هل تريد المتابعة؟'),
     confirmText: '🔄 استعادة',
     danger: true,
   });
@@ -173,7 +173,7 @@ async function restoreBackup() {
   showBackupOutput(true);
   document.getElementById('backup-log').textContent = '';
   appendBackupLog(`📤 رفع الملف: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`);
-  showBackupStatus('⏳ جاري رفع واستعادة النسخة...', false);
+  showBackupStatus(T('tail.uploading_and_restoring_the_copy', '⏳ جاري رفع واستعادة النسخة...'), false);
 
   try {
     const formData = new FormData();
@@ -191,7 +191,7 @@ async function restoreBackup() {
     if (response.ok && data && data.success) {
       appendBackupLog(`✅ ${data.message}`);
       if (data.backupFile) appendBackupLog(`🗂️ النسخة الأمنية المحفوظة: ${data.backupFile}`);
-      showBackupStatus('✅ تمت الاستعادة. جاري إعادة تشغيل الخادم...', false);
+      showBackupStatus(T('tail.restored_restarting_the_server', '✅ تمت الاستعادة. جاري إعادة تشغيل الخادم...'), false);
 
       // ننتظر قليلاً ثم نعيد التحميل؛ الخادم قد يكون في مرحلة إعادة التشغيل
       let countdown = 8;
@@ -209,16 +209,16 @@ async function restoreBackup() {
       let err = (data && data.error) ? data.error : `HTTP ${response.status}`;
       // v2.8.7 — رسالة واضحة لخطأ الحجم (nginx يرفض الطلب قبل أن يصل للخادم).
       if (response.status === 413) {
-        err = 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.';
+        err = T('tail.the_copy_is_larger_than_the_proxy_server_all', 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.');
       } else if (response.status === 404 || response.status === 502) {
-        err = 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.';
+        err = T('tail.could_not_reach_the_server_it_may_be_restart', 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.');
       }
       throw new Error(err);
     }
   } catch (e) {
     console.error('[BACKUP] restore error:', e);
     appendBackupLog(`❌ خطأ: ${e.message}`);
-    showBackupStatus('❌ خطأ في الاستعادة: ' + e.message, true);
+    showBackupStatus(T('tail.restore_error', '❌ خطأ في الاستعادة: ') + ' ' + e.message, true);
     if (restoreBtn) {
       restoreBtn.disabled = false;
       restoreBtn.textContent = T('s2.restore_the_copy', '⬆️ استعادة النسخة');
@@ -268,7 +268,7 @@ async function restoreFromExisting(filename) {
         countdown--;
       }, 1000);
     } else {
-      throw new Error((data && data.error) ? data.error : 'فشل الاستعادة');
+      throw new Error((data && data.error) ? data.error : T('tail.restore_failed', 'فشل الاستعادة'));
     }
   } catch (e) {
     appendBackupLog(`❌ خطأ: ${e.message}`);
@@ -299,7 +299,7 @@ async function deleteBackup(filename, rowEl) {
       throw new Error((data && data.error) ? data.error : 'فشل الحذف');
     }
   } catch (e) {
-    showBackupStatus('❌ خطأ في الحذف: ' + e.message, true);
+    showBackupStatus(T('tail.delete_error', '❌ خطأ في الحذف: ') + ' ' + e.message, true);
   }
 }
 
@@ -310,12 +310,12 @@ async function loadBackupList() {
 
   const r = await backupApi('/api/backup/list');
   if (!r.success) {
-    listEl.innerHTML = '<div style="color:var(--muted); padding:1rem;">❌ تعذر تحميل النسخ الأمنية</div>';
+    listEl.innerHTML = `<div style="color:var(--muted); padding:1rem;">${T('tail.could_not_load_the_safety_copies', '❌ تعذر تحميل النسخ الأمنية')}</div>`;
     return;
   }
 
   if (!r.backups || r.backups.length === 0) {
-    listEl.innerHTML = '<div class="nm-empty" style="color:var(--muted); padding:1rem;">📭 لا توجد نسخ أمنية حالياً. سيتم إنشاؤها تلقائياً عند أول عملية استعادة.</div>';
+    listEl.innerHTML = `<div class="nm-empty" style="color:var(--muted); padding:1rem;">${T('tail.no_safety_copies_yet_one_is_created_automati', '📭 لا توجد نسخ أمنية حالياً. سيتم إنشاؤها تلقائياً عند أول عملية استعادة.')}</div>`;
     return;
   }
 

@@ -14,12 +14,12 @@
   <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
   <header class="admin-topbar">
     <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" data-i18n-attr="aria-label:sidebar.toggleTitle" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
-    <h1 class="admin-page-title">📋 لوحة التحكم</h1>
+    <h1 class="admin-page-title"><span data-i18n="tail.dashboard">📋 لوحة التحكم</span></h1>
     <a href="../index.html" class="admin-link" data-i18n="topbar.publicPage">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
     <button id="lang-toggle" class="btn" type="button" title="تبديل اللغة (عربي / إنجليزي)" data-i18n="topbar.lang" data-i18n-attr="title:lang.switchTitle">🌐 English</button>
-    <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع" data-i18n="topbar.themeDark">🌙 وضع ليلي</button>
-    <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج" data-i18n="topbar.logout">🚪 تسجيل الخروج</button>
+    <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع" data-i18n="topbar.themeDark" data-i18n-attr="title:tail.toggle_the_theme">🌙 وضع ليلي</button>
+    <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج" data-i18n="topbar.logout" data-i18n-attr="title:tail.log_out">🚪 تسجيل الخروج</button>
   </header>
 
   <!-- ===== القائمة الجانبية العمودية (sidebar — v2.7.0) ===== -->
@@ -314,7 +314,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th class="col-center"><input type="checkbox" id="discovered-select-all" title="تحديد الكل" /></th>
+            <th class="col-center"><input type="checkbox" id="discovered-select-all" title="تحديد الكل"  data-i18n-attr="title:tail.select_all"/></th>
             <th class="sortable col-ltr" data-sort="ip" data-label="IP" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort">IP ↕</th>
             <th class="col-ltr">MAC</th>
             <th class="sortable" data-sort="hostname" data-label="الاسم" style="cursor:pointer;" title="انقر للفرز" data-i18n-attr="title:s2.click_to_sort"><span data-i18n="s2.name_2">الاسم ↕</span></th>
@@ -382,7 +382,7 @@
         <h3><span data-i18n="s2.location_and_device_tree">🗺️ شجرة المواقع والأَجهزة</span></h3>
         <p class="map-help nm-card-desc">
           عرض «بطاقات مُربّعة» لِـ شبكة المواقع: كُلّ <b>📍 <span class="nm-ltr">zone</span></b> بطاقة قابلة لِـ طي/تَوسيع،
-          تَحوي أَجهزتها (و <span class="nm-ltr">sub-zones</span> لو وُجدت: <b>🏢 <span class="nm-ltr">building</span></b> /
+          تَحوي أَجهزتها (و <span class="nm-ltr">sub-zones</span> <span data-i18n="tail.if_present">لو وُجدت:</span> <b>🏢 <span class="nm-ltr">building</span></b> /
           <b>📐 <span class="nm-ltr">floor</span></b> / <b>🚪 <span class="nm-ltr">room</span></b> /
           <b>🗄️ <span class="nm-ltr">rack</span></b>). الإِطار يُلخّص حالة الأَجهزة داخلها (أَحمر لو وُجد متوقف، أَخضر لو كلها
           متصلة). اِنقر تَرويسة لأَيّ بطاقة لِـ طيّها/تَوسيعها، أَو على جهاز لِـ عرض تَفاصيله في
@@ -435,7 +435,7 @@
           </div>
         </div>
         <div class="details-fields" id="map-device-fields">
-          <p class="details-placeholder">اِنقر عقدة جهاز في الشجرة لِـ عرض تَفاصيله هنا.</p>
+          <p class="details-placeholder"><span data-i18n="tail.click_a_device_node_in_the_tree_to_see_its_d">اِنقر عقدة جهاز في الشجرة لِـ عرض تَفاصيله هنا.</span></p>
         </div>
         <div class="details-actions" id="map-device-actions"></div>
       </div>
@@ -484,7 +484,7 @@
               <input type="checkbox" id="ntf-telegram_enabled" />
               <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط" data-i18n="admin.testChannel">🔔 اختبار هذه القناة</button>
+            <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط" data-i18n="admin.testChannel" data-i18n-attr="title:tail.send_a_test_notification_on_telegram_only">🔔 اختبار هذه القناة</button>
           </div>
           <div class="form-grid cols-2">
             <label><span data-i18n="notify.telegram.token">توكن البوت</span>
@@ -503,7 +503,7 @@
               <input type="checkbox" id="ntf-whatsapp_enabled" />
               <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-whatsapp-btn" title="إرسال إشعار تجريبي على واتساب فقط"><span data-i18n="admin.testChannel">🔔 اختبار هذه القناة</span></button>
+            <button type="button" class="btn btn-sm" id="ntf-test-whatsapp-btn" title="إرسال إشعار تجريبي على واتساب فقط" data-i18n-attr="title:tail.send_a_test_notification_on_whatsapp_only"><span data-i18n="admin.testChannel">🔔 اختبار هذه القناة</span></button>
           </div>
           <div class="form-grid cols-3">
             <label><span data-i18n="notify.whatsapp.url">رابط الـ API</span> <small class="nm-muted">(URL)</small>
@@ -525,7 +525,7 @@
               <input type="checkbox" id="ntf-mobile_enabled" />
               <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
-            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف فقط"><span data-i18n="admin.testChannel">🔔 اختبار هذه القناة</span></button>
+            <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف فقط" data-i18n-attr="title:tail.send_a_test_notification_on_mobile_only"><span data-i18n="admin.testChannel">🔔 اختبار هذه القناة</span></button>
           </div>
           <div class="form-grid cols-2">
             <label><span data-i18n="notify.fcm.key">مفتاح FCM Server Key</span>
@@ -534,20 +534,20 @@
           </div>
           <small class="nm-hint">
             💡 للحصول على المفتاح: <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> ← Project Settings ← Cloud Messaging ← Legacy Server Key.
-            ولتفعيلها على هاتفك: افتح <a href="../index.html" target="_blank" rel="noopener">الصفحة العامة</a> من Chrome واضغط «🔔 تفعيل الإشعارات» ثم ثبّت التطبيق (إضافة إلى الشاشة الرئيسية).
+            ولتفعيلها على هاتفك: افتح <a href="../index.html" target="_blank" rel="noopener"><span data-i18n="tail.public_page">الصفحة العامة</span></a> من Chrome واضغط «🔔 تفعيل الإشعارات» ثم ثبّت التطبيق (إضافة إلى الشاشة الرئيسية).
           </small>
         </div>
 
         <div class="nm-sub-section">
           <div class="nm-sub-head" data-i18n="notify.sub.smart">🧠 ذكاء الإشعارات</div>
-          <small class="nm-hint">كل ميزة مستقلة — شغّلها أو أوقفها بحرية، ثم احفظ من الأسفل.</small>
+          <small class="nm-hint"><span data-i18n="tail.each_feature_is_independent_turn_it_on_or_of">كل ميزة مستقلة — شغّلها أو أوقفها بحرية، ثم احفظ من الأسفل.</span></small>
           <div class="form-grid cols-2" style="margin-top:0.6rem;">
             <div class="nm-option-card">
               <label class="nm-check">
                 <input type="checkbox" id="ntf-bot_commands_enabled" />
-                <span class="nm-option-title">🤖 بوت تلجرام التفاعلي</span>
+                <span class="nm-option-title"><span data-i18n="tail.interactive_telegram_bot">🤖 بوت تلجرام التفاعلي</span></span>
               </label>
-              <span class="nm-option-desc">أوامر /status و /down وأزرار الاستعلام تحت رسائل الانقطاع — يحتاج تلجرام مفعّلًا بالأعلى.</span>
+              <span class="nm-option-desc"><span data-i18n="tail.commands_status_and_down_plus_query_buttons">أوامر /status و /down وأزرار الاستعلام تحت رسائل الانقطاع — يحتاج تلجرام مفعّلًا بالأعلى.</span></span>
             </div>
 
             <div class="nm-option-card">
@@ -555,13 +555,13 @@
                 <input type="checkbox" id="ntf-storm_digest_enabled" />
                 <span class="nm-option-title"><span data-i18n="s3.outage_storm_digest">⚡ تجميع عواصف الانقطاع</span></span>
               </label>
-              <span class="nm-option-desc">عند انقطاع عدة أجهزة معًا: رسالة واحدة بدل إغراق الهاتف + السبب المشترك من سلسلة الشبكة.</span>
+              <span class="nm-option-desc"><span data-i18n="tail.when_several_devices_drop_together_one_messa">عند انقطاع عدة أجهزة معًا: رسالة واحدة بدل إغراق الهاتف + السبب المشترك من سلسلة الشبكة.</span></span>
             </div>
 
             <div class="nm-option-card">
               <div class="nm-option-title"><span data-i18n="s3.storm_window_seconds">⏱️ مدة تجميع العاصفة (ثوانٍ)</span></div>
               <input type="number" class="nm-input nm-inline-num" id="ntf-storm_window_seconds" min="15" max="600" value="90" />
-              <span class="nm-option-desc">بين 15 و600 — خلالها تتجمّع الانقطاعات المتلاحقة.</span>
+              <span class="nm-option-desc"><span data-i18n="tail.between_15_and_600_consecutive_outages_are_b">بين 15 و600 — خلالها تتجمّع الانقطاعات المتلاحقة.</span></span>
             </div>
 
             <div class="nm-option-card">
@@ -569,7 +569,7 @@
                 <input type="checkbox" id="ntf-daily_report_enabled" />
                 <span class="nm-option-title"><span data-i18n="notify.daily.title">📊 تقرير يومي مجدول</span></span>
               </label>
-              <span class="nm-option-desc">ملخص 24 ساعة كل صباح: الانقطاعات وأطولها وأسوأ جهاز.</span>
+              <span class="nm-option-desc"><span data-i18n="tail.a_24_hour_summary_every_morning_outages_the">ملخص 24 ساعة كل صباح: الانقطاعات وأطولها وأسوأ جهاز.</span></span>
             </div>
 
             <div class="nm-option-card">
@@ -580,9 +580,9 @@
             <div class="nm-option-card">
               <label class="nm-check">
                 <input type="checkbox" id="ntf-noc_alert_screen" />
-                <span class="nm-option-title">🖥️ غطاء الإنذار الأحمر في شاشة NOC</span>
+                <span class="nm-option-title"><span data-i18n="tail.the_red_alarm_overlay_on_the_noc_screen">🖥️ غطاء الإنذار الأحمر في شاشة NOC</span></span>
               </label>
-              <span class="nm-option-desc">لما جهاز يفصل: الشاشة الحمراء الكاملة في NOC — أوقفها لو حابب تعتمد على الشارات والصوت فقط.</span>
+              <span class="nm-option-desc"><span data-i18n="tail.when_a_device_drops_the_full_red_overlay_on">لما جهاز يفصل: الشاشة الحمراء الكاملة في NOC — أوقفها لو حابب تعتمد على الشارات والصوت فقط.</span></span>
             </div>
 
             <div class="nm-option-card">
@@ -590,7 +590,7 @@
                 <input type="checkbox" id="ntf-escalation_enabled" />
                 <span class="nm-option-title"><span data-i18n="notify.escalation.title">🚨 تصعيد الانقطاعات</span></span>
               </label>
-              <span class="nm-option-desc">جهاز ما زال واقعًا بعد العتبة ⇒ تنبيه ثانٍ (وتذكير دوري اختياري) حتى يُحلَّ — يُرسل عبر القنوات المفعّلة أعلاه.</span>
+              <span class="nm-option-desc"><span data-i18n="tail.a_device_still_down_past_the_threshold_a_sec">جهاز ما زال واقعًا بعد العتبة ⇒ تنبيه ثانٍ (وتذكير دوري اختياري) حتى يُحلَّ — يُرسل عبر القنوات المفعّلة أعلاه.</span></span>
             </div>
 
             <div class="nm-option-card">
@@ -625,8 +625,8 @@
         </div>
 
         <div class="nm-actions">
-          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات" data-i18n="common.saveSettings"><span data-i18n="s2.save_settings">💾 حفظ الإعدادات</span></button>
-          <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)" data-i18n="admin.testNotification">🔔 اختبار الإشعار</button>
+          <button type="button" class="btn btn-primary" id="ntf-save-btn" title="حفظ إعدادات الإشعارات" data-i18n="common.saveSettings" data-i18n-attr="title:tail.save_the_notification_settings"><span data-i18n="s2.save_settings">💾 حفظ الإعدادات</span></button>
+          <button type="button" class="btn" id="ntf-test-btn" title="إرسال إشعار تجريبي عبر كل القنوات (تلجرام/واتساب/الهاتف)" data-i18n="admin.testNotification" data-i18n-attr="title:tail.send_a_test_notification_on_every_channel_te">🔔 اختبار الإشعار</button>
         </div>
         <div id="ntf-status" class="error-msg" style="color:var(--online); margin-top:0.5rem;"></div>
       </div>
@@ -928,7 +928,7 @@
           <span class="nm-chip is-info"><span data-i18n="s2.applied_instantly_no_restart">تُطبَّق فورًا · بلا إعادة تشغيل</span></span>
         </div>
         <p class="nm-card-desc">
-          كل ما هنا يُطبَّق <b>فورًا</b> ويُسجَّل في سجل التدقيق. والمبدأ العام:
+          كل ما هنا يُطبَّق <b><span data-i18n="tail.instantly">فورًا</span></b> ويُسجَّل في سجل التدقيق. والمبدأ العام:
           <b><span data-i18n="s2.a_visitor_without_a_session_never_sees_any">الزائر بلا تسجيل دخول لا يرى أي عنوان أبدًا</span></b>، والقرار للمستخدم المسجَّل.
         </p>
 
@@ -951,7 +951,7 @@
           <div class="nm-sub-head" data-i18n="display.userHeading"><span data-i18n="s2.what_a_signed_in_user_sees_admin_or_viewer">🙋 ما يراه المستخدم المسجَّل (مدير أو عرض)</span></div>
           <label class="nm-check">
             <input type="checkbox" id="disp-noc-internal" />
-            <span><span data-i18n="s2.show">عرض</span> <b><span data-i18n="s2.ip_addresses">عناوين IP</span></b> على الصفحة العامة وشاشة NOC — <b>لأي مستخدم مسجَّل</b> <span data-i18n="s2.visitors_are_always_blocked">(الزوار محجوبون دائمًا)</span></span>
+            <span><span data-i18n="s2.show">عرض</span> <b><span data-i18n="s2.ip_addresses">عناوين IP</span></b> <span data-i18n="tail.on_the_public_page_and_the_noc">على الصفحة العامة وشاشة NOC —</span> <b><span data-i18n="tail.for_any_signed_in_user">لأي مستخدم مسجَّل</span></b> <span data-i18n="s2.visitors_are_always_blocked">(الزوار محجوبون دائمًا)</span></span>
           </label>
           <small class="nm-hint"><span data-i18n="s2.clear_the_box_if_the_screen_hangs_in_a_pub">ألغِ التحديد لو الشاشة معلّقة في مكان عام وبها جلسة مسجّلة — عندها تُعرض الحالة بلا عناوين للجميع.</span></small>
         </div>
@@ -1241,7 +1241,7 @@
         <!-- ═══ المكشوف على الإنترنت ═══ -->
         <div class="nm-note is-ok" style="margin-bottom:0.85rem;">
           🛡️ <b><span data-i18n="s2.exposed_to_the_internet">المكشوف على الإنترنت:</span></b> <span id="rep-exposes"><span data-i18n="s2.web_ui_only_nginx_protected_by_the_sign_in">واجهة الويب فقط (nginx) — محميّة بكلمة مرور الدخول.</span></span>
-          <span style="display:block; margin-top:0.25rem;"><span data-i18n="s2.not_exposed">غير مكشوف:</span> <span id="rep-notexposed">SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span></span>
+          <span style="display:block; margin-top:0.25rem;"><span data-i18n="s2.not_exposed">غير مكشوف:</span> <span id="rep-notexposed"><span data-i18n="tail.ssh_22_application_port_4001_the_database_th">SSH (22) · منفذ التطبيق (4001) · قاعدة البيانات · كونسول الجهاز.</span></span></span>
         </div>
 
         <!-- ═══ التحكم الرئيسي ═══ -->
@@ -1337,7 +1337,7 @@
             </select>
           </label>
           <label><span data-i18n="device.field.port">المنفذ (افتراضي: HTTP=80, HTTPS=443, Port=مطلوب)</span> <input type="number" id="df-port" min="1" max="65535" placeholder="80/443" /></label>
-          <label><span data-i18n="device.field.webPort">بورت واجهة الويب (اختياري — لزر «فتح»، مثل 4444)</span> <input type="number" id="df-web_port" min="1" max="65535" placeholder="مثلاً 4444" data-i18n-attr="title:device.field.webPortTitle" title="بورت مخصص لواجهة الجهاز على الويب — يُكشف البروتوكول (HTTP/HTTPS) تلقائياً" /></label>
+          <label><span data-i18n="device.field.webPort">بورت واجهة الويب (اختياري — لزر «فتح»، مثل 4444)</span> <input type="number" id="df-web_port" min="1" max="65535" placeholder="مثلاً 4444" data-i18n-attr="placeholder:tail.e_g_4444 title:device.field.webPortTitle" title="بورت مخصص لواجهة الجهاز على الويب — يُكشف البروتوكول (HTTP/HTTPS) تلقائياً" /></label>
           <label><span data-i18n="device.field.interval">فترة الفحص (ثانية)</span> <input type="number" id="df-check_interval_seconds" value="10" min="5" /></label>
           <label><span data-i18n="device.field.threshold">حد التنبيه</span> <input type="number" id="df-failure_threshold" value="2" min="1" /></label>
           <label class="checkbox-label"><span data-i18n="device.field.monitored">مفعّل للمراقبة</span>
@@ -1364,14 +1364,14 @@
             <label><span data-i18n="device.services.name">اسم الخدمة</span> <input type="text" id="dfs-name" placeholder="Odoo ERP" /></label>
             <label><span data-i18n="s2.type">النوع</span>
               <select id="dfs-kind">
-                <option value="tcp">TCP (منفذ)</option>
+                <option value="tcp"><span data-i18n="tail.tcp_port">TCP (منفذ)</span></option>
                 <option value="http">HTTP</option>
                 <option value="https">HTTPS</option>
               </select>
             </label>
             <label><span data-i18n="device.services.port">المنفذ</span> <input type="number" id="dfs-port" min="1" max="65535" placeholder="8069" /></label>
             <label><span data-i18n="device.services.path">المسار (للويب)</span> <input type="text" id="dfs-url_path" placeholder="/web/login" /></label>
-            <label><span data-i18n="device.services.expect">الحالة المتوقعة</span> <input type="text" id="dfs-expect_status" placeholder="2xx أو 200-299 أو 200,301" /></label>
+            <label><span data-i18n="device.services.expect">الحالة المتوقعة</span> <input type="text" id="dfs-expect_status" placeholder="2xx أو 200-299 أو 200,301"  data-i18n-attr="placeholder:tail.2xx_or_200_299_or_200_301"/></label>
             <label><span data-i18n="device.services.interval">فاصل الفحص (ثانية)</span> <input type="number" id="dfs-interval_seconds" value="60" min="10" /></label>
             <label><span data-i18n="device.services.threshold">عتبة الفشل</span> <input type="number" id="dfs-failure_threshold" value="2" min="1" max="10" /></label>
             <label class="checkbox-label"><span data-i18n="device.services.critical">حرجة</span> <input type="checkbox" id="dfs-is_critical" /><span data-i18n="device.services.criticalHint">خدمة حرجة (تُبرَز في التنبيهات)</span></label>
@@ -1390,16 +1390,16 @@
   <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
       <button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق">✕</button>
-      <h3 id="history-modal-title">📈 تشغيل الجهاز</h3>
+      <h3 id="history-modal-title"><span data-i18n="tail.device_uptime">📈 تشغيل الجهاز</span></h3>
       <div id="history-ranges" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin:0.4rem 0 0.6rem;">
         <button type="button" class="btn" data-hrange="24h">24 ساعة</button>
         <button type="button" class="btn" data-hrange="7d">7 أيام</button>
-        <button type="button" class="btn" data-hrange="30d">30 يومًا</button>
+        <button type="button" class="btn" data-hrange="30d"><span data-i18n="tail.30_days">30 يومًا</span></button>
         <span id="history-quality" style="align-self:center; font-size:0.82rem; color:var(--muted);"></span>
       </div>
       <p id="history-summary" style="font-size:0.95rem; margin:0 0 0.5rem;"></p>
       <div id="history-strip" style="margin:0.4rem 0 0.8rem;"></div>
-      <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.4rem;">أحدث الانقطاعات في الفترة:</p>
+      <p style="font-size:0.85rem; color:var(--muted); margin:0 0 0.4rem;"><span data-i18n="tail.recent_outages_in_the_period">أحدث الانقطاعات في الفترة:</span></p>
       <ul id="history-downtimes" style="font-size:0.85rem; margin:0; padding-inline-start:1.1rem;"></ul>
     </div>
   </div>
@@ -1408,39 +1408,39 @@
   <div id="location-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
       <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
-      <h3 id="location-form-title">إضافة موقع</h3>
+      <h3 id="location-form-title"><span data-i18n="tail.add_location">إضافة موقع</span></h3>
       <input type="hidden" id="location-form-id" />
       <div class="form-grid">
-        <label>اسم الموقع <input type="text" id="loc-name" placeholder="مصدر الإنترنت / المنطقة الرئيسية…" /></label>
+        <label><span data-i18n="tail.location_name">اسم الموقع</span> <input type="text" id="loc-name" placeholder="مصدر الإنترنت / المنطقة الرئيسية…"  data-i18n-attr="placeholder:tail.internet_source_main_zone"/></label>
         <label><span data-i18n="s2.type">النوع</span>
-          <select id="loc-kind" title="نوع الموقع في هرم الشبكة">
-            <option value="internet">🌐 الإنترنت/الراوتر (قمة الهرم)</option>
-            <option value="zone" selected>📍 منطقة (وَسَطية)</option>
-            <option value="site">🏛️ موقع (site)</option>
-            <option value="building">🏢 مبنى (building)</option>
-            <option value="floor">📐 طابق (floor)</option>
-            <option value="room">🚪 غرفة (room)</option>
-            <option value="rack">🗄️ خزانة (rack)</option>
+          <select id="loc-kind" title="نوع الموقع في هرم الشبكة" data-i18n-attr="title:tail.location_kind_in_the_network_hierarchy">
+            <option value="internet"><span data-i18n="tail.internet_router_top_of_the_pyramid">🌐 الإنترنت/الراوتر (قمة الهرم)</span></option>
+            <option value="zone" selected><span data-i18n="tail.zone_intermediate">📍 منطقة (وَسَطية)</span></option>
+            <option value="site"><span data-i18n="tail.site">🏛️ موقع (site)</span></option>
+            <option value="building"><span data-i18n="tail.building">🏢 مبنى (building)</span></option>
+            <option value="floor"><span data-i18n="tail.floor">📐 طابق (floor)</span></option>
+            <option value="room"><span data-i18n="tail.room">🚪 غرفة (room)</span></option>
+            <option value="rack"><span data-i18n="tail.rack">🗄️ خزانة (rack)</span></option>
           </select>
         </label>
         <label>متصل عبر (سلسلة الشبكة)
-          <select id="loc-parent_id" title="العلاقة في «سلسلة الشبكة» فقط (internet يَكون جذرًا دائمًا) — لا تُستَخدم في خريطة المواقع">
-            <option value="">— جذر (لا أَب) —</option>
+          <select id="loc-parent_id" title="العلاقة في «سلسلة الشبكة» فقط (internet يَكون جذرًا دائمًا) — لا تُستَخدم في خريطة المواقع" data-i18n-attr="title:tail.used_in_the_network_chain_only_internet_is_a">
+            <option value=""><span data-i18n="tail.root_no_parent">— جذر (لا أَب) —</span></option>
           </select>
         </label>
         <!-- v2.11.0 — رابط مستقل تمامًا: «يتبع» في خريطة المواقع (منفصل عن «متصل عبر» في السلسلة) -->
         <label>يتبع (خريطة المواقع)
-          <select id="loc-map_parent_id" title="أي مبنى/موقع يدخل هذا الطابق/الغرفة داخله في «خريطة المواقع» — منفصل تمامًا عن «متصل عبر» (السلسلة)">
-            <option value="">— بطاقة مستقلة (بلا أب في الخريطة) —</option>
+          <select id="loc-map_parent_id" title="أي مبنى/موقع يدخل هذا الطابق/الغرفة داخله في «خريطة المواقع» — منفصل تمامًا عن «متصل عبر» (السلسلة)" data-i18n-attr="title:tail.any_building_location_inside_this_floor_room">
+            <option value=""><span data-i18n="tail.stand_alone_card_no_parent_on_the_map">— بطاقة مستقلة (بلا أب في الخريطة) —</span></option>
           </select>
         </label>
         <!-- v2.7.1 — تَرتيب العرض في خريطة المواقع (متَّصلة على التَوالي) -->
         <label>تَرتيب العرض
-          <input type="number" id="loc-sort-order" min="0" placeholder="0" title="الرقم الأَصغر يَظهر أَولاً. اتركه فارغاً لِـ التَرتيب التلقائي (نهاية القائمة)." />
+          <input type="number" id="loc-sort-order" min="0" placeholder="0" title="الرقم الأَصغر يَظهر أَولاً. اتركه فارغاً لِـ التَرتيب التلقائي (نهاية القائمة)."  data-i18n-attr="title:tail.the_smallest_number_shows_first_leave_it_emp"/>
         </label>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع">💾 حفظ الموقع</button>
+        <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع" data-i18n-attr="title:tail.save_the_location">💾 حفظ الموقع</button>
         <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
       </div>
     </div>
@@ -1450,14 +1450,14 @@
   <div id="type-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content" style="max-width:480px;">
       <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
-      <h3 id="type-form-title">إضافة نوع</h3>
+      <h3 id="type-form-title"><span data-i18n="tail.add_type">إضافة نوع</span></h3>
       <input type="hidden" id="type-form-id" />
       <div class="form-grid">
         <label><span data-i18n="s2.name">الاسم</span> <input type="text" id="type-name" required /></label>
         <label><span data-i18n="s2.icon">الأيقونة</span> <input type="text" id="type-icon" placeholder="server / printer / camera…" /></label>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع">💾 حفظ النوع</button>
+        <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع" data-i18n-attr="title:tail.save_the_type">💾 حفظ النوع</button>
         <button type="button" class="btn" id="type-cancel-btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
       </div>
     </div>
@@ -1465,13 +1465,13 @@
 
   <!-- Changelog Modal -->
   <!-- v2.10.0 — نافذة الرجوع لإصدار أقدم (Rollback) -->
-  <div id="rollback-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الرجوع لإصدار أقدم">
+  <div id="rollback-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الرجوع لإصدار أقدم" data-i18n-attr="aria-label:tail.roll_back_to_an_older_release">
     <div class="modal-content" style="max-width:560px;">
       <button type="button" class="modal-close" id="rollback-close" aria-label="إغلاق">✕</button>
       <h3><span data-i18n="s2.roll_back_to_an_older_release">↩️ الرجوع لإصدار أقدم</span></h3>
       <p style="font-size:0.88rem; color:var(--muted); margin-bottom:0.75rem;">
         اختر الإصدار الذي تريد الرجوع إليه — سيُنفَّذ بنفس الآلية الآمنة (ملف طلب ← مساعد root).
-        <br><strong style="color:var(--text);">يُنصح بعمل نسخة احتياطية أولاً.</strong>
+        <br><strong style="color:var(--text);"><span data-i18n="tail.making_a_backup_first_is_recommended">يُنصح بعمل نسخة احتياطية أولاً.</span></strong>
       </p>
       <div id="rollback-list" style="max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:8px;"></div>
       <div id="rollback-status" style="margin-top:0.75rem; font-size:0.9rem;"></div>
@@ -1481,7 +1481,7 @@
   <div id="changelog-modal" class="modal hidden">
     <div class="modal-content" style="max-width:800px;">
       <button id="changelog-close" type="button" class="modal-close" aria-label="إغلاق">✕</button>
-      <h3>📋 سجل التغييرات (Changelog)</h3>
+      <h3><span data-i18n="tail.change_log">📋 سجل التغييرات (Changelog)</span></h3>
       <div id="changelog-content" class="nm-note" style="max-height:500px; overflow:auto;"></div>
     </div>
   </div>
@@ -1489,24 +1489,24 @@
   <!-- ===== modal اختيار مسح السجل (v2.7.3 — مُدّة فقط، الإِشعارات فقط) ===== -->
   <div id="cleanup-select-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="confirm-modal-content">
-      <h3 class="confirm-modal-title">🗑️ مَسح سجل الإِشعارات</h3>
-      <p style="font-size:0.88rem; color:var(--muted); margin:0 0 0.9rem;">اِختَر المُدّة، ثُمّ اِضغط «تَأكيد». لا يمكن التَراجُع.</p>
+      <h3 class="confirm-modal-title"><span data-i18n="tail.clear_the_notification_log">🗑️ مَسح سجل الإِشعارات</span></h3>
+      <p style="font-size:0.88rem; color:var(--muted); margin:0 0 0.9rem;"><span data-i18n="tail.choose_the_range_then_press_confirm_this_can">اِختَر المُدّة، ثُمّ اِضغط «تَأكيد». لا يمكن التَراجُع.</span></p>
       <div class="form-grid" style="margin-bottom:0.8rem;">
         <label>مَسح الأَقدم من
           <select id="cleanup-range-select">
             <!-- v2.7.x — أَضِيفَت خِيَارات أَصْغَر (2h, day) لِـ status_logs الَّذِي تَحوي بيانات
                  أَحدث من أُسبوع غالباً؛ خِيَار «سنة» يُمكن أَن يُرجِع 0 لِأَنّ الجَدول صَغير عُمْراً. -->
-            <option value="2h">ساعتان</option>
-            <option value="day">24 ساعة (يَوم)</option>
-            <option value="week">ٍ7 أَيام (أُسبوع)</option>
-            <option value="month">30 يوم (شهر)</option>
-            <option value="year">365 يوم (سنة)</option>
+            <option value="2h"><span data-i18n="tail.two_hours">ساعتان</span></option>
+            <option value="day"><span data-i18n="tail.24_hours_a_day">24 ساعة (يَوم)</span></option>
+            <option value="week"><span data-i18n="tail.7_days_a_week">ٍ7 أَيام (أُسبوع)</span></option>
+            <option value="month"><span data-i18n="tail.30_days_a_month">30 يوم (شهر)</span></option>
+            <option value="year"><span data-i18n="tail.365_days_a_year">365 يوم (سنة)</span></option>
           </select>
         </label>
       </div>
       <div class="confirm-modal-actions">
         <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
-        <button type="button" id="cleanup-select-ok-btn" class="btn btn-danger" title="تأكيد المسح">🗑️ تَأكيد المَسح</button>
+        <button type="button" id="cleanup-select-ok-btn" class="btn btn-danger" title="تأكيد المسح" data-i18n-attr="title:tail.confirm_clearing">🗑️ تَأكيد المَسح</button>
       </div>
     </div>
   </div>
@@ -1520,7 +1520,7 @@
       <p class="confirm-modal-message" id="confirm-modal-message">—</p>
       <div class="confirm-modal-actions">
         <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
-        <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد">✓ تأكيد</button>
+        <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد" data-i18n-attr="title:tail.confirm">✓ تأكيد</button>
       </div>
     </div>
   </div>

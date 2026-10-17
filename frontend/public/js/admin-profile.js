@@ -53,7 +53,7 @@ async function changePassword(e) {
       statusEl.style.color = 'var(--online)';
       document.getElementById('change-password-form').reset();
     } else {
-      statusEl.textContent = '❌ ' + (r.error || 'فشل تغيير كلمة المرور');
+      statusEl.textContent = '❌ ' + (r.error || T('tail.password_change_failed', 'فشل تغيير كلمة المرور'));
       statusEl.style.color = 'var(--offline)';
     }
   } catch (e) {

@@ -33,11 +33,11 @@ async function loadSchedulerStatus() {
     return;
   }
   const d = r.data || {};
-  const runningTxt = d.is_running ? '🟡 جارٍ مسح الآن...' : '🟢 لا يَعمل مسح حاليًّا';
-  const enabledTxt = d.enabled ? '✅ مُفعّل' : '⏸️ متوقف';
+  const runningTxt = d.is_running ? T('tail.scanning_now', '🟡 جارٍ مسح الآن...') : T('tail.no_scan_running_right_now', '🟢 لا يَعمل مسح حاليًّا');
+  const enabledTxt = d.enabled ? T('tail.enabled', '✅ مُفعّل') : T('tail.stopped', '⏸️ متوقف');
   const lastTxt = d.last_run
     ? `آخر مسح #${d.last_run.runId}: ${d.last_run.status} (وُجدت ${d.last_run.devices_found} / أُضيفت ${d.last_run.devices_added} / ضاعت ${d.last_run.devices_lost})`
-    : 'لا توجد مسحات سابقة';
+    : T('tail.no_previous_scans', 'لا توجد مسحات سابقة');
   el.innerHTML = `${enabledTxt} — ${runningTxt}<br><span style="font-size:0.9em;color:var(--muted);">${lastTxt}`;
   if (d.last_run && d.last_run.error) {
     el.innerHTML += `<br><span style="color:#b00;font-size:0.85em;">خطأ: ${esc(d.last_run.error)}</span>`;
@@ -58,11 +58,11 @@ async function loadSchedulerRuns() {
     return;
   }
   tbody.innerHTML = rows.map((row) => {
-    const statusBadge = row.status === 'completed' ? '✅ مكتمل'
-      : (row.status === 'failed' ? '❌ فشل' : (row.status === 'cancelled' ? '⏹ مُلغى' : '🟡 جارٍ'));
+    const statusBadge = row.status === 'completed' ? T('tail.completed', '✅ مكتمل')
+      : (row.status === 'failed' ? T('tail.failed', '❌ فشل') : (row.status === 'cancelled' ? T('tail.cancelled', '⏹ مُلغى') : T('tail.running', '🟡 جارٍ')));
     // v2.11.7 — نُميّز المسح اليدوي (من شاشة «🔍 اكتشاف الأجهزة») عن المسح الدوري.
     const sourceBadge = row.source === 'manual'
-      ? ' <span style="background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:0 0.3rem; font-size:0.7rem; color:var(--muted);">✋ يدوي</span>'
+      ? ` <span style="background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:0 0.3rem; font-size:0.7rem; color:var(--muted);">${T('tail.manual', '✋ يدوي')}</span>`
       : '';
     return `<tr>
       <td class="col-center">${esc(row.id)}</td>
@@ -109,7 +109,7 @@ async function saveSchedulerSettings() {
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
-    showToast(T('s2j.save_failed', 'فشل الحفظ:') + ' ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.save_failed', 'فشل الحفظ:') + ' ' + (r?.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 

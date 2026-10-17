@@ -516,7 +516,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     // v2.8.5 — شارة القسم كانت ثابتة «نشط» في HTML: نربطها بوجود بيانات فعلية.
     const heroBadge = document.getElementById('hero-status-badge');
-    if (heroBadge) heroBadge.textContent = (allDevices.length || allLocations.length) ? 'نشط' : 'غير مُهيَّأ';
+    if (heroBadge) heroBadge.textContent = (allDevices.length || allLocations.length) ? 'نشط' : T('tail.not_set_up', 'غير مُهيَّأ');
 
     // 1. Find Gateway (v2.8.5 — بلا كائن وهمي: لو غير مُعرَّف نعرض حالة محايدة صريحة)
     const gateway = allLocations.find(l => l.kind === 'internet') || null;
@@ -556,7 +556,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     // Card 2: Internet Gateway
     html += `
       <div class="hero-card ${gateway ? 'up' : 'neutral'}">
-        <span class="role">🌐 المدخل الرئيسي</span>
+        <span class="role">${T('tail.main_gateway', '🌐 المدخل الرئيسي')}</span>
         <div class="nm">${gateway ? esc(gateway.name) : 'لا يوجد مدخل إنترنت مُعرَّف'}</div>
         <div class="meta">${gateway ? 'ISP Gateway · مزود الخدمة' : 'أضِف موقعًا نوعه internet من لوحة التحكم'}</div>
         <div class="st-badge ${gateway ? 'up' : 'neutral'}">${gateway ? '🟢 بوابة متصلة' : '⚪ غير مُهيَّأ'}</div>
@@ -572,10 +572,10 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       const isDown = firewall.status === 'offline';
       const isPath = !!firewall.pathDown;
       const cls = isDown ? 'down' : isPath ? 'warn' : 'up';
-      const stLabel = isDown ? '🔴 منقطع عن الخدمة' : isPath ? '⛔ مسدود عبر المسار' : '🟢 متصل ومحمي';
+      const stLabel = isDown ? T('tail.out_of_service', '🔴 منقطع عن الخدمة') : isPath ? T('tail.blocked_upstream', '⛔ مسدود عبر المسار') : T('tail.online_and_protected', '🟢 متصل ومحمي');
       html += `
         <div class="hero-card ${cls}">
-          <span class="role">🛡️ جدار الحماية المركزي</span>
+          <span class="role">${T('tail.central_firewall', '🛡️ جدار الحماية المركزي')}</span>
           <div class="nm">${esc(firewall.name)}</div>
           <div class="meta">${firewall.ip ? esc(firewall.ip) + ' — ' : ''}${esc(firewall.device_type_name || 'Firewall')}</div>
           <div class="st-badge ${cls}">${stLabel}</div>
@@ -601,7 +601,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         : (degradedServers > 0 ? `🟡 ${degradedServers} خادم بخدمة متوقفة` : '🟢 جميع الخوادم تعمل'));
     html += `
       <div class="hero-card ${srvCls}">
-        <span class="role">🖥️ مجمع الخوادم المركزية</span>
+        <span class="role">${T('tail.core_servers', '🖥️ مجمع الخوادم المركزية')}</span>
         <div class="nm">خوادم الشبكة الرئيسية</div>
         <div class="meta">${coreServers.length} خوادم (Odoo · ESXi · SIS · Synology)</div>
         <div class="st-badge ${srvCls}">
@@ -882,7 +882,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     if (orphanDevices.length > 0) {
       const orphanNode = {
         id: 'orphan-internet-devices',
-        name: 'أَجهزة مَدخل الإنترنت',
+        name: T('tail.internet_entry_devices', 'أَجهزة مَدخل الإنترنت'),
         kind: 'unassigned',
         device_count: orphanDevices.length,
         online: orphanDevices.filter((d) => d.status === 'online').length,
@@ -1148,7 +1148,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
           </div>
           <div class="mv-subhead">
             <span>${kindName}</span>
-            <span>${directDevices.length} جهاز</span>
+            <span>${directDevices.length} ${T('tail.devices', ' جهاز')}</span>
           </div>
           ${directDevices.length ? `<div class="mv-inner">${rowsHtml}</div>` : `<div class="mv-empty">مبنى تنظيمي — لا أجهزة مباشرة</div>`}
         </div>
@@ -1249,7 +1249,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         <div class="category-group">
           <div class="category-head">
             <span class="cat-title">${cfg.icon} ${cfg.title}</span>
-            <span class="cat-badge">${list.length} جهاز</span>
+            <span class="cat-badge">${list.length} ${T('tail.devices', ' جهاز')}</span>
             <span class="cat-stats">🟢 ${up} متصل &nbsp;·&nbsp; 🔴 ${down} منقطع</span>
           </div>
           <div class="device-grid">
@@ -1444,7 +1444,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   async function updateEngineAlertFromHealth(healthRes) {
     if (!healthRes || !healthRes.ok) {
       engineFetchFails += 1;
-      if (engineFetchFails >= 2) showEngineAlert('⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.');
+      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'));
       return;
     }
     engineFetchFails = 0;
@@ -1459,9 +1459,9 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const sec = Math.round((eng.lastTickAgeMs || 0) / 1000);
     const fmt = sec >= 60 ? Math.round(sec / 60) + ' دقيقة' : sec + ' ثانية';
     if (eng.stalled) {
-      showEngineAlert('⚠️ محرك المراقبة متوقف منذ ' + fmt + ' — البيانات المعروضة قد تكون قديمة!');
+      showEngineAlert(T('tail.the_monitoring_engine_has_been_down_for', '⚠️ محرك المراقبة متوقف منذ ') + ' ' + fmt + ' — البيانات المعروضة قد تكون قديمة!');
     } else if (eng.stuckChecks > 0) {
-      showEngineAlert('⚠️ يوجد ' + eng.stuckChecks + ' فحص عالق — بعض الأجهزة قد لا تتحدّث حالتها.');
+      showEngineAlert(T('tail.there_are', '⚠️ يوجد ') + ' ' + eng.stuckChecks + ' فحص عالق — بعض الأجهزة قد لا تتحدّث حالتها.');
     } else {
       hideEngineAlert();
     }

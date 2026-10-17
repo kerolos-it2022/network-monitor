@@ -36,7 +36,7 @@ async function loadDiscovered() {
   if (emptyMsg) emptyMsg.classList.toggle('hidden', rows.length > 0);
   for (const d of rows) {
     const tr = document.createElement('tr');
-    const statusText = d.is_approved === 1 ? '✅ معتمد' : (d.is_approved === -1 ? '❌ مرفوض' : '⏳ بانتظار');
+    const statusText = d.is_approved === 1 ? T('tail.approved_2', '✅ معتمد') : (d.is_approved === -1 ? T('tail.rejected_2', '❌ مرفوض') : T('tail.pending', '⏳ بانتظار'));
     tr.innerHTML = `
       <td class="col-center"><input type="checkbox" class="discovered-row-check" data-id="${esc(d.id)}" /></td>
       <td class="col-ltr">${esc(d.ip)}</td>
@@ -214,12 +214,12 @@ async function submitApprove(quick) {
     body: JSON.stringify(body),
   });
   if (r && r.success) {
-    showToast(r.message || 'تم الاعتماد.', { type: 'success' });
+    showToast(r.message || T('tail.approved', 'تم الاعتماد.'), { type: 'success' });
     closeEditModal(el);
     await loadDiscovered();
     if (typeof window.loadDevices === 'function') await window.loadDevices();
   } else {
-    showToast(T('s2j.approval_failed', 'فشل الاعتماد:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.approval_failed', 'فشل الاعتماد:') + ' ' + ((r && r.error) || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 
@@ -229,7 +229,7 @@ async function rejectDiscovered(id) {
     headers: { 'Content-Type': 'application/json' },
   });
   if (r && r.success) {
-    showToast(r.message || 'تم الرفض.', { type: 'success' });
+    showToast(r.message || T('tail.rejected', 'تم الرفض.'), { type: 'success' });
     await loadDiscovered();
   } else {
     showToast(T('s2j.rejection_failed', 'فشل الرفض:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });

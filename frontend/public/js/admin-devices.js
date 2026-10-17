@@ -452,7 +452,7 @@ async function importDevicesExcel(file) {
       showToast(msg, { type: imported > 0 ? 'success' : 'warning', duration: 6000 });
       await loadDevices();
     } else {
-      showToast(T('s2j.import_failed', 'فشل الاستيراد:') + ' ' + (data.error || 'خطأ غير معروف'), { type: 'error' });
+      showToast(T('s2j.import_failed', 'فشل الاستيراد:') + ' ' + (data.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
     }
   } catch (e) {
     showToast(T('s2j.import_error', 'خطأ في الاستيراد:') + ' ' + e.message, { type: 'error' });

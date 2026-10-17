@@ -28,7 +28,7 @@ function aiSetStatus(msg, isError) {
 
 async function loadAiSettings() {
   const r = await api('/api/ai/settings');
-  if (!r.success) { aiSetSettingsStatus('تعذّر تحميل إعدادات شات AI: ' + (r.error || ''), true); return; }
+  if (!r.success) { aiSetSettingsStatus(T('tail.could_not_load_the_ai_chat_settings', 'تعذّر تحميل إعدادات شات AI: ') + ' ' + (r.error || ''), true); return; }
   const d = r.data;
   document.getElementById('ai-enabled').checked = !!d.enabled;
   const keyEl = document.getElementById('ai-api-key');
@@ -52,7 +52,7 @@ async function aiPreviewContext() {
   const r = await api('/api/ai/context-preview');
   if (!r.success) { out.textContent = T('s2j.failed', 'تعذّر:') + ' ' + (r.error || ''); return; }
   const d = r.data;
-  const head = (d.redacted ? '🛡️ منقّح (العناوين/MAC برموز) — ' : '⚠️ غير منقّح (يعرض عناوين حقيقية) — ')
+  const head = (d.redacted ? T('tail.redacted_addresses_mac_as_tokens', '🛡️ منقّح (العناوين/MAC برموز) — ') + ' ' : T('tail.not_redacted_real_addresses_are_shown', '⚠️ غير منقّح (يعرض عناوين حقيقية) — ') + ' ')
     + d.chars + ' حرفًا · أجهزة ' + d.stats.devices
     + ' (مُستبعَد ' + d.stats.omitted_devices + ') · أحداث ' + d.stats.events
     + ' · أعطال ' + d.stats.incidents;
@@ -71,7 +71,7 @@ async function saveAiSettings() {
   const model = document.getElementById('ai-model').value.trim();
   // تحقق لطيف قبل الحفظ: العنوان لا يساوي فراغًا ولا يفشل صامتًا.
   if (base && !/^https?:\/\//i.test(base)) {
-    aiSetSettingsStatus('عنوان الخدمة يجب أن يبدأ بـ http:// أو https://', true);
+    aiSetSettingsStatus(T('tail.the_service_endpoint_must_start_with_http_or', 'عنوان الخدمة يجب أن يبدأ بـ http:// أو https://'), true);
     return;
   }
   const r = await api('/api/ai/settings', {
@@ -90,7 +90,7 @@ async function saveAiSettings() {
   aiSetSettingsStatus('✅ حُفظت الإعدادات — المفتاح: ' + (r.data.api_key_masked || T('s2.not_set', 'غير مضبوط')), false);
   document.getElementById('ai-api-key').value = '';
   document.getElementById('ai-api-key').placeholder = r.data.api_key_masked || T('s2.not_set', 'غير مضبوط');
-  if (r.data.enabled && r.data.has_key) aiSetStatus('شات AI جاهز — اسأل ما شئت.', false);
+  if (r.data.enabled && r.data.has_key) aiSetStatus(T('tail.ai_chat_is_ready_ask_away', 'شات AI جاهز — اسأل ما شئت.'), false);
   else aiSetStatus('شات AI غير نشط (يحتاج مفتاحًا + تفعيلًا).', false);
 }
 
@@ -107,7 +107,7 @@ async function aiSend() {
 
   aiBusy = true;
   document.getElementById('ai-send-btn').disabled = true;
-  aiAddBubble('assistant', '⏳ أفكّر…');
+  aiAddBubble('assistant', T('tail.thinking', '⏳ أفكّر…'));
   aiSetStatus('');
 
   const r = await api('/api/ai/chat', {
@@ -126,9 +126,9 @@ async function aiSend() {
     if (pending) pending.remove();
     aiAddBubble('assistant', r.reply);
     aiHistory.push({ role: 'assistant', content: r.reply });
-    aiSetStatus('السياق المُرسل: ' + (r.context_stats ? r.context_stats.devices + ' جهازًا · ' + r.context_stats.offline + ' واقعًا · ' + r.context_stats.events + ' انقطاعًا' : ''), false);
+    aiSetStatus(T('tail.context_sent', 'السياق المُرسل: ') + ' ' + (r.context_stats ? r.context_stats.devices + ' جهازًا · ' + r.context_stats.offline + ' واقعًا · ' + r.context_stats.events + ' انقطاعًا' : ''), false);
   } else {
-    const err = '⚠️ ' + (r.error || 'خطأ غير معروف');
+    const err = '⚠️ ' + (r.error || T('tail.unknown_error', 'خطأ غير معروف'));
     if (pending) { pending.textContent = err; pending.style.color = 'var(--offline, #dc2626)'; }
     aiSetStatus(err, true);
   }
@@ -138,7 +138,7 @@ function aiClear() {
   aiHistory = [];
   const box = document.getElementById('ai-chat-box');
   box.innerHTML = '<div id="ai-chat-empty" style="margin:auto 0; text-align:start; color:var(--muted); font-size:0.9rem; line-height:1.9;"><div style="font-size:2rem;">🤖</div>اكتب سؤالك أسفل… مثل: «إيه اللي واقع دلوقتي؟» أو «جنّاح الكاميرات طايح؟» أو «أكثر جهاز بيقع؟»</div>';
-  aiSetStatus('محُوِت المحادثة.', false);
+  aiSetStatus(T('tail.conversation_cleared_2', 'محُوِت المحادثة.'), false);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

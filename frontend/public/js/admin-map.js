@@ -324,7 +324,7 @@ function renderZonesGrid(rootData) {
     if (kept.length > 0) {
       const orphanNode = {
         id: 'orphan-internet-devices',
-        name: 'أَجهزة مَدخل الإنترنت',
+        name: T('tail.internet_entry_devices', 'أَجهزة مَدخل الإنترنت'),
         kind: 'unassigned',
         device_count: kept.length,
         online: kept.filter((d) => d.status === 'online').length,
@@ -572,14 +572,14 @@ function restoreScroll(container, top, left) {
 function renderMapSummary(summaryEl, rootData, visibleCount) {
   if (!summaryEl) return;
   if (hasActiveFilters()) {
-    summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} جهاز</span>`;
+    summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} ${T('tail.devices', ' جهاز')}</span>`;
     return;
   }
   const chips =
-    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="فلترة أَجهزة متوقفة">🔴 ${rootData.offline} متوقف</button>` : '') +
-    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="فلترة أَجهزة متصلة">🟢 ${rootData.online} متصل</button>` : '') +
+    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="فلترة أَجهزة متوقفة">🔴 ${rootData.offline} ${T('tail.offline', ' متوقف')}</button>` : '') +
+    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="فلترة أَجهزة متصلة">🟢 ${rootData.online} ${T('tail.online', ' متصل')}</button>` : '') +
     (rootData.unknown > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="unknown" aria-label="فلترة أَجهزة بلا نتيجة">⚪ ${rootData.unknown} غير معروف</button>` : '');
-  summaryEl.innerHTML = `<span class="map-summary-count">الإِجمالي: ${rootData.device_count} جهاز</span>${chips}`;
+  summaryEl.innerHTML = `<span class="map-summary-count">الإِجمالي: ${rootData.device_count} ${T('tail.devices', ' جهاز')}</span>${chips}`;
 }
 
 // رَبط نقر/طي على كل العُقد عبر delegation.
@@ -664,7 +664,7 @@ function bindNodeEvents(container) {
     // فلتر فعّال → لا سَحب (إِبقاء DOM متّسقاً مع الفلترة).
     if (hasActiveFilters()) {
       event.preventDefault();
-      showMapToast('⚠️ اِمسح الفلترة أَولاً لإِعادة التَرتيب', 3000);
+      showMapToast(T('tail.clear_the_filter_first_to_reorder', '⚠️ اِمسح الفلترة أَولاً لإِعادة التَرتيب'), 3000);
       return;
     }
     // البطاقات غير القابِلة للسَحب: الصِناعيّة (لا id رقمي).
@@ -769,7 +769,7 @@ async function saveMapReorder(container) {
 
   if (updates.length === 0) return;   // لا شيء لِـ حفظه.
 
-  showMapToast('⏳ جاري حفظ التَرتيب الجَديد…', 2000);
+  showMapToast(T('tail.saving_the_new_order', '⏳ جاري حفظ التَرتيب الجَديد…'), 2000);
 
   let ok = false;
   let errCode = null;
@@ -791,14 +791,14 @@ async function saveMapReorder(container) {
     if (fresh) {
       mapRootData = fresh;
       renderTree(mapRootData);
-      showMapToast('✅ تم حفظ التَرتيب الجَديد', 2000);
+      showMapToast(T('tail.new_order_saved', '✅ تم حفظ التَرتيب الجَديد'), 2000);
     } else {
       // جَلب الأَحدث فَشل، لكن الحفظ نجح — نَكتفي بالأَمر الحاليّ.
-      showMapToast('✅ تم حفظ التَرتيب', 2000);
+      showMapToast(T('tail.order_saved', '✅ تم حفظ التَرتيب'), 2000);
     }
   } else {
     // فَشل الحفظ: rollback بَصري إِلى التَرتيب المَخزُون server-side.
-    showMapToast('❌ فَشل حفظ التَرتيب', 3000);
+    showMapToast(T('tail.saving_the_order_failed', '❌ فَشل حفظ التَرتيب'), 3000);
     const fresh = await fetchTree();
     if (fresh) { mapRootData = fresh; renderTree(mapRootData); }
     else if (mapRootData) renderTree(mapRootData);   // rollback لِـ ما في الذاكرة.
@@ -832,7 +832,7 @@ async function loadMap() {
     }
     // إِزالة أَيّ بطاقة zone قَديمة (لو كان هناك عَرض سابق).
     if (container) container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
-    showMapToast('⚠️ تعذّر جلب الشَجرة', 3000);
+    showMapToast(T('tail.could_not_load_the_tree', '⚠️ تعذّر جلب الشَجرة'), 3000);
     return;
   }
   mapRootData = data;
@@ -859,7 +859,7 @@ function showMapToast(msg, ms = 3000) {
     if (mapRootData && !hasActiveFilters()) renderMapSummary(summaryEl, mapRootData, mapRootData.device_count);
     else if (mapRootData) {
       const visibleCount = countVisibleDevices(mapRootData);
-      summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} جهاز</span>`;
+      summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} ${T('tail.devices', ' جهاز')}</span>`;
     }
   }, ms);
 }
@@ -940,7 +940,7 @@ async function showDeviceDetails(deviceId) {
   const modal = document.getElementById('map-device-modal');
   if (!modal) return;
   const fieldsEl = document.getElementById('map-device-fields');
-  if (fieldsEl) fieldsEl.innerHTML = '<p class="details-placeholder">⏳ جَلب التَفاصيل…</p>';
+  if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">${T('tail.loading_details', '⏳ جَلب التَفاصيل…')}</p>`;
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
 

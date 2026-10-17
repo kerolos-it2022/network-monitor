@@ -107,7 +107,7 @@ async function saveNotificationSettings() {
 // (أزرار «🔔 اختبار هذه القناة» داخل كل قسم)؛ بلا مُعامل ⇒ كل القنوات المفعّلة كما كان.
 async function testNotification(channel) {
   const statusEl = document.getElementById('ntf-status');
-  const only = channel ? { telegram: T('s3.telegram', 'تلجرام'), whatsapp: T('s3.whatsapp', 'واتساب'), mobile: 'هاتف' }[channel] || channel : null;
+  const only = channel ? { telegram: T('s3.telegram', 'تلجرام'), whatsapp: T('s3.whatsapp', 'واتساب'), mobile: T('tail.mobile', 'هاتف') }[channel] || channel : null;
   statusEl.style.color = 'var(--online)';
   statusEl.textContent = only
     ? ('🔔 جارٍ إرسال إشعار تجريبي على ' + only + ' فقط…')
@@ -126,8 +126,8 @@ async function testNotification(channel) {
       if (data.success) {
         const okSent = !!(data.data && data.data.sent);
         statusEl.textContent = okSent
-          ? '✅ تم الإرسال (افتح هاتفك للتأكد)'
-          : '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة';
+          ? T('tail.sent_check_your_phone', '✅ تم الإرسال (افتح هاتفك للتأكد)')
+          : T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة');
         if (!okSent) statusEl.style.color = 'var(--offline)';
       } else {
         statusEl.style.color = 'var(--offline)';
@@ -139,8 +139,8 @@ async function testNotification(channel) {
     const lines = results.map((res) => {
       const name = labels[res.channel] || res.channel;
       if (res.ok) return name + ': ✅ تم الإرسال';
-      if (res.skipped) return name + ': ⏭️ لم يُرسل — ' + (res.reason || 'متخطّاة');
-      return name + ': ❌ فشل — ' + (res.error || 'بلا تفصيل');
+      if (res.skipped) return name + ': ⏭️ لم يُرسل — ' + (res.reason || T('tail.skipped_2', 'متخطّاة'));
+      return name + ': ❌ فشل — ' + (res.error || T('tail.no_details', 'بلا تفصيل'));
     });
     const anyOk = results.some((res) => res.ok);
     statusEl.style.color = anyOk ? 'var(--online)' : 'var(--offline)';
@@ -289,11 +289,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // أَضِيفَت خِيَارات أَصْغَر (2h, day) لِأَنّ status_logs يَحتوي بيانات أَحدث من أُسبوع غالباً.
   function rangeInfo(range) {
     switch (range) {
-      case '2h':    return { days: 2/24,    text: 'ساعتين' };
+      case '2h':    return { days: 2/24,    text: T('tail.two_hours', 'ساعتين') };
       case 'day':   return { days: 1,      text: '24 ساعة' };
-      case 'week':  return { days: 7,      text: '7 أَيام' };
+      case 'week':  return { days: 7,      text: T('tail.7_days', '7 أَيام') };
       case 'month': return { days: 30,     text: '30 يوم' };
-      case 'year':  return { days: 365,    text: '365 يوم' };
+      case 'year':  return { days: 365,    text: T('tail.365_days', '365 يوم') };
       default:      return { days: 7,      text: '7 أَيام' };
     }
   }

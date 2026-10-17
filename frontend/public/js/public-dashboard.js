@@ -697,7 +697,7 @@ async function init() {
         notifyBtn.style.color = "var(--online)";
       } else if (Notification.permission === "denied") {
         notifyBtn.disabled = true;
-        notifyBtn.textContent = "🔕 الإشعارات محجوبة";
+        notifyBtn.textContent = T('tail.notifications_are_blocked', "🔕 الإشعارات محجوبة");
       } else {
         notifyBtn.textContent = "🔔 تفعيل الإشعارات";
       }
@@ -756,7 +756,7 @@ async function init() {
         });
       } catch (e) {
         console.error("Push subscribe error", e);
-        alert("❌ فشل تفعيل الإشعارات: " + (e.message || "خطأ غير معروف"));
+        alert("❌ فشل تفعيل الإشعارات: " + (e.message || T('tail.unknown_error', "خطأ غير معروف")));
       }
       updateNotifyBtnState();
     });
