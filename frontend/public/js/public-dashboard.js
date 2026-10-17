@@ -801,12 +801,46 @@ function applyLiveStatus(msg) {
   if (changed) applyFilters();
 }
 
+// v2.33.0 — «أوقف المالك العرض العام»: السيرفر يرسل {type:'closed'} قبل إغلاق الخطّ، فنوقف
+// إعادة المحاولة السريعة ونعرض السبب بدل أن تبدو الشاشة متجمّدة، ثم نُعيد المحاولة كل دقيقة
+// (فلو أعاد المالك التشغيل، تعود الشاشة لحظيًّا من نفسها بلا تحديث يدوي).
+let publicLiveClosed = false;
+let publicLiveRetry = null;
+
+function schedulePublicLiveRetry() {
+  if (publicLiveRetry) return;
+  publicLiveRetry = setTimeout(() => { publicLiveRetry = null; connectPublicLive(); }, 60000);
+}
+
+function handlePublicLiveClosed() {
+  publicLiveClosed = true;
+  if (publicLiveES) { publicLiveES.close(); publicLiveES = null; }
+  setPollInterval(600000);   // لا نبض سريع أثناء الإيقاف (بلا ضجيج على السيرفر)
+  const el = document.getElementById('summary-bar');
+  if (el) el.textContent = '⛔ أوقف المالك العرض العام — تُعرض آخر حالة معروفة (إعادة محاولة كل دقيقة)';
+  schedulePublicLiveRetry();
+}
+
 function connectPublicLive() {
   if (typeof window.EventSource !== 'function') return;   // متصفح قديم ⇒ polling فقط
   try { publicLiveES = new EventSource('/api/live/status'); } catch (_) { publicLiveES = null; return; }
-  publicLiveES.onopen = () => setPollInterval(60000);
-  publicLiveES.onmessage = (ev) => { try { applyLiveStatus(JSON.parse(ev.data)); } catch (_) {} };
-  publicLiveES.onerror = () => { if (publicPollMs !== 10000) setPollInterval(10000); };
+  publicLiveES.onopen = () => {
+    // عودة الخطّ بعد إيقاف المالك ⇒ نرسم البيانات فورًا فنمسح تنبيه الإيقاف بدل بقائه بلا داعٍ
+    const wasClosed = publicLiveClosed;
+    publicLiveClosed = false;
+    setPollInterval(60000);
+    if (wasClosed) { try { pollDevices(); } catch (_) {} }
+  };
+  publicLiveES.onmessage = (ev) => {
+    let msg = null;
+    try { msg = JSON.parse(ev.data); } catch (_) { return; }
+    if (msg && msg.type === 'closed') { handlePublicLiveClosed(); return; }
+    try { applyLiveStatus(msg); } catch (_) {}
+  };
+  publicLiveES.onerror = () => {
+    if (publicLiveClosed) { schedulePublicLiveRetry(); return; }   // موقوف من المالك ⇒ محاولة كل دقيقة
+    if (publicPollMs !== 10000) setPollInterval(10000);
+  };
 }
 
 function fillSelect(selectId, items) {

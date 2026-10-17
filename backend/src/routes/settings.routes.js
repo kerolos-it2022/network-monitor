@@ -38,7 +38,11 @@ router.put('/public-display', adminOnly, (req, res) => {
     return res.status(400).json({ success: false, error: result.error });
   }
   audit.record('settings_change', req, { target: 'public_display_mode', details: { mode: result.mode } });
-  res.json({ success: true, data: { mode: result.mode } });
+  // v2.33.0 — احترام الإعداد لحظيًّا: خطوط البثّ (SSE) المفتوحة تُغلق فورًا عند الوضع 'off'
+  // بدل أن تظلّ تبثّ حتى يقفل الزائر تابعه. نُبلّغ العدد المُغلق للمالك في الردّ نفسه.
+  let closedStreams = 0;
+  try { closedStreams = require('../services/live.service').applyPolicyNow(); } catch (e) { closedStreams = 0; }
+  res.json({ success: true, data: { mode: result.mode, closed_streams: closedStreams } });
 });
 
 // ─────────────────────────────────────────────────────────────

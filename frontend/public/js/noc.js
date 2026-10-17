@@ -1308,6 +1308,10 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   function refreshStatusText(serverOk) {
     const el = document.getElementById('update-status');
     if (!el) return;
+    if (liveClosed) {
+      el.textContent = '⛔ أوقف المالك العرض العام — لا بثّ ولا تحديث (إعادة محاولة كل دقيقة)';
+      return;
+    }
     if (serverOk === false) {
       el.textContent = '⚠️ تعذر الوصول للخادم — إعادة المحاولة جارية...';
       return;
@@ -1365,18 +1369,45 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     }, 150);
   }
 
+  // v2.33.0 — «أوقف المالك العرض العام»: السيرفر يرسل {type:'closed'} قبل إغلاق الخطّ ⇒
+  // نوقف البثّ، نعرض السبب في شريط الحالة، ونُعيد المحاولة كل دقيقة (ترجع الشاشة وحدها).
+  let liveClosed = false;
+  let liveRetryTimer = null;
+
+  function scheduleLiveRetry() {
+    if (liveRetryTimer) return;
+    liveRetryTimer = setTimeout(() => { liveRetryTimer = null; connectLive(); }, 60000);
+  }
+
+  function handleLiveClosed() {
+    liveClosed = true;
+    liveConnected = false;
+    if (liveES) { liveES.close(); liveES = null; }
+    setPollInterval(300000);   // لا polling سريع أثناء الإيقاف
+    refreshStatusText(true);
+    scheduleLiveRetry();
+  }
+
   function connectLive() {
     if (typeof window.EventSource !== 'function') return;   // متصفح قديم ⇒ polling فقط
     try { liveES = new EventSource('/api/live/status'); } catch (_) { liveES = null; return; }
     liveES.onopen = () => {
+      // عودة الخطّ بعد إيقاف المالك ⇒ تحديث فوري (كانت فترة الـ polling 5 دقائق أثناء الإيقاف)
+      const wasClosed = liveClosed;
+      liveClosed = false;
       liveConnected = true;
       setPollInterval(60000);   // تخفيف الـ polling: للبنية فقط
       refreshStatusText(true);
+      if (wasClosed) { try { tick(); } catch (_) {} }
     };
     liveES.onmessage = (ev) => {
-      try { applyLiveUpdate(JSON.parse(ev.data)); } catch (_) {}
+      let msg = null;
+      try { msg = JSON.parse(ev.data); } catch (_) { return; }
+      if (msg && msg.type === 'closed') { handleLiveClosed(); return; }
+      try { applyLiveUpdate(msg); } catch (_) {}
     };
     liveES.onerror = () => {
+      if (liveClosed) { scheduleLiveRetry(); return; }   // موقوف من المالك ⇒ محاولة كل دقيقة
       // EventSource يعيد المحاولة تلقائيًّا — ونرجّع الـ polling لـ 10 ثوانٍ فورًا حتى يعود الخط.
       liveConnected = false;
       if (pollIntervalMs !== 10000) setPollInterval(10000);
@@ -1390,6 +1421,8 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     pollMs: () => pollIntervalMs,
     close: () => {
       if (liveES) { liveES.close(); liveES = null; }
+      if (liveRetryTimer) { clearTimeout(liveRetryTimer); liveRetryTimer = null; }
+      liveClosed = false;
       liveConnected = false;
       setPollInterval(10000);
       refreshStatusText(true);

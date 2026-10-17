@@ -142,6 +142,24 @@ async function loadSystemStats() {
         + (b.lastError ? ' · آخر خطأ: ' + esc(b.lastError) : '');
     }
   }
+
+  // 📡 خطوط البثّ الحيّ (SSE) — v2.33.0: كام شاشة مفتوحة الآن، وهل أسقطنا عميلًا بطيئًا أو رفضنا خطًّا؟ (يُقاس)
+  const sseEl = document.getElementById('sys-sse');
+  if (sseEl) {
+    const s = d.sse;
+    if (!s) sseEl.textContent = '— (الخدمة غير محمّلة)';
+    else {
+      const parts = [
+        'شاشات مفتوحة الآن: <bdi>' + esc(s.clients) + '</bdi> / ' + esc(s.maxClients),
+        'أقصى عدد وصل: <bdi>' + esc(s.peak) + '</bdi>',
+        'مُسقَطون (شاشات بطيئة): <bdi>' + esc(s.droppedSlow) + '</bdi>',
+        'مرفوضون (تجاوز الحد): <bdi>' + esc(s.rejectedLimit) + '</bdi>',
+      ];
+      if (s.closedByPolicy) parts.push('أُغلقوا بعد إيقاف العرض: <bdi>' + esc(s.closedByPolicy) + '</bdi>');
+      sseEl.innerHTML = parts.join(' · ')
+        + '<br><span class="nm-sub">بايتات مُرسَلة منذ الإقلاع: ' + esc(NMFormat.bytes(s.bytesSent)) + '</span>';
+    }
+  }
   sysSetStatus('آخر تحديث: ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();

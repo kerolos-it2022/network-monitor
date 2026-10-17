@@ -190,6 +190,11 @@ router.get('/stats', requireAuth, (req, res) => {
         try { return require('../services/telegram-bot.service').getBotStatus(); }
         catch (e) { return null; }
       })(),
+      // v2.33.0 — إحصاءات خطوط البثّ الحيّ (SSE): عدد الشاشات المفتوحة الآن + أقصى عدد + المُسقَطون.
+      sse: (() => {
+        try { return require('../services/live.service').stats(); }
+        catch (e) { return null; }
+      })(),
       devices_active: devicesCount,
       system: {
         platform: os.platform(),           // 'linux' | 'win32' …
