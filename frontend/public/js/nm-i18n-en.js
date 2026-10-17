@@ -243,6 +243,8 @@
     // ── Tail: the remaining page texts ──
 
     // ── Merged fragments (counters and units) ──
+    'public.notifyOnState': '🔔 Notifications are on',
+    'public.notifyUnsupported': '🔕 Notifications are not supported',
     'public.uptimeLabel': 'Uptime:',
     'public.noDevicesForUptime': 'No devices to compute the ratio.',
     'public.summary': '{total} total  •  {online} online  •  {offline} offline',

@@ -695,11 +695,11 @@ async function init() {
     function updateNotifyBtnState() {
       if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
         notifyBtn.disabled = true;
-        notifyBtn.textContent = "🔕 الإشعارات غير مدعومة";
+        notifyBtn.textContent = T('public.notifyUnsupported', "🔕 الإشعارات غير مدعومة");
         return;
       }
       if (Notification.permission === "granted") {
-        notifyBtn.textContent = "🔔 الإشعارات مفعّلة";
+        notifyBtn.textContent = T('public.notifyOnState', "🔔 الإشعارات مفعّلة");
         notifyBtn.style.color = "var(--online)";
       } else if (Notification.permission === "denied") {
         notifyBtn.disabled = true;
@@ -709,6 +709,9 @@ async function init() {
       }
     }
     updateNotifyBtnState();
+
+    // تغيير اللغة يُعيد رسم نصّ الزرّ (الحالات الأربع)
+    document.addEventListener('nm:lang', function () { try { updateNotifyBtnState(); } catch (e) {} });
 
     notifyBtn.addEventListener("click", async function () {
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {

@@ -249,6 +249,8 @@
       // ── الذيل: نصوص الصفحات الثلاث ──
 
       // ── أجزاء/كلمات مدمجة (عدّادات ووحدات) ──
+      'public.notifyOnState': '🔔 الإشعارات مفعّلة',
+      'public.notifyUnsupported': '🔕 الإشعارات غير مدعومة',
       'public.uptimeLabel': 'نسبة التشغيل:',
       'public.noDevicesForUptime': 'لا أجهزة لِـ حِساب النِسبة.',
       'public.summary': 'الإجمالي: {total}  •  متصل: {online}  •  متوقف: {offline}',
