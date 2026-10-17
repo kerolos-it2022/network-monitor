@@ -50,7 +50,7 @@ async function loadIncidentsBanner() {
     const names = (i.affected || []).slice(0, 6).map((a) => esc(a.name)).join('، ');
     const more = (i.affected_count || 0) > 6 ? ` و${i.affected_count - 6} غيرهم` : '';
     const conf = i.confidence === 'high' ? 'ثقة عالية' : (i.confidence === 'medium' ? 'ثقة متوسطة' : 'ثقة منخفضة');
-    const since = i.started_at ? new Date(i.started_at).toLocaleString('ar') : '—';
+    const since = i.started_at ? NMFormat.dateTime(i.started_at) : '—';
     return `<div style="margin-bottom:0.25rem;">
       ⚠️ <b>عطل مركزي</b>: ${esc(i.root_name || ('#' + i.root_device_id))}
       — <b>${i.affected_count}</b> جهازًا متأثرًا (${conf}) — منذ ${since}
@@ -62,9 +62,10 @@ async function loadIncidentsBanner() {
 async function loadDevices() {
   const r = await api('/api/devices');
   const tbody = document.getElementById('devices-table-body');
+  const emptyBox = document.getElementById('devices-empty');
   tbody.innerHTML = '';
   loadIncidentsBanner();
-  if (!r.success) return;
+  if (!r.success) { if (emptyBox) emptyBox.classList.add('hidden'); return; }
 
   // تَصفية client-side حسب location_id لو الفلتر فعّال (نَتفادى تَعديل SELECT في الخادم).
   const locFilter = currentLocationFilter ? Number(currentLocationFilter) : null;
@@ -107,6 +108,9 @@ async function loadDevices() {
     return 0;
   });
 
+  // حالة فارغة صريحة: لا جدول بلا صفوف وبلا رسالة
+  if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
+
   for (const d of sortedData) {
     // زر الفتح للأجهزة التي تدعم HTTP/HTTPS (فحص تلقائي)
     // v2.7.5 — web_port: لو مُحدَّد نَفتح على البورت المخصص (مثل 4444)، وإلا الافتراضي.
@@ -121,17 +125,17 @@ async function loadDevices() {
     }
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${esc(d.name)}${d.asset_id ? `<div style="font-size:0.72rem; color:var(--muted); direction:ltr;">${esc(d.asset_id)}</div>` : ''}</td>
-      <td>${esc(d.ip)}</td>
+      <td>${esc(d.name)}${d.asset_id ? `<div class="nm-sub nm-ltr" style="display:block; font-size:0.72rem;">${esc(d.asset_id)}</div>` : ''}</td>
+      <td class="nm-ltr">${esc(d.ip)}</td>
       <td>${esc(d.device_type_name || '-')}</td>
       <td>${esc(d.location_name || '-')}</td>
       <td>${esc(statusText(d.current_status))}</td>
       <td>
         ${openBtn}
-        <button class="btn" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>
-        <button class="btn" data-asset="${esc(d.asset_id || d.id)}" title="الأصل: الهوية الثابتة + واجهات MAC + سجل IP + تعارضات">🔖 أصل</button>
-        <button class="btn" data-edit="${d.id}" title="تعديل الجهاز">✏️ تعديل</button>
-        <button class="btn btn-danger" data-del="${d.id}" title="حذف الجهاز">🗑️ حذف</button>
+        <button class="btn btn-sm" data-hist="${d.id}" title="تشغيل الجهاز (24 ساعة / 7 أيام / 30 يومًا + تغطية)">📈 تشغيل</button>
+        <button class="btn btn-sm" data-asset="${esc(d.asset_id || d.id)}" title="الأصل: الهوية الثابتة + واجهات MAC + سجل IP + تعارضات">🔖 أصل</button>
+        <button class="btn btn-sm" data-edit="${d.id}" title="تعديل الجهاز">✏️ تعديل</button>
+        <button class="btn btn-sm btn-danger" data-del="${d.id}" title="حذف الجهاز">🗑️ حذف</button>
       </td>
     `;
     // مستمع زر الفتح

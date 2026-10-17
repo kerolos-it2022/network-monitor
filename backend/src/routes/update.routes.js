@@ -356,8 +356,11 @@ async function checkForUpdates(branch = 'main') {
       };
     }
 
-    const hasUpdate = currentVersion !== latestVersion;
-    
+    // v2.33.0 — كان المقارنة «مختلف» (currentVersion !== latestVersion) فيظهر «تحديث متاح»
+    // حتى لو نسختك المحلية أحدث من آخر تاج منشور. المقارنة الآن semver حقيقية: تحديث فقط
+    // عندما يكون التاج البعيد أحدث فعلًا (مطابق لِسلوك وضع الأبلاينس فوق).
+    const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+
     // الحصول على ملخص التغييرات
     let changelog = '';
     if (hasUpdate) {
@@ -375,7 +378,10 @@ async function checkForUpdates(branch = 'main') {
       currentVersion,
       latestVersion,
       branch,
-      changelog: changelog || 'لا توجد تغييرات',
+      // لو النسخة المحلية أحدث من المتاح: نوضّح ذلك بدل رسالة «لا توجد تغييرات» الغامضة
+      changelog: changelog || (isNewerVersion(currentVersion, latestVersion)
+        ? `نسختك المحلية (v${currentVersion}) أحدث من آخر إصدار منشور على GitHub (v${latestVersion})`
+        : 'لا توجد تغييرات'),
       updateAvailable: hasUpdate
     };
   } catch (error) {

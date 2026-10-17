@@ -74,9 +74,9 @@
       } else {
         for (const ev of events) {
           const li = document.createElement('li');
-          const end = ev.ended_at ? new Date(ev.ended_at).toLocaleString('ar') : 'مستمر الآن';
-          li.textContent = 'من ' + new Date(ev.started_at).toLocaleString('ar') + ' إلى ' + end
-            + ' — المدة: ' + fmtDuration(ev.duration_seconds);
+          const end = ev.ended_at ? NMFormat.dateTime(ev.ended_at) : 'مستمر الآن';
+          li.textContent = 'من ' + NMFormat.dateTime(ev.started_at) + ' إلى ' + end
+            + ' — المدة: ' + NMFormat.duration(ev.duration_seconds);
           list.appendChild(li);
         }
       }

@@ -23,7 +23,7 @@
   function fmtTs(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleString('ar');
+    return isNaN(d.getTime()) ? '—' : NMFormat.dateTime(d);
   }
 
   function renderInterfaces(list) {

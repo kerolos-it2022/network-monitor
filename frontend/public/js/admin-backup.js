@@ -35,13 +35,45 @@ function showBackupOutput(show = true) {
   }
 }
 
+// جدول «تفاصيل الجداول»: نحفظ العدّادات لِإعادة الترتيب بلا نداء جديد.
+let backupTableCounts = {};
+
+// رسم صفوف الجداول بالترتيب المطلوب (اسم/الأكثر صفوفًا) بصفوف موحّدة الصفات من ui.css.
+function backupRenderTableRows() {
+  const tableListEl = document.getElementById('backup-table-list');
+  if (!tableListEl) return;
+  const modeEl = document.getElementById('backup-tables-sort');
+  const mode = modeEl ? modeEl.value : 'name';
+  let names = Object.keys(backupTableCounts);
+  names = (mode === 'rows_desc')
+    ? names.sort((a, b) => (backupTableCounts[b] || 0) - (backupTableCounts[a] || 0) || a.localeCompare(b))
+    : names.sort((a, b) => a.localeCompare(b));
+  tableListEl.innerHTML = '';
+  if (names.length === 0) {
+    tableListEl.innerHTML = '<li class="nm-muted">لا توجد جداول.</li>';
+    return;
+  }
+  names.forEach((t) => {
+    const li = document.createElement('li');
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'nm-ltr';
+    nameSpan.textContent = t;
+    const countSpan = document.createElement('span');
+    countSpan.className = 'v';
+    countSpan.textContent = backupTableCounts[t] >= 0 ? (NMFormat.num(backupTableCounts[t]) + ' صف') : '—';
+    li.appendChild(nameSpan);
+    li.appendChild(countSpan);
+    tableListEl.appendChild(li);
+  });
+}
+function backupSortTables() { backupRenderTableRows(); }
+
 // تحميل معلومات القاعدة الحالية عند فتح التبويب
 async function loadBackupInfo() {
   const r = await backupApi('/api/backup/info');
   const sizeEl = document.getElementById('backup-db-size');
   const tablesEl = document.getElementById('backup-table-count');
   const modifiedEl = document.getElementById('backup-last-modified');
-  const tableListEl = document.getElementById('backup-table-list');
 
   if (!r.success) {
     if (sizeEl) sizeEl.textContent = 'خطأ';
@@ -51,26 +83,12 @@ async function loadBackupInfo() {
     return;
   }
 
-  if (sizeEl) sizeEl.textContent = `${r.sizeMB} ميجابايت`;
-  if (tablesEl) tablesEl.textContent = `${r.tableCount} جدول`;
-  if (modifiedEl) modifiedEl.textContent = new Date(r.lastModified).toLocaleString('ar-EG');
+  if (sizeEl) sizeEl.textContent = NMFormat.bytes((Number(r.sizeMB) || 0) * 1024 * 1024);
+  if (tablesEl) tablesEl.textContent = NMFormat.num(r.tableCount) + ' جدول';
+  if (modifiedEl) modifiedEl.textContent = NMFormat.dateTime(r.lastModified);
 
-  if (tableListEl) {
-    const counts = r.tables || {};
-    tableListEl.innerHTML = '';
-    Object.keys(counts).sort().forEach((t) => {
-      const li = document.createElement('li');
-      li.style.cssText = 'display:flex; justify-content:space-between; padding:0.35rem 0.6rem; border-bottom:1px solid var(--border);';
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = t;
-      const countSpan = document.createElement('span');
-      countSpan.style.color = 'var(--muted)';
-      countSpan.textContent = counts[t] >= 0 ? `${counts[t]} صف` : '—';
-      li.appendChild(nameSpan);
-      li.appendChild(countSpan);
-      tableListEl.appendChild(li);
-    });
-  }
+  backupTableCounts = r.tables || {};
+  backupRenderTableRows();
 }
 
 // تصدير نسخة احتياطية (.db)
@@ -304,28 +322,26 @@ async function loadBackupList() {
   listEl.innerHTML = '';
   r.backups.forEach((b) => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:0.6rem; border:1px solid var(--border); border-radius:6px; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;';
+    row.className = 'nm-listitem';
 
     const info = document.createElement('div');
     info.innerHTML = `
-      <div style="font-weight:600;">🗂️ ${esc(b.filename)}</div>
-      <div style="font-size:0.8rem; color:var(--muted);">${esc(b.sizeMB)} ميجابايت • ${new Date(b.createdAt).toLocaleString('ar-EG')}</div>
+      <div class="nm-listitem-title">🗂️ <span class="nm-ltr">${esc(b.filename)}</span></div>
+      <div class="nm-listitem-sub">${esc(NMFormat.bytes((Number(b.sizeMB) || 0) * 1024 * 1024))} • ${esc(NMFormat.dateTime(b.createdAt))}</div>
     `;
 
     const actions = document.createElement('div');
-    actions.style.cssText = 'display:flex; gap:0.4rem;';
+    actions.className = 'nm-listitem-actions';
 
     const restoreB = document.createElement('button');
     restoreB.type = 'button';
-    restoreB.className = 'btn btn-primary';
-    restoreB.style.cssText = 'padding:0.3rem 0.7rem; font-size:0.85rem;';
+    restoreB.className = 'btn btn-primary btn-sm';
     restoreB.textContent = '↩️ استعادة';
     restoreB.addEventListener('click', () => restoreFromExisting(b.filename));
 
     const deleteB = document.createElement('button');
     deleteB.type = 'button';
-    deleteB.className = 'btn';
-    deleteB.style.cssText = 'padding:0.3rem 0.7rem; font-size:0.85rem; color:var(--offline);';
+    deleteB.className = 'btn btn-danger btn-sm';
     deleteB.textContent = '🗑️ حذف';
     deleteB.addEventListener('click', () => deleteBackup(b.filename, row));
 

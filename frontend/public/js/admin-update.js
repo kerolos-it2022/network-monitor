@@ -44,11 +44,19 @@ function updSetBusy(on) {
 // ── آخر فحص (يُحفظ محليًّا) ──
 function updReadLast() { try { return Number(localStorage.getItem(UPD_LAST_KEY)) || 0; } catch (e) { return 0; } }
 
-// v2.30.6 — عرض التوقيت بالعربية بدل الصيغة الخام
+// v2.30.6 — عرض التوقيت بالعربية بدل الصيغة الخام (منسّق موحّد لكل الشاشات)
 function updFmtWhen(at) {
   const ts = Date.parse(at);
   if (!Number.isFinite(ts)) return String(at || '');
-  return new Date(ts).toLocaleString('ar-EG');
+  return NMFormat.dateTime(ts);
+}
+
+// v2.33.0 — مقارنة semver محلية: هل a أحدث من b؟ (تمنع رسالة «تحديث متاح» عندما تكون نسختنا أحدث)
+function updIsNewer(a, b) {
+  const pa = String(a || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0); }
+  return false;
 }
 function updRenderLast(ts) {
   const t = ts || updReadLast();
@@ -263,7 +271,9 @@ async function updCheck(silent = false) {
     const has = !!(r.hasUpdate || r.updateAvailable);
     updSet('upd-current', 'v' + cur, 'upd-hero-value');
     updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
-    updSet('upd-latest-sub', has ? 'يتوفّر تحديث جديد 🟠' : 'أنت على أحدث إصدار ✓', 'upd-hero-sub');
+    // لو نسختنا المحلية أحدث من آخر تاج منشور: نقولها بصراحة بدل «أنت على أحدث إصدار» المُربكة
+    const curNewer = !has && updIsNewer(cur, lat);
+    updSet('upd-latest-sub', has ? 'يتوفّر تحديث جديد 🟠' : (curNewer ? 'نسختك المحلية أحدث من المتاح ✓' : 'أنت على أحدث إصدار ✓'), 'upd-hero-sub');
     updSet('upd-state', has ? '🟠 تحديث متاح' : '🟢 محدَّث', 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
     const now = Date.now();
     try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
@@ -502,9 +512,11 @@ async function updLoadHistory() {
     return;
   }
   el.innerHTML = rows.slice(0, 10).map((h) => {
-    const when = esc(h.at || h.date || h.time || '');
+    const when = esc(NMFormat.dateTime(h.at || h.date || h.time || '') || '');
+    // نصوص الرسائل إنجليزية (رسائل git) ⇒ تُعزل داخل صندوق LTR حتى لا يتشوّه ترتيبها في صفحة RTL
     const what = esc(h.message || h.text || h.tag || h.version || JSON.stringify(h));
-    return '<div class="upd-row"><span>' + when + '</span><span>' + what + '</span></div>';
+    return '<div class="upd-row"><span class="nm-ltr" style="white-space:nowrap;">' + when + '</span>'
+      + '<span class="nm-ltr" style="text-align:left;">' + what + '</span></div>';
   }).join('');
 }
 

@@ -50,38 +50,40 @@ async function loadSystemStats() {
   const r = await api('/api/system/stats');
   if (!r.success) { sysSetStatus('تعذّر قراءة حالة النظام: ' + (r.error || ''), true); return; }
   const d = r.data;
+  // v2.33.0 — عزل القيم اللاتينية/الرقمية داخل نصّ عربي (bdi) لمنع تشوّه ترتيب النصّ
+  const bdi = (v) => '<bdi class="nm-ltr">' + esc(v) + '</bdi>';
 
   // 🧠 الرام
   sysSetBar('sys-memory-bar', d.memory.used_percent);
-  document.getElementById('sys-memory-text').textContent =
-    'مستخدم ' + sysFmtBytes(d.memory.used_bytes) + ' من ' + sysFmtBytes(d.memory.total_bytes)
-    + ' — متاح ' + sysFmtBytes(d.memory.free_bytes) + ' (' + d.memory.used_percent + '%)';
-  document.getElementById('sys-process').textContent =
-    '🧩 خدمة المراقبة: ' + sysFmtBytes(d.memory.process.rss_bytes)
-    + ' (Heap مستخدم ' + sysFmtBytes(d.memory.process.heap_used_bytes) + ')'
-    + ' · مفتوحة منذ ' + sysFmtUptime(d.memory.process.uptime_seconds);
+  document.getElementById('sys-memory-text').innerHTML =
+    'مستخدم ' + bdi(sysFmtBytes(d.memory.used_bytes)) + ' من ' + bdi(sysFmtBytes(d.memory.total_bytes))
+    + ' — متاح ' + bdi(sysFmtBytes(d.memory.free_bytes)) + ' (' + bdi(d.memory.used_percent + '%') + ')';
+  document.getElementById('sys-process').innerHTML =
+    '🧩 خدمة المراقبة: ' + bdi(sysFmtBytes(d.memory.process.rss_bytes))
+    + ' (Heap مستخدم ' + bdi(sysFmtBytes(d.memory.process.heap_used_bytes)) + ')'
+    + ' · مفتوحة منذ ' + esc(sysFmtUptime(d.memory.process.uptime_seconds));
 
   // ⚡ المعالج
   const cpuPercent = d.cpu.usage_percent;
   sysSetBar('sys-cpu-bar', cpuPercent);
-  document.getElementById('sys-cpu-text').textContent = (cpuPercent === null ? 'يُحسب من التحديث التالي…' : 'الاستخدام الحي: ' + cpuPercent + '%')
-    + ' · أنوية: ' + d.cpu.cores + (d.cpu.model ? ' · ' + d.cpu.model : '');
-  document.getElementById('sys-loadavg').textContent =
-    d.cpu.loadavg_1_5_15 ? 'تحميل النظام (1/5/15 دقيقة): ' + d.cpu.loadavg_1_5_15.join(' · ') : '—';
+  document.getElementById('sys-cpu-text').innerHTML = (cpuPercent === null ? 'يُحسب من التحديث التالي…' : 'الاستخدام الحي: ' + bdi(cpuPercent + '%'))
+    + ' · أنوية: ' + bdi(d.cpu.cores) + (d.cpu.model ? ' · ' + bdi(d.cpu.model) : '');
+  document.getElementById('sys-loadavg').innerHTML =
+    d.cpu.loadavg_1_5_15 ? 'تحميل النظام (1/5/15 دقيقة): ' + bdi(d.cpu.loadavg_1_5_15.join(' · ')) : '—';
 
   // 💾 القرص
   const root = d.disks.root;
   if (root) {
     sysSetBar('sys-disk-bar', root.used_percent);
-    document.getElementById('sys-disk-text').textContent =
-      'مستخدم ' + sysFmtBytes(root.used) + ' من ' + sysFmtBytes(root.total) + ' — متاح ' + sysFmtBytes(root.free) + ' (' + root.used_percent + '%)';
+    document.getElementById('sys-disk-text').innerHTML =
+      'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
   } else {
     sysSetBar('sys-disk-bar', null);
     document.getElementById('sys-disk-text').textContent = 'قياس قرص الجذر غير متاح على هذه المنصة';
   }
-  document.getElementById('sys-db-size').textContent =
-    '🗃️ قاعدة البيانات: ' + sysFmtBytes(d.disks.db_file_bytes)
-    + ' · 💾 النسخ الاحتياطية: ' + sysFmtBytes(d.disks.backups_bytes);
+  document.getElementById('sys-db-size').innerHTML =
+    '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
+    + ' · 💾 النسخ الاحتياطية: ' + bdi(sysFmtBytes(d.disks.backups_bytes));
 
   // 🌐 الشبكة (لينكس فقط — بطاقة تُخفى بهدوء على غيره)
   const netCard = document.getElementById('sys-network-card');
@@ -94,19 +96,21 @@ async function loadSystemStats() {
     document.getElementById('sys-net-rx-total').textContent = sysFmtBytes(d.network.rx_total);
     document.getElementById('sys-net-tx-total').textContent = sysFmtBytes(d.network.tx_total);
     const top = (d.network.interfaces || []).slice(0, 3)
-      .map((i) => i.name + ' (' + sysFmtBytes(i.rx_bytes) + '/' + sysFmtBytes(i.tx_bytes) + ')').join(' · ');
-    document.getElementById('sys-net-ifaces').textContent = top ? 'الواجهات الأنشط: ' + top : '—';
+      .map((i) => esc(i.name) + ' (' + sysFmtBytes(i.rx_bytes) + '/' + sysFmtBytes(i.tx_bytes) + ')').join(' · ');
+    document.getElementById('sys-net-ifaces').innerHTML = top ? 'الواجهات الأنشط: ' + bdi(top) : '—';
   }
 
-  // 📋 تفاصيل النظام
+  // 📋 تفاصيل النظام — سطور «اسم: قيمة» مع عزل القيم (أسماء أنظمة/أرقام إنجليزية) داخل صفحة عربية
+  const ltr = (v) => '<bdi class="nm-ltr">' + esc(v) + '</bdi>';
+  const kvRow = (label, value) => '<div class="nm-kv"><span class="k">' + label + '</span><span class="v">' + value + '</span></div>';
   const s = d.system;
   document.getElementById('sys-details').innerHTML =
-    '<div>💻 النظام: <b>' + esc(s.type || s.platform) + ' ' + esc(s.release) + '</b></div>'
-    + '<div>🧱 المعمارية: <b>' + esc(s.arch) + '</b></div>'
-    + '<div>🖥️ الجهاز: <b>' + esc(s.hostname) + '</b></div>'
-    + '<div>🟢 إصدار Node: <b>' + esc(s.node_version) + '</b></div>'
-    + '<div>⏰ خدمة المراقبة مفتوحة منذ: <b>' + sysFmtUptime(s.app_uptime_seconds) + '</b></div>'
-    + '<div>🔋 نظام التشغيل منذ: <b>' + sysFmtUptime(s.os_uptime_seconds) + '</b></div>';
+    kvRow('💻 النظام:', ltr(String(s.type || s.platform || '—') + ' ' + String(s.release || '')))
+    + kvRow('🧱 المعمارية:', ltr(s.arch || '—'))
+    + kvRow('🖥️ الجهاز:', ltr(s.hostname || '—'))
+    + kvRow('🟢 إصدار Node:', ltr(s.node_version || '—'))
+    + kvRow('⏰ خدمة المراقبة مفتوحة منذ:', esc(sysFmtUptime(s.app_uptime_seconds)))
+    + kvRow('🔋 نظام التشغيل منذ:', esc(sysFmtUptime(s.os_uptime_seconds)));
 
   // ⏱️ المحرك
   const e = d.engine;
@@ -114,7 +118,7 @@ async function loadSystemStats() {
     : (e.stalled ? '⚠️ المحرك متوقف أو متعثر! آخر دورة قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية — راجع تبويب السجل'
        : '✅ سليم — آخر دورة فحص قبل ' + Math.round((e.last_tick_age_ms || 0) / 1000) + ' ثانية · أجهزة نشطة: ' + (d.devices_active !== null ? d.devices_active : (e.active_devices || '—')) + ' · فحوص جارية: ' + (e.inflight_checks || 0));
 
-  sysSetStatus('آخر تحديث: ' + new Date(d.ts).toLocaleTimeString('ar-EG'), false);
+  sysSetStatus('آخر تحديث: ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();
 }
@@ -134,10 +138,18 @@ async function loadAndDrawHistory() {
   if (sysDrawSkip++ % 10 !== 0) return; // كل 50 ثانية (10 دورات × 5ث)
   const cv = document.getElementById('sys-history-canvas');
   if (!cv) return;
+  const emptyBox = document.getElementById('sys-history-empty');
+  const showEmpty = (on) => { if (emptyBox) emptyBox.classList.toggle('hidden', !on); };
   try {
     const r = await fetch('/api/system/history', { credentials: 'same-origin', cache: 'no-store' });
     const j = await r.json();
-    if (!j.success || !Array.isArray(j.data) || j.data.length < 2) return;
+    if (!j.success || !Array.isArray(j.data) || j.data.length < 2) {
+      // حالة فارغة صريحة بدل مستطيل أبيض صامت
+      cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+      showEmpty(true);
+      return;
+    }
+    showEmpty(false);
     const pts = j.data.slice(-120); // آخر 10 دقائق تقريبًا كافية لاتجاه واضح
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
@@ -166,10 +178,14 @@ async function loadAndDrawHistory() {
     };
     drawLine('mem_percent', '#3b82f6');
     drawLine('cpu_percent', '#a855f7');
-    // تسميات المحور
-    ctx.fillStyle = 'var(--muted, #888)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    // تسميات المحور — لون حقيقي من الصفحة (canvas لا يفهم var(--muted) فيبقى أسود غير مرئي ليلًا)
+    const muted = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#6b7280';
+    ctx.fillStyle = muted; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
     ctx.fillText('100%', 8, yOf(100) + 4); ctx.fillText('50%', 10, yOf(50) + 4); ctx.fillText('0%', 8, yOf(0) + 4);
-  } catch (e) { /* فشل الرسم لا يضر الباقي */ }
+  } catch (e) {
+    cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    showEmpty(true);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

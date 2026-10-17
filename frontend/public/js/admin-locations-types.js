@@ -98,8 +98,9 @@ function populateMapParentSelect(currentId) {
 async function loadLocations() {
   const r = await api('/api/locations');
   const tbody = document.getElementById('locations-table-body');
+  const emptyBox = document.getElementById('locations-empty');
   tbody.innerHTML = '';
-  if (!r.success) { currentLocations = []; return; }
+  if (!r.success) { currentLocations = []; if (emptyBox) emptyBox.classList.add('hidden'); return; }
   currentLocations = r.data;
 
   // فلتر النوع (client-side).
@@ -133,6 +134,9 @@ async function loadLocations() {
     if (valA > valB) return 1;
     return 0;
   });
+
+  // حالة فارغة صريحة
+  if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
 
   // خريطة id→name لِـ عرض اسم الأَب في الجدول.
   const nameById = new Map(r.data.map((l) => [l.id, l.name]));
@@ -308,16 +312,19 @@ async function loadTypes() {
     return 0;
   });
   
+  const emptyBox = document.getElementById('types-empty');
+  if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
+
   for (const t of sortedData) {
     const tr = document.createElement('tr');
     const iconEmoji = getIconEmoji(t.icon) || inferByName(t.name);
     tr.innerHTML = `
       <td>${t.id}</td>
       <td>${esc(t.name)}</td>
-      <td style="text-align:center; font-size:1.2rem;">${iconEmoji}</td>
+      <td class="nm-center" style="font-size:1.2rem;">${iconEmoji}</td>
       <td>
-        <button class="btn" data-edit="${t.id}" title="تعديل النوع">✏️ تعديل</button>
-        <button class="btn btn-danger" data-del="${t.id}" title="حذف النوع">🗑️ حذف</button>
+        <button class="btn btn-sm" data-edit="${t.id}" title="تعديل النوع">✏️ تعديل</button>
+        <button class="btn btn-sm btn-danger" data-del="${t.id}" title="حذف النوع">🗑️ حذف</button>
       </td>
     `;
     tr.querySelector('[data-edit]').addEventListener('click', () => editType(t));

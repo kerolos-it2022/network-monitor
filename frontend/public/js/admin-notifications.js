@@ -187,15 +187,18 @@ async function loadNotificationLogs() {
     if (c === 'mobile') return 'هاتف (PWA)';
     return c;
   };
+  const emptyBox = document.getElementById('logs-empty');
+  if (emptyBox) emptyBox.classList.toggle('hidden', sortedData.length > 0);
+
   for (const l of sortedData) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${esc(l.sent_at ? new Date(l.sent_at).toLocaleString('ar') : '-')}</td>
-      <td>${esc(l.device_name || '-')}</td>
+      <td class="nm-ltr" style="white-space:nowrap;">${esc(l.sent_at ? NMFormat.dateTime(l.sent_at) : '—')}</td>
+      <td>${esc(l.device_name || '—')}</td>
       <td>${esc(channelText(l.channel))}</td>
       <td>${esc(l.status === 'sent' ? 'تم الإرسال' : 'فشل')}</td>
       <td>${esc(l.message)}</td>
-      <td>${esc(l.error || '-')}</td>
+      <td>${esc(l.error || '—')}</td>
     `;
     tbody.appendChild(tr);
   }

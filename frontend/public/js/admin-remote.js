@@ -165,7 +165,7 @@ function renderRemoteStatus(s) {
   const dst = rEl('remote-domain-status');
   if (dst) {
     dst.textContent = s.domainsAt
-      ? ('آخر جلب للدومينات: ' + new Date(s.domainsAt).toLocaleString('ar-EG') + ' — العدد: ' + ((s.domains || []).length))
+      ? ('آخر جلب للدومينات: ' + NMFormat.dateTime(s.domainsAt) + ' — العدد: ' + ((s.domains || []).length))
       : 'لم تُجلب الدومينات بعد.';
   }
 
@@ -186,7 +186,7 @@ function renderRemoteStatus(s) {
     // v2.17.2 — سجل «آخر إجراء» الأقدم من 24 ساعة **لا يُعرض أدناه** (طلب المستخدم:
     // «ليه مش محذوف؟»): رسالة قديمة علي سطح شاشة حيّة = تشويش بلا قيمة.
     // تظل متاحة في السجلات النصية (log) أسفل الصفحة إن لزم للتحقيق.
-    const when = last.at ? new Date(last.at).toLocaleString('ar-EG') : '';
+    const when = last.at ? NMFormat.dateTime(last.at) : '';
     const ageMs = last.at ? Date.now() - new Date(last.at).getTime() : 0;
     if (ageMs > 24 * 3600 * 1000) { rStatus(''); return; }
     const icon = last.state === 'success' ? '✅ ' : (last.state === 'failed' ? '❌ ' : '⏳ ');

@@ -1,4 +1,5 @@
-// admin-tabs.js: التبديل بين أقسام لوحة التحكم (إظهار واحد، إخفاء البقية).
+// v2.33.0 — عنوان موحّد للصفحة: الشريط العلوي يعرض اسم القسم المفتوح (وأيقونته)
+// بدل عنوان ثابت «لوحة التحكم» — كل شاشة صار لها عنوان واضح (نفس نمط NOC/العامة).
 const TAB_TO_SECTION = {
   'tab-devices': 'section-devices',
   'tab-locations': 'section-locations',
@@ -22,11 +23,41 @@ const TAB_TO_SECTION = {
   'tab-updates': 'section-updates',
 };
 
+// عنوان لكل قسم (يُستعمل في الشريط العلوي وفي عنوان التبويب في المتصفح).
+const TAB_TITLES = {
+  'tab-devices': '📱 إدارة الأجهزة',
+  'tab-locations': '📍 إدارة المواقع',
+  'tab-types': '🏷️ أنواع الأجهزة',
+  'tab-discovery': '🔍 اكتشاف الأجهزة',
+  'tab-discovered': '📥 بانتظار الاعتماد',
+  'tab-scheduler': '⏱️ الجدولة التلقائية',
+  'tab-map': '🗺️ خريطة المواقع',
+  'tab-topology': '🔗 سلسلة الشبكة',
+  'tab-notifications': '🔔 الإشعارات',
+  'tab-ai': '🤖 شات AI',
+  'tab-logs': '📋 سجل الإشعارات',
+  'tab-profile': '👤 الملف الشخصي والحسابات',
+  'tab-backup': '💾 النسخ الاحتياطي',
+  'tab-remote': '🌍 الوصول عن بُعد',
+  'tab-display': '🎛️ إعدادات العرض والأدوات',
+  'tab-system': '🖥️ حالة النظام',
+  'tab-updates': '🔄 تحديثات النظام',
+};
+
+function setPageTitle(tabId) {
+  const title = TAB_TITLES[tabId];
+  if (!title) return;
+  const el = document.querySelector('.admin-topbar h1');
+  if (el) el.textContent = title;
+  document.title = title.replace(/^\S+\s*/, '') + ' — لوحة التحكم';
+}
+
 function showSection(tabId) {
   // تحديث الأزرار.
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
   const btn = document.getElementById(tabId);
   if (btn) btn.classList.add('active');
+  setPageTitle(tabId);
 
   // إظهار القسم المقابل وإخفاء البقية.
   const target = TAB_TO_SECTION[tabId];

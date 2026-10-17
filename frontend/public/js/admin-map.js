@@ -576,9 +576,9 @@ function renderMapSummary(summaryEl, rootData, visibleCount) {
     return;
   }
   const chips =
-    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="فلترة أَجهزة offline">🔴 ${rootData.offline} offline</button>` : '') +
-    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="فلترة أَجهزة online">🟢 ${rootData.online} online</button>` : '') +
-    (rootData.unknown > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="unknown" aria-label="فلترة أَجهزة unknown">⚪ ${rootData.unknown} unknown</button>` : '');
+    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="فلترة أَجهزة متوقفة">🔴 ${rootData.offline} متوقف</button>` : '') +
+    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="فلترة أَجهزة متصلة">🟢 ${rootData.online} متصل</button>` : '') +
+    (rootData.unknown > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="unknown" aria-label="فلترة أَجهزة بلا نتيجة">⚪ ${rootData.unknown} غير معروف</button>` : '');
   summaryEl.innerHTML = `<span class="map-summary-count">الإِجمالي: ${rootData.device_count} جهاز</span>${chips}`;
 }
 
@@ -931,7 +931,7 @@ function fmtDate(s) {
   try {
     const d = new Date(s);
     if (isNaN(d.getTime())) return esc(String(s));
-    return esc(d.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }));
+    return esc(NMFormat.dateTime(d));
   } catch (_) { return esc(String(s)); }
 }
 

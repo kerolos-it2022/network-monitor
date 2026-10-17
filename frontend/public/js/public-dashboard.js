@@ -15,6 +15,26 @@ const THEME_STORAGE_KEY = 'nm.publicTheme'; // 'dark' | 'light'
 // في المتصفح، وبلا كشف أي عنوان قبل تأكيد الصلاحية.
 let internalView = false;   // true ⇒ نقرأ المسارات الداخلية (تحوي IP) لأن الجلسة مسموح لها
 
+// ═══ v2.33.0 — مواءمة عناصر الصفحة مع وضع العرض ═══
+// الزائر لا يرى عناوين IP إطلاقًا ⇒ لا نَعِده بالبحث/الترتيب بعنوان لا وجود له،
+// ونخفي خيار الترتيب «حسب IP» مع أي أثر بصري آخر (النص يتغيّر بدل أن يبقى مُضلِّلًا).
+function applyDisplayModeUi() {
+  var searchEl = document.getElementById('search-input');
+  if (searchEl) {
+    searchEl.placeholder = internalView ? 'بحث بالاسم أو IP…' : 'بحث بالاسم…';
+  }
+  var ipOption = document.querySelector('#filter-sort option[value="ip"]');
+  if (ipOption) {
+    ipOption.hidden = !internalView;
+    ipOption.disabled = !internalView;
+    if (!internalView && currentSort === 'ip') {
+      currentSort = 'name';
+      var sel = document.getElementById('filter-sort');
+      if (sel) sel.value = 'name';
+    }
+  }
+}
+
 async function resolveDisplayMode() {
   try {
     const r = await fetch('/api/settings/noc-mode', { credentials: 'same-origin' });
@@ -168,7 +188,7 @@ function renderDevices(devicesList) {
       (d.ip ? '<div class="ip">' + escapeHtml(d.ip) + '</div>' : '') +
       '<div class="meta">\u0627\u0644\u0646\u0648\u0639: ' + escapeHtml(d.device_type_name || '-') + '</div>' +
       '<div class="meta">\u0627\u0644\u0645\u0648\u0642\u0639: ' + escapeHtml(d.location_name || '-') + '</div>' +
-      '<div class="meta">\u0622\u062e\u0631 \u0641\u062d\u0635: ' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
+      '<div class="meta">\u0622\u062e\u0631 \u0641\u062d\u0635: ' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '\u0644\u0645 \u064a\u0641\u062d\u0635 \u0628\u0639\u062f') + '</div>' +
       '<span class="status-badge ' + badgeClass + '">' + overallStatusText(d) + '</span>' +
       (openBtnHtml ? '<div class="card-actions">' + openBtnHtml + '</div>' : '');
     card.addEventListener('click', function (e) {
@@ -240,7 +260,7 @@ function renderTable(devicesList) {
       '<td style="direction:ltr;text-align:center;font-size:0.85rem;">' + escapeHtml(d.ip || '—') + '</td>' +
       '<td>' + escapeHtml(d.device_type_name || '-') + '</td>' +
       '<td>' + escapeHtml(d.location_name || '-') + '</td>' +
-      '<td style="font-size:0.85rem;color:var(--muted);">' + (d.last_checked_at ? new Date(d.last_checked_at).toLocaleString('ar') : '-') + '</td>' +
+      '<td class="nm-ltr" style="font-size:0.85rem;color:var(--muted);">' + (d.last_checked_at ? NMFormat.dateTime(d.last_checked_at) : '—') + '</td>' +
       '<td style="font-size:0.85rem;color:var(--muted);">' + fmtLastOutage(d) + '</td>' +
       '<td>' + (openBtnHtml || '') + '</td>' +
       '<td><button class="btn" data-detail="' + d.id + '">\u062a\u0641\u0627\u0635\u064a\u0644</button></td>';
@@ -392,7 +412,7 @@ window.openDeviceModal = async function (deviceId) {
       if (!his || !his.success) { alert(his && his.error ? his.error : 'تعذّر جلب سجل الجهاز'); return; }
       var data = his.data;
       var rangeNames = { '24h': 'آخر 24 ساعة', '7d': 'آخر 7 أيام', '30d': 'آخر 30 يوم' };
-      document.getElementById('modal-uptime').textContent = 'نسبة التشغيل (' + rangeNames[range] + '): ' + data.uptime_percentage + '%';
+      document.getElementById('modal-uptime').textContent = 'نسبة التشغيل (' + rangeNames[range] + '): ' + NMFormat.pct(data.uptime_percentage) + '';
       var canvas = document.getElementById('modal-chart-canvas');
       if (typeof window.renderDeviceChart === 'function') {
         try { currentChart = window.renderDeviceChart(canvas, data.status_points); } catch (e) { console.error(e); }
@@ -405,8 +425,8 @@ window.openDeviceModal = async function (deviceId) {
         for (var i = 0; i < data.downtime_events.length; i++) {
           var ev = data.downtime_events[i];
           var li = document.createElement('li');
-          var ended = ev.ended_at ? new Date(ev.ended_at).toLocaleString('ar') : 'مستمرة الآن';
-          li.textContent = 'من ' + new Date(ev.started_at).toLocaleString('ar') + ' إلى ' + ended + ' — المدة: ' + formatDuration(ev.duration_seconds);
+          var ended = ev.ended_at ? NMFormat.dateTime(ev.ended_at) : 'مستمرة الآن';
+          li.textContent = 'من ' + NMFormat.dateTime(ev.started_at) + ' إلى ' + ended + ' — المدة: ' + NMFormat.duration(ev.duration_seconds);
           listEl.appendChild(li);
         }
       }
@@ -447,6 +467,7 @@ async function init() {
   // قرار العرض أولًا: مسجَّل ⇒ مسارات داخلية (بالعناوين) · زائر ⇒ التغذية العامة المنقّاة.
   // مهم: لا يُطلب أي بيانات قبل معرفة الوضع، فلا يظهر عنوان للزائر إطلاقًا.
   apiPaths = await resolveDisplayMode();
+  applyDisplayModeUi();
 
   var results = await Promise.all([
     fetchApi(apiPaths.list),

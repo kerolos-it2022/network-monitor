@@ -4,7 +4,7 @@ window.renderDeviceChart = function (canvasElement, statusPoints) {
   const ctx = canvasElement.getContext('2d');
   const labels = (statusPoints || []).map((p) => {
     const d = new Date(p.checked_at);
-    return d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+    return (window.NMFormat ? NMFormat.timeShort(d) : d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
   });
   const data = (statusPoints || []).map((p) => {
     if (p.status !== 'online') return 0; // لإظهار الانخفاض عند الانقطاع.

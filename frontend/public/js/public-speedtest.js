@@ -226,7 +226,7 @@
         setValue('st-ping', last.ping + ' ms');
         setValue('st-download', last.down + ' Mbps');
         setValue('st-upload', last.up == null ? '—' : last.up + ' Mbps');
-        setStatus('آخر قياس [' + (last.server || '—') + ']: ' + new Date(last.at).toLocaleString('ar') + ' — اضغط «ابدأ القياس» لإعادة القياس.');
+        setStatus('آخر قياس [' + (last.server || '—') + ']: ' + NMFormat.dateTime(last.at) + ' — اضغط «ابدأ القياس» لإعادة القياس.');
       }
     } catch (_) {}
   }

@@ -975,7 +975,8 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     try {
       const d = new Date(s);
       if (isNaN(d.getTime())) return String(s);
-      return d.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+      // منسّق موحّد لكل الشاشات (أرقام لاتينية + ص/م) — nm-format.js
+      return window.NMFormat ? NMFormat.dateTime(d) : d.toLocaleString('ar-EG');
     } catch (_) { return String(s); }
   }
   function statusBadgeText(status) {
@@ -1360,7 +1361,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       renderAll();
       const now = new Date();
       const el = document.getElementById('last-updated-time');
-      if (el) el.textContent = 'آخر تحديث: ' + now.toLocaleTimeString('ar-EG') + ' (لحظي)';
+      if (el) el.textContent = 'آخر تحديث: ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
     }, 150);
   }
 
@@ -1457,7 +1458,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         
         const now = new Date();
         document.getElementById('last-updated-time').textContent = 
-          'آخر تحديث: ' + now.toLocaleTimeString('ar-EG');
+          'آخر تحديث: ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
         if (updateStatusEl) refreshStatusText(true);
         updateEngineAlertFromHealth(healthRes);
       }
@@ -1471,8 +1472,9 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   // ── Live Clock ──
   function clock() {
     const d = new Date();
-    const timeStr = d.toLocaleTimeString('ar-EG', { hour12: true });
-    const dateStr = d.toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    // v2.33.0 — نفس منسّق باقي الشاشات (أرقام لاتينية + ص/م) بدل صيغة ar-EG الافتراضية
+    const timeStr = window.NMFormat ? NMFormat.time(d) : d.toLocaleTimeString('ar-EG', { hour12: true });
+    const dateStr = window.NMFormat ? NMFormat.dateLongWd(d) : d.toLocaleDateString('ar-EG', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
     const clockEl = document.getElementById('clock');
     if (clockEl) clockEl.textContent = `${dateStr}  ·  ${timeStr}`;
   }

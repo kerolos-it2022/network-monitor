@@ -524,7 +524,7 @@ async function loadLastScan() {
     document.getElementById('discovery-progress').classList.add('hidden');
     document.getElementById('discovery-results').classList.remove('hidden');
     renderDiscoveryTable(data.devices || []);
-    const when = data.endedAt ? new Date(data.endedAt).toLocaleString('ar-EG') : '—';
+    const when = data.endedAt ? NMFormat.dateTime(data.endedAt) : '—';
     showToast((data.cancelled ? '📄 آخر نتيجة (مُلغى) — ' : '📄 آخر نتيجة مسح — ') +
       (data.cidr || '—') + ' · ' + (data.deviceCount || 0) + ' جهاز · ' + when,
       { type: 'info', duration: 7000 });
