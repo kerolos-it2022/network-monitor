@@ -154,7 +154,8 @@ body.dark {
   flex-direction: column;
   gap: 0.3rem;
   min-height: 84px;
-  justify-content: center;
+  /* طلب المالك: نصّ البطاقة يبدأ من **أعلى** البطاقة (بدل التوسيط) فتتصفّ التسميات على سطر واحد */
+  justify-content: flex-start;
 }
 .nm-kpi-label {
   font-size: var(--nm-fs-xs);
