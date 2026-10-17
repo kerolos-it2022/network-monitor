@@ -916,12 +916,10 @@ table.data-table td.col-status, table.data-table th.col-status { text-align: rig
 .nm-empty, .nm-empty .nm-empty-icon { text-align: start; }
 table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
 
-/* سطر الحقوق في ذيل الصفحة: يمين بدل المنتصف */
-.site-footer { text-align: start; }
+/* سطر الحقوق في ذيل الصفحة: **في المنتصف** في اللغتين (قرار المالك 2026-10-18 */
+.site-footer { text-align: center; }
 
-/* طلب المالك (2026-10-18): «All rights reserved in center» — في الوضع الإنجليزي يُوسَّط سطر الحقوق،
-   ووضع العربية يبقى كما اخترتَه (يمين). */
-html[dir="ltr"] .site-footer { text-align: center; }
+/* ملاحظة: قاعدة الإنجليزية الخاصة أُزيلت — التوسيط صار للغتين معًا. */
 
 /* ═══════════════════════════ 14) شارات الحالة وملخص الأجهزة (v2.33.0) ═══════════════════════════ */
 /* شارة حالة: نقطة ملوّنة + الكلمة على خلفية باهتة — والكلمة مكتوبة دائمًا (لا اعتماد على اللون وحده). */
