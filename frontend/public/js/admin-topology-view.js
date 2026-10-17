@@ -51,7 +51,7 @@
 
   // v2.8.2 — تسمية عربية لنوع الموقع.
   function kindLabel(kind) {
-    if (kind === 'building') return T('s2.building', T('s3.building', '🏢 مبنى'));
+    if (kind === 'building') return T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', T('s3.building', T('kind.building', T('s2.building', '🏢 مبنى'))))))))));
     if (kind === 'internet') return '🌐 بوابة إنترنت';
     if (kind === 'floor') return T('s2.floor', T('s3.floor', '📐 طابق'));
     if (kind === 'room') return T('s2.room', T('s3.room', '🚪 غرفة'));
@@ -108,7 +108,7 @@
       + '<b class="t-nm">' + esc(n.name) + '</b>'
       + (isLoc
           ? ' <span class="t-ip">' + esc(kindIcon(n.kind)) + ' ' + esc(kindLabel(n.kind)) + '</span>'
-            + ' <span class="t-loc-stats" title="أجهزة هذا المبنى: متصل · منقطع · غير معروف">🟢 ' + lc.online
+            + ` <span class="t-loc-stats" title="${T('frag.devices_in_this_building', 'أجهزة هذا المبنى')}: ${T('status.online', 'متصل')} · ${T('frag.offline_unknown', 'منقطع · غير معروف')}">🟢 ` + lc.online
             + ' · 🔴 ' + lc.offline + ' · ⚪ ' + lc.unknown + ' <b>(' + lc.total + ')</b></span>'
           : ' <span class="t-ip">' + esc(n.ip) + (n.device_type_name ? ' — ' + esc(n.device_type_name) : '') + '</span>')
       + ' <span class="t-type">' + (si.st ? si.st + ' ' : '') + (pathDown ? '⛔ مسدود عبر الأب' : '') + '</span>'
@@ -134,7 +134,7 @@
       const byId = new Map();
       indexTree(j.data, null, byId);
       if (!j.data.length) {
-        treeEl.innerHTML = '<p class="muted">لا توجد أجهزة بعد — أضف أجهزة من تبويب «الأجهزة» وحدّد لكل جهاز «متصل عبر» لبناء المسار.</p>';
+        treeEl.innerHTML = `<p class="muted">${T('common.no', 'لا')} ${T('frag.no_devices_yet_add_devices_from_the', 'توجد أجهزة بعد — أضف أجهزة من تبويب ')}«${T('frag.devices_2', 'الأجهزة')}» ${T('frag.and_set_for_each_device', 'وحدّد لكل جهاز ')}«${T('s3.connects_via', 'متصل عبر')}» ${T('frag.to_build_the_path', 'لبناء المسار.')}</p>`;
       } else {
         treeEl.innerHTML = j.data.map((n) => renderNode(n, 0)).join('');
       }

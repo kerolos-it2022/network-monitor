@@ -46,7 +46,7 @@ function inferByName(typeName) {
 const KIND_LABEL = {
   internet: { icon: '🌐', label: 'إنترنت' },
   zone: { icon: '📍', label: 'منطقة' },
-  site: { icon: '🏛️', label: 'موقع' },
+  site: { icon: '🏛️', label: T('frag.location', 'موقع') },
   building: { icon: '🏢', label: 'مبنى' },
   floor: { icon: '📐', label: 'طابق' },
   room: { icon: '🚪', label: 'غرفة' },
@@ -60,7 +60,7 @@ function populateParentSelect(currentId) {
   const sel = document.getElementById('loc-parent_id');
   if (!sel) return;
   const prevValue = sel.value; // أُحافظ على الاختيار عند إِعادة التَعبئة.
-  sel.innerHTML = '<option value="">— جذر (لا أَب) —</option>';
+  sel.innerHTML = `<option value="">— ${T('frag.root', 'جذر ')}(${T('common.no', 'لا')} ${T('frag.parent', 'أَب')}) —</option>`;
   for (const l of currentLocations) {
     if (currentId != null && Number(l.id) === Number(currentId)) continue; // منع ذاتي.
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
@@ -81,7 +81,7 @@ function populateMapParentSelect(currentId) {
   const sel = document.getElementById('loc-map_parent_id');
   if (!sel) return;
   const prevValue = sel.value;
-  sel.innerHTML = '<option value="">— بطاقة مستقلة (بلا أب في الخريطة) —</option>';
+  sel.innerHTML = `<option value="">— ${T('frag.stand_alone_card', 'بطاقة مستقلة ')}(ب${T('common.no', 'لا')} ${T('frag.parent_on_the_map', 'أب في الخريطة')}) —</option>`;
   for (const l of currentLocations) {
     if (currentId != null && Number(l.id) === Number(currentId)) continue;
     const kl = KIND_LABEL[l.kind] || { icon: '📍', label: l.kind || 'zone' };
@@ -181,7 +181,7 @@ function resetLocationForm() {
 // v2.7.4 — فتح popup modal لإِضافة موقع جديد (بَدل form-card المضمّن).
 function openLocationForm() {
   resetLocationForm();
-  document.getElementById('location-form-title').textContent = 'إضافة موقع';
+  document.getElementById('location-form-title').textContent = T('tail.add_location', 'إضافة موقع');
   openEditModal(document.getElementById('location-modal'), {
     focusSelector: '#loc-name',
     onClose: () => resetLocationForm(),
@@ -233,7 +233,7 @@ async function saveLocation() {
   if (kind === 'internet' && parentSel && parentSel.value) {
     const ok = await confirmAction({
       title: T('s2j.notice_the_internet_kind', 'تَنبيه: نوع «internet»'),
-      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟'),
+      message: T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', T('s2j.the_internet_kind_is_always_the_top_of_the_p', 'نوع «internet» يَكون دائمًا قمة الهَرم (لا أَب). سيُتجاهل الموقع الأَب المُختار. مُتابعة؟')))))),
       confirmText: '✓ مُتابعة',
     });
     if (!ok) return;
@@ -342,7 +342,7 @@ function resetTypeForm() {
 // v2.7.4 — فتح popup modal لإِضافة نوع جديد (بَدل form-card المضمّن).
 function openTypeForm() {
   resetTypeForm();
-  document.getElementById('type-form-title').textContent = 'إضافة نوع';
+  document.getElementById('type-form-title').textContent = T('tail.add_type', 'إضافة نوع');
   openEditModal(document.getElementById('type-modal'), {
     focusSelector: '#type-name',
     onClose: () => resetTypeForm(),

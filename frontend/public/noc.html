@@ -148,10 +148,10 @@
         <div class="bar"></div>
         <!-- v2.11.5 — أزرار العرض في الأعلى مثل لوحة التحكم (كانت عائمة أسفل اللوحة) -->
         <div class="chain-zoom-controls" role="group" aria-label="تكبير وتصغير وملاءمة اللوحة" data-i18n-attr="aria-label:tail.zoom_in_out_and_fit_the_board">
-          <button type="button" class="map-btn" id="draw-zoom-in" title="تكبير" onclick="zoomMap(0.15)">+</button>
-          <button type="button" class="map-btn" id="draw-zoom-out" title="تصغير" onclick="zoomMap(-0.15)">−</button>
-          <button type="button" class="map-btn wide" id="draw-zoom-reset" title="إعادة ضبط 100%" onclick="resetMapZoom()">↺ 100%</button>
-          <button type="button" class="map-btn wide" id="draw-zoom-fit" title="ملاءمة الشاشة" onclick="fitMapToScreen()"><span data-i18n="s2.full_view">⛶ عرض كامل</span></button>
+          <button type="button" class="map-btn" id="draw-zoom-in" title="تكبير" onclick="zoomMap(0.15)" data-i18n-attr="title:s2.zoom_in">+</button>
+          <button type="button" class="map-btn" id="draw-zoom-out" title="تصغير" onclick="zoomMap(-0.15)" data-i18n-attr="title:s2.zoom_out">−</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-reset" title="إعادة ضبط 100%" onclick="resetMapZoom()" data-i18n-attr="title:s2.reset_to_100">↺ 100%</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-fit" title="ملاءمة الشاشة" onclick="fitMapToScreen()" data-i18n-attr="title:s2.fit_to_screen"><span data-i18n="s2.full_view">⛶ عرض كامل</span></button>
         </div>
       </div>
       <div class="map-container">
@@ -183,7 +183,7 @@
   <!-- v2.8.6 — نافذة تفاصيل الجهاز: نفس حقول نافذة «خريطة المواقع» في لوحة التحكم -->
   <div id="noc-device-modal" class="noc-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="noc-modal-card">
-      <button type="button" class="noc-modal-close" id="noc-modal-close" aria-label="إغلاق">✕</button>
+      <button type="button" class="noc-modal-close" id="noc-modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
       <div class="details-header">
         <span class="details-icon" id="noc-modal-icon">🖥️</span>
         <div class="details-title-wrap">

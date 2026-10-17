@@ -393,7 +393,7 @@ function renderZoneCard(node, opts) {
 
   // v2.10.7 — سطر «متصل عبر» داخل البطاقة (بدل الإدخال داخل بطاقة الأب)
   const parentLine = opts.parentName
-    ? `<div class="map-zone-parent">🧩 متصل عبر: ${esc(opts.parentName)}</div>`
+    ? `<div class="map-zone-parent">🧩 ${T('s3.connects_via', 'متصل عبر')}: ${esc(opts.parentName)}</div>`
     : '';
 
   return `
@@ -403,7 +403,7 @@ function renderZoneCard(node, opts) {
         <span class="map-zone-icon">${icon}</span>
         <span class="map-zone-name">${esc(node.name || '')}</span>
         <span class="map-zone-stats">${stats}</span>
-        <button type="button" class="map-zone-toggle" aria-label="تَوسيع/طي" aria-expanded="${!collapsedNow}">▼</button>
+        <button type="button" class="map-zone-toggle" aria-label="${T('frag.expand', 'تَوسيع')}/${T('frag.collapse', 'طي')}" aria-expanded="${!collapsedNow}">▼</button>
       </div>
       ${parentLine}
       <div class="map-zone-body">${body}</div>
@@ -419,7 +419,7 @@ function renderZoneBody(node) {
     // لا أَبناء — إِما فارِغة أو عقدة leaf; رِسالة hint قَد لا تَلزم لأَنّ reveal عبر
     // has-offline / stats يُكفي. نُعيد سَلسلة فَارِغة فقط.
     const dc = node.device_count || 0;
-    if (dc === 0) return '<p class="map-zone-empty">لا أجهزة في هذا الموقع.</p>';
+    if (dc === 0) return `<p class="map-zone-empty">${T('common.no', 'لا')} ${T('frag.devices_in_this_location', 'أجهزة في هذا الموقع.')}</p>`;
     return '';
   }
   // نَفصل الأَبناء location عَن device.
@@ -458,7 +458,7 @@ function renderZoneBody(node) {
         ${renderZoneBody(sz)}
       </div>`;
   }
-  return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
+  return html || `<p class="map-zone-empty">${T('common.no', 'لا')} ${T('frag.matches', 'مُطابِقات.')}</p>`;
 }
 
 // device chip داخل بطاقة zone/sub-zone.
@@ -480,9 +480,9 @@ function renderZoneDevice(node) {
 // tooltip النصّي.
 function nodeTooltip(node) {
   if (node.kind === 'device') {
-    return `${node.name}\nIP: ${node.ip}\nالنوع: ${node.device_type || '—'}\nالحالة: ${node.status}`;
+    return `${node.name}\nIP: ${node.ip}\n${T('s2.type', 'النوع')}: ${node.device_type || '—'}\n${T('s2.status', 'الحالة')}: ${node.status}`;
   }
-  return `${node.name}\nأَجهزة: ${node.device_count} (🟢${node.online} 🔴${node.offline} ⚪${node.unknown})`;
+  return `${node.name}\n${T('frag.devices', 'أَجهزة')}: ${node.device_count} (🟢${node.online} 🔴${node.offline} ⚪${node.unknown})`;
 }
 
 // رَسم الشَبكة كاملة في container (#map-grid — v2.6.0).
@@ -522,11 +522,11 @@ function renderTree(rootData) {
     if (emptyEl) {
       emptyEl.style.display = 'block';
       emptyEl.classList.add('map-empty-error');
-      const qPart = mapSearchQuery ? ` لِـ «<b>${esc(mapSearchQuery)}</b>»` : '';
-      const sPart = mapStatusFilter ? (mapSearchQuery ? ' و' : ' لِـ') + ` فلتر «${esc(mapStatusFilter)}»` : '';
-      emptyEl.innerHTML = `⚠️ لا توجد نَتائج${qPart}${sPart}.<br><button type="button" class="btn map-clear-btn" id="map-empty-clear" style="margin-top:0.6rem;">✖ مَسح الفِلترة</button>`;
+      const qPart = mapSearchQuery ? ` ${T('frag.for', 'لِـ ')}«<b>${esc(mapSearchQuery)}</b>»` : '';
+      const sPart = mapStatusFilter ? (mapSearchQuery ? ' و' : ' لِـ') + ` ${T('frag.filter', 'فلتر ')}«${esc(mapStatusFilter)}»` : '';
+      emptyEl.innerHTML = `⚠️ ${T('frag.no_results', 'لا توجد نَتائج')}${qPart}${sPart}.<br><button type="button" class="btn map-clear-btn" id="map-empty-clear" style="margin-top:0.6rem;">✖ ${T('frag.clear_the_filter', 'مَسح الفِلترة')}</button>`;
     }
-    if (summaryEl) summaryEl.innerHTML = `<span class="map-summary-count">لا مُطابِقات</span>`;
+    if (summaryEl) summaryEl.innerHTML = `<span class="map-summary-count">${T('frag.no_matches', 'لا مُطابِقات')}</span>`;
     container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
     bindNodeEvents(container);   // لِـ ربط زر #map-empty-clear عبر delegation على summary/container
     restoreScroll(container, savedScrollTop, savedScrollLeft);
@@ -537,7 +537,7 @@ function renderTree(rootData) {
   if (emptyEl) {
     emptyEl.style.display = 'none';
     emptyEl.classList.remove('map-empty-error');
-    emptyEl.textContent = T('s2.no_data_yet_add_locations_and_devices_firs', 'لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.');
+    emptyEl.textContent = T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', T('s2.no_data_yet_add_locations_and_devices_firs', 'لا توجد بيانات. أَضف مواقع وأَجهزة أَوّلًا.'))))));
   }
 
   // P1.3 — ملخص تفاعلي: chips (offline/online/unknown) عند عدم وجود فلتر، أَو عدّ المُطابِقات عند الفِلتر.
@@ -572,14 +572,14 @@ function restoreScroll(container, top, left) {
 function renderMapSummary(summaryEl, rootData, visibleCount) {
   if (!summaryEl) return;
   if (hasActiveFilters()) {
-    summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} ${T('tail.devices', ' جهاز')}</span>`;
+    summaryEl.innerHTML = `<span class="map-summary-count">${T('frag.matches_2', 'المُطابِقات')}: ${visibleCount} ${T('tail.devices', ' جهاز')}</span>`;
     return;
   }
   const chips =
-    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="فلترة أَجهزة متوقفة">🔴 ${rootData.offline} ${T('tail.offline', ' متوقف')}</button>` : '') +
-    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="فلترة أَجهزة متصلة">🟢 ${rootData.online} ${T('tail.online', ' متصل')}</button>` : '') +
-    (rootData.unknown > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="unknown" aria-label="فلترة أَجهزة بلا نتيجة">⚪ ${rootData.unknown} غير معروف</button>` : '');
-  summaryEl.innerHTML = `<span class="map-summary-count">الإِجمالي: ${rootData.device_count} ${T('tail.devices', ' جهاز')}</span>${chips}`;
+    (rootData.offline > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="offline" aria-label="${T('frag.filter_offline_devices', 'فلترة أَجهزة متوقفة')}">🔴 ${rootData.offline} ${T('tail.offline', ' متوقف')}</button>` : '') +
+    (rootData.online  > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="online"  aria-label="${T('frag.filter_online_devices', 'فلترة أَجهزة متصلة')}">🟢 ${rootData.online} ${T('tail.online', ' متصل')}</button>` : '') +
+    (rootData.unknown > 0 ? `<button type="button" class="map-summary-chip" data-filter-status="unknown" aria-label="${T('frag.filter_devices_with_no_result', 'فلترة أَجهزة بلا نتيجة')}">⚪ ${rootData.unknown} ${T('status.unknown', 'غير معروف')}</button>` : '');
+  summaryEl.innerHTML = `<span class="map-summary-count">${T('s3.total', 'الإِجمالي: ')} ${rootData.device_count} ${T('tail.devices', ' جهاز')}</span>${chips}`;
 }
 
 // رَبط نقر/طي على كل العُقد عبر delegation.
@@ -828,7 +828,7 @@ async function loadMap() {
     if (emptyEl) {
       emptyEl.style.display = 'block';
       emptyEl.classList.add('map-empty-error');
-      emptyEl.textContent = T('s2j.could_not_load_the_location_tree_check_the_c', '⚠️ تعذّر جلب شجرة المواقع. تَحقّق من الاتّصال و حاول مَرّةً أُخرى.');
+      emptyEl.textContent = T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', T('s2j.could_not_load_the_location_tree_check_the_c', '⚠️ تعذّر جلب شجرة المواقع. تَحقّق من الاتّصال و حاول مَرّةً أُخرى.'))))));
     }
     // إِزالة أَيّ بطاقة zone قَديمة (لو كان هناك عَرض سابق).
     if (container) container.querySelectorAll(':scope > .map-zone-card').forEach((c) => c.remove());
@@ -859,7 +859,7 @@ function showMapToast(msg, ms = 3000) {
     if (mapRootData && !hasActiveFilters()) renderMapSummary(summaryEl, mapRootData, mapRootData.device_count);
     else if (mapRootData) {
       const visibleCount = countVisibleDevices(mapRootData);
-      summaryEl.innerHTML = `<span class="map-summary-count">المُطابِقات: ${visibleCount} ${T('tail.devices', ' جهاز')}</span>`;
+      summaryEl.innerHTML = `<span class="map-summary-count">${T('frag.matches_2', 'المُطابِقات')}: ${visibleCount} ${T('tail.devices', ' جهاز')}</span>`;
     }
   }, ms);
 }
@@ -921,7 +921,7 @@ function deviceIcon(deviceType) {
 }
 
 function statusBadgeHtml(status, idAttr) {
-  const text = status === 'online' ? T('s2x.online', T('s3b.online_2', 'متصل')) : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
+  const text = status === 'online' ? T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', 'متصل')))))))))) : (status === 'offline' ? T('s2x.offline', 'متوقف') : T('status.unknown', 'غير معروف'));
   const id = idAttr ? `id="${idAttr}" ` : '';
   return `<span ${id}class="details-status-badge ${status || 'unknown'}">${text}</span>`;
 }
@@ -946,7 +946,7 @@ async function showDeviceDetails(deviceId) {
 
   const r = await api(`/api/devices/${encodeURIComponent(deviceId)}`);
   if (!r || !r.success) {
-    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ تعذّر جلب تَفاصيل الجهاز${r?.error ? ': ' + esc(r.error) : ''}</p>`;
+    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('frag.could_not_load_the_device_details', 'تعذّر جلب تَفاصيل الجهاز')}${r?.error ? ': ' + esc(r.error) : ''}</p>`;
     return;
   }
   const d = r.data;
@@ -971,7 +971,7 @@ async function showDeviceDetails(deviceId) {
       <div class="details-field"><span class="df-label">${T('devices.th.location', 'الموقع')}</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
       <div class="details-field"><span class="df-label">${T('device.field.protocol', 'طريقة الفحص')}</span><span class="df-value">${esc(d.check_protocol || 'ping')}</span></div>
       <div class="details-field"><span class="df-label">${T('device.services.port', 'المنفذ')}</span><span class="df-value">${esc(d.port || '—')}</span></div>
-      <div class="details-field"><span class="df-label">فترة الفحص</span><span class="df-value">${esc(d.check_interval_seconds ?? '—')} ث</span></div>
+      <div class="details-field"><span class="df-label">${T('frag.check_interval', 'فترة الفحص')}</span><span class="df-value">${esc(d.check_interval_seconds ?? '—')} ث</span></div>
       <div class="details-field"><span class="df-label">${T('device.field.threshold', 'حد التنبيه')}</span><span class="df-value">${esc(d.failure_threshold ?? '—')}</span></div>
       <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? 'نعم' : 'لا'}</span></div>
       <div class="details-field"><span class="df-label">${T('s3.response_time', 'زمن الاستجابة')}</span><span class="df-value">${d.last_response_time_ms != null ? esc(d.last_response_time_ms) + ' ms' : '—'}</span></div>
@@ -985,7 +985,7 @@ async function showDeviceDetails(deviceId) {
     let html = '';
     if (d.https_accessible == 1) html += `<button class="btn" data-open-url="https://${esc(d.ip)}/">🔒 فتح HTTPS</button>`;
     else if (d.http_accessible == 1) html += `<button class="btn" data-open-url="http://${esc(d.ip)}/">🌐 فتح HTTP</button>`;
-    html += `<button class="btn" id="map-device-goto-devices">📋 فتح في تَبويب الأَجهزة</button>`;
+    html += `<button class="btn" id="map-device-goto-devices">📋 ${T('frag.open_in_the_devices_tab', 'فتح في تَبويب الأَجهزة')}</button>`;
     actionsEl.innerHTML = html;
     actionsEl.querySelectorAll('[data-open-url]').forEach((b) => {
       b.addEventListener('click', (e) => {

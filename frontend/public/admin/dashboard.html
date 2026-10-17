@@ -13,7 +13,7 @@
 <body>
   <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
   <header class="admin-topbar">
-    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" data-i18n-attr="aria-label:sidebar.toggleTitle" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" data-i18n-attr="title:sidebar.toggleTitle aria-label:sidebar.toggleTitle" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
     <h1 class="admin-page-title"><span data-i18n="tail.dashboard">📋 لوحة التحكم</span></h1>
     <a href="../index.html" class="admin-link" data-i18n="topbar.publicPage">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
@@ -426,7 +426,7 @@
     <!-- modal تَفاصيل الجهاز (عائم فوق صفحة الخريطة — يُملأ من admin-map.js عند نقر عقدة جهاز) -->
     <div id="map-device-modal" class="map-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="map-modal-content">
-        <button type="button" class="modal-close" id="map-device-close" aria-label="إغلاق">✕</button>
+        <button type="button" class="modal-close" id="map-device-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
         <div class="details-header">
           <span class="details-icon" id="map-device-icon">🖥️</span>
           <div class="details-title-wrap">
@@ -1389,7 +1389,7 @@
   <!-- ===== HIST-03 — نافذة «تشغيل الجهاز» (24 ساعة / 7 أيام / 30 يومًا + تغطية) ===== -->
   <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
-      <button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق">✕</button>
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق" data-i18n-attr="aria-label:common.close title:common.close">✕</button>
       <h3 id="history-modal-title"><span data-i18n="tail.device_uptime">📈 تشغيل الجهاز</span></h3>
       <div id="history-ranges" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin:0.4rem 0 0.6rem;">
         <button type="button" class="btn" data-hrange="24h">24 ساعة</button>
@@ -1407,7 +1407,7 @@
   <!-- ===== popup modal إِضافة/تعديل موقع (v2.7.4) ===== -->
   <div id="location-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
-      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء" data-i18n-attr="aria-label:common.close title:common.cancel">✕</button>
       <h3 id="location-form-title"><span data-i18n="tail.add_location">إضافة موقع</span></h3>
       <input type="hidden" id="location-form-id" />
       <div class="form-grid">
@@ -1441,7 +1441,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-primary" id="loc-save-btn" title="حفظ الموقع" data-i18n-attr="title:tail.save_the_location">💾 حفظ الموقع</button>
-        <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
+        <button type="button" class="btn" id="loc-cancel-btn" title="إلغاء" data-i18n-attr="title:common.cancel"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
       </div>
     </div>
   </div>
@@ -1449,7 +1449,7 @@
   <!-- ===== popup modal إِضافة/تعديل نوع جهاز (v2.7.4) ===== -->
   <div id="type-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content" style="max-width:480px;">
-      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
+      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء" data-i18n-attr="aria-label:common.close title:common.cancel">✕</button>
       <h3 id="type-form-title"><span data-i18n="tail.add_type">إضافة نوع</span></h3>
       <input type="hidden" id="type-form-id" />
       <div class="form-grid">
@@ -1458,7 +1458,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-primary" id="type-save-btn" title="حفظ النوع" data-i18n-attr="title:tail.save_the_type">💾 حفظ النوع</button>
-        <button type="button" class="btn" id="type-cancel-btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
+        <button type="button" class="btn" id="type-cancel-btn" title="إلغاء" data-i18n-attr="title:common.cancel"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
       </div>
     </div>
   </div>
@@ -1467,7 +1467,7 @@
   <!-- v2.10.0 — نافذة الرجوع لإصدار أقدم (Rollback) -->
   <div id="rollback-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="الرجوع لإصدار أقدم" data-i18n-attr="aria-label:tail.roll_back_to_an_older_release">
     <div class="modal-content" style="max-width:560px;">
-      <button type="button" class="modal-close" id="rollback-close" aria-label="إغلاق">✕</button>
+      <button type="button" class="modal-close" id="rollback-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
       <h3><span data-i18n="s2.roll_back_to_an_older_release">↩️ الرجوع لإصدار أقدم</span></h3>
       <p style="font-size:0.88rem; color:var(--muted); margin-bottom:0.75rem;">
         اختر الإصدار الذي تريد الرجوع إليه — سيُنفَّذ بنفس الآلية الآمنة (ملف طلب ← مساعد root).
@@ -1480,7 +1480,7 @@
 
   <div id="changelog-modal" class="modal hidden">
     <div class="modal-content" style="max-width:800px;">
-      <button id="changelog-close" type="button" class="modal-close" aria-label="إغلاق">✕</button>
+      <button id="changelog-close" type="button" class="modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
       <h3><span data-i18n="tail.change_log">📋 سجل التغييرات (Changelog)</span></h3>
       <div id="changelog-content" class="nm-note" style="max-height:500px; overflow:auto;"></div>
     </div>
@@ -1505,7 +1505,7 @@
         </label>
       </div>
       <div class="confirm-modal-actions">
-        <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
+        <button type="button" id="cleanup-select-cancel-btn" class="btn" title="إلغاء" data-i18n-attr="title:common.cancel"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         <button type="button" id="cleanup-select-ok-btn" class="btn btn-danger" title="تأكيد المسح" data-i18n-attr="title:tail.confirm_clearing">🗑️ تَأكيد المَسح</button>
       </div>
     </div>
@@ -1519,7 +1519,7 @@
       <h3 class="confirm-modal-title" id="confirm-modal-title">—</h3>
       <p class="confirm-modal-message" id="confirm-modal-message">—</p>
       <div class="confirm-modal-actions">
-        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
+        <button type="button" id="confirm-modal-cancel-btn" class="btn" title="إلغاء" data-i18n-attr="title:common.cancel"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         <button type="button" id="confirm-modal-ok-btn" class="btn btn-primary" title="تأكيد" data-i18n-attr="title:tail.confirm">✓ تأكيد</button>
       </div>
     </div>

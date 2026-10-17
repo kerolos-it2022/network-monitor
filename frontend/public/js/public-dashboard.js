@@ -21,7 +21,7 @@ let internalView = false;   // true ⇒ نقرأ المسارات الداخلي
 function applyDisplayModeUi() {
   var searchEl = document.getElementById('search-input');
   if (searchEl) {
-    searchEl.placeholder = internalView ? 'بحث بالاسم أو IP…' : T('s3.search_by_name', 'بحث بالاسم…');
+    searchEl.placeholder = internalView ? T('tail.search_by_name_or_ip', 'بحث بالاسم أو IP…') : T('s3.search_by_name', 'بحث بالاسم…');
   }
   var ipOption = document.querySelector('#filter-sort option[value="ip"]');
   if (ipOption) {
@@ -82,8 +82,8 @@ async function fetchApi(url) {
 }
 
 function statusText(status) {
-  if (status === 'online') return T('status.online', T('s2x.online', '\u0645\u062a\u0635\u0644'));
-  if (status === 'offline') return T('status.offline', T('s2x.offline', '\u0645\u062a\u0648\u0642\u0641'));
+  if (status === 'online') return T('status.online', '\u0645\u062a\u0635\u0644');
+  if (status === 'offline') return T('status.offline', '\u0645\u062a\u0648\u0642\u0641');
   return T('status.unknown', '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641');
 }
 
@@ -100,7 +100,7 @@ function statusDotClass(d) {
 function overallStatusText(d) {
   if (d.overall_health === 'degraded') {
     var n = Number(d.services_down_count) || 0;
-    return 'متصل — ' + (n > 0 ? n + ' خدمة متوقفة' : 'خدمة متوقفة');
+    return 'متصل — ' + (n > 0 ? n + ' خدمة متوقفة' : T('status.serviceDown', 'خدمة متوقفة'));
   }
   return statusText(d.current_status);
 }
@@ -239,7 +239,7 @@ function renderTable(devicesList) {
   const tbody = document.getElementById('devices-table-body');
   tbody.innerHTML = '';
   if (!devicesList || devicesList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="is-empty">لا توجد أجهزة مطابقة — جرّب تغيير الفلاتر أو البحث.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="9" class="is-empty">${NMI18N.t('public.empty')}</td></tr>`;
     return;
   }
   for (const d of devicesList) {
@@ -259,7 +259,7 @@ function renderTable(devicesList) {
     const tr = document.createElement('tr');
     tr.className = 'public-row';
     tr.innerHTML =
-      '<td class="col-status"><span class="status-dot ' + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
+      `<td class="col-${T('unit.status', ' status')}"><span class="status-dot ` + dot + '" title="' + escapeHtml(overallStatusText(d)) + '"></span></td>' +
       '<td>' + escapeHtml(d.name) + '</td>' +
       '<td class="col-ltr">' + escapeHtml(d.ip || '—') + '</td>' +
       '<td>' + escapeHtml(d.device_type_name || '—') + '</td>' +
@@ -424,7 +424,7 @@ window.openDeviceModal = async function (deviceId) {
       var listEl = document.getElementById('modal-downtime-list');
       listEl.innerHTML = '';
       if (!data.downtime_events || data.downtime_events.length === 0) {
-        listEl.innerHTML = '<li>لا توجد انقطاعات خلال الفترة.</li>';
+        listEl.innerHTML = `<li>${T('common.no', 'لا')} ${T('frag.no_outages_in_the_period', 'توجد انقطاعات خلال الفترة.')}</li>`;
       } else {
         for (var i = 0; i < data.downtime_events.length; i++) {
           var ev = data.downtime_events[i];
@@ -444,9 +444,9 @@ window.openDeviceModal = async function (deviceId) {
       rangesRow = document.createElement('div');
       rangesRow.id = 'modal-ranges-row';
       rangesRow.style.cssText = 'display:flex; gap:0.4rem; flex-wrap:wrap; margin:0.4rem 0;';
-      rangesRow.innerHTML = '<button data-r="24h" type="button">24 ساعة</button>' +
-        '<button data-r="7d" type="button">7 أيام</button>' +
-        '<button data-r="30d" type="button">30 يوم</button>';
+      rangesRow.innerHTML = `<button data-r="24h" type="button">${T('s3b.24_hours', '24 ساعة')}</button>` +
+        `<button data-r="7d" type="button">${T('s3b.7_days', '7 أيام')}</button>` +
+        `<button data-r="30d" type="button">${T('s3b.30_days', '30 يوم')}</button>`;
       chipEl0.insertAdjacentElement('afterend', rangesRow);
       rangesRow.addEventListener('click', function (e) {
         var b = e.target.closest('button[data-r]');
@@ -699,7 +699,7 @@ async function init() {
         notifyBtn.disabled = true;
         notifyBtn.textContent = T('tail.notifications_are_blocked', "🔕 الإشعارات محجوبة");
       } else {
-        notifyBtn.textContent = "🔔 تفعيل الإشعارات";
+        notifyBtn.textContent = T('public.notifyOn', "🔔 تفعيل الإشعارات");
       }
     }
     updateNotifyBtnState();

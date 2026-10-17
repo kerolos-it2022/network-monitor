@@ -29,10 +29,10 @@ function ipSortKey(ip) {
 // نصوص الحالة من القاموس (تتغيّر مع اللغة) — والقيم البرمجية ('online' …) تبقى كما هي.
 function __t(k, fb) { try { return (window.NMI18N && NMI18N.t(k)) || fb; } catch (e) { return fb; } }
 function statusText(status) {
-  if (status === 'online') return __t('status.online', T('s2x.online', 'متصل'));
+  if (status === 'online') return __t('status.online', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', 'متصل')))))))))))))))))));
   if (status === 'offline') return __t('status.offline', T('s2x.offline', 'متوقف'));
-  if (status === 'paused') return __t('status.paused', 'موقوف');
-  return __t('status.unknown', 'غير معروف');
+  if (status === 'paused') return __t('status.paused', T('status.paused', 'موقوف'));
+  return __t('status.unknown', T('status.unknown', 'غير معروف'));
 }
 
 // v2.33.0 — شارة الحالة (نقطة + الكلمة على خلفية باهتة بلون الحالة): أوضح من كلمة سادة،
@@ -86,13 +86,13 @@ async function loadIncidentsBanner() {
   host.classList.remove('hidden');
   host.innerHTML = rows.map((i) => {
     const names = (i.affected || []).slice(0, 6).map((a) => esc(a.name)).join('، ');
-    const more = (i.affected_count || 0) > 6 ? ` و${i.affected_count - 6} غيرهم` : '';
+    const more = (i.affected_count || 0) > 6 ? ` و${i.affected_count - 6} ${T('frag.others', 'غيرهم')}` : '';
     const conf = i.confidence === 'high' ? 'ثقة عالية' : (i.confidence === 'medium' ? 'ثقة متوسطة' : 'ثقة منخفضة');
     const since = i.started_at ? NMFormat.dateTime(i.started_at) : '—';
     return `<div style="margin-bottom:0.25rem;">
-      ⚠️ <b>عطل مركزي</b>: ${esc(i.root_name || ('#' + i.root_device_id))}
-      — <b>${i.affected_count}</b> جهازًا متأثرًا (${conf}) — منذ ${since}
-      <div style="color:var(--muted); font-size:0.82rem;">المتأثرون: ${names}${more}</div>
+      ⚠️ <b>${T('frag.central_fault', 'عطل مركزي')}</b>: ${esc(i.root_name || ('#' + i.root_device_id))}
+      — <b>${i.affected_count}</b> ${T('frag.affected_devices', 'جهازًا متأثرًا ')}(${conf}) — ${T('frag.since', 'منذ ')}${since}
+      <div style="color:var(--muted); font-size:0.82rem;">${T('frag.affected', 'المتأثرون')}: ${names}${more}</div>
     </div>`;
   }).join('');
 }
@@ -245,10 +245,10 @@ async function loadFormOptions() {
   const locSel = document.getElementById('df-location_id');
   const filterLocSel = document.getElementById('filter-location-devices');
   typeSel.innerHTML = '';
-  locSel.innerHTML = '<option value="">— بدون —</option>';
+  locSel.innerHTML = `<option value="">${T('device.field.noLocation', '— بدون —')}</option>`;
   // فلتر الجدول: خيار "كل المواقع" + خيارات هرمية لِـ كل موقع.
   if (filterLocSel) {
-    filterLocSel.innerHTML = '<option value="">📍 كل المواقع</option>';
+    filterLocSel.innerHTML = `<option value="">📍 ${T('frag.all', 'كل ')}${T('nav.locations', 'المواقع')}</option>`;
   }
   for (const t of types.success ? types.data : []) {
     const o = document.createElement('option');
@@ -291,7 +291,7 @@ window.__reloadFormOptions = loadFormOptions;
 function resetDeviceForm() {
   document.getElementById('device-form').reset();
   document.getElementById('device-form-id').value = '';
-  document.getElementById('device-form-title').textContent = 'إضافة جهاز';
+  document.getElementById('device-form-title').textContent = T('device.form.add', 'إضافة جهاز');
   document.getElementById('df-is_active').checked = true;
   document.getElementById('df-check_protocol').value = 'ping';
   document.getElementById('df-check_interval_seconds').value = 10;
@@ -303,7 +303,7 @@ function resetDeviceForm() {
 // ومكان الجهاز يُحدَّد من حقل «الموقع». الخادم يُبقي أي ربط قديم عند غياب الحقل.
 function openDeviceForm() {
   resetDeviceForm();
-  document.getElementById('device-form-title').textContent = 'إضافة جهاز';
+  document.getElementById('device-form-title').textContent = T('device.form.add', 'إضافة جهاز');
   // MON-02 — لا خدمات لجهاز لم يُحفظ بعد.
   if (window.AdminServices) window.AdminServices.mount(null);
   openEditModal(document.getElementById('device-modal'), {
@@ -447,7 +447,7 @@ async function importDevicesExcel(file) {
     const data = await r.json();
     if (data.success) {
       const { imported, skipped, errors } = data.data;
-      let msg = `تم الاستيراد: ${imported} جهاز، تم التخطي: ${skipped}`;
+      let msg = `${T('frag.imported', 'تم الاستيراد')}: ${imported} ${T('frag.devices_skipped', 'جهاز، تم التخطي')}: ${skipped}`;
       if (errors.length) msg += '\nأخطاء:\n' + errors.join('\n');
       showToast(msg, { type: imported > 0 ? 'success' : 'warning', duration: 6000 });
       await loadDevices();

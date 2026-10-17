@@ -59,7 +59,7 @@ function setPageTitle(tabId) {
   const el = document.querySelector('.admin-topbar h1');
   if (el) el.textContent = title;
   // عنوان تبويب المتصفح: بلا إيموجي + لاحقة لوحة التحكم (مترجمة أيضًا)
-  document.title = title.replace(/^\S+\s*/, '') + ' — ' + TTitle('topbar.dashboard', 'لوحة التحكم');
+  document.title = title.replace(/^\S+\s*/, '') + ' — ' + TTitle('topbar.dashboard', T('topbar.dashboard', 'لوحة التحكم'));
 }
 
 // تغيير اللغة يُعيد كتابة العنوان فورًا (بلا حاجة لتغيير التبويب)
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // نصوص عربية تَعكس حالة الزرّ على الحاسوب (تُحدَّث ديناميكياً في title/aria-label).
   const STATE_TITLES = {
-    open:   'القائمة مفتوحة — اِضغط للطيّ',
+    open:   T('sidebar.toggleTitle', 'القائمة مفتوحة — اِضغط للطيّ'),
     rail:   'القائمة مطويةّ — اِضغط للتَوسيع',
   };
 

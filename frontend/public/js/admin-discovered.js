@@ -49,9 +49,9 @@ async function loadDiscovered() {
       <td class="col-center">${esc(d.seen_count || 0)}</td>
       <td class="col-status">${statusText}</td>
       <td class="col-actions">
-        <button class="btn btn-sm btn-approve" data-id="${esc(d.id)}" data-detected="${esc(d.detected_type || '')}" title="اعتماد ونقل إلى الأجهزة (مع اختيار النوع/الموقع)">✅ اعتماد</button>
-        <button class="btn btn-sm btn-reject" data-id="${esc(d.id)}" title="رفض">❌ رفض</button>
-        <button class="btn btn-sm btn-delete" data-id="${esc(d.id)}" title="حذف نهائي">${T('common.delete', '🗑️ حذف')}</button>
+        <button class="btn btn-sm btn-approve" data-id="${esc(d.id)}" data-detected="${esc(d.detected_type || '')}" title="${T('frag.approve_and_move_to_devices', 'اعتماد ونقل إلى الأجهزة ')}(${T('frag.with_type_selection', 'مع اختيار النوع')}/${T('s3.location', 'الموقع')})">✅ ${T('frag.approve', 'اعتماد')}</button>
+        <button class="btn btn-sm btn-reject" data-id="${esc(d.id)}" title="${T('frag.reject', 'رفض')}">❌ ${T('frag.reject', 'رفض')}</button>
+        <button class="btn btn-sm btn-delete" data-id="${esc(d.id)}" title="${T('frag.delete_permanently', 'حذف نهائي')}">${T('common.delete', '🗑️ حذف')}</button>
       </td>`;
     tbody.appendChild(tr);
   }
@@ -65,7 +65,7 @@ function updateDiscoveredPager(shownRows) {
   const limit = discoveredView.limit;
   const from = discoveredView.total === 0 ? 0 : discoveredView.offset + 1;
   const to = Math.min(discoveredView.offset + (typeof shownRows === 'number' ? shownRows : limit), discoveredView.total);
-  if (info) info.textContent = `${from}–${to} من ${discoveredView.total}`;
+  if (info) info.textContent = `${from}–${to} ${T('frag.from', 'من ')}${discoveredView.total}`;
   if (prev) prev.disabled = discoveredView.offset <= 0;
   if (next) next.disabled = (discoveredView.offset + limit) >= discoveredView.total;
 }
@@ -81,9 +81,9 @@ function ensureApproveModal() {
   el.setAttribute('aria-modal', 'true');
   el.innerHTML = `
     <div class="modal-content">
-      <button type="button" class="modal-close" id="dsc-close" aria-label="إغلاق" title="إلغاء">✕</button>
-      <h3>✅ اعتماد جهاز مُكتشَف</h3>
-      <p style="color:var(--muted); font-size:0.85rem;">الجهاز: <b id="dsc-ip"></b> <span id="dsc-meta"></span></p>
+      <button type="button" class="modal-close" id="dsc-close" aria-label="${T('common.close', 'إغلاق')}" title="${T('common.cancel', 'إلغاء')}">✕</button>
+      <h3>✅ ${T('frag.approve_a_discovered_device', 'اعتماد جهاز مُكتشَف')}</h3>
+      <p style="color:var(--muted); font-size:0.85rem;">${T('s3.device', 'الجهاز')}: <b id="dsc-ip"></b> <span id="dsc-meta"></span></p>
       <div class="form-grid">
         <label>${T('s2.name', 'الاسم')} <input type="text" id="dsc-name" /></label>
         <label>${T('s2.type', 'النوع')} <select id="dsc-type"><option value="">${T('device.field.noLocation', '— بدون —')}</option></select></label>
@@ -96,12 +96,12 @@ function ensureApproveModal() {
             <option value="https">HTTPS</option>
           </select>
         </label>
-        <label>المنفذ (للفحص) <input type="number" id="dsc-port" min="1" max="65535" placeholder="443" /></label>
-        <label>منفذ الواجهة (web_port) <input type="number" id="dsc-webport" min="1" max="65535" placeholder="443" /></label>
+        <label>${T('device.services.port', 'المنفذ ')}(${T('frag.for_checking', 'للفحص')}) <input type="number" id="dsc-port" min="1" max="65535" placeholder="443" /></label>
+        <label>${T('frag.web_port', 'منفذ الواجهة ')}(web_port) <input type="number" id="dsc-webport" min="1" max="65535" placeholder="443" /></label>
       </div>
       <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem; flex-wrap:wrap;">
-        <button type="button" class="btn" id="dsc-quick" title="اعتماد فوري بالسلوك الافتراضي (بلا تفاصيل)">⚡ اعتماد سريع</button>
-        <button type="button" class="btn btn-primary" id="dsc-ok">✅ اعتماد بالتفاصيل</button>
+        <button type="button" class="btn" id="dsc-quick" title="${T('frag.approve_instantly_with_the_default_behav', 'اعتماد فوري بالسلوك الافتراضي ')}(${T('frag.without_details', 'بلا تفاصيل')})">⚡ ${T('frag.quick_approve', 'اعتماد سريع')}</button>
+        <button type="button" class="btn btn-primary" id="dsc-ok">✅ ${T('frag.approve_with_details', 'اعتماد بالتفاصيل')}</button>
       </div>
     </div>`;
   document.body.appendChild(el);
@@ -140,7 +140,7 @@ async function openApproveModal(id, detectedType) {
     row = (r && r.success) ? r.data : null;
   } catch (e) { /* fallback: تُعرض النافذة بقيم افتراضية */ }
   if (!row) {
-    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.'), { type: 'error' });
+    showToast(T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', T('s2j.could_not_fetch_the_log_details_try_quick_ap', 'تعذّر جلب تفاصيل السجل — جرّب «⚡ اعتماد سريع» من القائمة.')))))), { type: 'error' });
     return;
   }
   discoveredApproveId = id;
@@ -148,14 +148,14 @@ async function openApproveModal(id, detectedType) {
   const data = await loadDiscoveredFormData();
   const typeSel = el.querySelector('#dsc-type');
   const locSel = el.querySelector('#dsc-loc');
-  typeSel.innerHTML = '<option value="">— بدون —</option>';
+  typeSel.innerHTML = `<option value="">${T('device.field.noLocation', '— بدون —')}</option>`;
   (data.types || []).forEach((t) => {
     const o = document.createElement('option');
     o.value = t.id;
     o.textContent = t.name;
     typeSel.appendChild(o);
   });
-  locSel.innerHTML = '<option value="">— بدون —</option>';
+  locSel.innerHTML = `<option value="">${T('device.field.noLocation', '— بدون —')}</option>`;
   (data.locations || []).forEach((l) => {
     const o = document.createElement('option');
     o.value = l.id;
@@ -196,7 +196,7 @@ async function submitApprove(quick) {
     const port = portRaw ? Number(portRaw) : null;
     const webPort = webRaw ? Number(webRaw) : null;
     if (protocol !== 'ping' && !port) {
-      showToast(T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.'), { type: 'warning' });
+      showToast(T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', T('s2j.enter_the_port_for_the_selected_check_method', 'حدّد المنفذ لطريقة الفحص المختارة.')))))), { type: 'warning' });
       return;
     }
     body = {
@@ -232,7 +232,7 @@ async function rejectDiscovered(id) {
     showToast(r.message || T('tail.rejected', 'تم الرفض.'), { type: 'success' });
     await loadDiscovered();
   } else {
-    showToast(T('s2j.rejection_failed', 'فشل الرفض:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.rejection_failed', 'فشل الرفض:') + ' ' + ((r && r.error) || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 
@@ -249,7 +249,7 @@ async function deleteDiscovered(id) {
     showToast(T('s2j.deleted', '✅ تَم الحذف'), { type: 'success' });
     await loadDiscovered();
   } else {
-    showToast(T('s2j.delete_failed', 'فشل الحذف:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.delete_failed', 'فشل الحذف:') + ' ' + ((r && r.error) || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 
@@ -267,10 +267,10 @@ async function bulkApproveDiscovered() {
     body: JSON.stringify({ ids }),
   });
   if (r && r.success) {
-    showToast(r.message || 'تم الاعتماد.', { type: 'success' });
+    showToast(r.message || T('tail.approved', 'تم الاعتماد.'), { type: 'success' });
     await loadDiscovered();
   } else {
-    showToast(T('s2j.bulk_approval_failed', 'فشل الاعتماد الجماعي:') + ' ' + ((r && r.error) || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.bulk_approval_failed', 'فشل الاعتماد الجماعي:') + ' ' + ((r && r.error) || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 

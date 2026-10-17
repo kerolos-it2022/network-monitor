@@ -36,11 +36,11 @@ async function loadSchedulerStatus() {
   const runningTxt = d.is_running ? T('tail.scanning_now', '🟡 جارٍ مسح الآن...') : T('tail.no_scan_running_right_now', '🟢 لا يَعمل مسح حاليًّا');
   const enabledTxt = d.enabled ? T('tail.enabled', '✅ مُفعّل') : T('tail.stopped', '⏸️ متوقف');
   const lastTxt = d.last_run
-    ? `آخر مسح #${d.last_run.runId}: ${d.last_run.status} (وُجدت ${d.last_run.devices_found} / أُضيفت ${d.last_run.devices_added} / ضاعت ${d.last_run.devices_lost})`
+    ? `${T('frag.last_scan', 'آخر مسح ')}#${d.last_run.runId}: ${d.last_run.status} (${T('s2.found', 'وُجدت ')}${d.last_run.devices_found} / ${T('s2.added', 'أُضيفت ')}${d.last_run.devices_added} / ${T('s2.lost', 'ضاعت ')}${d.last_run.devices_lost})`
     : T('tail.no_previous_scans', 'لا توجد مسحات سابقة');
   el.innerHTML = `${enabledTxt} — ${runningTxt}<br><span style="font-size:0.9em;color:var(--muted);">${lastTxt}`;
   if (d.last_run && d.last_run.error) {
-    el.innerHTML += `<br><span style="color:#b00;font-size:0.85em;">خطأ: ${esc(d.last_run.error)}</span>`;
+    el.innerHTML += `<br><span style="color:#b00;font-size:0.85em;">${T('tail.error', 'خطأ')}: ${esc(d.last_run.error)}</span>`;
   }
 }
 
@@ -54,7 +54,7 @@ async function loadSchedulerRuns() {
   }
   const rows = r.data || [];
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="is-empty">لا توجد مسحات مُسجَّلة بعد.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="is-empty">${T('frag.no_scans_logged_yet', 'لا توجد مسحات مُسجَّلة بعد.')}</td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map((row) => {
@@ -89,13 +89,13 @@ async function saveSchedulerSettings() {
     new_device_alert: document.getElementById('sched-new-device-alert').checked ? 1 : 0,
   };
   if (!patch.subnets) {
-    showToast(T('s2j.enter_at_least_one_subnet_cidr_example_192_1', 'الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24'), { type: 'warning' });
+    showToast(T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', 'الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24')))))), { type: 'warning' });
     return;
   }
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ وتطبيق إعدادات المسح الدوري.
   const ok = await confirmAction({
     title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
-    message: T('s2j.save_and_apply_the_periodic_scan_settings', 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟'),
+    message: T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟')))))),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
@@ -105,7 +105,7 @@ async function saveSchedulerSettings() {
     body: JSON.stringify(patch),
   });
   if (r && r.success) {
-    showToast(T('s2j.periodic_scan_settings_were_saved_and_applie', 'تم حفظ إعدادات المسح الدوري وتطبيقها.'), { type: 'success' });
+    showToast(T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', 'تم حفظ إعدادات المسح الدوري وتطبيقها.')))))), { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
@@ -116,11 +116,11 @@ async function saveSchedulerSettings() {
 async function runSchedulerNow() {
   const r = await api('/api/scan-scheduler/run-now', { method: 'POST' });
   if (r && r.success) {
-    showToast(T('s2j.the_scan_has_started_watch_the_results_in_th', 'بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.'), { type: 'success' });
+    showToast(T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', 'بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.')))))), { type: 'success' });
     await loadSchedulerStatus();
     await loadSchedulerRuns();
   } else {
-    showToast(T('s2j.could_not_start_the_scan', 'فشل بدء المسح الفوري:') + ' ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.could_not_start_the_scan', 'فشل بدء المسح الفوري:') + ' ' + (r?.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 
@@ -132,7 +132,7 @@ async function stopScheduler() {
     document.getElementById('sched-enabled').checked = false;
     await loadSchedulerStatus();
   } else {
-    showToast(T('s2j.stop_failed', 'فشل الإيقاف:') + ' ' + (r?.error || 'خطأ غير معروف'), { type: 'error' });
+    showToast(T('s2j.stop_failed', 'فشل الإيقاف:') + ' ' + (r?.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
   }
 }
 

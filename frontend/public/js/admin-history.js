@@ -14,8 +14,8 @@
   function fmtDuration(seconds) {
     if (seconds == null) return '—';
     const s = Math.max(0, Math.round(seconds));
-    if (s < 60) return s + ' ثانية';
-    if (s < 3600) return Math.round(s / 60) + ' دقيقة';
+    if (s < 60) return s + T('unit.s', ' ثانية');
+    if (s < 3600) return Math.round(s / 60) + T('unit.min', ' دقيقة');
     if (s < 86400) return Math.round(s / 3600) + ' ساعة';
     return (Math.round(s / 8640) / 10) + ' يوم';
   }
@@ -40,7 +40,7 @@
     const rects = cells.map((c, i) => `<rect x="${(i * w).toFixed(3)}%" y="0" width="${Math.max(0.2, w).toFixed(3)}%" height="26" fill="${c}"></rect>`).join('');
     host.innerHTML = `<svg viewBox="0 0 100 26" preserveAspectRatio="none" style="width:100%; height:26px; border-radius:6px; overflow:hidden;">${rects}</svg>
       <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--muted); margin-top:2px;">
-        <span>أقدم</span><span>${points.length} عيّنة</span><span>الأحدث</span>
+        <span>${T('frag.oldest', 'أقدم')}</span><span>${points.length} ${T('frag.samples', 'عيّنة')}</span><span>${T('frag.newest', 'الأحدث')}</span>
       </div>`;
   }
 
@@ -52,15 +52,15 @@
         + (data.rollup_granularity ? ' (مدمَج مع تجميعات ' + (data.rollup_granularity === 'day' ? 'يومية' : 'ساعية') + ')' : '');
     }
 
-    const uPct = data.uptime_percentage == null ? 'بيانات غير كافية' : data.uptime_percentage + '%';
+    const uPct = data.uptime_percentage == null ? T('s3b.insufficient_data', 'بيانات غير كافية') : data.uptime_percentage + '%';
     const sEl = el('history-summary');
     if (sEl) {
       sEl.innerHTML =
-        `نسبة التشغيل (${data.range}): <b>${uPct}</b>` +
-        ` · التغطية: <b>${data.coverage_percentage}%</b>` +
-        ` · متصل: ${fmtDuration(data.online_seconds)}` +
-        ` · متقطع: ${fmtDuration(data.offline_seconds)}` +
-        ` · بلا دليل: ${fmtDuration(data.unknown_seconds)}`;
+        `${T('frag.uptime', 'نسبة التشغيل ')}(${data.range}): <b>${uPct}</b>` +
+        ` · ${T('s3b.coverage', 'التغطية')}: <b>${data.coverage_percentage}%</b>` +
+        ` · ${T('status.online', 'متصل')}: ${fmtDuration(data.online_seconds)}` +
+        ` · ${T('frag.intermittent', 'متقطع')}: ${fmtDuration(data.offline_seconds)}` +
+        ` · ${T('frag.no_evidence', 'بلا دليل')}: ${fmtDuration(data.unknown_seconds)}`;
     }
 
     renderStrip(data.status_points);

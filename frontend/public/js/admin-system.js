@@ -18,7 +18,7 @@ function sysFmtUptime(sec) {
   if (!sec || sec < 0) return '—';
   const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
   if (d) return d + ' يوم و ' + h + ' ساعة';
-  if (h) return h + ' ساعة و ' + m + ' دقيقة';
+  if (h) return h + ' ساعة و ' + m + T('unit.min', ' دقيقة');
   return m + ' دقيقة';
 }
 
@@ -79,7 +79,7 @@ async function loadSystemStats() {
       'مستخدم ' + bdi(sysFmtBytes(root.used)) + ' من ' + bdi(sysFmtBytes(root.total)) + ' — متاح ' + bdi(sysFmtBytes(root.free)) + ' (' + bdi(root.used_percent + '%') + ')';
   } else {
     sysSetBar('sys-disk-bar', null);
-    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة');
+    document.getElementById('sys-disk-text').textContent = T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', T('s2j.root_disk_measurement_is_not_available_on_th', 'قياس قرص الجذر غير متاح على هذه المنصة'))))));
   }
   document.getElementById('sys-db-size').innerHTML =
     '🗃️ قاعدة البيانات: ' + bdi(sysFmtBytes(d.disks.db_file_bytes))
@@ -125,7 +125,7 @@ async function loadSystemStats() {
     if (!b) botEl.textContent = T('s2j.service_not_loaded', '— (الخدمة غير محمّلة)');
     else if (b.listening) {
       const age = b.lastPollAt ? Math.round((Date.now() - b.lastPollAt) / 1000) : null;
-      const ageTxt = age === null ? 'لم تبدأ بعد' : (age < 60 ? 'قبل ' + age + ' ثانية' : 'قبل ' + Math.round(age / 60) + ' دقيقة');
+      const ageTxt = age === null ? 'لم تبدأ بعد' : (age < 60 ? 'قبل ' + age + T('unit.s', ' ثانية') : 'قبل ' + Math.round(age / 60) + T('unit.min', ' دقيقة'));
       botEl.innerHTML = '✅ <b>يعمل</b> — يستمع للأوامر والأزرار (آخر استقبال ' + esc(ageTxt)
         + ' · أوامر مُنفَّذة منذ الإقلاع: <bdi>' + esc(b.updatesHandled) + '</bdi>)'
         + (b.lastPollOk === false && b.lastError ? ' · ⚠️ آخر خطأ: ' + esc(b.lastError) : '');
@@ -137,7 +137,7 @@ async function loadSystemStats() {
       if (!b.hasChatId) reasons.push('معرّف المحادثة غير مضبوط');
       if (b.hasToken && b.hasChatId && b.telegramEnabled && !b.commandsEnabled) reasons.push('مفتاح «بوت تلجرام التفاعلي» مُطفأ');
       if (reasons.length === 0 && b.running) reasons.push('في انتظار أول دورة استقبال');
-      botEl.innerHTML = '⛔ <b>متوقف</b>'
+      botEl.innerHTML = `⛔ <b>${T('status.offline', 'متوقف')}</b>`
         + (reasons.length ? ' — السبب: ' + esc(reasons.join(' · ')) : ' — الحلقة لم تبدأ بعد')
         + (b.lastError ? ' · آخر خطأ: ' + esc(b.lastError) : '');
     }
@@ -160,7 +160,7 @@ async function loadSystemStats() {
         + '<br><span class="nm-sub">بايتات مُرسَلة منذ الإقلاع: ' + esc(NMFormat.bytes(s.bytesSent)) + '</span>';
     }
   }
-  sysSetStatus(T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + NMFormat.time(d.ts), false);
+  sysSetStatus(T('s2j.last_updated', 'آخر تحديث:') + ' ' + NMFormat.time(d.ts), false);
   // v2.26.0 — الرسم الزمني: كل 10 دورات نحضّر السجل ونرسم (تقليل حمل الرسم).
   loadAndDrawHistory();
 }

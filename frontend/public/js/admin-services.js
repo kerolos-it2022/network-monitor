@@ -26,10 +26,10 @@
   }
 
   function statusChip(s) {
-    if (!s.is_enabled) return '<span style="color:var(--muted);">⏸ موقوفة</span>';
+    if (!s.is_enabled) return `<span style="color:var(--muted);">⏸ ${T('status.paused', 'موقوف')}ة</span>`;
     if (s.status === 'online') return '🟢 تعمل';
     if (s.status === 'offline') return '🔴 متوقفة';
-    return '<span style="color:var(--muted);">⚪ بلا فحص بعد</span>';
+    return `<span style="color:var(--muted);">⚪ ب${T('common.no', 'لا')} ${T('frag.not_checked_yet', 'فحص بعد')}</span>`;
   }
 
   function renderList(services) {
@@ -51,8 +51,8 @@
         </span>
         <span style="white-space:nowrap;">
           <button type="button" class="btn" data-act="toggle" title="${s.is_enabled ? 'إيقاف مؤقت' : 'تفعيل'}">${s.is_enabled ? '⏸' : '▶️'}</button>
-          <button type="button" class="btn" data-act="edit" title="تعديل">✏️</button>
-          <button type="button" class="btn" data-act="del" title="حذف">🗑️</button>
+          <button type="button" class="btn" data-act="edit" title="${T('frag.edit', 'تعديل')}">✏️</button>
+          <button type="button" class="btn" data-act="del" title="${T('frag.delete', 'حذف')}">🗑️</button>
         </span>
       </div>`).join('');
   }
@@ -60,7 +60,7 @@
   async function refresh() {
     const host = el('df-services-list');
     if (!currentDeviceId) return;
-    if (host) host.innerHTML = '<span style="color:var(--muted);font-size:0.85rem;">…جارٍ التحميل</span>';
+    if (host) host.innerHTML = `<span style="color:var(--muted);font-size:0.85rem;">${T('common.loading', '…جارٍ التحميل')}</span>`;
     const r = await api('/api/devices/' + currentDeviceId + '/services');
     if (!r.success) {
       if (host) host.innerHTML = '<span style="color:#ef4444;font-size:0.85rem;">' + esc(r.error || 'تعذّر جلب الخدمات') + '</span>';
@@ -92,7 +92,7 @@
     el('dfs-failure_threshold').value = '2';
     const crit = document.getElementById('dfs-is_critical'); if (crit) crit.checked = false;
     el('dfs-verify_tls').checked = true;
-    el('dfs-save').textContent = T('s2j.add_the_service', '➕ إضافة الخدمة');
+    el('dfs-save').textContent = T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', T('device.services.addBtn', T('s2j.add_the_service', '➕ إضافة الخدمة')))))))))));
     el('dfs-cancel-edit').classList.add('hidden');
   }
 
@@ -134,7 +134,7 @@
     const act = btn.dataset.act;
 
     if (act === 'del') {
-      const ok = await confirmAction({ message: T('s2j.delete_this_service_permanently_the_service', 'حذف هذه الخدمة نهائيًّا؟ (سيختفي تمييز «خدمة متوقفة» عنها)') });
+      const ok = await confirmAction({ message: T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', T('s2j.delete_this_service_permanently_the_service', 'حذف هذه الخدمة نهائيًّا؟ (سيختفي تمييز «خدمة متوقفة» عنها)')))))) });
       if (!ok) return;
       const r = await jsonApi('/api/devices/' + currentDeviceId + '/services/' + sid, 'DELETE');
       if (!r.success) { showToast(r.error || 'تعذّر الحذف', { type: 'error' }); return; }

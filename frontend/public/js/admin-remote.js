@@ -55,8 +55,8 @@ function rFormatUptime(sec) {
   if (!sec && sec !== 0) return '';
   const s = Number(sec);
   if (!Number.isFinite(s)) return '';
-  if (s < 60) return s + ' ثانية';
-  if (s < 3600) return Math.round(s / 60) + ' دقيقة';
+  if (s < 60) return s + T('unit.s', ' ثانية');
+  if (s < 3600) return Math.round(s / 60) + T('unit.min', ' دقيقة');
   if (s < 86400) return Math.round(s / 3600) + ' ساعة';
   return Math.round(s / 86400) + ' يوم';
 }
@@ -106,7 +106,7 @@ function renderRemoteStatus(s) {
     s.installed ? 'var(--online)' : 'var(--offline)');
 
   // 3) التشغيل التلقائي
-  rSet('remote-autostart', s.autostart ? 'مفعّل ✓' : 'معطّل', s.autostart ? 'var(--online)' : 'var(--muted)');
+  rSet('remote-autostart', s.autostart ? 'مفعّل ✓' : T('admin.disabled', 'معطّل'), s.autostart ? 'var(--online)' : 'var(--muted)');
 
   // 4) المفاتيح — رموز فقط (set / not_set / unknown) وأبدًا بلا قيم
   const stateText = (v) => (v === 'set' ? 'مضبوط ✓' : (v === 'not_set' ? 'غير مضبوط ✗' : 'غير معروفة'));
@@ -256,7 +256,7 @@ async function remoteAction(action, label, value) {
       const diag = '⚠️ الطلب مكتوب لكن مساعد الجهاز (nm-remote) لم ينفّذه — غالبًا وحدة المراقبة متوقفة.\n'
         + 'من كونسول الجهاز أو SSH (sysadmin): sudo systemctl enable --now nm-remote.path && sudo systemctl restart nm-remote.service';
       rStatus('⚠️ لم يُنفَّذ بعد ' + (Math.round(25)) + ' ثانية — مساعد الجهاز لا يستهلك الطلبات (انظر التشخيص بالسجل)', true);
-      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path'), { type: 'warning', duration: 10000 });
+      showToast(T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', T('s2j.the_request_was_not_executed_check_sudo_syst', '⚠️ الطلب لم يُنفَّذ — راجع التشخيص: sudo systemctl status nm-remote.path')))))), { type: 'warning', duration: 10000 });
       console.warn('[remote] ' + diag);
     }
   } finally {

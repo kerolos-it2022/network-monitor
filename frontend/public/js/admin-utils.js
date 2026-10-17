@@ -59,7 +59,7 @@ function confirmAction(opts) {
   const modal = document.getElementById('confirm-modal');
   if (!modal) {
     // fallback آمن: لو modal غَير مَوجُود (خطأ تَحميل)، اِستَعمِل confirm الأَصلي.
-    return Promise.resolve(window.confirm(opts.message || (window.NMI18N ? NMI18N.t('confirm.question') : 'تأكيد؟')));
+    return Promise.resolve(window.confirm(opts.message || (window.NMI18N ? NMI18N.t('confirm.question') : T('confirm.question', 'تأكيد؟'))));
   }
   if (__confirmState) __confirmState.cancel();
   const previousFocus = document.activeElement;
@@ -229,7 +229,7 @@ function showToast(message, opts) {
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.className = 'toast-close';
-  closeBtn.setAttribute('aria-label', 'إغلاق');
+  closeBtn.setAttribute('aria-label', T('common.close', 'إغلاق'));
   closeBtn.textContent = '×';
   item.appendChild(closeBtn);
   container.appendChild(item);

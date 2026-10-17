@@ -55,13 +55,13 @@
   // v2.33.0 — عناوين المجموعات صارت عربية صافية (قرار المالك: لا إنجليزية وصفية في الواجهة).
   // المفاتيح keys لاتينية عن قصد: هي **قيم tipos الأجهزة** (بيانات) لا نصوص واجهة — الترجمة على العنوان فقط.
   const TYPE_CONFIG = {
-    'Firewall':     { icon: '🛡️', title: (window.NMI18N ? NMI18N.t('noc.group.firewall') : 'جدار الحماية والبوابات'), order: 1 },
-    'Server':       { icon: '🖥️', title: (window.NMI18N ? NMI18N.t('noc.group.server') : 'الخوادم والأنظمة المركزية'), order: 2 },
-    'Switch':       { icon: '🔌', title: (window.NMI18N ? NMI18N.t('noc.group.switch') : 'السويتشات وموزعات الشبكة'), order: 3 },
-    'Access Point': { icon: '📡', title: (window.NMI18N ? NMI18N.t('noc.group.ap') : 'نقاط الواي فاي والشبكة اللاسلكية'), order: 4 },
-    'NVR/DVR':      { icon: '📹', title: (window.NMI18N ? NMI18N.t('noc.group.nvr') : 'كاميرات المراقبة وأجهزة التسجيل'), order: 5 },
-    'Printer':      { icon: '🖨️', title: (window.NMI18N ? NMI18N.t('noc.group.printer') : 'الطابعات وماكينات التصوير'), order: 6 },
-    'Other':        { icon: '🧩', title: (window.NMI18N ? NMI18N.t('noc.group.other') : 'أجهزة وأنظمة أخرى'), order: 7 }
+    'Firewall':     { icon: '🛡️', title: (window.NMI18N ? NMI18N.t('noc.group.firewall') : T('noc.group.firewall', 'جدار الحماية والبوابات')), order: 1 },
+    'Server':       { icon: '🖥️', title: (window.NMI18N ? NMI18N.t('noc.group.server') : T('noc.group.server', 'الخوادم والأنظمة المركزية')), order: 2 },
+    'Switch':       { icon: '🔌', title: (window.NMI18N ? NMI18N.t('noc.group.switch') : T('noc.group.switch', 'السويتشات وموزعات الشبكة')), order: 3 },
+    'Access Point': { icon: '📡', title: (window.NMI18N ? NMI18N.t('noc.group.ap') : T('noc.group.ap', 'نقاط الواي فاي والشبكة اللاسلكية')), order: 4 },
+    'NVR/DVR':      { icon: '📹', title: (window.NMI18N ? NMI18N.t('noc.group.nvr') : T('noc.group.nvr', 'كاميرات المراقبة وأجهزة التسجيل')), order: 5 },
+    'Printer':      { icon: '🖨️', title: (window.NMI18N ? NMI18N.t('noc.group.printer') : T('noc.group.printer', 'الطابعات وماكينات التصوير')), order: 6 },
+    'Other':        { icon: '🧩', title: (window.NMI18N ? NMI18N.t('noc.group.other') : T('noc.group.other', 'أجهزة وأنظمة أخرى')), order: 7 }
   };
 
   // v2.12.2 — تصنيف الأنواع بكلمات مفتاحية (بدل المطابقة الحرفية فقط).
@@ -135,9 +135,9 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     if (!isFinite(t) || t < 0) return 'الآن';
     const s = Math.floor(t / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
     if (d) return d + ' يوم ' + (h % 24) + ' ساعة';
-    if (h) return h + ' ساعة ' + (m % 60) + ' دقيقة';
-    if (m) return m + ' دقيقة ' + (s % 60) + ' ثانية';
-    return 'لحظة — ' + s + ' ثانية';
+    if (h) return h + T('unit.h', ' ساعة ') + (m % 60) + T('unit.min', ' دقيقة');
+    if (m) return m + T('unit.min_2', ' دقيقة ') + (s % 60) + T('unit.s', ' ثانية');
+    return T('unit.just_now', 'لحظة — ') + s + T('unit.s', ' ثانية');
   }
   function downtimeAge(iso) { return iso ? fmtDowntime(iso) : 'الآن'; }
 
@@ -150,7 +150,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     if (!list) return;
     list.innerHTML = overlayDevices.map((d) => `
       <div class="oo-device">${esc((d.name || T('s2x.device', 'جهاز')) + ' · ' + (d.ip || '—'))}
-        <span class="oo-age">منقطع منذ ${esc(downtimeAge(d.offline_since))}</span>
+        <span class="oo-age">${T('frag.down_for', 'منقطع منذ')} ${esc(downtimeAge(d.offline_since))}</span>
       </div>`).join('');
     const ov = document.getElementById('outage-overlay');
     if (ov) ov.classList.add('show');
@@ -233,7 +233,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     icon.textContent = audioAlertEnabled ? '🔊' : '🔔';
     btn.title = audioAlertEnabled
       ? 'التنبيه الصوتي مُفعَّل — يصفر عند انقطاع جهاز جديد (يبقى مفعّلًا بعد إعادة التحميل)'
-      : 'تشغيل تنبيه صوتي عند انقطاع أي جهاز';
+      : T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', T('tail.play_a_sound_alert_when_any_device_drops', 'تشغيل تنبيه صوتي عند انقطاع أي جهاز')))));
   }
 
   // v2.12.0 — تنشيط الصوت بعد إعادة التحميل: المتصفحات تمنع التشغيل قبل تفاعل المستخدم، فنطلب
@@ -472,8 +472,8 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
           const offline = anchors.filter((a) => a.status === 'offline').length;
           const up = anchors.length - anchors.filter((a) => a.status === 'offline' || a.status === 'unknown').length;
           chip.innerHTML = offline === 0 && up > 0
-            ? '<div class="num">🌐</div><div class="lbl">الخط الخارجي يعمل</div>'
-            : '<div class="num">🔴</div><div class="lbl">الخط الخارجي منقطع — عطل مزود/خط</div>';
+            ? `<div class="num">🌐</div><div class="lbl">${T('s3b.internet_uplink_is_up', 'الخط الخارجي يعمل')}</div>`
+            : `<div class="num">🔴</div><div class="lbl">${T('s3b.internet_uplink_is_down_provider_line_fault', 'الخط الخارجي منقطع — عطل مزود/خط')}</div>`;
         }
       }
     } catch (e) {}
@@ -516,7 +516,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     // v2.8.5 — شارة القسم كانت ثابتة «نشط» في HTML: نربطها بوجود بيانات فعلية.
     const heroBadge = document.getElementById('hero-status-badge');
-    if (heroBadge) heroBadge.textContent = (allDevices.length || allLocations.length) ? 'نشط' : T('tail.not_set_up', 'غير مُهيَّأ');
+    if (heroBadge) heroBadge.textContent = (allDevices.length || allLocations.length) ? T('tail.active', 'نشط') : T('tail.not_set_up', 'غير مُهيَّأ');
 
     // 1. Find Gateway (v2.8.5 — بلا كائن وهمي: لو غير مُعرَّف نعرض حالة محايدة صريحة)
     const gateway = allLocations.find(l => l.kind === 'internet') || null;
@@ -543,7 +543,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       const dnsDown = dns.status === 'offline';
       html += `
         <div class="hero-card ${dnsDown ? 'down' : 'up'}">
-          <span class="role">🌍 فحص الاتصال الخارجي</span>
+          <span class="role">🌍 ${T('frag.internet_connectivity_check', 'فحص الاتصال الخارجي')}</span>
           <div class="nm">${esc(dns.name)}</div>
           <div class="meta">${dns.ip ? esc(dns.ip) + ' — ' : ''}Google Public DNS</div>
           <div class="st-badge ${dnsDown ? 'down' : 'up'}">${dnsDown ? '🔴 انقطاع الاستجابة' : '🟢 اتصال إنترنت مستقر'}</div>
@@ -595,15 +595,15 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       ? 'neutral'
       : (serversDown > 0 ? (serversUp === 0 ? 'down' : 'warn') : (degradedServers > 0 ? 'warn' : 'up'));
     const srvText = noServers
-      ? '⚪ لا توجد خوادم مُعرَّفة'
+      ? T('unit.no_servers_configured_2', '⚪ لا توجد خوادم مُعرَّفة')
       : (serversDown > 0
-        ? `⚠️ ${serversDown} خوادم منقطعة`
-        : (degradedServers > 0 ? `🟡 ${degradedServers} خادم بخدمة متوقفة` : '🟢 جميع الخوادم تعمل'));
+        ? `⚠️ ${serversDown} ${T('frag.servers_offline', 'خوادم منقطعة')}`
+        : (degradedServers > 0 ? `🟡 ${degradedServers} ${T('frag.servers_with_a_service_down', 'خادم بخدمة متوقفة')}` : '🟢 جميع الخوادم تعمل'));
     html += `
       <div class="hero-card ${srvCls}">
         <span class="role">${T('tail.core_servers', '🖥️ مجمع الخوادم المركزية')}</span>
-        <div class="nm">خوادم الشبكة الرئيسية</div>
-        <div class="meta">${coreServers.length} خوادم (Odoo · ESXi · SIS · Synology)</div>
+        <div class="nm">${T('unit.core_servers', 'خوادم الشبكة الرئيسية')}</div>
+        <div class="meta">${coreServers.length} ${T('frag.servers', 'خوادم ')}(Odoo · ESXi · SIS · Synology)</div>
         <div class="st-badge ${srvCls}">
           ${srvText}
         </div>
@@ -682,9 +682,9 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   }
   function zoneTooltip(node) {
     if (node.kind === 'device') {
-      return `${mapDevLabel(node)}\nIP: ${node.ip || '—'}\nالنوع: ${node.device_type || '—'}\nالحالة: ${node.status}`;
+      return `${mapDevLabel(node)}\nIP: ${node.ip || '—'}\n${T('s2.type', 'النوع')}: ${node.device_type || '—'}\n${T('s2.status', 'الحالة')}: ${node.status}`;
     }
-    return `${node.name}\nأجهزة: ${node.device_count} (🟢${node.online} 🔴${node.offline} ⚪${node.unknown})`;
+    return `${node.name}\n${T('frag.devices_3', 'أجهزة')}: ${node.device_count} (🟢${node.online} 🔴${node.offline} ⚪${node.unknown})`;
   }
 
   // صف جهاز داخل الكارت — نفس markup «خريطة المواقع» بالضبط.
@@ -790,7 +790,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const kids = Array.isArray(node.children) ? node.children : [];
     if (kids.length === 0) {
       const dc = node.device_count || 0;
-      if (dc === 0) return '<p class="map-zone-empty">لا أجهزة في هذا الموقع.</p>';
+      if (dc === 0) return `<p class="map-zone-empty">${T('common.no', 'لا')} ${T('frag.devices_in_this_location', 'أجهزة في هذا الموقع.')}</p>`;
       return '';
     }
     const devices = [];
@@ -824,7 +824,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         ${renderZoneBody(sz)}
       </div>`;
     }
-    return html || '<p class="map-zone-empty">لا مُطابِقات.</p>';
+    return html || `<p class="map-zone-empty">${T('common.no', 'لا')} ${T('frag.matches', 'مُطابِقات.')}</p>`;
   }
 
   // بطاقة موقع واحدة — نفس markup وألوان وحالات «خريطة المواقع».
@@ -852,7 +852,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     // v2.10.7 — سطر «متصل عبر» (بدل الإدخال داخل بطاقة الأب)
     const parentLine = parentName
-      ? `<div class="map-zone-parent">🧩 متصل عبر: ${esc(parentName)}</div>`
+      ? `<div class="map-zone-parent">🧩 ${T('s3.connects_via', 'متصل عبر')}: ${esc(parentName)}</div>`
       : '';
     return `
     <article class="${cls}" data-id="${esc(String(node.id))}" data-kind="${esc(kind)}" role="listitem"
@@ -861,7 +861,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         <span class="map-zone-icon">${icon}</span>
         <span class="map-zone-name">${esc(node.name || '')}</span>
         <span class="map-zone-stats">${stats}</span>
-        <button type="button" class="map-zone-toggle" aria-label="توسيع/طي" aria-expanded="${!collapsedNow}">▼</button>
+        <button type="button" class="map-zone-toggle" aria-label="${T('frag.expand', 'توسيع')}/${T('frag.collapse', 'طي')}" aria-expanded="${!collapsedNow}">▼</button>
       </div>
       ${parentLine}
       <div class="map-zone-body">${body}</div>
@@ -921,7 +921,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     if (!mapRootData) {
       grid.innerHTML = '';
-      if (note) { note.textContent = T('s2j.could_not_load_the_building_map_check_the_co', '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.'); note.hidden = false; }
+      if (note) { note.textContent = T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', T('s2j.could_not_load_the_building_map_check_the_co', '⚠️ تعذّر جلب خريطة المباني — تَحقّق من الاتصال.')))))); note.hidden = false; }
       if (badge) badge.textContent = '—';
       return;
     }
@@ -936,12 +936,12 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const res = renderZonesGrid(mapRootData);
     if (!res.html) {
       grid.innerHTML = '';
-      if (note) { note.textContent = T('s2j.no_locations_or_devices_yet_add_them_from_th', 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.'); note.hidden = false; }
+      if (note) { note.textContent = T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', T('s2j.no_locations_or_devices_yet_add_them_from_th', 'لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.')))))); note.hidden = false; }
       if (badge) badge.textContent = '—';
       return;
     }
     if (note) note.hidden = true;
-    if (badge) badge.textContent = `${res.zones} منطقة · ${res.devices} جهاز`;
+    if (badge) badge.textContent = `${res.zones} ${T('frag.zones', 'منطقة · ')}${res.devices} ${T('s2x.device', 'جهاز')}`;
     grid.innerHTML = res.html;
     bindMapGridEvents();
   }
@@ -982,15 +982,15 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     } catch (_) { return String(s); }
   }
   function statusBadgeText(status) {
-    return status === 'online' ? T('s2x.online', T('s3b.online_2', 'متصل')) : (status === 'offline' ? T('s2x.offline', 'متوقف') : 'غير معروف');
+    return status === 'online' ? T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', T('s3b.online_2', T('status.online', T('s2x.online', 'متصل')))))))))) : (status === 'offline' ? T('s2x.offline', 'متوقف') : T('status.unknown', 'غير معروف'));
   }
   // MON-02 — نص الحالة العامة: يميّز «متصل مع خدمة متوقفة» (DEGRADED) بدل الأخضر الكاذب.
   function overallHealthText(d) {
     if (d.overall_health === 'degraded') return 'متصل — خدمة متوقفة';
     if (d.status === 'offline' || d.overall_health === 'offline') return T('s2x.offline', 'متوقف');
-    if (d.status === 'paused') return 'موقوف';
-    if ((d.status || d.overall_health) === 'unknown') return 'غير معروف';
-    return T('s2x.online', 'متصل');
+    if (d.status === 'paused') return T('status.paused', 'موقوف');
+    if ((d.status || d.overall_health) === 'unknown') return T('status.unknown', 'غير معروف');
+    return T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', 'متصل'))))))))))))))))));
   }
   async function openDeviceDetails(deviceId) {
     const modal = document.getElementById('noc-device-modal');
@@ -999,7 +999,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const nameEl = document.getElementById('noc-modal-name');
     const iconEl = document.getElementById('noc-modal-icon');
     const statusEl = document.getElementById('noc-modal-status');
-    if (fieldsEl) fieldsEl.innerHTML = '<p class="details-placeholder">⏳ جَلب التفاصيل…</p>';
+    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⏳ ${T('frag.loading_the', 'جَلب ال')}${T('common.details', 'تفاصيل')}…</p>`;
     if (nameEl) nameEl.textContent = '…';
     if (statusEl) { statusEl.className = 'details-status-badge'; statusEl.textContent = '—'; }
     modal.classList.remove('hidden');
@@ -1038,10 +1038,10 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         let ah = '';
         if (d.https_accessible == 1 && ip) ah += `<a class="da-https" href="https://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🔒 فتح HTTPS</a>`;
         if (d.http_accessible == 1 && ip) ah += `<a class="da-http" href="http://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🌐 فتح HTTP</a>`;
-        acts.innerHTML = ah || '<small class="da-none">لا توجد واجهة ويب مكتشفة لهذا الجهاز (فحص PING فقط).</small>';
+        acts.innerHTML = ah || `<small class="da-none">${T('common.no', 'لا')} ${T('frag.no_web_interface_detected_for_this_devic', 'توجد واجهة ويب مكتشفة لهذا الجهاز ')}(${T('frag.check', 'فحص ')}PING ${T('frag.only', 'فقط')}).</small>`;
       }
     } catch (e) {
-      if (fieldsEl) fieldsEl.innerHTML = '<p class="details-placeholder">⚠️ تعذّر جلب تفاصيل الجهاز.</p>';
+      if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('frag.could_not_load', 'تعذّر جلب ')}${T('common.details', 'تفاصيل')} ${T('frag.the_device', 'الجهاز.')}</p>`;
       const acts = document.getElementById('noc-modal-actions');
       if (acts) acts.innerHTML = '';
     }
@@ -1128,7 +1128,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         // v2.8.8 — الصف قابل للنقر: يفتح نفس نافذة تفاصيل الجهاز (كما في «خريطة المباني»).
         return `
           <div class="mv-inner-row ${isDown ? 'down' : ''}" data-device-id="${Number(d.id)}" role="button" tabindex="0"
-               title="${esc(d.name)} — انقر لعرض التفاصيل">
+               title="${esc(d.name)} — ${T('frag.click_to_see_the_details', 'انقر لعرض التفاصيل')}">
             <span class="mv-dot ${dotCls}"></span>
             <span class="mv-inner-type">${esc(d.device_type_name || T('s2x.device', 'جهاز'))}</span>
             <span class="mv-inner-nm" title="${esc(d.name)}">${esc(d.name)}</span>
@@ -1157,7 +1157,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     // v2.8.6 — شارة تبويب «التخطيط المرسوم» + ملاحظته (لم يعد يشارك شارة «خريطة المباني»).
     const locBadge = document.getElementById('draw-locs-count');
-    if (locBadge) locBadge.textContent = `${renderedLocs} موقع`;
+    if (locBadge) locBadge.textContent = `${renderedLocs} ${T('frag.location', 'موقع')}`;
     const note = document.getElementById('draw-empty-note');
     if (note) note.hidden = renderedLocs > 0;
     cardsContainer.innerHTML = cardsHtml;
@@ -1217,7 +1217,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
 
     // v2.8.5 — الشارة كانت ثابتة «39 جهاز» في HTML ولا يحدّثها أي كود (عدد وهمي).
     const devBadge = document.getElementById('devices-count-badge');
-    if (devBadge) devBadge.textContent = `${shownCount} جهاز`;
+    if (devBadge) devBadge.textContent = `${shownCount} ${T('s2x.device', 'جهاز')}`;
 
     // Sort categories according to config order
     const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
@@ -1250,7 +1250,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
           <div class="category-head">
             <span class="cat-title">${cfg.icon} ${cfg.title}</span>
             <span class="cat-badge">${list.length} ${T('tail.devices', ' جهاز')}</span>
-            <span class="cat-stats">🟢 ${up} متصل &nbsp;·&nbsp; 🔴 ${down} منقطع</span>
+            <span class="cat-stats">🟢 ${up} ${T('status.online', 'متصل ')}&nbsp;·&nbsp; 🔴 ${down} ${T('s3b.offline_2', 'منقطع')}</span>
           </div>
           <div class="device-grid">
             ${list.map(d => {
@@ -1277,8 +1277,8 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
                     <span class="ip">${esc(d.ip || '—')}</span>
                     <span class="loc-tag" title="الموقع: ${esc(locName)}">📍 ${esc(locName)}</span>
                   </div>
-                  ${d.status === 'offline' ? `<div class="dev-downtime">⏱ منقطع منذ ${esc(downtimeAge(d.offline_since))}</div>` : ''}
-                  ${parentDev ? `<div class="parent-info">🔗 متصل عبر: <b>${esc(parentDev.name)}</b></div>` : ''}
+                  ${d.status === 'offline' ? `<div class="dev-downtime">${T('s3b.down_for', '⏱ منقطع منذ ')} ${esc(downtimeAge(d.offline_since))}</div>` : ''}
+                  ${parentDev ? `<div class="parent-info">🔗 ${T('s3.connects_via', 'متصل عبر')}: <b>${esc(parentDev.name)}</b></div>` : ''}
                 </div>
               `;
             }).join('')}
@@ -1311,16 +1311,16 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const el = document.getElementById('update-status');
     if (!el) return;
     if (liveClosed) {
-      el.textContent = '⛔ أوقف المالك العرض العام — لا بثّ ولا تحديث (إعادة محاولة كل دقيقة)';
+      el.textContent = T('noc.displayOff', '⛔ أوقف المالك العرض العام — لا بثّ ولا تحديث (إعادة محاولة كل دقيقة)');
       return;
     }
     if (serverOk === false) {
-      el.textContent = '⚠️ تعذر الوصول للخادم — إعادة المحاولة جارية...';
+      el.textContent = T('noc.serverDown', '⚠️ تعذر الوصول للخادم — إعادة المحاولة جارية...');
       return;
     }
     el.textContent = liveConnected
-      ? T('s3.live_real_time_updates_sse', 'مراقبة حية — تحديث فوري (SSE)')
-      : 'مراقبة حية — تحديث دوري كل ' + Math.round(pollIntervalMs / 1000) + ' ثانية';
+      ? T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', T('s3.live_real_time_updates_sse', T('noc.liveStatus', 'مراقبة حية — تحديث فوري (SSE)'))))))))))))
+      : T('unit.live_polling_every', 'مراقبة حية — تحديث دوري كل ') + Math.round(pollIntervalMs / 1000) + T('unit.s', ' ثانية');
   }
 
   // تطبيق تحديث السيرفر على الحالة المحلّية (بلا طلب شبكة) ثم إعادة رسم واحدة مجمّعة.
@@ -1367,7 +1367,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
       renderAll();
       const now = new Date();
       const el = document.getElementById('last-updated-time');
-      if (el) el.textContent = T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
+      if (el) el.textContent = T('s2j.last_updated', 'آخر تحديث:') + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG')) + ' (لحظي)'
     }, 150);
   }
 
@@ -1444,7 +1444,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
   async function updateEngineAlertFromHealth(healthRes) {
     if (!healthRes || !healthRes.ok) {
       engineFetchFails += 1;
-      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'));
+      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.')))))));
       return;
     }
     engineFetchFails = 0;
@@ -1453,11 +1453,11 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     // v2.13.8 — رأس الشاشة يعرض الإصدار من الخادم (بدل نصّ ثابت قديم كان يظهر لسنوات).
     const vtag = document.getElementById('noc-version-tag');
     // v2.33.0 — النصّ العربي بدل الكلمة الإنجليزية الوصفية (قرار المالك: لا إنجليزية وصفية في الواجهة)
-    if (vtag) vtag.textContent = (window.NMI18N ? NMI18N.t('noc.tag') : 'مركز عمليات الشبكة') + (json && json.version ? ' — v' + json.version : '');
+    if (vtag) vtag.textContent = (window.NMI18N ? NMI18N.t('noc.tag') : T('noc.tag', 'مركز عمليات الشبكة')) + (json && json.version ? ' — v' + json.version : '');
     const eng = json ? json.engine : null;
     if (!eng || eng.notStarted) { hideEngineAlert(); return; }
     const sec = Math.round((eng.lastTickAgeMs || 0) / 1000);
-    const fmt = sec >= 60 ? Math.round(sec / 60) + ' دقيقة' : sec + ' ثانية';
+    const fmt = sec >= 60 ? Math.round(sec / 60) + T('unit.min', ' دقيقة') : sec + T('unit.s', ' ثانية');
     if (eng.stalled) {
       showEngineAlert(T('tail.the_monitoring_engine_has_been_down_for', '⚠️ محرك المراقبة متوقف منذ ') + ' ' + fmt + ' — البيانات المعروضة قد تكون قديمة!');
     } else if (eng.stuckChecks > 0) {
@@ -1494,14 +1494,14 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         
         const now = new Date();
         document.getElementById('last-updated-time').textContent = 
-          T('s2j.last_updated', T('s3.last_update', 'آخر تحديث:')) + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
+          T('s2j.last_updated', 'آخر تحديث:') + ' ' + (window.NMFormat ? NMFormat.time(now) : now.toLocaleTimeString('ar-EG'));
         if (updateStatusEl) refreshStatusText(true);
         updateEngineAlertFromHealth(healthRes);
       }
     } catch (err) {
       refreshStatusText(false);
       engineFetchFails += 1;
-      if (engineFetchFails >= 2) showEngineAlert('⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.');
+      if (engineFetchFails >= 2) showEngineAlert(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'))))));
     }
   }
 

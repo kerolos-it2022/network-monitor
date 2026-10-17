@@ -53,8 +53,8 @@
       <option value="last_checked"><span data-i18n="tail.sort_last_check">⏰ ترتيب: حسب آخر فحص</span></option>
     </select>
       <div class="view-toggle" role="group" aria-label="نمط العرض" data-i18n-attr="aria-label:tail.view_mode">
-        <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات">🗂️</button>
-        <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول">📋</button>
+        <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات" data-i18n-attr="title:public.view.cards">🗂️</button>
+        <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول" data-i18n-attr="title:public.view.table">📋</button>
         <a id="noc-link-btn" class="view-btn" href="/noc.html" title="شاشة NOC (عرض العمليات)" style="text-decoration:none;" data-i18n-attr="title:tail.noc_screen_operations_view">🖥️</a>
       </div>
     </section>
@@ -110,7 +110,7 @@
   <!-- Modal تفاصيل الجهاز -->
   <div id="device-modal" class="modal hidden">
     <div class="modal-content">
-      <button id="modal-close-btn" type="button" class="modal-close" aria-label="إغلاق">✕</button>
+      <button id="modal-close-btn" type="button" class="modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
       <h2 id="modal-device-name" data-i18n="common.none">—</h2>
       <div id="modal-uptime" class="modal-uptime"></div>
       <div id="device-connect-chip" class="connect-chip" style="margin:0.5rem 0;"></div>
@@ -125,7 +125,7 @@
   <!-- ===== popup قياس سرعة الانترنت (v2.7.5) — القياس من المتصفح عبر Cloudflare ===== -->
   <div id="speedtest-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
-      <button type="button" class="modal-close speedtest-close" aria-label="إغلاق" title="إغلاق">✕</button>
+      <button type="button" class="modal-close speedtest-close" aria-label="إغلاق" title="إغلاق" data-i18n-attr="aria-label:common.close title:common.close">✕</button>
       <h3><span data-i18n="tail.internet_speed_test">⚡ قياس سرعة الانترنت</span></h3>
       <div class="st-server-row">
         <label for="st-server"><span data-i18n="tail.server">الخادم:</span></label>

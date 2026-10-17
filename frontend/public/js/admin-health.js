@@ -25,7 +25,7 @@
       r = await fetch('/api/health', { credentials: 'same-origin', cache: 'no-store' });
     } catch (e) {
       fetchFails += 1;
-      if (fetchFails >= 2) show(T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.'));
+      if (fetchFails >= 2) show(T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', T('tail.could_not_reach_the_monitoring_server_check', '⚠️ تعذر الاتصال بخادم المراقبة — تحقّق من حالة الجهاز.')))))));
       return;
     }
     fetchFails = 0;
@@ -33,7 +33,7 @@
     try { eng = (await r.json()).engine; } catch (e) { eng = null; }
     if (!eng || eng.notStarted) { hide(); return; }
     const sec = Math.round((eng.lastTickAgeMs || 0) / 1000);
-    const fmt = sec >= 60 ? Math.round(sec / 60) + ' دقيقة' : sec + ' ثانية';
+    const fmt = sec >= 60 ? Math.round(sec / 60) + T('unit.min', ' دقيقة') : sec + T('unit.s', ' ثانية');
     if (eng.stalled) {
       show(T('tail.the_monitoring_engine_has_been_down_for', '⚠️ محرك المراقبة متوقف منذ ') + ' ' + fmt + ' — البيانات المعروضة قد تكون قديمة!');
     } else if (eng.stuckChecks > 0) {

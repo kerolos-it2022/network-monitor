@@ -47,7 +47,7 @@ async function loadNotificationSettings() {
   const vapidEl = document.getElementById('ntf-status');
   if (vapidEl && d.vapid_public_key_ready === false) {
     vapidEl.style.color = 'var(--offline)';
-    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.');
+    vapidEl.textContent = T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', T('s2j.web_push_vapid_keys_are_not_ready_on_the_ser', '⚠️ مفاتيح Web Push (VAPID) غير جاهزة على الخادم — إشعارات الهاتف لن تُفعّل حتى تُضبط.'))))));
   }
 }
 
@@ -55,7 +55,7 @@ async function saveNotificationSettings() {
   // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ إعدادات الإِشعارات (إِجراء حسّاس).
   const ok = await confirmAction({
     title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
-    message: T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟'),
+    message: T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', T('s2j.save_the_notification_settings_changes', 'تَأكيد حفظ تَعديل إعدادات الإِشعارات؟')))))),
     confirmText: '✓ تَأكيد الحفظ',
   });
   if (!ok) return;
@@ -127,7 +127,7 @@ async function testNotification(channel) {
         const okSent = !!(data.data && data.data.sent);
         statusEl.textContent = okSent
           ? T('tail.sent_check_your_phone', '✅ تم الإرسال (افتح هاتفك للتأكد)')
-          : T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة');
+          : T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', T('tail.sending_failed_make_sure_the_channel_is_enab', '❌ فشل الإرسال — تأكد من تفعيل القناة ووجود تسجيلات نشطة'))))));
         if (!okSent) statusEl.style.color = 'var(--offline)';
       } else {
         statusEl.style.color = 'var(--offline)';
@@ -135,7 +135,7 @@ async function testNotification(channel) {
       }
       return;
     }
-    const labels = { telegram: T('s3.telegram', 'تلجرام'), whatsapp: T('s3.whatsapp', 'واتساب'), mobile: 'هاتف' };
+    const labels = { telegram: T('s3.telegram', 'تلجرام'), whatsapp: T('s3.whatsapp', 'واتساب'), mobile: T('tail.mobile', 'هاتف') };
     const lines = results.map((res) => {
       const name = labels[res.channel] || res.channel;
       if (res.ok) return name + ': ✅ تم الإرسال';
@@ -193,7 +193,7 @@ async function loadNotificationLogs() {
   const channelText = (c) => {
     if (c === 'telegram') return T('s3.telegram', 'تلجرام');
     if (c === 'whatsapp') return T('s3.whatsapp', 'واتساب');
-    if (c === 'mobile') return 'هاتف';
+    if (c === 'mobile') return T('tail.mobile', 'هاتف');
     return c;
   };
   // v2.33.0 — فلتر الحالة (كل / تم الإرسال / فشل / مكتوم صيانة) قبل العرض
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let cleanupMode = 'notifications';
   // عنوان modal الاختيار حسب النوع (لِـ تأكيد واضح للمستخدم قبل الفتح).
   const cleanupTitles = {
-    notifications: '🗑️ مَسح سجل الإِشعارات',
+    notifications: T('tail.clear_the_notification_log', '🗑️ مَسح سجل الإِشعارات'),
     downtime:      '🗑️ مَسح سجل الانقطاعات',
     'status-logs': '🗑️ مَسح نَقاط فحص الحالة',
   };
@@ -290,11 +290,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   function rangeInfo(range) {
     switch (range) {
       case '2h':    return { days: 2/24,    text: T('tail.two_hours', 'ساعتين') };
-      case 'day':   return { days: 1,      text: '24 ساعة' };
+      case 'day':   return { days: 1,      text: T('s3b.24_hours', '24 ساعة') };
       case 'week':  return { days: 7,      text: T('tail.7_days', '7 أَيام') };
-      case 'month': return { days: 30,     text: '30 يوم' };
+      case 'month': return { days: 30,     text: T('s3b.30_days', '30 يوم') };
       case 'year':  return { days: 365,    text: T('tail.365_days', '365 يوم') };
-      default:      return { days: 7,      text: '7 أَيام' };
+      default:      return { days: 7,      text: T('tail.7_days', '7 أَيام') };
     }
   }
 
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = data.data || {};
         const deleted = d.deleted != null ? d.deleted : 0;
         const vacuumed = d.vacuumed === true;
-        showToast(`✅ تَم تَفْرِيغ ${deleted} صَف من status_logs${vacuumed ? ' + VACUUM ناجح' : ' (VACUUM فَشِل — حَجْم القاعدة لَم يَتقلَّص)'}`, { type: 'success' });
+        showToast(`✅ ${T('frag.truncated', 'تَم تَفْرِيغ ')}${deleted} ${T('frag.rows_from', 'صَف من ')}status_logs${vacuumed ? ' + VACUUM ناجح' : ' (VACUUM فَشِل — حَجْم القاعدة لَم يَتقلَّص)'}`, { type: 'success' });
         showToast('ℹ️ الجَدول فُرِّغ بِالكامِل — الرسوم البيانية/Uptime في الصفحة العامة سَتَبْدأ التَجَمُّع من جديد', { type: 'info', duration: 5000 });
       } else {
         showToast('❌ ' + ((data && data.error) || 'فشل التَفْرِيغ'), { type: 'error' });
@@ -376,10 +376,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // v2.7.x — rangeInfo تَدْعَم 2h/day/week/month/year لِـ تَوْضِيح رِسالة التَأكِيد (ساعة/أَيام).
     const { days } = rangeInfo(range);
     const ri = rangeInfo(range);
-    const typeLabel = cleanupLabels[type] || 'السجل';
+    const typeLabel = cleanupLabels[type] || T('nav.logs', 'السجل');
     const ok = await confirmAction({
       title: T('s2j.confirm_clearing', 'تَأكيد مَسح') + ' ' + typeLabel,
-      message: `سيتم مَسح ${typeLabel} الأَقدم من ${ri.text}.\nلا يمكن التَراجُع عن هذا الإِجراء. مُتابعة؟`,
+      message: NMI18N.t('notify.clearConfirm', { what: typeLabel, range: ri.text }),
       confirmText: '🗑️ مَسح',
       danger: true,
     });
@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             type: 'info', duration: 5000,
           });
         } else {
-          showToast(`✅ تَم مَسح ${deleted} سجل (${typeLabel} — أَقدم من ${ri.text})`, { type: 'success' });
+          showToast(`✅ ${T('frag.cleared', 'تَم مَسح ')}${deleted} ${T('frag.log', 'سجل ')}(${typeLabel} — ${T('tail.older_than', 'أَقدم من ')}${ri.text})`, { type: 'success' });
         }
         // تَحديث جدول السجل لو كان مُحمَّلاً (notifications).
         if (type === 'notifications' && typeof loadNotificationLogs === 'function') {

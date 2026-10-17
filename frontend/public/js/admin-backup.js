@@ -124,7 +124,7 @@ async function exportBackup() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    showBackupStatus(`✅ تم تنزيل النسخة الاحتياطية: ${filename}`, false);
+    showBackupStatus(`✅ ${T('frag.the_backup_was_downloaded', 'تم تنزيل النسخة الاحتياطية')}: ${filename}`, false);
   } catch (e) {
     console.error('[BACKUP] export error:', e);
     showBackupStatus(T('tail.export_error', '❌ خطأ في التصدير: ') + ' ' + e.message, true);
@@ -159,7 +159,7 @@ async function restoreBackup() {
       '⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالكامل بالملف المختار.\n\n' +
       '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
       '• سيتم إعادة تشغيل الخادم بعد الانتهاء.\n' +
-      `• حجم الملف: ${(file.size / 1024 / 1024).toFixed(2)} ميجابايت\n\n` +
+      `• ${T('frag.file_size', 'حجم الملف')}: ${(file.size / 1024 / 1024).toFixed(2)} ${T('frag.mb', 'ميجابايت')}\n\n` +
       T('tail.continue', 'هل تريد المتابعة؟'),
     confirmText: '🔄 استعادة',
     danger: true,
@@ -172,7 +172,7 @@ async function restoreBackup() {
   }
   showBackupOutput(true);
   document.getElementById('backup-log').textContent = '';
-  appendBackupLog(`📤 رفع الملف: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`);
+  appendBackupLog(`📤 ${T('frag.uploading', 'رفع الملف')}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`);
   showBackupStatus(T('tail.uploading_and_restoring_the_copy', '⏳ جاري رفع واستعادة النسخة...'), false);
 
   try {
@@ -190,7 +190,7 @@ async function restoreBackup() {
 
     if (response.ok && data && data.success) {
       appendBackupLog(`✅ ${data.message}`);
-      if (data.backupFile) appendBackupLog(`🗂️ النسخة الأمنية المحفوظة: ${data.backupFile}`);
+      if (data.backupFile) appendBackupLog(`🗂️ ${T('frag.the_saved_safety_copy', 'النسخة الأمنية المحفوظة')}: ${data.backupFile}`);
       showBackupStatus(T('tail.restored_restarting_the_server', '✅ تمت الاستعادة. جاري إعادة تشغيل الخادم...'), false);
 
       // ننتظر قليلاً ثم نعيد التحميل؛ الخادم قد يكون في مرحلة إعادة التشغيل
@@ -202,22 +202,22 @@ async function restoreBackup() {
           location.reload();
           return;
         }
-        appendBackupLog(`⏱️ إعادة التحميل خلال ${countdown} ثانية...`);
+        appendBackupLog(`⏱️ ${T('frag.the_page_reloads_in', 'إعادة التحميل خلال ')}${countdown} ${T('frag.seconds', 'ثانية...')}`);
         countdown--;
       }, 1000);
     } else {
       let err = (data && data.error) ? data.error : `HTTP ${response.status}`;
       // v2.8.7 — رسالة واضحة لخطأ الحجم (nginx يرفض الطلب قبل أن يصل للخادم).
       if (response.status === 413) {
-        err = T('tail.the_copy_is_larger_than_the_proxy_server_all', 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.');
+        err = T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', T('tail.the_copy_is_larger_than_the_proxy_server_all', 'حجم ملف النَسخة أكبر من الحدّ المسموح على الخادم الوسيط (nginx: client_max_body_size). ارفع الحدّ أو استعِد النَسخة من سطر الأوامر.'))))));
       } else if (response.status === 404 || response.status === 502) {
-        err = T('tail.could_not_reach_the_server_it_may_be_restart', 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.');
+        err = T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', T('tail.could_not_reach_the_server_it_may_be_restart', 'تعذّر الوصول للخادم (قد يكون في إعادة تشغيل) — أعِد المحاولة بعد لحظات.'))))));
       }
       throw new Error(err);
     }
   } catch (e) {
     console.error('[BACKUP] restore error:', e);
-    appendBackupLog(`❌ خطأ: ${e.message}`);
+    appendBackupLog(`❌ ${T('tail.error', 'خطأ')}: ${e.message}`);
     showBackupStatus(T('tail.restore_error', '❌ خطأ في الاستعادة: ') + ' ' + e.message, true);
     if (restoreBtn) {
       restoreBtn.disabled = false;
@@ -231,9 +231,7 @@ async function restoreFromExisting(filename) {
   const confirmed = await confirmAction({
     title: T('s2j.confirm_restoring_an_existing_copy', '⚠️ تَأكيد استعادة نَسخة موجودة'),
     message:
-      `⚠️ تحذير: سيتم استبدال قاعدة البيانات الحالية بالنسخة:\n${filename}\n\n` +
-      '• سيتم إنشاء نسخة أمنية تلقائية من القاعدة الحالية قبل الاستبدال.\n' +
-      '• سيتم إعادة تشغيل الخادم.\n\nهل تريد المتابعة؟',
+      NMI18N.t('backup.restoreWarn', { file: filename }),
     confirmText: '🔄 استعادة',
     danger: true,
   });
@@ -241,7 +239,7 @@ async function restoreFromExisting(filename) {
 
   showBackupOutput(true);
   document.getElementById('backup-log').textContent = '';
-  appendBackupLog(`🔄 استعادة من النسخة الموجودة: ${filename}...`);
+  appendBackupLog(`🔄 ${T('frag.restore_from_the_existing_copy', 'استعادة من النسخة الموجودة')}: ${filename}...`);
   showBackupStatus(T('s2j.restoring', '⏳ جاري الاستعادة...'), false);
 
   try {
@@ -253,8 +251,8 @@ async function restoreFromExisting(filename) {
 
     if (data && data.success) {
       appendBackupLog(`✅ ${data.message}`);
-      if (data.backupFile) appendBackupLog(`🗂️ النسخة الأمنية: ${data.backupFile}`);
-      showBackupStatus('✅ تمت الاستعادة. جاري إعادة تشغيل الخادم...', false);
+      if (data.backupFile) appendBackupLog(`🗂️ ${T('frag.safety_copy', 'النسخة الأمنية')}: ${data.backupFile}`);
+      showBackupStatus(T('tail.restored_restarting_the_server', '✅ تمت الاستعادة. جاري إعادة تشغيل الخادم...'), false);
 
       let countdown = 8;
       const reloadTimer = setInterval(() => {
@@ -264,14 +262,14 @@ async function restoreFromExisting(filename) {
           location.reload();
           return;
         }
-        appendBackupLog(`⏱️ إعادة التحميل خلال ${countdown} ثانية...`);
+        appendBackupLog(`⏱️ ${T('frag.the_page_reloads_in', 'إعادة التحميل خلال ')}${countdown} ${T('frag.seconds', 'ثانية...')}`);
         countdown--;
       }, 1000);
     } else {
       throw new Error((data && data.error) ? data.error : T('tail.restore_failed', 'فشل الاستعادة'));
     }
   } catch (e) {
-    appendBackupLog(`❌ خطأ: ${e.message}`);
+    appendBackupLog(`❌ ${T('tail.error', 'خطأ')}: ${e.message}`);
     showBackupStatus('❌ خطأ في الاستعادة: ' + e.message, true);
   }
 }
@@ -280,7 +278,7 @@ async function restoreFromExisting(filename) {
 async function deleteBackup(filename, rowEl) {
   const confirmed = await confirmAction({
     title: T('s2j.confirm_deleting_the_copy', 'تَأكيد حذف النَسخة'),
-    message: `هل أَنت متأَكّد من حذف النَسخة:\n${filename}\n\nلا يمكن التَراجُع عن هذا الإجراء.`,
+    message: `${T('frag.delete_this_copy', 'هل أَنت متأَكّد من حذف النَسخة')}:\n${filename}\n\n${T('frag.this_action_cannot_be_undone', 'لا يمكن التَراجُع عن هذا الإجراء.')}`,
     confirmText: T('common.delete', '🗑️ حذف'),
     danger: true,
   });
@@ -292,7 +290,7 @@ async function deleteBackup(filename, rowEl) {
     });
     if (data && data.success) {
       if (rowEl) rowEl.remove();
-      showBackupStatus(`🗑️ تم حذف "${filename}"`, false);
+      showBackupStatus(`🗑️ ${T('frag.deleted', 'تم حذف ')}"${filename}"`, false);
       // إعادة تحميل القائمة للتأكد من الترتيب الصحيح
       loadBackupList();
     } else {
