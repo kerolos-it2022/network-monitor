@@ -23,34 +23,47 @@ const TAB_TO_SECTION = {
   'tab-updates': 'section-updates',
 };
 
-// عنوان لكل قسم (يُستعمل في الشريط العلوي وفي عنوان التبويب في المتصفح).
-const TAB_TITLES = {
-  'tab-devices': '📱 إدارة الأجهزة',
-  'tab-locations': '📍 إدارة المواقع',
-  'tab-types': '🏷️ أنواع الأجهزة',
-  'tab-discovery': '🔍 اكتشاف الأجهزة',
-  'tab-discovered': '📥 بانتظار الاعتماد',
-  'tab-scheduler': '⏱️ الجدولة التلقائية',
-  'tab-map': '🗺️ خريطة المواقع',
-  'tab-topology': '🔗 سلسلة الشبكة',
-  'tab-notifications': '🔔 الإشعارات',
-  'tab-ai': '🤖 شات AI',
-  'tab-logs': '📋 سجل الإشعارات',
-  'tab-profile': '👤 الملف الشخصي والحسابات',
-  'tab-backup': '💾 النسخ الاحتياطي',
-  'tab-remote': '🌍 الوصول عن بُعد',
-  'tab-display': '🎛️ إعدادات العرض والأدوات',
-  'tab-system': '🖥️ حالة النظام',
-  'tab-updates': '🔄 تحديثات النظام',
+// مفاتيح الترجمة لعناوين الأقسام (الشريط العلوي + عنوان تبويب المتصفح).
+const TAB_TITLE_KEYS = {
+  'tab-devices': 'tabs.devices',
+  'tab-locations': 'tabs.locations',
+  'tab-types': 'tabs.types',
+  'tab-discovery': 'tabs.discovery',
+  'tab-discovered': 'tabs.pending',
+  'tab-scheduler': 'tabs.scheduler',
+  'tab-map': 'tabs.map',
+  'tab-topology': 'tabs.topology',
+  'tab-notifications': 'tabs.notifications',
+  'tab-ai': 'tabs.ai',
+  'tab-logs': 'tabs.logs',
+  'tab-profile': 'tabs.profile',
+  'tab-backup': 'tabs.backup',
+  'tab-remote': 'tabs.remote',
+  'tab-display': 'tabs.display',
+  'tab-system': 'tabs.system',
+  'tab-updates': 'tabs.updates',
 };
 
+// مترجم آمن (يعمل حتى لو تأخّر تحميل نظام الترجمة).
+function TTitle(key, fallback) {
+  try { return (window.NMI18N && NMI18N.t(key)) || fallback || key; } catch (e) { return fallback || key; }
+}
+
+let currentTabId = 'tab-devices';
+
 function setPageTitle(tabId) {
-  const title = TAB_TITLES[tabId];
-  if (!title) return;
+  const key = TAB_TITLE_KEYS[tabId];
+  if (!key) return;
+  currentTabId = tabId;
+  const title = TTitle(key);
   const el = document.querySelector('.admin-topbar h1');
   if (el) el.textContent = title;
-  document.title = title.replace(/^\S+\s*/, '') + ' — لوحة التحكم';
+  // عنوان تبويب المتصفح: بلا إيموجي + لاحقة لوحة التحكم (مترجمة أيضًا)
+  document.title = title.replace(/^\S+\s*/, '') + ' — ' + TTitle('topbar.dashboard', 'لوحة التحكم');
 }
+
+// تغيير اللغة يُعيد كتابة العنوان فورًا (بلا حاجة لتغيير التبويب)
+document.addEventListener('nm:lang', function () { try { setPageTitle(currentTabId); } catch (e) {} });
 
 function showSection(tabId) {
   // تحديث الأزرار.

@@ -1571,6 +1571,10 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     try {
       const r = await fetch('/api/settings/noc-mode', { credentials: 'same-origin' });
       const j = await r.json();
+      if (j && j.success && j.data && j.data.ui_language && window.NMI18N) {
+        // لغة النظام (إعداد واحد من اللوحة) — تُرفَق في نفس الردّ.
+        try { NMI18N.setLang(j.data.ui_language, { persist: true }); } catch (e) {}
+      }
       if (j && j.success && j.data && j.data.mode === 'full') {
         nocMode = 'full';
         document.body.setAttribute('data-noc-mode', 'full');

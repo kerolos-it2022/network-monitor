@@ -54,8 +54,48 @@ test('i18n: لا يوجد نصّ فارغ في القاموس، والعربية
   assert.match(I18N_SRC, /let lang = 'ar'/, 'الافتراضي العربية');
   assert.match(I18N_SRC, /function t\(key, vars\)/, 'دالة t موجودة');
   assert.match(I18N_SRC, /function applyDom\(/, 'مطبّق النصوص موجود');
-  // قسم الإنجليزية غير مُعبّأ الآن (يُعبّأ لاحقًا بنفس المفاتيح) — تعليق فقط
-  assert.ok(!/^\s*en:\s*\{/m.test(I18N_SRC), 'قسم en غير مُفعّل بعد (كما هو مطلوب في هذه المرحلة)');
+  // الاتجاه صار تابعًا للغة (كان مثبّتًا على rtl) + تسجيل اللغات من ملفات مستقلة
+  assert.match(I18N_SRC, /function dirOf\(/, 'اتجاه اللغة محسوب من LANG_META');
+  assert.match(I18N_SRC, /const LANG_META = \{/, 'جدول اللغات موجود');
+  assert.match(I18N_SRC, /function registerLang\(/, 'تسجيل لغة جديدة متاح');
+  assert.ok(!/setAttribute\('dir', 'rtl'\)/.test(I18N_SRC), 'لا يوجد تثبيت اتجاه في الكود');
+});
+
+// قسم الإنجليزية (js/nm-i18n-en.js): نفس مفاتيح العربية بالحرف — أي مفتاح ناقص يُسقط الاختبار.
+function englishDict() {
+  const src = fs.readFileSync(path.join(PUBLIC, 'js', 'nm-i18n-en.js'), 'utf8');
+  const dict = {};
+  const re = /^\s*'([a-zA-Z0-9_.]+)':\s*'((?:[^'\\]|\\.)*)',\s*$/gm;
+  let m;
+  while ((m = re.exec(src))) dict[m[1]] = m[2].replace(/\\'/g, "'");
+  return dict;
+}
+
+test('i18n: كل مفتاح عربي له ترجمة إنجليزية بنفس المفتاح (تكافؤ كامل)', () => {
+  const ar = arabicDict();
+  const en = englishDict();
+  assert.ok(Object.keys(en).length >= 100, 'القاموس الإنجليزي كبير بما يكفي (الآن: ' + Object.keys(en).length + ')');
+  const missing = Object.keys(ar).filter((k) => en[k] === undefined || !String(en[k]).trim());
+  assert.deepEqual(missing, [], 'مفاتيح بلا ترجمة إنجليزية: ' + missing.join(', '));
+  // ولا مفتاح إنجليزي بلا مقابل عربي (يمنع المفاتيح اليتيمة)
+  const orphans = Object.keys(en).filter((k) => ar[k] === undefined);
+  assert.deepEqual(orphans, [], 'مفاتيح إنجليزية بلا أصل عربي: ' + orphans.join(', '));
+});
+
+test('i18n: قواعد الوضع الإنجليزي (LTR) موجودة وتنعكس مع العربية', () => {
+  const css = fs.readFileSync(path.join(PUBLIC, 'css', 'ui.css'), 'utf8');
+  for (const sel of [
+    'html[dir="ltr"] table.data-table td',
+    'html[dir="ltr"] table.nm-table .col-ltr',
+    'html[dir="ltr"] body:not(.page-noc) input[type="time"]',
+    'html[dir="ltr"] .df-value',
+    'html[dir="ltr"] .sidebar.open',
+  ]) {
+    assert.ok(css.includes(sel), 'قاعدة LTR ناقصة: ' + sel);
+  }
+  // العربية تبقى كما هي: قواعد المحاذاة الأصلية (بلا dir) لم تُحذف
+  assert.ok(css.includes('table.data-table .col-ltr, table.nm-table .col-ltr {'), 'قاعدة العربية الأصلية باقية');
+  assert.ok(css.includes('text-align: right;'), 'محاذاة العربية اليمنى باقية');
 });
 
 test('i18n: لا كلمات إنجليزية وصفية تركت في واجهات الشاشات الأربع', () => {

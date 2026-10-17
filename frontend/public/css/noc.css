@@ -588,7 +588,7 @@
     gap: 0.4rem;
     padding: 0.5rem 0.65rem;
     cursor: pointer;
-    direction: rtl;
+    direction: inherit;
     background: var(--mv-header-bg);
     border-bottom: 1px solid var(--mv-border);
     user-select: none;
@@ -661,7 +661,7 @@
     gap: 0.4rem;
     width: 100%;
     text-align: start;
-    direction: rtl;
+    direction: inherit;
     border: none;
     background: transparent;
     color: var(--mv-text);
@@ -723,7 +723,7 @@
     width: min(560px, 95vw);
     max-height: 88vh;
     overflow: auto;
-    direction: rtl;
+    direction: inherit;
     text-align: start;
   }
   .noc-modal-close {
@@ -775,7 +775,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem 0.75rem;
-    direction: rtl;
+    direction: inherit;
   }
   .details-field {
     display: flex;
@@ -833,7 +833,7 @@
     display: none;
     flex-direction: column; align-items: center; justify-content: center;
     gap: 18px; padding: 32px;
-    text-align: center; direction: rtl;
+    text-align: center; direction: inherit;
   }
   .outage-overlay.show { display: flex; }
   .outage-overlay .oo-title {
@@ -847,7 +847,7 @@
     font-size: clamp(1.3rem, 2.6vw, 2.2rem); font-weight: 800; color: #fff;
     font-family: monospace; direction: ltr;
   }
-  .outage-overlay .oo-device .oo-age { display: block; font-size: 0.65em; font-weight: 600; color: #fecaca; direction: rtl; }
+  .outage-overlay .oo-device .oo-age { display: block; font-size: 0.65em; font-weight: 600; color: #fecaca; direction: inherit; }
   .outage-overlay .oo-close {
     margin-top: 14px; background: #fff; color: #991b1b;
     border: none; border-radius: 10px; padding: 14px 42px;
@@ -857,7 +857,7 @@
   .outage-overlay .oo-close:hover { background: #fecaca; }
 
   /* شارة «منقطع منذ …» على بطاقات NOC (v2.13.3) */
-  .dev-downtime { font-size: 0.78rem; font-weight: 700; color: #f87171; margin-top: 4px; direction: rtl; }
+  .dev-downtime { font-size: 0.78rem; font-weight: 700; color: #f87171; margin-top: 4px; direction: inherit; }
   .map-zone-device .map-device-downtime,
   .mv-inner-row .mv-downtime { font-size: 0.72em; color: #f87171; font-weight: 700; white-space: nowrap; }
   html.noc-day .dev-downtime,

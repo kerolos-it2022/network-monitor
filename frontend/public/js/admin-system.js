@@ -222,8 +222,12 @@ async function loadAndDrawHistory() {
     drawLine('cpu_percent', '#a855f7');
     // تسميات المحور — لون حقيقي من الصفحة (canvas لا يفهم var(--muted) فيبقى أسود غير مرئي ليلًا)
     const muted = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#6b7280';
-    ctx.fillStyle = muted; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText('100%', 8, yOf(100) + 4); ctx.fillText('50%', 10, yOf(50) + 4); ctx.fillText('0%', 8, yOf(0) + 4);
+    // اتجاه تسميات المحور يتبع اتجاه الصفحة: في العربية من نقطة يمينية (كما كانت بالحرف)،
+    // وفي الإنجليزية من نقطة يسارية — وإلا خرجت الأرقام خارج اللوحة بعد التحويل لـLTR.
+    const ltrAxis = getComputedStyle(cv).direction === 'ltr';
+    ctx.fillStyle = muted; ctx.font = '11px sans-serif'; ctx.textAlign = ltrAxis ? 'left' : 'right';
+    const xA = ltrAxis ? 6 : 8, xB = ltrAxis ? 8 : 10;
+    ctx.fillText('100%', xA, yOf(100) + 4); ctx.fillText('50%', xB, yOf(50) + 4); ctx.fillText('0%', xA, yOf(0) + 4);
   } catch (e) {
     cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
     showEmpty(true);

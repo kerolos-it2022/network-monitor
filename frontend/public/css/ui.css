@@ -1074,3 +1074,46 @@ body:not(.page-noc) input[type="time"]::-webkit-calendar-picker-indicator { disp
 
 /* التفصيل الصغير (مثل «(URL)») لا يكسر السطر: يبقى مع التسمية */
 .form-grid label small, .nm-field small { font-weight: 400; }
+
+/* ═══════════════════════════ 17) الوضع الإنجليزي (LTR) — انعكاس ما ثُبِّت على العربية ═══════════════════════════
+   الأصل عربي RTL بأمر المالك: «الجدول والحقول تبدأ من اليمين، وما كان في الوسط يصير يمين». هنا نعكس
+   **نفس المعنى** لا نفس الخاصية: «البداية» في الإنجليزية هي اليسار. كل قاعدة هنا محصورة بـ html[dir="ltr"]
+   ⇒ وضع العربية لا يتغيّر بحرف واحد (نفس القاعدة الفيزيائية كما هي).
+   ملاحظة: خلايا القيم اللاتينية (.col-ltr) تبقى direction:ltr + isolate في اللغتين ⇒ لا يتشوّه IP/وقت،
+   ويتغيّر فقط حدّ محاذاتها (يسار في الإنجليزية). */
+html[dir="ltr"] table.data-table th, html[dir="ltr"] table.data-table td,
+html[dir="ltr"] table.nm-table th, html[dir="ltr"] table.nm-table td { text-align: left; }
+
+html[dir="ltr"] table.data-table .col-center, html[dir="ltr"] table.nm-table .col-center,
+html[dir="ltr"] table.data-table th.col-center, html[dir="ltr"] table.nm-table th.col-center,
+html[dir="ltr"] table.data-table .col-actions, html[dir="ltr"] table.nm-table .col-actions,
+html[dir="ltr"] table.data-table th.col-actions, html[dir="ltr"] table.nm-table th.col-actions,
+html[dir="ltr"] table.data-table td.col-status, html[dir="ltr"] table.data-table th.col-status { text-align: left; }
+
+html[dir="ltr"] table.data-table .col-ltr, html[dir="ltr"] table.nm-table .col-ltr,
+html[dir="ltr"] table.data-table th.col-ltr, html[dir="ltr"] table.nm-table th.col-ltr { text-align: left; }
+
+html[dir="ltr"] table.data-table .col-actions .btn,
+html[dir="ltr"] table.nm-table .col-actions .btn { margin: 0 0.12rem 0 0; }
+
+/* حقول الوقت: المتصفح يفرض عليها اتجاهًا يساريًّا، فقاعدتنا العربية كانت «حاذِ النصّ يمينًا».
+   في الإنجليزية تُحاذى يسارًا (بداية السطر) مع بقاء إخفاء أيقونة الساعة. */
+html[dir="ltr"] body:not(.page-noc) input[type="time"] { text-align: left; }
+
+/* صفوف التفاصيل (النافذة المنبثقة): كانت مثبّتة «يمين» لأن قيمها لاتينية وتظهر شمالًا مع plaintext. */
+html[dir="ltr"] .df-value { text-align: left; }
+html[dir="ltr"] .df-label { text-align: left; }
+
+/* أشرطة التقدّم والجهوزية: التعبئة تبدأ من بداية السطر (كانت 270deg = من اليمين في العربية). */
+html[dir="ltr"] .nm-progress > * { background: linear-gradient(90deg, var(--nm-info), var(--accent)); }
+html[dir="ltr"] .uptime-fill { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+/* الشريط الجانبي: كان مخفيًّا بإزاحة يمين (translateX(100%)) لأنه في يمين الصفحة — ينعكس للشمال. */
+html[dir="ltr"] body.sidebar-hidden .sidebar { transform: translateX(-100%); }
+@media (max-width: 768px) {
+  html[dir="ltr"] .sidebar { transform: translateX(-100%); box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15); }
+  html[dir="ltr"] .sidebar.open { transform: translateX(0); }
+}
+
+/* أسهم الطيّ في عناوين الخلايا — تنعكس مع الاتجاه */
+html[dir="ltr"] .map-zone-toggle { transform: rotate(90deg); }

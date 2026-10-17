@@ -6,13 +6,15 @@
 <title>NOC — مركز مراقبة وتتبع الشبكة</title>
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link rel="stylesheet" href="css/noc.css">
-<link rel="stylesheet" href="css/ui.css?v=2.33.0-ui4">
+<link rel="stylesheet" href="css/ui.css?v=2.33.0-ui5">
 <script>
   // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
   try {
     if (localStorage.getItem('nm.publicTheme') === 'light') document.documentElement.classList.add('noc-day');
   } catch (e) {}
 </script>
+  <script>/* ضبط اللغة قبل أول رسم (بلا وميض عربي في الوضع الإنجليزي) — نفس نمط سكربت الوضع الليلي */
+  try { if (localStorage.getItem('nm.lang') === 'en') { document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr'; } } catch (e) {}</script>
 </head>
 <body class="page-noc">
 
@@ -156,7 +158,9 @@
         <div id="draw-empty-note" class="noc-board-note" hidden>
           لا توجد مواقع مرسومة على لوحة وضع الرسم بعد — ارسمها من لوحة التحكم ← وضع الرسم (💾 حفظ التخطيط).
         </div>
-        <div class="map-wrapper" id="map-wrapper">
+        <!-- dir="rtl" مثبّت عمدًا: لوحة الرسم مرتكزة على الحافة اليمنى (transform-origin: 100% 0) وحساب
+             التمرير يفترض RTL ⇒ لا نُغيّره مع لغة الواجهة. الإصلاح الجذري في مرحلة لاحقة. -->
+        <div class="map-wrapper" id="map-wrapper" dir="rtl">
           <div id="map-board-inner">
             <svg class="mv-links" width="2800" height="1450" xmlns="http://www.w3.org/2000/svg" id="map-svg-links"></svg>
             <div id="map-cards-container"></div>
@@ -197,6 +201,8 @@
 
 <script src="js/nm-format.js"></script>
 <script src="js/nm-i18n.js"></script>
+<script src="js/nm-i18n-en.js"></script>
+<script src="js/nm-lang.js"></script>
 <script src="js/noc.js"></script>
 </body>
 </html>

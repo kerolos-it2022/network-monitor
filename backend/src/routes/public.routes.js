@@ -10,6 +10,8 @@ const { buildTopology } = require('../services/topology.service');
 const { listDevicesWithOutages, getDeviceById } = require('../services/device-query.service');
 const { getDeviceHistory } = require('../services/history.service');
 const pd = require('../services/public-display.service');
+// لغة الواجهة (عربي/إنجليزي) — تُرفَق في ردود العرض العام فتضبط الصفحة العامة وNOC لغتها بلا طلب إضافي.
+const uiLang = require('../services/ui-language.service');
 
 const router = express.Router();
 
@@ -29,6 +31,7 @@ router.get('/status', (req, res) => {
     success: true,
     data: devices,
     display_mode: mode,
+    ui_language: uiLang.getLang(),
     generated_at: new Date().toISOString(),
   });
 });
@@ -60,6 +63,7 @@ router.get('/topology', (req, res) => {
     success: true,
     data: pd.sanitizeTopology(buildTopology(), mode),
     display_mode: mode,
+    ui_language: uiLang.getLang(),
     generated_at: new Date().toISOString(),
   });
 });

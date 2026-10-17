@@ -6,39 +6,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="topbar.dashboard">لوحة التحكم</title>
   <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui4" />
+  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui5" />
+  <script>/* ضبط اللغة قبل أول رسم (بلا وميض عربي في الوضع الإنجليزي) — نفس نمط سكربت الوضع الليلي */
+  try { if (localStorage.getItem('nm.lang') === 'en') { document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr'; } } catch (e) {}</script>
 </head>
 <body>
   <!-- ===== شريط علوي مُختصر للوحة الإِدارة (v2.7.0: sidebar layout) ===== -->
   <header class="admin-topbar">
-    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button" title="القائمة مفتوحة — اِضغط للطيّ" data-i18n-attr="aria-label:sidebar.toggleTitle" aria-label="القائمة مفتوحة — اِضغط للطيّ" aria-expanded="true" aria-controls="admin-sidebar">☰</button>
     <h1 class="admin-page-title">📋 لوحة التحكم</h1>
     <a href="../index.html" class="admin-link" data-i18n="topbar.publicPage">🏠 الصفحة العامة</a>
     <div style="flex:1;"></div>
+    <button id="lang-toggle" class="btn" type="button" title="تبديل اللغة (عربي / إنجليزي)" data-i18n="topbar.lang" data-i18n-attr="title:lang.switchTitle">🌐 English</button>
     <button id="theme-toggle" class="btn" type="button" title="تبديل الوضع" data-i18n="topbar.themeDark">🌙 وضع ليلي</button>
     <button id="logout-btn" type="button" class="btn" title="تسجيل الخروج" data-i18n="topbar.logout">🚪 تسجيل الخروج</button>
   </header>
 
   <!-- ===== القائمة الجانبية العمودية (sidebar — v2.7.0) ===== -->
   <!-- RTL: sidebar على اليمين (inset-inline-start: 0). drawer في < 768px عبر .open -->
-  <aside class="sidebar" id="admin-sidebar" role="navigation" aria-label="أَقسام لوحة الإِدارة">
+  <aside class="sidebar" id="admin-sidebar" role="navigation" data-i18n-attr="aria-label:nav.aria" aria-label="أَقسام لوحة الإِدارة">
     <ul class="sidebar-list">
-      <li><button class="tab-btn active" id="tab-devices" type="button" title="إدارة الأجهزة"><span class="tab-btn-icon">📱</span><span class="tab-btn-label" data-i18n="nav.devices">الأَجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-locations" type="button" title="إدارة المواقع"><span class="tab-btn-icon">📍</span><span class="tab-btn-label" data-i18n="nav.locations">المواقع</span></button></li>
-      <li><button class="tab-btn" id="tab-types" type="button" title="إدارة أنواع الأجهزة"><span class="tab-btn-icon">🏷️</span><span class="tab-btn-label" data-i18n="nav.types">أنواع الأجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-discovery" type="button" title="اكتشاف الأجهزة تلقائياً"><span class="tab-btn-icon">🔍</span><span class="tab-btn-label" data-i18n="nav.discovery">اِكتشاف الأَجهزة</span></button></li>
-      <li><button class="tab-btn" id="tab-map" type="button" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label" data-i18n="nav.map">خريطة المواقع</span></button></li>
-      <li><button class="tab-btn" id="tab-topology" type="button" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label" data-i18n="nav.topology">سلسلة الشبكة</span></button></li>
-      <li><button class="tab-btn" id="tab-notifications" type="button" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label" data-i18n="nav.notifications">الإِشعارات</span></button></li>
-      <li><button class="tab-btn" id="tab-ai" type="button" title="شات AI: اسأل عن الشبكة بالعربية"><span class="tab-btn-icon">🤖</span><span class="tab-btn-label" data-i18n="nav.ai">شات AI</span></button></li>
-      <li><button class="tab-btn" id="tab-logs" type="button" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label" data-i18n="nav.logs">السجل</span></button></li>
-      <li><button class="tab-btn" id="tab-profile" type="button" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label" data-i18n="nav.profile">الملف الشخصي</span></button></li>
-      <li><button class="tab-btn" id="tab-backup" type="button" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label" data-i18n="nav.backup">النسخ الاحتياطي</span></button></li>
-      <li><button class="tab-btn" id="tab-remote" type="button" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label" data-i18n="nav.remote">الوصول عن بُعد</span></button></li>
-      <li><button class="tab-btn" id="tab-display" type="button" title="إعدادات العرض: ما يراه الزوار وشاشة NOC"><span class="tab-btn-icon">🎛️</span><span class="tab-btn-label" data-i18n="nav.display">إعدادات العرض</span></button></li>
-      <li><button class="tab-btn" id="tab-system" type="button" title="حالة النظام: رام/معالج/هارد/شبكة"><span class="tab-btn-icon">🖥️</span><span class="tab-btn-label" data-i18n="nav.system">حالة النظام</span></button></li>
+      <li><button class="tab-btn active" id="tab-devices" type="button" data-i18n-attr="title:navTitle.devices" title="إدارة الأجهزة"><span class="tab-btn-icon">📱</span><span class="tab-btn-label" data-i18n="nav.devices">الأَجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-locations" type="button" data-i18n-attr="title:navTitle.locations" title="إدارة المواقع"><span class="tab-btn-icon">📍</span><span class="tab-btn-label" data-i18n="nav.locations">المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-types" type="button" data-i18n-attr="title:navTitle.types" title="إدارة أنواع الأجهزة"><span class="tab-btn-icon">🏷️</span><span class="tab-btn-label" data-i18n="nav.types">أنواع الأجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-discovery" type="button" data-i18n-attr="title:navTitle.discovery" title="اكتشاف الأجهزة تلقائياً"><span class="tab-btn-icon">🔍</span><span class="tab-btn-label" data-i18n="nav.discovery">اِكتشاف الأَجهزة</span></button></li>
+      <li><button class="tab-btn" id="tab-map" type="button" data-i18n-attr="title:navTitle.map" title="شجرة المواقع والأجهزة الهرمية"><span class="tab-btn-icon">🗺️</span><span class="tab-btn-label" data-i18n="nav.map">خريطة المواقع</span></button></li>
+      <li><button class="tab-btn" id="tab-topology" type="button" data-i18n-attr="title:navTitle.topology" title="سلسلة الشبكة: الأجهزة بترتيب المسار وحالاتها"><span class="tab-btn-icon">🔗</span><span class="tab-btn-label" data-i18n="nav.topology">سلسلة الشبكة</span></button></li>
+      <li><button class="tab-btn" id="tab-notifications" type="button" data-i18n-attr="title:navTitle.notifications" title="إعدادات الإشعارات"><span class="tab-btn-icon">🔔</span><span class="tab-btn-label" data-i18n="nav.notifications">الإِشعارات</span></button></li>
+      <li><button class="tab-btn" id="tab-ai" type="button" data-i18n-attr="title:navTitle.ai" title="شات AI: اسأل عن الشبكة بالعربية"><span class="tab-btn-icon">🤖</span><span class="tab-btn-label" data-i18n="nav.ai">شات AI</span></button></li>
+      <li><button class="tab-btn" id="tab-logs" type="button" data-i18n-attr="title:navTitle.logs" title="سجل الأحداث"><span class="tab-btn-icon">📋</span><span class="tab-btn-label" data-i18n="nav.logs">السجل</span></button></li>
+      <li><button class="tab-btn" id="tab-profile" type="button" data-i18n-attr="title:navTitle.profile" title="الملف الشخصي"><span class="tab-btn-icon">👤</span><span class="tab-btn-label" data-i18n="nav.profile">الملف الشخصي</span></button></li>
+      <li><button class="tab-btn" id="tab-backup" type="button" data-i18n-attr="title:navTitle.backup" title="نسخة احتياطية واستعادة قاعدة البيانات"><span class="tab-btn-icon">💾</span><span class="tab-btn-label" data-i18n="nav.backup">النسخ الاحتياطي</span></button></li>
+      <li><button class="tab-btn" id="tab-remote" type="button" data-i18n-attr="title:navTitle.remote" title="الوصول عن بُعد عبر ngrok"><span class="tab-btn-icon">🌍</span><span class="tab-btn-label" data-i18n="nav.remote">الوصول عن بُعد</span></button></li>
+      <li><button class="tab-btn" id="tab-display" type="button" data-i18n-attr="title:navTitle.display" title="إعدادات العرض: ما يراه الزوار وشاشة NOC"><span class="tab-btn-icon">🎛️</span><span class="tab-btn-label" data-i18n="nav.display">إعدادات العرض</span></button></li>
+      <li><button class="tab-btn" id="tab-system" type="button" data-i18n-attr="title:navTitle.system" title="حالة النظام: رام/معالج/هارد/شبكة"><span class="tab-btn-icon">🖥️</span><span class="tab-btn-label" data-i18n="nav.system">حالة النظام</span></button></li>
       <!-- v2.23.0 — «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة في حافة القائمة). -->
-      <li><button class="tab-btn" id="tab-updates" type="button" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label" data-i18n="nav.updates">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" title="يتوفّر تحديث جديد"></span></button></li>
+      <li><button class="tab-btn" id="tab-updates" type="button" data-i18n-attr="title:navTitle.updates" title="تحديثات النظام من GitHub"><span class="tab-btn-icon">🔄</span><span class="tab-btn-label" data-i18n="nav.updates">التَحديثات</span><span class="tab-badge hidden" id="upd-tab-badge" data-i18n-attr="title:updates.badge" title="يتوفّر تحديث جديد"></span></button></li>
     </ul>
   </aside>
 
@@ -50,29 +53,28 @@
     <section id="section-devices">
       <div class="nm-card">
         <div class="nm-toolbar">
-          <button id="add-device-btn" type="button" class="btn btn-primary" title="إضافة جهاز جديد للمراقبة" data-i18n="admin.addDevice">➕ إضافة جهاز</button>
-          <button id="export-devices-btn" type="button" class="btn" title="تصدير قائمة الأجهزة لملف Excel">📤 تصدير Excel</button>
-          <a id="devices-labels-btn" class="btn" href="/labels/devices" target="_blank" rel="noopener" title="صفحة طباعة ملصقات QR لكل جهاز (تُلصق على الجهاز)">🏷️ ملصقات QR</a>
-          <label class="btn" style="cursor:pointer;" title="استيراد أجهزة من ملف Excel">
-            📥 استيراد Excel
+          <button id="add-device-btn" type="button" class="btn btn-primary" title="إضافة جهاز جديد للمراقبة" data-i18n="admin.addDevice" data-i18n-attr="title:devices.addTitle">➕ إضافة جهاز</button>
+          <button id="export-devices-btn" type="button" class="btn" data-i18n-attr="title:devices.exportTitle" title="تصدير قائمة الأجهزة لملف Excel"><span data-i18n="devices.export">📤 تصدير Excel</span></button>
+          <a id="devices-labels-btn" class="btn" href="/labels/devices" target="_blank" rel="noopener" data-i18n-attr="title:devices.qrTitle" title="صفحة طباعة ملصقات QR لكل جهاز (تُلصق على الجهاز)"><span data-i18n="devices.qrLabels">🏷️ ملصقات QR</span></a>
+          <label class="btn" style="cursor:pointer;" data-i18n-attr="title:devices.importTitle" title="استيراد أجهزة من ملف Excel">
+            <span data-i18n="devices.import">📥 استيراد Excel</span>
             <input type="file" id="import-devices-file" accept=".xlsx,.xls" style="display:none;" />
           </label>
           <span class="spacer"></span>
           <input id="devices-search" type="search" class="nm-input" autocomplete="off"
-                 data-i18n-attr="placeholder:devices.search.placeholder"
-                 placeholder="🔍 ابحث بالاسم أو IP…" title="بحث فوري: اكتب اسم الجهاز أو عنوان IP — النتائج تتحدّث أثناء الكتابة (Esc للمسح)" />
-          <label class="nm-sub" for="filter-location-devices">فلتر الموقع:</label>
-          <select id="filter-location-devices" class="nm-select" style="max-width:190px;" title="تصفية الأَجهزة حسب الموقع">
-            <option value="">📍 كل المواقع</option>
+                 placeholder="🔍 ابحث بالاسم أو IP…" data-i18n-attr="placeholder:devices.search.placeholder title:devices.searchTitle" title="بحث فوري: اكتب اسم الجهاز أو عنوان IP — النتائج تتحدّث أثناء الكتابة (Esc للمسح)" />
+          <label class="nm-sub" for="filter-location-devices" data-i18n="devices.filterLocation">فلتر الموقع:</label>
+          <select id="filter-location-devices" class="nm-select" style="max-width:190px;" data-i18n-attr="title:devices.filterLocationTitle" title="تصفية الأَجهزة حسب الموقع">
+            <option value="" data-i18n="devices.allLocations">📍 كل المواقع</option>
           </select>
-          <label class="nm-sub" for="filter-sort-devices">ترتيب:</label>
+          <label class="nm-sub" for="filter-sort-devices" data-i18n="devices.filterSort">ترتيب:</label>
           <select id="filter-sort-devices" class="nm-select" style="max-width:190px;">
-            <option value="name">🔑 حسب الاسم</option>
-            <option value="ip">🌐 حسب IP</option>
-            <option value="status">📶 حسب الحالة</option>
-            <option value="type">🏷️ حسب النوع</option>
-            <option value="location">📍 حسب الموقع</option>
-            <option value="last_checked">⏱️ حسب آخر فحص</option>
+            <option value="name" data-i18n="devices.sort.name">🔑 حسب الاسم</option>
+            <option value="ip" data-i18n="devices.sort.ip">🌐 حسب IP</option>
+            <option value="status" data-i18n="devices.sort.status">📶 حسب الحالة</option>
+            <option value="type" data-i18n="devices.sort.type">🏷️ حسب النوع</option>
+            <option value="location" data-i18n="devices.sort.location">📍 حسب الموقع</option>
+            <option value="last_checked" data-i18n="devices.sort.lastChecked">⏱️ حسب آخر فحص</option>
           </select>
         </div>
 
@@ -86,15 +88,15 @@
             <div class="num" id="sum-online">—</div>
             <div class="lbl" data-i18n="devices.sum.online">🟢 متصل الآن</div>
           </div>
-          <div class="nm-counter is-muted" id="counter-offline" title="الأجهزة المنقطعة الآن">
+          <div class="nm-counter is-muted" id="counter-offline" data-i18n-attr="title:devices.sum.offlineTitle" title="الأجهزة المنقطعة الآن">
             <div class="num" id="sum-offline">—</div>
             <div class="lbl" data-i18n="devices.sum.offline">🔴 منقطع</div>
           </div>
-          <div class="nm-counter is-muted" id="counter-unknown" title="الأجهزة التي لم تُحسم حالتها بعد (غير معروفة أو موقوفة من المراقبة)">
+          <div class="nm-counter is-muted" id="counter-unknown" data-i18n-attr="title:devices.sum.unknownTitle" title="الأجهزة التي لم تُحسم حالتها بعد (غير معروفة أو موقوفة من المراقبة)">
             <div class="num" id="sum-unknown">—</div>
             <div class="lbl" data-i18n="devices.sum.unknown">⚪ غير معروف</div>
           </div>
-          <div class="nm-counter is-muted" id="counter-services" title="عدد الأجهزة التي بها خدمة مراقَبة متوقفة واحدة على الأقل">
+          <div class="nm-counter is-muted" id="counter-services" data-i18n-attr="title:devices.sum.servicesTitle" title="عدد الأجهزة التي بها خدمة مراقَبة متوقفة واحدة على الأقل">
             <div class="num" id="sum-services">—</div>
             <div class="lbl" data-i18n="devices.sum.services">🧩 خدمات متأثرة</div>
           </div>
@@ -106,14 +108,14 @@
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>الاسم</th><th class="col-ltr">IP</th><th>النوع</th><th>الموقع</th><th class="col-status">الحالة</th><th class="col-actions">إجراءات</th></tr>
+              <tr><th data-i18n="devices.th.name">الاسم</th><th class="col-ltr" data-i18n="devices.th.ip">IP</th><th data-i18n="devices.th.type">النوع</th><th data-i18n="devices.th.location">الموقع</th><th class="col-status" data-i18n="devices.th.status">الحالة</th><th class="col-actions" data-i18n="devices.th.actions">إجراءات</th></tr>
             </thead>
             <tbody id="devices-table-body"></tbody>
           </table>
         </div>
         <div id="devices-empty" class="nm-empty hidden" style="margin-top:0.7rem;">
           <span class="nm-empty-icon">📱</span>
-          لا توجد أجهزة مطابقة — أضف جهازًا بزر «➕ إضافة جهاز» أو غيّر الفلاتر.
+          <span data-i18n="devices.empty">لا توجد أجهزة مطابقة — أضف جهازًا بزر «➕ إضافة جهاز» أو غيّر الفلاتر.</span>
         </div>
       </div>
     </section>
@@ -192,9 +194,9 @@
     <section id="section-discovery" class="hidden">
       <!-- v2.27.2 — شريط الشرائح: الثلاثة أنظمة في تبويب واحد (بنمط Advanced IP Scanner) -->
       <div id="disc-segments" class="nm-segmented">
-        <button type="button" class="btn btn-primary" id="seg-scan" data-sub="scan">🔍 فحص الآن</button>
-        <button type="button" class="btn" id="seg-discovered" data-sub="discovered">📥 بانتظار الاعتماد <span id="seg-disc-count" class="nm-badge-count" style="display:none;">0</span></button>
-        <button type="button" class="btn" id="seg-sched" data-sub="sched">⏱️ الجدولة التلقائية</button>
+        <button type="button" class="btn btn-primary" id="seg-scan" data-sub="scan" data-i18n="discovery.scanNow">🔍 فحص الآن</button>
+        <button type="button" class="btn" id="seg-discovered" data-sub="discovered"><span data-i18n="tabs.pending">📥 بانتظار الاعتماد</span> <span id="seg-disc-count" class="nm-badge-count" style="display:none;">0</span></button>
+        <button type="button" class="btn" id="seg-sched" data-sub="sched" data-i18n="tabs.scheduler">⏱️ الجدولة التلقائية</button>
       </div>
     </section>
 
@@ -460,7 +462,9 @@
           </div>
         </div>
       </div>
-      <div class="topo-canvas-wrap">
+      <!-- dir="rtl" مثبّت عمدًا: إحداثيات هذه اللوحة وحساب تمريرها مرتكزان فيزيائيًّا (left: pos_x + scrollLeft)
+           فلا نُغيّرهما مع لغة الواجهة — يُصلَحان جذريًّا في مرحلة لاحقة (docs/i18n.md). -->
+      <div class="topo-canvas-wrap" dir="rtl">
         <svg id="topology-links" xmlns="http://www.w3.org/2000/svg"></svg>
         <div id="topology-canvas" aria-label="لوحة رسم السلسلة"></div>
       </div>
@@ -470,7 +474,7 @@
       <div class="nm-card">
         <div class="nm-card-head">
           <h3 class="nm-card-title" data-i18n="card.notifications.title">🔔 إعدادات الإشعارات</h3>
-          <span class="nm-chip">كل القنوات اختيارية — تُحفظ بزر «حفظ الإعدادات» بالأسفل</span>
+          <span class="nm-chip" data-i18n="notify.chip">كل القنوات اختيارية — تُحفظ بزر «حفظ الإعدادات» بالأسفل</span>
         </div>
 
         <div class="nm-sub-section">
@@ -478,7 +482,7 @@
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-telegram_enabled" />
-              <span>القناة مفعّلة</span>
+              <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
             <button type="button" class="btn btn-sm" id="ntf-test-telegram-btn" title="إرسال إشعار تجريبي على تلجرام فقط" data-i18n="admin.testChannel">🔔 اختبار هذه القناة</button>
           </div>
@@ -497,7 +501,7 @@
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-whatsapp_enabled" />
-              <span>القناة مفعّلة</span>
+              <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
             <button type="button" class="btn btn-sm" id="ntf-test-whatsapp-btn" title="إرسال إشعار تجريبي على واتساب فقط">🔔 اختبار هذه القناة</button>
           </div>
@@ -519,7 +523,7 @@
           <div class="nm-row">
             <label class="nm-check">
               <input type="checkbox" id="ntf-mobile_enabled" />
-              <span>القناة مفعّلة</span>
+              <span data-i18n="notify.channelEnabled">القناة مفعّلة</span>
             </label>
             <button type="button" class="btn btn-sm" id="ntf-test-mobile-btn" title="إرسال إشعار تجريبي لإشعارات الهاتف فقط">🔔 اختبار هذه القناة</button>
           </div>
@@ -699,37 +703,37 @@
         <div class="nm-card-head">
           <h3 class="nm-card-title" data-i18n="card.logs.title">📋 سجل الإشعارات</h3>
           <div class="nm-row">
-            <label class="nm-sub" for="logs-filter-status">الحالة:</label>
-            <select id="logs-filter-status" class="nm-select" style="min-width:180px;" title="إظهار كل الإشعارات أو الناجحة أو الفاشلة فقط">
-              <option value="">كل الحالات</option>
-              <option value="sent">✅ تم الإرسال</option>
-              <option value="failed">❌ فشل الإرسال</option>
-              <option value="maintenance">🛠️ مكتوم (صيانة)</option>
+            <label class="nm-sub" for="logs-filter-status" data-i18n="logs.filterStatus">الحالة:</label>
+            <select id="logs-filter-status" class="nm-select" style="min-width:180px;" data-i18n-attr="title:logs.filterStatusTitle" title="إظهار كل الإشعارات أو الناجحة أو الفاشلة فقط">
+              <option value="" data-i18n="logs.status.all">كل الحالات</option>
+              <option value="sent" data-i18n="logs.status.sent">✅ تم الإرسال</option>
+              <option value="failed" data-i18n="logs.status.failed">❌ فشل الإرسال</option>
+              <option value="maintenance" data-i18n="logs.status.maintenance">🛠️ مكتوم (صيانة)</option>
             </select>
-            <label class="nm-sub" for="filter-sort-logs">ترتيب:</label>
+            <label class="nm-sub" for="filter-sort-logs" data-i18n="logs.filterSort">ترتيب:</label>
             <select id="filter-sort-logs" class="nm-select" style="min-width:190px;">
-              <option value="sent_at_desc">🔽 الأحدث أولًا</option>
-              <option value="sent_at_asc">🔼 الأقدم أولًا</option>
-              <option value="device_name">📱 حسب الجهاز</option>
-              <option value="channel">📢 حسب القناة</option>
-              <option value="status">📊 حسب الحالة</option>
+              <option value="sent_at_desc" data-i18n="logs.sort.newest">🔽 الأحدث أولًا</option>
+              <option value="sent_at_asc" data-i18n="logs.sort.oldest">🔼 الأقدم أولًا</option>
+              <option value="device_name" data-i18n="logs.sort.device">📱 حسب الجهاز</option>
+              <option value="channel" data-i18n="logs.sort.channel">📢 حسب القناة</option>
+              <option value="status" data-i18n="logs.sort.status">📊 حسب الحالة</option>
             </select>
-            <button id="logs-clear-btn" class="btn btn-danger btn-sm" title="مسح سجل الإِشعارات القديمة">
-              🗑️ مسح الإشعارات
+            <button id="logs-clear-btn" class="btn btn-danger btn-sm" data-i18n-attr="title:logs.clearTitle" title="مسح سجل الإِشعارات القديمة">
+              <span data-i18n="logs.clear">🗑️ مسح الإشعارات</span>
             </button>
           </div>
         </div>
         <div class="nm-table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th class="col-ltr">الوقت</th><th>الجهاز</th><th class="col-center">القناة</th><th class="col-status">الحالة</th><th>الرسالة</th><th>السبب</th></tr>
+              <tr><th class="col-ltr" data-i18n="logs.th.time">الوقت</th><th data-i18n="logs.th.device">الجهاز</th><th class="col-center" data-i18n="logs.th.channel">القناة</th><th class="col-status" data-i18n="logs.th.status">الحالة</th><th data-i18n="logs.th.message">الرسالة</th><th data-i18n="logs.th.reason">السبب</th></tr>
             </thead>
             <tbody id="logs-table-body"></tbody>
           </table>
         </div>
         <div id="logs-empty" class="nm-empty hidden" style="margin-top:0.6rem;">
           <span class="nm-empty-icon">📭</span>
-          لا توجد إشعارات مسجَّلة بعد — تظهر هنا كل رسالة يُرسلها النظام (انقطاع/تعافٍ/تصعيد/تقرير).
+          <span data-i18n="logs.empty">لا توجد إشعارات مسجَّلة بعد — تظهر هنا كل رسالة يُرسلها النظام (انقطاع/تعافٍ/تصعيد/تقرير).</span>
         </div>
       </div>
     </section>
@@ -1310,23 +1314,23 @@
   <!-- ===== popup modal إِضافة/تعديل جهاز (v2.7.4 — نَقل inline form إلى popup) ===== -->
   <div id="device-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
-      <button type="button" class="modal-close" aria-label="إغلاق" title="إلغاء">✕</button>
+      <button type="button" class="modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close title:common.cancel" title="إلغاء">✕</button>
       <h3 id="device-form-title">إضافة جهاز</h3>
       <form id="device-form">
         <input type="hidden" id="device-form-id" />
         <div class="form-grid">
-          <label>الاسم <input type="text" id="df-name" required /></label>
+          <label><span data-i18n="device.field.name">الاسم</span> <input type="text" id="df-name" required /></label>
           <label>IP <input type="text" id="df-ip" required placeholder="192.168.1.10" /></label>
-          <label>النوع
+          <label><span data-i18n="device.field.type">النوع</span>
             <select id="df-device_type_id" required></select>
           </label>
-          <label>الموقع
-            <select id="df-location_id"><option value="">— بدون —</option></select>
+          <label><span data-i18n="device.field.location">الموقع</span>
+            <select id="df-location_id"><option value="" data-i18n="device.field.noLocation">— بدون —</option></select>
           </label>
           <!-- v2.11.4 — حُذف حقل «متصل عبر» من نموذج الجهاز: تكرار لعلاقة «سلسلة الشبكة»
                (تُدار من بطاقات المواقع)؛ ومكان الجهاز يُحدَّد من حقل «الموقع» أعلاه.
                الروابط القائمة في القاعدة تبقى ولا تُمسح (الخادم يُبقيها عند غياب الحقل). -->
-          <label>طريقة الفحص
+          <label><span data-i18n="device.field.protocol">طريقة الفحص</span>
             <select id="df-check_protocol">
               <option value="ping">Ping</option>
               <option value="port">Port (TCP)</option>
@@ -1334,50 +1338,50 @@
               <option value="https">HTTPS</option>
             </select>
           </label>
-          <label>المنفذ (افتراضي: HTTP=80, HTTPS=443, Port=مطلوب) <input type="number" id="df-port" min="1" max="65535" placeholder="80/443" /></label>
-          <label>بورت واجهة الويب (اختياري — لزر «فتح»، مثل 4444) <input type="number" id="df-web_port" min="1" max="65535" placeholder="مثلاً 4444" title="بورت مخصص لواجهة الجهاز على الويب — يُكشف البروتوكول (HTTP/HTTPS) تلقائياً" /></label>
-          <label>فترة الفحص (ثانية) <input type="number" id="df-check_interval_seconds" value="10" min="5" /></label>
-          <label>حد التنبيه <input type="number" id="df-failure_threshold" value="2" min="1" /></label>
-          <label class="checkbox-label">مفعّل للمراقبة
+          <label><span data-i18n="device.field.port">المنفذ (افتراضي: HTTP=80, HTTPS=443, Port=مطلوب)</span> <input type="number" id="df-port" min="1" max="65535" placeholder="80/443" /></label>
+          <label><span data-i18n="device.field.webPort">بورت واجهة الويب (اختياري — لزر «فتح»، مثل 4444)</span> <input type="number" id="df-web_port" min="1" max="65535" placeholder="مثلاً 4444" data-i18n-attr="title:device.field.webPortTitle" title="بورت مخصص لواجهة الجهاز على الويب — يُكشف البروتوكول (HTTP/HTTPS) تلقائياً" /></label>
+          <label><span data-i18n="device.field.interval">فترة الفحص (ثانية)</span> <input type="number" id="df-check_interval_seconds" value="10" min="5" /></label>
+          <label><span data-i18n="device.field.threshold">حد التنبيه</span> <input type="number" id="df-failure_threshold" value="2" min="1" /></label>
+          <label class="checkbox-label"><span data-i18n="device.field.monitored">مفعّل للمراقبة</span>
             <input type="checkbox" id="df-is_active" checked />
-            <span>نعم، المراقبة مفعّلة</span>
+            <span data-i18n="device.field.monitoredOn">نعم، المراقبة مفعّلة</span>
           </label>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary" title="حفظ الجهاز">💾 حفظ</button>
-          <button type="button" class="btn" id="device-form-cancel" title="إلغاء العملية">✖️ إلغاء</button>
+          <button type="submit" class="btn btn-primary" data-i18n-attr="title:device.form.saveTitle" title="حفظ الجهاز"><span data-i18n="common.save">💾 حفظ</span></button>
+          <button type="button" class="btn" id="device-form-cancel" data-i18n-attr="title:device.form.cancelTitle" title="إلغاء العملية"><span data-i18n="confirm.cancel">✖️ إلغاء</span></button>
         </div>
       </form>
 
       <!-- ═══ MON-02 — الخدمات المراقَبة (تظهر عند تعديل جهاز موجود فقط) ═══ -->
       <div id="df-services-section" class="hidden" style="margin-top:1rem;border-top:1px solid var(--border);padding-top:0.8rem;">
-        <h4 style="margin:0 0 0.3rem;">🧩 الخدمات المراقَبة على هذا الجهاز</h4>
+        <h4 style="margin:0 0 0.3rem;" data-i18n="device.services.title">🧩 الخدمات المراقَبة على هذا الجهاز</h4>
         <p style="color:var(--muted);font-size:0.8rem;margin:0 0 0.6rem;">
-          مضيف متصل وخدمة متوقفة ⇒ تظهر حالة الجهاز «متصل — خدمة متوقفة» وتُرسل تنبيهًا خاصًّا بالخدمة.
+          <span data-i18n="device.services.hint">مضيف متصل وخدمة متوقفة ⇒ تظهر حالة الجهاز «متصل — خدمة متوقفة» وتُرسل تنبيهًا خاصًّا بالخدمة.</span>
         </p>
         <div id="df-services-list"><span style="color:var(--muted);font-size:0.85rem;" data-i18n="common.loading">…جارٍ التحميل</span></div>
         <details id="df-service-add" style="margin-top:0.6rem;">
-          <summary style="cursor:pointer;font-size:0.9rem;">➕ إضافة خدمة</summary>
+          <summary style="cursor:pointer;font-size:0.9rem;" data-i18n="device.services.add">➕ إضافة خدمة</summary>
           <div class="form-grid" style="margin-top:0.6rem;">
-            <label>اسم الخدمة <input type="text" id="dfs-name" placeholder="Odoo ERP" /></label>
-            <label>النوع
+            <label><span data-i18n="device.services.name">اسم الخدمة</span> <input type="text" id="dfs-name" placeholder="Odoo ERP" /></label>
+            <label><span data-i18n="device.services.kind">النوع</span>
               <select id="dfs-kind">
                 <option value="tcp">TCP (منفذ)</option>
                 <option value="http">HTTP</option>
                 <option value="https">HTTPS</option>
               </select>
             </label>
-            <label>المنفذ <input type="number" id="dfs-port" min="1" max="65535" placeholder="8069" /></label>
-            <label>المسار (للويب) <input type="text" id="dfs-url_path" placeholder="/web/login" /></label>
-            <label>الحالة المتوقعة <input type="text" id="dfs-expect_status" placeholder="2xx أو 200-299 أو 200,301" /></label>
-            <label>فاصل الفحص (ثانية) <input type="number" id="dfs-interval_seconds" value="60" min="10" /></label>
-            <label>عتبة الفشل <input type="number" id="dfs-failure_threshold" value="2" min="1" max="10" /></label>
-            <label class="checkbox-label">حرجة <input type="checkbox" id="dfs-is_critical" /><span>خدمة حرجة (تُبرَز في التنبيهات)</span></label>
-            <label class="checkbox-label">شهادة TLS <input type="checkbox" id="dfs-verify_tls" checked /><span>التحقق من الشهادة (موصى به)</span></label>
+            <label><span data-i18n="device.services.port">المنفذ</span> <input type="number" id="dfs-port" min="1" max="65535" placeholder="8069" /></label>
+            <label><span data-i18n="device.services.path">المسار (للويب)</span> <input type="text" id="dfs-url_path" placeholder="/web/login" /></label>
+            <label><span data-i18n="device.services.expect">الحالة المتوقعة</span> <input type="text" id="dfs-expect_status" placeholder="2xx أو 200-299 أو 200,301" /></label>
+            <label><span data-i18n="device.services.interval">فاصل الفحص (ثانية)</span> <input type="number" id="dfs-interval_seconds" value="60" min="10" /></label>
+            <label><span data-i18n="device.services.threshold">عتبة الفشل</span> <input type="number" id="dfs-failure_threshold" value="2" min="1" max="10" /></label>
+            <label class="checkbox-label"><span data-i18n="device.services.critical">حرجة</span> <input type="checkbox" id="dfs-is_critical" /><span data-i18n="device.services.criticalHint">خدمة حرجة (تُبرَز في التنبيهات)</span></label>
+            <label class="checkbox-label"><span data-i18n="device.services.tls">شهادة TLS</span> <input type="checkbox" id="dfs-verify_tls" checked /><span data-i18n="device.services.tlsHint">التحقق من الشهادة (موصى به)</span></label>
           </div>
           <div class="form-actions" style="margin-top:0.4rem;">
-            <button type="button" class="btn btn-primary" id="dfs-save">➕ إضافة الخدمة</button>
-            <button type="button" class="btn hidden" id="dfs-cancel-edit">✖️ إلغاء التعديل</button>
+            <button type="button" class="btn btn-primary" id="dfs-save" data-i18n="device.services.addBtn">➕ إضافة الخدمة</button>
+            <button type="button" class="btn hidden" id="dfs-cancel-edit" data-i18n="device.services.cancelEdit">✖️ إلغاء التعديل</button>
           </div>
         </details>
       </div>
@@ -1529,6 +1533,8 @@
   <!-- سكريبتات (admin-utils.js يجب أن يُحمّل أولاً — يحوي esc/api المشتركة) -->
   <script src="../js/nm-format.js"></script>
   <script src="../js/nm-i18n.js"></script>
+  <script src="../js/nm-i18n-en.js"></script>
+  <script src="../js/nm-lang.js"></script>
   <script src="../js/admin-utils.js"></script>
   <script src="../js/admin-devices.js"></script>
   <!-- MON-02 — إدارة الخدمات المراقَبة (تُستدعى من نافذة تعديل الجهاز) -->
@@ -1558,7 +1564,7 @@
 
   <!-- ذيل الصفحة -->
   <footer class="site-footer">
-    &copy; 2026 <a href="https://github.com/kerolos-it2022/network-monitor" target="_blank" rel="noopener">KeRo-IT</a> — جميع الحقوق محفوظة
+    &copy; 2026 <a href="https://github.com/kerolos-it2022/network-monitor" target="_blank" rel="noopener">KeRo-IT</a> — <span data-i18n="footer.rights">جميع الحقوق محفوظة</span>
   </footer>
 </body>
 </html>

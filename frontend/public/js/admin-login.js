@@ -3,6 +3,11 @@
 // ونَحفظ حالة الـ checkbox في localStorage لِنُعيد استرجاعها عند الزيارة القادمة.
 const REMEMBER_KEY = 'nm.loginRemember';
 
+// مترجم آمن: يعمل حتى لو لم يُحمَّل نظام الترجمة (يرجع النصّ العربي المكتوب هنا).
+function T(key, fallback) {
+  try { return (window.NMI18N && NMI18N.t(key)) || fallback || key; } catch (e) { return fallback || key; }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const rememberEl = document.getElementById('remember');
 
@@ -42,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const show = pwEl.type === 'password';
       pwEl.type = show ? 'text' : 'password';
       toggleEl.textContent = show ? '🙈' : '👁️';
-      toggleEl.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+      toggleEl.setAttribute('aria-label', show ? T('login.pwHide') : T('login.pwShow'));
       toggleEl.setAttribute('aria-pressed', String(show));
       pwEl.focus();
       try { const n = pwEl.value.length; pwEl.setSelectionRange(n, n); } catch (_) {}
@@ -54,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const capsCheck = (e) => {
       let on = false;
       try { on = !!(e.getModifierState && e.getModifierState('CapsLock')); } catch (_) {}
-      hintEl.textContent = on ? '⚠️ مفتاح Caps Lock مُفعَّل — ستُكتب الحروف كبيرة' : '';
+      hintEl.textContent = on ? T('login.capsLock') : '';
     };
     ['keydown', 'keyup', 'focus'].forEach((ev) => pwEl.addEventListener(ev, capsCheck));
   }
@@ -74,7 +79,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   // v2.8.9 — تعطيل الزر أثناء الطلب لمنع الإرسال المزدوج + إعلام المستخدم
   const submitBtn = document.querySelector('#login-form button[type="submit"]');
   const submitLabel = submitBtn ? submitBtn.textContent : '';
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ جارٍ الدخول…'; }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = T('login.busy'); }
   const resetSubmit = () => {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitLabel; }
   };
@@ -95,12 +100,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       try { localStorage.setItem(REMEMBER_KEY, String(remember)); } catch (_) {}
       window.location.href = 'dashboard.html';
     } else {
-      errEl.textContent = data.error || 'بيانات الدخول غير صحيحة';
+      errEl.textContent = data.error || T('login.badCredentials');
       resetSubmit();
       focusPassword();
     }
   } catch (err) {
-    errEl.textContent = 'تعذر الاتصال بالخادم';
+    errEl.textContent = T('api.serverDown');
     resetSubmit();
   }
 });

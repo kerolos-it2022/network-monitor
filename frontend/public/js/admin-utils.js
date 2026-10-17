@@ -24,9 +24,9 @@ async function api(url, opts) {
     if (!r.ok && r.status !== 401 && r.status !== 404) {
       return data || { success: false, error: 'HTTP ' + r.status };
     }
-    return data != null ? data : { success: false, error: 'استجابة غير صالحة من الخادم' };
+    return data != null ? data : { success: false, error: (window.NMI18N ? NMI18N.t('api.badResponse') : 'استجابة غير صالحة من الخادم') };
   } catch (e) {
-    return { success: false, error: 'تعذر الاتصال بالخادم' };
+    return { success: false, error: (window.NMI18N ? NMI18N.t('api.serverDown') : 'تعذر الاتصال بالخادم') };
   }
 }
 
@@ -59,7 +59,7 @@ function confirmAction(opts) {
   const modal = document.getElementById('confirm-modal');
   if (!modal) {
     // fallback آمن: لو modal غَير مَوجُود (خطأ تَحميل)، اِستَعمِل confirm الأَصلي.
-    return Promise.resolve(window.confirm(opts.message || 'تأكيد؟'));
+    return Promise.resolve(window.confirm(opts.message || (window.NMI18N ? NMI18N.t('confirm.question') : 'تأكيد؟')));
   }
   if (__confirmState) __confirmState.cancel();
   const previousFocus = document.activeElement;
@@ -67,10 +67,11 @@ function confirmAction(opts) {
   const msgEl = document.getElementById('confirm-modal-message');
   const okBtn = document.getElementById('confirm-modal-ok-btn');
   const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
-  if (titleEl) titleEl.textContent = opts.title || 'تَأكيد';
+  const _t = (k, fb) => (window.NMI18N ? NMI18N.t(k) : fb);
+  if (titleEl) titleEl.textContent = opts.title || _t('confirm.title', 'تَأكيد');
   if (msgEl) msgEl.textContent = opts.message || '';
-  if (okBtn) okBtn.textContent = opts.confirmText || '✓ تَأكيد';
-  if (cancelBtn) cancelBtn.textContent = opts.cancelText || '✖️ إلغاء';
+  if (okBtn) okBtn.textContent = opts.confirmText || _t('confirm.ok', '✓ تَأكيد');
+  if (cancelBtn) cancelBtn.textContent = opts.cancelText || _t('confirm.cancel', '✖️ إلغاء');
   // danger → زرّ أَحمر على الـ modal.
   modal.classList.toggle('danger', !!opts.danger);
 

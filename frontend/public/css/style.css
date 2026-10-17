@@ -52,7 +52,7 @@ body {
   font-family: "Segoe UI", Tahoma, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  direction: rtl;
+  direction: inherit;
 }
 
 .hidden { display: none !important; }
@@ -286,7 +286,7 @@ body.dark .noc-link-btn:hover {
 .modal-close {
   position: absolute;
   top: 0.75rem;
-  left: 0.75rem;
+  inset-inline-end: 0.75rem;   /* منطقي: ينعكس تلقائيًّا مع اتجاه الصفحة */
   background: transparent;
   border: none;
   font-size: 1.25rem;
@@ -331,7 +331,7 @@ table.data-table tr.public-row:hover { background: var(--bg); }
   height: 12px;
   border-radius: 50%;
   vertical-align: middle;
-  margin-left: 0.4rem;
+  margin-inline-end: 0.4rem;   /* منطقي: يسار النصّ في العربية، يمينه في الإنجليزية */
 }
 .status-dot.online  { background: var(--online);  box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
 .status-dot.offline { background: var(--offline); box-shadow: 0 0 0 2px rgba(239,68,68,0.15); }
@@ -546,7 +546,7 @@ body.sidebar-hidden .admin-topbar { margin-inline-start: 0; }
   width: min(440px, 95vw);
   max-height: 85vh;
   overflow: auto;
-  direction: rtl;
+  direction: inherit;
 }
 .confirm-modal-title {
   margin: 0 0 0.6rem;
@@ -598,7 +598,7 @@ body.sidebar-hidden .admin-topbar { margin-inline-start: 0; }
   font-size: 0.9rem;
   line-height: 1.45;
   box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  direction: rtl;
+  direction: inherit;
   animation: toast-slide-in 0.22s ease-out;
   display: flex;
   align-items: flex-start;
@@ -801,7 +801,7 @@ table.data-table td .open-device-btn {
 
 /* ===== شجرة المواقع الهرمية (D3) — v2.5.1 + v2.5.2 (internet/zone + zoom) ===== */
 .d3-tree {
-  direction: rtl;
+  direction: inherit;
   background: var(--bg, #fff);
   border: 1px solid var(--border, #ddd);
   border-radius: 8px;
@@ -838,13 +838,13 @@ table.data-table td .open-device-btn {
   font-family: var(--font, system-ui, "Segoe UI", Tahoma, sans-serif);
   font-weight: 500;
   user-select: none;
-  direction: rtl;
+  direction: inherit;
   unicode-bidi: plaintext;
 }
 .map-meta {
   user-select: none;
   opacity: 0.85;
-  direction: rtl;
+  direction: inherit;
   unicode-bidi: plaintext;
 }
 
@@ -877,7 +877,7 @@ table.data-table td .open-device-btn {
   list-style: none;
   margin: 0;
   padding: 0;
-  direction: rtl;
+  direction: inherit;
 }
 .map-tree { padding: 0.25rem 0; }
 
@@ -926,7 +926,7 @@ table.data-table td .open-device-btn {
   gap: 0.4rem;
   padding: 0.5rem 0.6rem;                   /* تَنفّس أَكبر (v2.5.3) */
   cursor: pointer;
-  direction: rtl;
+  direction: inherit;
   unicode-bidi: plaintext;
   transition: background 0.15s ease;
 }
@@ -1236,7 +1236,7 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
   gap: 0.4rem;
   padding: 0.5rem 0.65rem;
   cursor: pointer;
-  direction: rtl;
+  direction: inherit;
   background: rgba(127, 127, 127, 0.04);
   border-bottom: 1px solid var(--border);
   user-select: none;
@@ -1313,7 +1313,7 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
   gap: 0.4rem;
   width: 100%;
   text-align: start;
-  direction: rtl;
+  direction: inherit;
   border: none;
   background: transparent;
   color: var(--text);
@@ -1475,7 +1475,7 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
   width: min(560px, 95vw);
   max-height: 88vh;
   overflow: auto;
-  direction: rtl;
+  direction: inherit;
 }
 .map-modal-content .modal-close {
   position: absolute;
@@ -1527,7 +1527,7 @@ body.dark .map-zone-device:hover { background: var(--map-device-hover); }
   display: grid;
   grid-template-columns: 1fr 1fr;        /* حقلان لكل صف */
   gap: 0.4rem 0.75rem;
-  direction: rtl;
+  direction: inherit;
 }
 .details-field {
   display: flex;

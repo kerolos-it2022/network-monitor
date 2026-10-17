@@ -40,6 +40,10 @@ async function resolveDisplayMode() {
     const r = await fetch('/api/settings/noc-mode', { credentials: 'same-origin' });
     const j = await r.json();
     internalView = !!(j && j.success && j.data && j.data.mode === 'full');
+    // لغة النظام (إعداد المالك) — تُرفَق في نفس الردّ فلا نحتاج طلبًا آخر.
+    if (j && j.success && j.data && j.data.ui_language && window.NMI18N) {
+      try { NMI18N.setLang(j.data.ui_language, { persist: true }); } catch (e) {}
+    }
   } catch (_) {
     internalView = false;   // أي شك ⇒ العرض المنقّى (الأأمن)
   }

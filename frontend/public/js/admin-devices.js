@@ -26,11 +26,13 @@ function ipSortKey(ip) {
   return String(ip || '').split('.').reduce((acc, p) => acc * 256 + (parseInt(p, 10) || 0), 0);
 }
 
+// نصوص الحالة من القاموس (تتغيّر مع اللغة) — والقيم البرمجية ('online' …) تبقى كما هي.
+function __t(k, fb) { try { return (window.NMI18N && NMI18N.t(k)) || fb; } catch (e) { return fb; } }
 function statusText(status) {
-  if (status === 'online') return 'متصل';
-  if (status === 'offline') return 'متوقف';
-  if (status === 'paused') return 'موقوف';
-  return 'غير معروف';
+  if (status === 'online') return __t('status.online', 'متصل');
+  if (status === 'offline') return __t('status.offline', 'متوقف');
+  if (status === 'paused') return __t('status.paused', 'موقوف');
+  return __t('status.unknown', 'غير معروف');
 }
 
 // v2.33.0 — شارة الحالة (نقطة + الكلمة على خلفية باهتة بلون الحالة): أوضح من كلمة سادة،
@@ -585,4 +587,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.files[0]) importDevicesExcel(e.target.files[0]);
     e.target.value = ''; // السماح بإعادة نفس الملف
   });
+});
+
+// تغيير اللغة (زر 👁️🌐 في الشريط العلوي) يُعيد رسم الجدول والملخص بلغة جديدة
+// بلا أي طلب شبكة — نُعيد الرسم من آخر قائمة مجلوبة (نفس منطق البحث الفوري).
+document.addEventListener('nm:lang', function () {
+  try { if (typeof renderDevicesView === 'function' && Array.isArray(lastDevicesList) && lastDevicesList.length) renderDevicesView(); } catch (e) {}
 });
