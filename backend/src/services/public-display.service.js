@@ -54,14 +54,16 @@ function setMode(mode) {
   return { ok: true, mode: m };
 }
 
-// ═══ SEC-02/MON-02 — وضع شاشة NOC الداخلية ═══
-// 'off' (افتراضي وآمن): شاشة NOC تقرأ العرض العام المنقّى دائمًا (بلا عناوين).
-// 'full': إن كانت الجلسة **مديرًا** تُقرأ المسارات الداخلية (مع IP) — للشاشة داخل الشبكة.
-// غير المدراء (وزائر بلا جلسة) يبقون على المنقّى حتى لو كان الوضع 'full'.
+// ═══ SEC-02/MON-02 — وضع «العرض الداخلي» لشاشات العرض (الصفحة العامة + NOC) ═══
+// 'full' (الافتراضي — قرار المالك 2026-10-17): **أي مستخدم مسجّل** (مدير أو عرض) يرى العناوين
+//        على الصفحة العامة وشاشة NOC؛ والزائر بلا جلسة يبقى على العرض المنقّى (بلا أي IP/MAC).
+// 'off': حتى المسجّلون يرون العرض المنقّى (للشاشات المعروضة على تلفزيون عام بلا رقابة).
+// ملاحظة أمنية: هذا الوضع لا يفتح شيئًا للزوار إطلاقًا — التمييز يقوم على الجلسة لا على العنوان،
+// والمسارات الداخلية محمية أصلًا بـ requireAuth.
 const NOC_KEY = 'noc_internal_full';
 
 function getNocMode() {
-  return String(readSetting(NOC_KEY) || process.env.NM_NOC_INTERNAL || 'off').toLowerCase() === 'full' ? 'full' : 'off';
+  return String(readSetting(NOC_KEY) || process.env.NM_NOC_INTERNAL || 'full').toLowerCase() === 'off' ? 'off' : 'full';
 }
 
 function setNocMode(mode) {
@@ -71,11 +73,12 @@ function setNocMode(mode) {
   return { ok: true, mode: m };
 }
 
-// الوضع الفعلي لطلب معيّن: 'full' فقط لو الإعداد كذلك **والجلسة مدير**.
+// الوضع الفعلي لطلب معيّن: 'full' لو الإعداد كذلك **والطلب بجلسة مستخدم** (أي رتبة).
+// الزائر بلا جلسة ⇒ 'sanitized' دائمًا مهما كان الإعداد.
 function resolveNocMode(req) {
   if (getNocMode() !== 'full') return 'sanitized';
   const user = req && req.session && req.session.user;
-  return user && user.role === 'admin' ? 'full' : 'sanitized';
+  return user ? 'full' : 'sanitized';
 }
 
 // ── تنقية جهاز واحد (صف من devices + JOINs) ──

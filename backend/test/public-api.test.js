@@ -214,3 +214,28 @@ test('T02: وضع العرض قابل للضبط (lan/minimal/off) ويُطبَ�
   assert.equal(g.data.mode, 'lan');
   assert.equal(g.data.source, 'database');
 });
+
+test('T02: العرض الداخلي — أي مستخدم مسجَّل يرى العناوين، والزائر لا يراها إطلاقًا', async () => {
+  // الإعداد الافتراضي الآن 'full' (قرار المالك): التمييز يقوم على الجلسة لا على الإعداد.
+  const anonRes = await anon.get('/api/settings/noc-mode');
+  assert.equal(anonRes.status, 200);
+  assert.equal((await anonRes.json()).data.mode, 'sanitized', 'الزائر دائمًا منقّى');
+
+  const viewerRes = await viewer.get('/api/settings/noc-mode');
+  assert.equal((await viewerRes.json()).data.mode, 'full', 'حساب العرض المسجَّل يرى العناوين');
+
+  const adminRes = await admin.get('/api/settings/noc-mode');
+  assert.equal((await adminRes.json()).data.mode, 'full', 'المدير كذلك');
+
+  // ومع الوضع الداخلي: المسارات الداخلية تعمل للمستخدِم (الصفحة العامة تقرأ منها في هذا الوضع)
+  assert.equal((await viewer.get('/api/devices')).status, 200);
+  // وللزائر: منقّى بلا أي عنوان (تأكيد صريح)
+  const pub = await anon.get('/api/public/status');
+  assert.ok(!JSON.stringify(await pub.json()).includes('192.168'), 'لا عناوين في العرض العام للزائر');
+
+  // إيقاف الوضع الداخلي (off) ⇒ حتى المستخدم المسجَّل يرى المنقّى، ثم نعيده للافتراضي
+  assert.equal((await admin.put('/api/settings/noc-display', { mode: 'off' })).status, 200);
+  assert.equal((await (await viewer.get('/api/settings/noc-mode')).json()).data.mode, 'sanitized', 'off يمنع العناوين حتى للمسجّلين');
+  assert.equal((await admin.put('/api/settings/noc-display', { mode: 'full' })).status, 200);
+  assert.equal((await (await viewer.get('/api/settings/noc-mode')).json()).data.mode, 'full');
+});

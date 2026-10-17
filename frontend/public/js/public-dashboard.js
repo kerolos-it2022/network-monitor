@@ -9,6 +9,36 @@ const VIEW_STORAGE_KEY = 'nm.publicView';
 const SORT_STORAGE_KEY = 'nm.publicSort';
 const THEME_STORAGE_KEY = 'nm.publicTheme'; // 'dark' | 'light'
 
+// ═══ قرار المالك (2026-10-17) — «العرض الداخلي» للمستخدمين المسجّلين ═══
+// الصفحة العامة تعرض العناوين (IP) **لأي مستخدم مسجّل** (مدير أو عرض)، وتبقى منقّاة تمامًا للزائر
+// بلا جلسة. القرار يُقرأ من الخادم (جلسة + إعداد المالك) عبر /api/settings/noc-mode — بلا أي تخمين
+// في المتصفح، وبلا كشف أي عنوان قبل تأكيد الصلاحية.
+let internalView = false;   // true ⇒ نقرأ المسارات الداخلية (تحوي IP) لأن الجلسة مسموح لها
+
+async function resolveDisplayMode() {
+  try {
+    const r = await fetch('/api/settings/noc-mode', { credentials: 'same-origin' });
+    const j = await r.json();
+    internalView = !!(j && j.success && j.data && j.data.mode === 'full');
+  } catch (_) {
+    internalView = false;   // أي شك ⇒ العرض المنقّى (الأأمن)
+  }
+  // مسارات القراءة حسب الوضع: الداخلية (بجلسة، تحوي IP) أو العامة المنقّاة.
+  return {
+    list: internalView ? '/api/devices' : '/api/public/status',
+    detail: (id) => internalView ? ('/api/devices/' + id) : ('/api/public/devices/' + id),
+    history: (id, range) => internalView
+      ? ('/api/devices/' + id + '/history?range=' + range)
+      : ('/api/public/devices/' + id + '/history?range=' + range),
+  };
+}
+
+let apiPaths = {
+  list: '/api/public/status',
+  detail: (id) => '/api/public/devices/' + id,
+  history: (id, range) => '/api/public/devices/' + id + '/history?range=' + range,
+};
+
 // ====== \u062c\u0644\u0628 \u0648\u0639\u0631\u0636 \u0627\u0644\u0623\u062c\u0647\u0632\u0629 ======
 async function fetchApi(url) {
   try {
@@ -330,7 +360,7 @@ window.openDeviceModal = async function (deviceId) {
     currentChart = null;
   }
   try {
-    var devRes = await fetchApi('/api/devices/' + deviceId);
+    var devRes = await fetchApi(apiPaths.detail(deviceId));
     if (!devRes || !devRes.success) { alert(devRes && devRes.error ? devRes.error : 'تعذّر جلب بيانات الجهاز'); return; }
     var dev = devRes.data;
     document.getElementById('modal-device-name').textContent = dev.name;
@@ -358,7 +388,7 @@ window.openDeviceModal = async function (deviceId) {
     // ── المودال يعرض نافذة افتراضية 7 أيام + أزرار تبديل (24/7/30) ──
     var currentRange = '7d';
     var loadRange = async function (range) {
-      var his = await fetchApi('/api/devices/' + deviceId + '/history?range=' + range);
+      var his = await fetchApi(apiPaths.history(deviceId, range));
       if (!his || !his.success) { alert(his && his.error ? his.error : 'تعذّر جلب سجل الجهاز'); return; }
       var data = his.data;
       var rangeNames = { '24h': 'آخر 24 ساعة', '7d': 'آخر 7 أيام', '30d': 'آخر 30 يوم' };
@@ -414,10 +444,12 @@ window.openDeviceModal = async function (deviceId) {
 
 // ====== \u062a\u0647\u064a\u0626\u0629 \u0627\u0644\u0635\u0641\u062d\u0629 ======
 async function init() {
-  // SEC-02 — الصفحة العامة تقرأ من التغذية المنقّاة /api/public/status (بلا IP/MAC/سيريال)،
-  // وقوائم الفلترة (النوع/الموقع) تُبنى من نفس القائمة — لا حاجة لمسارات داخلية محمية.
+  // قرار العرض أولًا: مسجَّل ⇒ مسارات داخلية (بالعناوين) · زائر ⇒ التغذية العامة المنقّاة.
+  // مهم: لا يُطلب أي بيانات قبل معرفة الوضع، فلا يظهر عنوان للزائر إطلاقًا.
+  apiPaths = await resolveDisplayMode();
+
   var results = await Promise.all([
-    fetchApi('/api/public/status'),
+    fetchApi(apiPaths.list),
   ]);
   var devs = results[0];
   allDevices = devs.success ? devs.data : [];
@@ -717,7 +749,7 @@ let publicLiveES = null;
 
 async function pollDevices() {
   try {
-    const r = await fetchApi('/api/public/status');
+    const r = await fetchApi(apiPaths.list);
     if (r.success) {
       allDevices = r.data;
       applyFilters();
