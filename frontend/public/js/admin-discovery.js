@@ -133,7 +133,7 @@ function renderDiscoveryTable(devices) {
 
   if (discoveryDevices.length === 0) {
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="6" style="text-align:center; color:var(--muted); padding:1rem;">' +
+    tr.innerHTML = '<td colspan="6" class="is-empty">' +
       'لم يُعثر على أجهزة مستجيبة في هذا النطاق.</td>';
     tbody.appendChild(tr);
     applyDiscoveryView();

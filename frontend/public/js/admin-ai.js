@@ -137,7 +137,7 @@ async function aiSend() {
 function aiClear() {
   aiHistory = [];
   const box = document.getElementById('ai-chat-box');
-  box.innerHTML = '<div id="ai-chat-empty" style="margin:auto; text-align:center; color:var(--muted); font-size:0.9rem;"><div style="font-size:2rem;">🤖</div>اكتب سؤالك أسفل… مثل: «إيه اللي واقع دلوقتي؟» أو «جنّاح الكاميرات طايح؟» أو «أكثر جهاز بيقع؟»</div>';
+  box.innerHTML = '<div id="ai-chat-empty" style="margin:auto 0; text-align:start; color:var(--muted); font-size:0.9rem; line-height:1.9;"><div style="font-size:2rem;">🤖</div>اكتب سؤالك أسفل… مثل: «إيه اللي واقع دلوقتي؟» أو «جنّاح الكاميرات طايح؟» أو «أكثر جهاز بيقع؟»</div>';
   aiSetStatus('محُوِت المحادثة.', false);
 }
 

@@ -54,7 +54,7 @@ async function loadSchedulerRuns() {
   }
   const rows = r.data || [];
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="color:var(--muted);text-align:center;">لا توجد مسحات مُسجَّلة بعد.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="is-empty">لا توجد مسحات مُسجَّلة بعد.</td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map((row) => {

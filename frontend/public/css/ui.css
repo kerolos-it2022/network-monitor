@@ -861,3 +861,29 @@ table.data-table td.col-status, table.data-table th.col-status { text-align: cen
 #devices-table-view { padding: 0 1.5rem 2rem; }
 #devices-table-view .map-uptime-bar { margin-bottom: 1rem; }
 @media (max-width: 600px) { #devices-table-view { padding: 0 0.5rem 1.5rem; } }
+
+/* ═══════════════════════════ 13) محاذاة يمين لكل ما كان في المنتصف (طلب المالك) ═══════════════════════════ */
+/* السبب الجذري لكروت «ذكاء الإشعارات»: قاعدة قديمة في style.css (‎.form-grid label { flex-direction: column }‎)
+   تسبق .nm-check فتقلب صفّ الاختيار عمودًا رأسيًّا، وعندها يصبح align-items:center توسيطًا أفقيًّا.
+   الإصلاح: إعادة الصفّ الأفقي داخل شبكات الحقول + تثبيت البداية (اليمين في RTL). */
+.form-grid label.nm-check,
+.form-grid label.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: start;
+}
+.nm-option-card { align-items: stretch; text-align: start; }
+.nm-option-card .nm-option-title,
+.nm-option-card .nm-option-desc,
+.nm-option-card .nm-check,
+.nm-option-card .nm-row,
+.nm-option-card .nm-field { text-align: start; justify-content: flex-start; }
+.nm-check, .checkbox-label { justify-content: flex-start; text-align: start; }
+
+/* رسائل «لا توجد بيانات»: تبدأ من اليمين بدل المنتصف */
+.nm-empty, .nm-empty .nm-empty-icon { text-align: start; }
+table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
+
+/* سطر الحقوق في ذيل الصفحة: يمين بدل المنتصف */
+.site-footer { text-align: start; }

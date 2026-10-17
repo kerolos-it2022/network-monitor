@@ -315,7 +315,7 @@ async function loadBackupList() {
   }
 
   if (!r.backups || r.backups.length === 0) {
-    listEl.innerHTML = '<div style="color:var(--muted); padding:1rem; text-align:center;">📭 لا توجد نسخ أمنية حالياً. سيتم إنشاؤها تلقائياً عند أول عملية استعادة.</div>';
+    listEl.innerHTML = '<div class="nm-empty" style="color:var(--muted); padding:1rem;">📭 لا توجد نسخ أمنية حالياً. سيتم إنشاؤها تلقائياً عند أول عملية استعادة.</div>';
     return;
   }
 
