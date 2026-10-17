@@ -52,14 +52,16 @@
     12: { x: 2350, y: 1040 }, // الورشة-2 (Child of Warsha 1)
   };
 
+  // v2.33.0 — عناوين المجموعات صارت عربية صافية (قرار المالك: لا إنجليزية وصفية في الواجهة).
+  // المفاتيح keys لاتينية عن قصد: هي **قيم tipos الأجهزة** (بيانات) لا نصوص واجهة — الترجمة على العنوان فقط.
   const TYPE_CONFIG = {
-    'Firewall':     { icon: '🛡️', title: 'جدار الحماية والبوابات (Firewall & Gateways)', order: 1 },
-    'Server':       { icon: '🖥️', title: 'الخوادم والأنظمة المركزية (Core Servers)', order: 2 },
-    'Switch':       { icon: '🔌', title: 'السويتشات وموزعات الشبكة (Switches)', order: 3 },
-    'Access Point': { icon: '📡', title: 'نقاط الواي فاي والشبكة اللاسلكية (Access Points)', order: 4 },
-    'NVR/DVR':      { icon: '📹', title: 'كاميرات المراقبة وأجهزة التسجيل (NVR & DVR)', order: 5 },
-    'Printer':      { icon: '🖨️', title: 'الطابعات وماكينات التصوير (Printers & Scanners)', order: 6 },
-    'Other':        { icon: '🧩', title: 'أجهزة وأنظمة أخرى (Other Devices)', order: 7 }
+    'Firewall':     { icon: '🛡️', title: (window.NMI18N ? NMI18N.t('noc.group.firewall') : 'جدار الحماية والبوابات'), order: 1 },
+    'Server':       { icon: '🖥️', title: (window.NMI18N ? NMI18N.t('noc.group.server') : 'الخوادم والأنظمة المركزية'), order: 2 },
+    'Switch':       { icon: '🔌', title: (window.NMI18N ? NMI18N.t('noc.group.switch') : 'السويتشات وموزعات الشبكة'), order: 3 },
+    'Access Point': { icon: '📡', title: (window.NMI18N ? NMI18N.t('noc.group.ap') : 'نقاط الواي فاي والشبكة اللاسلكية'), order: 4 },
+    'NVR/DVR':      { icon: '📹', title: (window.NMI18N ? NMI18N.t('noc.group.nvr') : 'كاميرات المراقبة وأجهزة التسجيل'), order: 5 },
+    'Printer':      { icon: '🖨️', title: (window.NMI18N ? NMI18N.t('noc.group.printer') : 'الطابعات وماكينات التصوير'), order: 6 },
+    'Other':        { icon: '🧩', title: (window.NMI18N ? NMI18N.t('noc.group.other') : 'أجهزة وأنظمة أخرى'), order: 7 }
   };
 
   // v2.12.2 — تصنيف الأنواع بكلمات مفتاحية (بدل المطابقة الحرفية فقط).
