@@ -518,28 +518,19 @@ async function updPlainApply() {
   }
 }
 
-// ── سجل عمليات التحديث ──
+// ── آخر عملية تحديث (سطر واحد) ──
+// طلب المالك (2026-10-19): كان القسم يعرض أيضًا آخر ٢٠ كوميت من `git log` — قايمة تخصّ المطوّر
+// (رسائل كوميتات وتفاصيل داخلية) وتظهر **فارغة** على الأبلاينس لأنه بلا `.git` ⇒ أُزيلت، وبقي
+// سطر «آخر عملية» المفيد: وقت آخر تحديث ونتيجته والإصدار العامل — وزرّ النسخ انتقل لأزرار التحديث.
 async function updLoadHistory() {
   const el = updEl('upd-history');
   if (!el) return;
   el.innerHTML = '<span style="color:var(--muted);">⏳…</span>';
-  const r = await api('/api/update/history');
-  const rows = (r && r.success && Array.isArray(r.history)) ? r.history : (Array.isArray(r) ? r : []);
-  if (!rows.length) {
-    const p = (updMode === 'appliance') ? await api('/api/appliance-update/progress') : null;
-    const st = p && p.state;
-    el.innerHTML = (st && st.message)
-      ? `<div class="upd-row"><span>${T('upd.lastRunApplianceHelper', 'آخر عملية (مساعد الأبلاينس)')}</span><span>` + esc(String(st.message || '').replace(/✅\s*/g, '').trim()) + (st.at ? ' — ' + updFmtWhen(st.at) : '') + '</span></div>'
-      : `<span style="color:var(--muted);">${T('upd.noRunsLoggedYet', 'لا توجد عمليات مسجّلة بعد.')}</span>`;
-    return;
-  }
-  el.innerHTML = rows.slice(0, 10).map((h) => {
-    const when = esc(NMFormat.dateTime(h.at || h.date || h.time || '') || '');
-    // نصوص الرسائل إنجليزية (رسائل git) ⇒ تُعزل داخل صندوق LTR حتى لا يتشوّه ترتيبها في صفحة RTL
-    const what = esc(h.message || h.text || h.tag || h.version || JSON.stringify(h));
-    return '<div class="upd-row"><span class="nm-ltr" style="white-space:nowrap;">' + when + '</span>'
-      + '<span class="nm-ltr" style="text-align:left;">' + what + '</span></div>';
-  }).join('');
+  const p = (updMode === 'appliance') ? await api('/api/appliance-update/progress') : null;
+  const st = p && p.state;
+  el.innerHTML = (st && st.message)
+    ? `<div class="upd-row"><span>${T('upd.lastRunApplianceHelper', 'آخر عملية (مساعد الأبلاينس)')}</span><span>` + esc(String(st.message || '').replace(/✅\s*/g, '').trim()) + (st.at ? ' — ' + updFmtWhen(st.at) : '') + '</span></div>'
+    : `<span style="color:var(--muted);">${T('upd.noRunsLoggedYet', 'لا توجد عمليات مسجّلة بعد.')}</span>`;
 }
 
 function updCopyAll() {

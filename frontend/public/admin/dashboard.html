@@ -1124,6 +1124,7 @@
           <button type="button" class="btn btn-primary hidden" id="upd-safe-btn" title="ينشئ نسخة احتياطية ثم ينفّذ التحديث" data-i18n-attr="title:s2.creates_a_backup_then_runs_the_update"><span data-i18n="s2.backup_update">🛡️ نسخة احتياطية + تحديث</span></button>
           <button type="button" class="btn hidden" id="upd-changelog-btn"><span data-i18n="s2.view_changes">📋 عرض التغييرات</span></button>
           <button type="button" class="btn hidden" id="upd-rollback-btn"><span data-i18n="s2.roll_back_to_an_older_release">↩️ الرجوع لإصدار أقدم</span></button>
+          <button type="button" class="btn" id="upd-log-copy-btn"><span data-i18n="s2.copy_the_log">📋 نسخ السجل</span></button>
         </div>
 
         <!-- مسار التثبيت العادي (غير الأبلاينس) فقط -->
@@ -1172,10 +1173,7 @@
 
         <!-- سجل عمليات التحديث -->
         <div class="nm-sub-section" style="margin-top:1rem;">
-          <div class="nm-row-between" style="margin-bottom:0.5rem;">
-            <div style="font-weight:700;"><span data-i18n="s2.update_history">🗂️ سجل عمليات التحديث</span></div>
-            <button type="button" class="btn btn-sm" id="upd-log-copy-btn"><span data-i18n="s2.copy_the_log">📋 نسخ السجل</span></button>
-          </div>
+          <div style="font-weight:700; margin-bottom:0.5rem;"><span data-i18n="s2.update_history">🗂️ سجل عمليات التحديث</span></div>
           <div id="upd-history" class="nm-sub">—</div>
         </div>
 
