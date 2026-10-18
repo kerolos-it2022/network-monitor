@@ -23,13 +23,17 @@ SQLite محلية: بلا حساب سحابي وبلا أي خدمة خارجي�
 <p align="center">
   <img src="docs/screenshots/noc-screen.ar.png" width="92%" alt="شاشة NOC — سلسلة الإنترنت والبطاقات اللحظية" />
 </p>
-<p align="center"><b>شاشة NOC</b> — العرض اللحظي للشاشة الجدارية: سلسلة الإنترنت، العدّادات، حالة كل جهاز</p>
+<p align="center"><b>شاشة NOC</b> — العرض اللحظي للشاشة الجدارية: سلسلة الإنترنت والعدّادات وحالة كل جهاز في نظرة واحدة</p>
 
 <p align="center">
-  <img src="docs/screenshots/dashboard-devices.ar.png" width="49%" alt="لوحة التحكم — الأجهزة" />
-  <img src="docs/screenshots/public-dashboard.ar.png" width="49%" alt="الصفحة العامة" />
+  <img src="docs/screenshots/dashboard-devices.ar.png" width="92%" alt="لوحة التحكم — الأجهزة" />
 </p>
-<p align="center"><b>لوحة التحكم</b> و<b>الصفحة العامة</b></p>
+<p align="center"><b>لوحة التحكم</b> — كل جهاز بنوعه وموقعه وحالته اللحظية وأزرار التشغيل</p>
+
+<p align="center">
+  <img src="docs/screenshots/public-dashboard.ar.png" width="92%" alt="الصفحة العامة" />
+</p>
+<p align="center"><b>الصفحة العامة</b> — واجهة الزائر: بطاقات الأجهزة اللحظية وشريط نسبة التشغيل وأدوات الشبكة</p>
 
 ## ✅ أبرز المميزات
 

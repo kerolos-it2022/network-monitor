@@ -23,13 +23,17 @@ process with a local SQLite database: no cloud account, no external service requ
 <p align="center">
   <img src="docs/screenshots/noc-screen.en.png" width="92%" alt="NOC wall screen — internet chain and live cards" />
 </p>
-<p align="center"><b>NOC wall screen</b> — the live view for a TV: internet chain, counters, per-device state</p>
+<p align="center"><b>NOC wall screen</b> — the live view for a TV: the internet chain, the counters and every device's state at a glance</p>
 
 <p align="center">
-  <img src="docs/screenshots/dashboard-devices.en.png" width="49%" alt="Admin dashboard — devices" />
-  <img src="docs/screenshots/public-dashboard.en.png" width="49%" alt="Public status page" />
+  <img src="docs/screenshots/dashboard-devices.en.png" width="92%" alt="Admin dashboard — devices" />
 </p>
-<p align="center"><b>Admin dashboard</b> and the <b>public status page</b></p>
+<p align="center"><b>Admin dashboard</b> — every device with its type, location, live status and uptime controls</p>
+
+<p align="center">
+  <img src="docs/screenshots/public-dashboard.en.png" width="92%" alt="Public status page" />
+</p>
+<p align="center"><b>Public status page</b> — the guest view: live device cards, a shared uptime bar and the network tools</p>
 
 ## ✅ Highlights
 
