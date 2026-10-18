@@ -715,6 +715,9 @@
               <option value="channel" data-i18n="logs.sort.channel">📢 حسب القناة</option>
               <option value="status" data-i18n="logs.sort.status">📊 حسب الحالة</option>
             </select>
+            <!-- v2.34.0 — لغة **رسائل** السجل وحدها (الزرّ يتبع لغة الواجهة حتى أول ضغطة، ثم يحفظ اختيارك) -->
+            <button id="logs-lang-toggle" type="button" class="btn btn-sm"
+                    title="عرض رسائل السجل بالإنجليزية (هذه الشاشة فقط)">🌐 English</button>
             <button id="logs-clear-btn" class="btn btn-danger btn-sm" data-i18n-attr="title:logs.clearTitle" title="مسح سجل الإِشعارات القديمة">
               <span data-i18n="logs.clear">🗑️ مسح الإشعارات</span>
             </button>
@@ -1528,6 +1531,8 @@
   <script src="../js/nm-format.js"></script>
   <script src="../js/nm-i18n.js"></script>
   <script src="../js/nm-i18n-en.js"></script>
+  <!-- v2.34.0 — ترجمة رسائل سجل الإشعارات عند العرض + حالة زرّ لغتها (مستقل عن لغة الواجهة) -->
+  <script src="../js/nm-log-i18n.js"></script>
   <script src="../js/nm-lang.js"></script>
   <script src="../js/admin-utils.js"></script>
   <script src="../js/admin-devices.js"></script>

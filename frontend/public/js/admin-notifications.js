@@ -4,6 +4,38 @@ let currentLogsSort = 'sent_at_desc';
 // v2.33.0 — فلتر حالة سجل الإشعارات: '' = كل الحالات · sent · failed · maintenance
 let logsFilterStatus = '';
 
+// v2.34.0 — نصّ رسالة السجل: يُترجم عند العرض بلغة السجل المختارة (nm-log-i18n.js)،
+// ومع الوسوم التي يكتبها السيرفر لِتلجرام (<b>/<code>) تُنظَّف في اللغتين.
+function logText(s) {
+  try { return window.NMLogI18N ? NMLogI18N.translate(s) : s; } catch (e) { return s; }
+}
+
+// v2.34.0 — زر لغة رسائل السجل: **مستقل** عن لغة الواجهة العامة (اختيار يُحفظ في المتصفح)،
+// والافتراضي أن يتبع لغة الواجهة حتى أول ضغطة. الزرّ لا يغيّر اتجاه الصفحة ولا أي شاشة أخرى.
+function paintLogLangBtn() {
+  const btn = document.getElementById('logs-lang-toggle');
+  if (!btn || !window.NMLogI18N) return;
+  const n = window.NMI18N;
+  const isEn = NMLogI18N.getLang() === 'en';
+  const key = isEn ? 'logs.lang.toAr' : 'logs.lang.toEn';
+  const titleKey = isEn ? 'logs.lang.toArTitle' : 'logs.lang.toEnTitle';
+  btn.textContent = n ? n.t(key) : (isEn ? '🌐 عربي' : '🌐 English');
+  btn.title = n ? n.t(titleKey) : '';
+  btn.setAttribute('aria-label', btn.title);
+  // مِلء أزرق = عرض الرسائل بالإنجليزية مُفعَّل الآن (نفس أسلوب زرّ اللغة العلوي).
+  btn.classList.toggle('btn-primary', isEn);
+}
+
+function toggleLogLang() {
+  if (!window.NMLogI18N) return;
+  NMLogI18N.setLang(NMLogI18N.getLang() === 'en' ? 'ar' : 'en');
+  paintLogLangBtn();
+  loadNotificationLogs(); // إعادة رسم الجدول باللغة المختارة (نفس الفلتر والترتيب)
+}
+
+// تغيير لغة الواجهة يُعيد كتابة نصّ الزرّ؛ وإعادة رسم الجدول تتكفّل بها nm-lang.js (نقر التبويب).
+document.addEventListener('nm:lang', paintLogLangBtn);
+
 async function loadNotificationSettings() {
   const r = await api('/api/notifications/settings');
   if (!r.success) return;
@@ -206,19 +238,22 @@ async function loadNotificationLogs() {
     const filtered = !!logsFilterStatus && sortedData.length > 0 && shownData.length === 0;
     emptyBox.classList.toggle('hidden', shownData.length > 0);
     emptyBox.innerHTML = filtered
-      ? '<span class="nm-empty-icon">🔍</span>لا توجد إشعارات بحالة «' + esc(statusText(logsFilterStatus)) + '» — اختر «كل الحالات» لعرض الكل.'
-      : '<span class="nm-empty-icon">📭</span>لا توجد إشعارات مسجَّلة بعد — تظهر هنا كل رسالة يُرسلها النظام (انقطاع/تعافٍ/تصعيد/تقرير).';
+      ? '<span class="nm-empty-icon">🔍</span>' + (window.NMI18N
+        ? NMI18N.t('logs.emptyFiltered', { s: esc(statusText(logsFilterStatus)) })
+        : 'لا توجد إشعارات بحالة «' + esc(statusText(logsFilterStatus)) + '» — اختر «كل الحالات» لعرض الكل.')
+      : '<span class="nm-empty-icon">📭</span>' + T('logs.empty');
   }
 
   for (const l of shownData) {
     const tr = document.createElement('tr');
+    // dir="auto" — الرسالة الإنجليزية تظهر باتجاهها الصحيح داخل جدول عربي (والعربية كما هي).
     tr.innerHTML = `
       <td class="col-ltr">${esc(l.sent_at ? NMFormat.dateTime(l.sent_at) : '—')}</td>
       <td>${esc(l.device_name || '—')}</td>
       <td class="col-center">${esc(channelText(l.channel))}</td>
       <td class="col-status">${esc(statusText(l.status))}</td>
-      <td>${esc(l.message)}</td>
-      <td>${esc(l.error || '—')}</td>
+      <td dir="auto">${esc(logText(l.message))}</td>
+      <td dir="auto">${esc(l.error ? logText(l.error) : '—')}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -256,6 +291,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentLogsSort = e.target.value;
       loadNotificationLogs();
     });
+  }
+  // v2.34.0 — زر لغة رسائل السجل (ترجمة عرض الرسائل وحدها — بلا مساس بلغة الواجهة).
+  const logLangBtn = document.getElementById('logs-lang-toggle');
+  if (logLangBtn) {
+    logLangBtn.addEventListener('click', toggleLogLang);
+    paintLogLangBtn();
   }
   // v2.7.3 — ثلاثة أَزرار منفصلة لِـ مَسح كل نوع من السجلّات:
   //   الإِشعارات:       DELETE /api/notifications/logs?older_than_days={days}
