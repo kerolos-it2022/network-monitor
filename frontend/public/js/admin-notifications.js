@@ -184,6 +184,8 @@ async function testNotification(channel) {
 }
 
 async function loadNotificationLogs() {
+  // v2.34.0 — إعادة ضبط نصّ زرّ اللغة مع كل رسم (لو تغيّرت الحالة من خارج الزرّ يبقى النصّ مطابقًا).
+  paintLogLangBtn();
   const r = await api('/api/notifications/logs');
   const tbody = document.getElementById('logs-table-body');
   tbody.innerHTML = '';
@@ -274,8 +276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const b = document.getElementById(id);
     if (b) b.addEventListener('click', () => testNotification(ch));
   });
-  // عند فتح تبويب السجل: تحميل السجل تلقائياً.
-  document.getElementById('tab-logs').addEventListener('click', loadNotificationLogs);
+  // v2.34.0 — تبويب «الإشعارات» صار يعرض الإعدادات + سجل الإشعارات معًا (شاشة واحدة)
+  // ⇒ تحميل السجل يتم عند فتح نفس التبويب.
+  document.getElementById('tab-notifications').addEventListener('click', loadNotificationLogs);
   // v2.33.0 — فلتر حالة السجل (كل الحالات / تم الإرسال / فشل / مكتوم صيانة)
   const filterStatusEl = document.getElementById('logs-filter-status');
   if (filterStatusEl) {

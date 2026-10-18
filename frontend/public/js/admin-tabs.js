@@ -1,5 +1,7 @@
 // v2.33.0 — عنوان موحّد للصفحة: الشريط العلوي يعرض اسم القسم المفتوح (وأيقونته)
 // بدل عنوان ثابت «لوحة التحكم» — كل شاشة صار لها عنوان واضح (نفس نمط NOC/العامة).
+// v2.34.0 — قيمة التبويب قد تكون **قسمًا واحدًا أو قائمة أقسام** (طلب المالك: ضمّ «الإشعارات»
+// و«سجل الإشعارات» في شاشة واحدة ⇒ تبويب واحد يعرض القسمين).
 const TAB_TO_SECTION = {
   'tab-devices': 'section-devices',
   'tab-locations': 'section-locations',
@@ -10,9 +12,8 @@ const TAB_TO_SECTION = {
   'tab-discovery-content': 'section-discovery-content',
   'tab-map': 'section-map',
   'tab-topology': 'section-topology',
-  'tab-notifications': 'section-notifications',
+  'tab-notifications': ['section-notifications', 'section-logs'],
   'tab-ai': 'section-ai',
-  'tab-logs': 'section-logs',
   'tab-profile': 'section-profile',
   'tab-backup': 'section-backup',
   // v2.23.0 — «حالة النظام» ثم «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة).
@@ -22,6 +23,7 @@ const TAB_TO_SECTION = {
   'tab-system': 'section-system',
   'tab-updates': 'section-updates',
 };
+
 
 // مفاتيح الترجمة لعناوين الأقسام (الشريط العلوي + عنوان تبويب المتصفح).
 const TAB_TITLE_KEYS = {
@@ -35,7 +37,6 @@ const TAB_TITLE_KEYS = {
   'tab-topology': 'tabs.topology',
   'tab-notifications': 'tabs.notifications',
   'tab-ai': 'tabs.ai',
-  'tab-logs': 'tabs.logs',
   'tab-profile': 'tabs.profile',
   'tab-backup': 'tabs.backup',
   'tab-remote': 'tabs.remote',
@@ -72,13 +73,14 @@ function showSection(tabId) {
   if (btn) btn.classList.add('active');
   setPageTitle(tabId);
 
-  // إظهار القسم المقابل وإخفاء البقية.
-  const target = TAB_TO_SECTION[tabId];
-  Object.values(TAB_TO_SECTION).forEach((secId) => {
+  // إظهار أقسام التبويب (قسم أو أكثر) وإخفاء البقية.
+  const target = [].concat(TAB_TO_SECTION[tabId] || []);
+  const all = new Set();
+  Object.values(TAB_TO_SECTION).forEach((v) => [].concat(v).forEach((s) => all.add(s)));
+  all.forEach((secId) => {
     const s = document.getElementById(secId);
     if (!s) return;
-    if (secId === target) s.classList.remove('hidden');
-    else s.classList.add('hidden');
+    s.classList.toggle('hidden', !target.includes(secId));
   });
 }
 

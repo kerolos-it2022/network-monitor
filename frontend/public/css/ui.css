@@ -673,6 +673,11 @@ body.sidebar-collapsed .sidebar .tab-btn { padding-inline: 0; }
 .nm-option-card .nm-option-title { font-weight: 700; font-size: var(--nm-fs-sm); }
 .nm-option-card .nm-option-desc { font-size: var(--nm-fs-xs); color: var(--muted); line-height: 1.8; }
 .nm-option-card .nm-inline-num { max-width: 130px; }
+/* v2.34.0 — بطاقات الخيارات في صفٍّ واحد متساوية الشكل: `align-self: stretch` يلغي محاذاة
+   الأسفل التي تأتي من `.form-grid` (كانت تترك البطاقة الأقصر نازلة ٣٠px فتظهر غير مرتّبة)،
+   وآخر سطر وصف يُلتصق بأسفل البطاقة فتصطفّ الأوصاف على خطٍّ واحد (طلب المالك: «نسّق البطاقات»). */
+.form-grid > .nm-option-card { align-self: stretch; }
+.nm-option-card > .nm-option-desc:last-child { margin-top: auto; }
 
 /* ═══════════════════════════ 9) أسماء قديمة يستعملها جافاسكربت (تعمل كما هي بعد التوحيد) ═══════════════════════════ */
 .upd-hero-value { font-size: 1.05rem; font-weight: 700; color: var(--text); }
