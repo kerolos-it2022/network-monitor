@@ -267,19 +267,6 @@ curl http://localhost:4000/api/health
 
 للإبلاغ عن ثغرة: [docs/SECURITY.ar.md](docs/SECURITY.ar.md) (وبالإنجليزية: [SECURITY.md](.github/SECURITY.md)).
 
-## 🗺️ خارطة الطريق
-
-| الميزة | الحالة |
-|---|---|
-| أدوار متعددة (مدير / عرض) | ✅ منفَّذ |
-| تحديثات لحظية عبر SSE | ✅ منفَّذ (`/api/live/status`) |
-| قراءة SNMP + بيانات Synology/NAS | ✅ منفَّذ |
-| تقرير أسبوعي للطباعة · ملصقات QR · تصدير Excel/CSV | ✅ منفَّذ |
-| مصادر MikroTik / Sophos / ESXi (للقراءة فقط، اختيارية) | 📋 مخطط |
-| تصدير PDF ربع سنوي/أسبوعي | 📋 مخطط (اليوم: Excel + طباعة) |
-| WebSocket بدل SSE | 📋 عند الحاجة لتحكّم ثنائي الاتجاه |
-| PostgreSQL | 📋 عند تجاوز SQLite لحدود البيانات |
-
 ## 📚 ملفات التوثيق
 
 | الملف | اللغة |
@@ -310,6 +297,3 @@ curl http://localhost:4000/api/health
 [web-push](https://github.com/web-push-libs/web-push) · [Chart.js](https://www.chartjs.org/) ·
 [PM2](https://pm2.keymetrics.io/)
 
----
-
-**⭐ لو المشروع أفادك، نجمة على GitHub تُسعِدنا.**

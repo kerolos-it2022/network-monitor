@@ -273,19 +273,6 @@ deploys on its own — deployment is a manual, deliberate step.
 
 Report a vulnerability as described in [SECURITY.md](.github/SECURITY.md) (Arabic: [docs/SECURITY.ar.md](docs/SECURITY.ar.md)).
 
-## 🗺️ Roadmap
-
-| Item | State |
-|---|---|
-| Multi-account roles (admin / viewer) | ✅ done |
-| Live updates over SSE | ✅ done (`/api/live/status`) |
-| SNMP polling + Synology/NAS data | ✅ done |
-| Weekly printable report, QR labels, Excel/CSV export | ✅ done |
-| MikroTik / Sophos / ESXi read-only sources | 📋 planned (opt-in, read-only) |
-| Quarterly/weekly PDF export | 📋 planned (Excel + print today) |
-| WebSocket instead of SSE | 📋 only if bi-directional control is ever needed |
-| PostgreSQL backend | 📋 only if the dataset outgrows SQLite |
-
 ## 📚 Documentation
 
 | Document | Language |
@@ -318,6 +305,3 @@ written permission from the copyright holder. See [LICENSE](LICENSE).
 [web-push](https://github.com/web-push-libs/web-push) · [Chart.js](https://www.chartjs.org/) ·
 [PM2](https://pm2.keymetrics.io/)
 
----
-
-**⭐ If this project is useful to you, a star on GitHub is appreciated.**
