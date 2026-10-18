@@ -52,6 +52,8 @@ function getArchiveUrl(tag) {
 // مقارنة semver حقيقية (وليس نصية). نسخة المستودع المحلي قد تكون أحدث من آخر تاج منشور
 // (العمل على إصدار لم يُرفع بعد) — وهذا **طبيعي** ويُعرَض كما هو، مع منع أي تنزيل نازل.
 const { semverParts, isNewerVersion, compareVersions } = require('../services/update-version.service');
+// v2.50.2 — استبدال كامل لملفات التطبيق (وليس نسخًا فوق الشجرة القديمة) — انظر الخدمة للتفاصيل.
+const { applyReleaseTree, refreshApplianceHelpers } = require('../services/update-apply.service');
 async function getLatestTagFromApi() {
   try {
     const { owner, repo } = getRepoConfig();
@@ -109,9 +111,23 @@ function performUpdateArchive(tag) {
     const steps = [
       { name: uiText('تحميل أرشيف الإصدار ', 'Downloading release archive ') + tag, cmd: `curl -fL --retry 2 -m 300 ${authHdr}-o ${TMP_ZIP} "${archiveUrl}"` },
       { name: uiText('فك الأرشيف', 'Extracting archive'), cmd: `rm -rf ${TMP_SRC} && mkdir -p ${TMP_SRC} && unzip -q -o ${TMP_ZIP} -d ${TMP_SRC}` },
-      { name: uiText('تحديث ملفات التطبيق', 'Updating application files'), cmd: `cd ${TMP_SRC} && SRC=$(ls -d */ | head -n1) && cp -a "$SRC/backend" ${REPO_DIR}/ && cp -a "$SRC/frontend" ${REPO_DIR}/ && mkdir -p ${REPO_DIR}/database && cp -a "$SRC"/database/. ${REPO_DIR}/database/`
-      + `; if [ -f "$SRC/appliance/config/includes.chroot/usr/local/sbin/nm-remote" ]; then install -m 0755 "$SRC/appliance/config/includes.chroot/usr/local/sbin/nm-remote" /usr/local/sbin/nm-remote && echo 'nm-remote helper updated'; fi`
-      + `; if [ -f "$TMP_SRC/appliance/config/includes.chroot/usr/local/sbin/nm-update" ]; then install -m 0755 "$TMP_SRC/appliance/config/includes.chroot/usr/local/sbin/nm-update" /usr/local/sbin/nm-update && echo 'nm-update helper updated'; fi` },
+      // v2.50.2 — استبدال كامل: كان الأمر السابق `cp -a` فوق الشجرة القائمة ⇒ كل ملف/مجلد
+      // موجود في النسخة القديمة وغائب عن الجديدة يبقى (صفحات JS محذوفة، مجلدات مهجورة)
+      // ويظن المالك أن التحديث «لم يستبدل» كل شيء. الآن: تجهيز كامل ثم تبديل ذرّي (rename)
+      // مع الحفاظ الصريح على بيانات المستخدم (قاعدة البيانات، .env، node_modules…) —
+      // القائمة الكاملة في services/update-apply.service.js.
+      { name: uiText('تحديث ملفات التطبيق', 'Updating application files'), run: () => {
+          const report = applyReleaseTree({ srcDir: TMP_SRC, destDir: REPO_DIR });
+          const helpers = refreshApplianceHelpers(report.releaseRoot);
+          const parts = [
+            uiText('استُبدل: ', 'replaced: ') + (report.replaced.join(', ') || '-'),
+            uiText('عناصر قديمة أُزيلت: ', 'stale entries removed: ') + report.removedStaleEntries,
+            uiText('محفوظ: ', 'preserved: ') + (Object.keys(report.preserved).map((k) => k + '/{' + report.preserved[k].join(',') + '}').join(' ') || '-'),
+          ];
+          if (helpers.length) parts.push(uiText('حُدّثت أدوات النظام: ', 'system helpers updated: ') + helpers.join(', '));
+          console.log('[UPDATE] apply:', parts.join(' | '));
+          return parts.join(' | ');
+        } },
       { name: uiText('تحديث التبعيات', 'Updating dependencies'), cmd: `cd ${REPO_DIR}/backend && npm ci --omit=dev` },
       { name: uiText('إعادة تشغيل الخدمة', 'Restarting the service'), cmd: `if systemctl is-active --quiet network-monitor 2>/dev/null; then systemctl restart network-monitor; else pm2 restart network-monitor --update-env 2>/dev/null || true; fi` },
       // v2.14.8 — إصلاح ذاتي: كل تحديث يعيد تنشيط مراقب طلبات الوصول عن بُعد (كان يموت
@@ -128,16 +144,26 @@ function performUpdateArchive(tag) {
         return;
       }
       const st = steps[i];
-      exec(st.cmd, { cwd: REPO_DIR, timeout: 600000 }, (err, stdout, stderr) => {
+      const done = (err, stdout, stderr) => {
         if (err) {
           try { writeWebUpdateStatus({ state: 'failed', code: 'update.failed', message: uiText('❌ فشل التحديث («', '❌ Update failed (“') + st.name + uiText('»): ', '”): ') + (err.message || '') }); } catch (e) {}
-          resolve({ success: false, error: uiText('فشل في خطوة "', 'Failed at step "') + st.name + '": ' + err.message + '\n' + stderr, steps: results });
+          resolve({ success: false, error: uiText('فشل في خطوة "', 'Failed at step "') + st.name + '": ' + err.message + '\n' + (stderr || ''), steps: results });
           return;
         }
-        results.push({ step: st.name, output: (stdout || '').trim().slice(0, 500) });
+        results.push({ step: st.name, output: String(stdout || '').trim().slice(0, 500) });
         i++;
         next();
-      });
+      };
+      // خطوة داخلية (JS) بدل أمر shell — تُستعمل لاستبدال الملفات عبر الخدمة القابلة للاختبار.
+      if (typeof st.run === 'function') {
+        try {
+          Promise.resolve(st.run()).then((out) => done(null, out, ''), (err) => done(err || new Error('step failed'), '', err && err.stack ? err.stack : ''));
+        } catch (err) {
+          done(err, '', err && err.stack ? err.stack : '');
+        }
+        return;
+      }
+      exec(st.cmd, { cwd: REPO_DIR, timeout: 600000 }, done);
     }
     next();
   });
@@ -414,6 +440,24 @@ async function checkForUpdates(branch = 'main') {
   }
 }
 
+// v2.50.2 — مسار الأبلاينس: خدمة الويب تعمل بلا صلاحية كتابة في مجلد الكود
+// (ProtectSystem=strict) وبلا systemctl، فمسار الكتابة المباشر كان يفشل حتمًا هناك.
+// عند وجود المساعد الجذري نكتب «ملف طلب» يحوي الوسم فقط — والمساعد root
+// (nm-update) يستبدل الملفات كاملة ثم يعيد تشغيل الجهاز بالكامل.
+// ملاحظة: هذا هو نفس المنطق الآمن في appliance-update.routes (لا أوامر ولا مسارات من الويب).
+const APPLIANCE_HELPER = process.env.APPLIANCE_HELPER_PATH || '/usr/local/sbin/nm-update';
+function applianceHelperPath() {
+  try { return fs.existsSync(APPLIANCE_HELPER) ? APPLIANCE_HELPER : null; } catch (e) { return null; }
+}
+function writeApplianceUpdateRequest(tag) {
+  const dataDir = path.dirname(path.resolve(process.cwd(), process.env.DB_PATH || '../database/monitoring.db'));
+  const reqFile = path.join(dataDir, 'update-request.json');
+  fs.mkdirSync(dataDir, { recursive: true });
+  try { fs.unlinkSync(reqFile); } catch (e) { /* لا يوجد ملف سابق */ }
+  fs.writeFileSync(reqFile, JSON.stringify({ tag, requestedAt: new Date().toISOString() }) + '\n', 'utf8');
+  return reqFile;
+}
+
 // تنفيذ التحديث
 async function performUpdate(branch = 'main') {
     // وضع الـ appliance: تحديث عبر أرشيف الإصدار (بدون git/PM2)
@@ -426,6 +470,16 @@ async function performUpdate(branch = 'main') {
       }
       if (!isNewerVersion(tag, getCurrentVersion())) {
         return { success: true, code: 'update.up_to_date', message: uiText('أنت بالفعل على أحدث إصدار (أو أحدث من المتاح)', 'You are already on the latest version (or newer than available)'), alreadyUpdated: true };
+      }
+      if (applianceHelperPath()) {
+        writeApplianceUpdateRequest(tag);
+        return {
+          success: true,
+          viaApplianceHelper: true,
+          code: 'update.appliance_delegated',
+          message: uiText('أُرسل طلب التحديث إلى مساعد الأبلاينس — سيُستبدَل التطبيق كاملًا ثم يُعاد تشغيل الجهاز بالكامل خلال دقائق (ستنقطع الشاشة مؤقتًا ثم تعود).',
+            'Update request sent to the appliance helper — the application will be fully replaced and the device will reboot completely within minutes (the screen disconnects briefly, then returns).')
+        };
       }
       return performUpdateArchive(tag);
     }

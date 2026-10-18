@@ -141,7 +141,11 @@ fi
 log_info "تحديث تبعيات Node.js (backend)..."
 cd "$REPO_DIR/backend"
 # --omit=dev هي البديل المدعوم في npm الحديث (بدل --production المُلغى)
-if ! npm ci --omit=dev 2>&1 | tail -5; then
+# v2.50.2 — إصلاح: كان `npm ci | tail` يُخفي رمز فشل npm (الأنبوب يُرجع رمز tail)
+# فيكمل التحديث وإعادة التشغيل رغم فشل التثبيت ⇒ نصف تثبيت بلا إنذار. الآن
+# نفحص PIPESTATUS[0] الحقيقي (بلا pipefail لأنه يكسر `git log | head`).
+npm ci --omit=dev 2>&1 | tail -5
+if [ "${PIPESTATUS[0]:-0}" -ne 0 ]; then
     log_error "فشل npm ci. حاول يدوياً: cd backend && npm install"
     exit 1
 fi

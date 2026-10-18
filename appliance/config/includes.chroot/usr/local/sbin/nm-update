@@ -125,15 +125,37 @@ ensure_node_ready() {
 }
 ensure_node_ready
 
-# ── نسخ ملفات التطبيق (بدون أي قاعدة/نسخ احتياطية داخل الأرشيف) ──
+# ── v2.50.2 — استبدال كامل لملفات التطبيق ──
+# كان rsync يعمل بلا --delete (نسخ فوق الشجرة القائمة) ⇒ أي ملف حُذف من الإصدار
+# الجديد يبقى على الجهاز للأبد (صفحات/سكربتات قديمة تظل «النسخة القديمة»). الآن
+# --delete يجعل الشجرة الجديدة هي المرجع الوحيد، مع استثناءات صريحة لا تُحذف ولا
+# تُستبدل أبدًا (بيانات المستخدم):
+#   node_modules/ : تُثبّتها npm ci التالية — نُبقيها هنا كشبكة أمان لو فشلت npm ci
+#   .env* (عدا .env.example) : أسرار/إعدادات المستخدم
+#   *.db · *.db-* · backups/ · svc-backups/ · uploads/ · .tmp/ : القاعدة/النسخ/المرفوعات
+#   .git/ : لو كان هناك مستودع محلي — لا نلمسه
+RSYNC_KEEP=(
+  --exclude 'node_modules/'
+  --exclude '.git/'
+  --include '.env.example' --exclude '.env*'
+  --exclude '*.db' --exclude '*.db-*'
+  --exclude 'backups/' --exclude 'svc-backups/'
+  --exclude 'uploads/' --exclude '.tmp/'
+)
 status in_progress "تحديث ملفات التطبيق" "$TAG"
 command -v rsync >/dev/null 2>&1 || fail "rsync غير مثبّت (مطلوب للتحديث الآمن)"
-for d in backend frontend database; do
+for d in backend frontend; do
   [ -d "$SRC/$d" ] || continue
   install -d "$APP_DIR/$d"
-  rsync -a --exclude '*.db' --exclude '*.db-*' --exclude 'backups/' --exclude '.tmp/' \
-        "$SRC/$d/" "$APP_DIR/$d/" || fail "فشل تحديث مجلد $d"
+  rsync -a --delete "${RSYNC_KEEP[@]}" "$SRC/$d/" "$APP_DIR/$d/" || fail "فشل تحديث مجلد $d"
 done
+# database: دمج بلا --delete — قد تحوي قاعدة بيانات/نسخًا على التثبيتات النسبية،
+# ولا يُحذف منها شيء إطلاقًا (الأرشيف يحوي schema.sql فقط أصلًا).
+if [ -d "$SRC/database" ]; then
+  install -d "$APP_DIR/database"
+  rsync -a --exclude '*.db' --exclude '*.db-*' --exclude 'backups/' --exclude 'svc-backups/' \
+        "$SRC/database/" "$APP_DIR/database/" || fail "فشل تحديث مجلد database"
+fi
 
 # ── التبعيات ──
 # v2.11.3 — مهلة زمنية إلزامية: كان `npm ci` بلا timeout فيعلّق التحديث بلا نهاية عند تعطّل
