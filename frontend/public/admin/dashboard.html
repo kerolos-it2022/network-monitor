@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="topbar.dashboard">لوحة التحكم</title>
   <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui9" />
+  <link rel="stylesheet" href="../css/ui.css?v=2.33.0-ui10" />
   <script>/* ضبط اللغة قبل أول رسم (بلا وميض عربي في الوضع الإنجليزي) — نفس نمط سكربت الوضع الليلي */
   try { if (localStorage.getItem('nm.lang') === 'en') { document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr'; } } catch (e) {}</script>
 </head>
@@ -52,7 +52,8 @@
     <!-- ============ قسم الأجهزة ============ -->
     <section id="section-devices">
       <div class="nm-card">
-        <div class="nm-toolbar">
+        <!-- v2.34.0 — nm-toolbar-2rows: أزرار الإجراءات في السطر الأول، والبحث والفلاتر في الثاني -->
+        <div class="nm-toolbar nm-toolbar-2rows">
           <button id="add-device-btn" type="button" class="btn btn-primary" title="إضافة جهاز جديد للمراقبة" data-i18n="admin.addDevice" data-i18n-attr="title:devices.addTitle">➕ إضافة جهاز</button>
           <button id="export-devices-btn" type="button" class="btn" data-i18n-attr="title:devices.exportTitle" title="تصدير قائمة الأجهزة لملف Excel"><span data-i18n="devices.export">📤 تصدير Excel</span></button>
           <a id="devices-labels-btn" class="btn" href="/labels/devices" target="_blank" rel="noopener" data-i18n-attr="title:devices.qrTitle" title="صفحة طباعة ملصقات QR لكل جهاز (تُلصق على الجهاز)"><span data-i18n="devices.qrLabels">🏷️ ملصقات QR</span></a>

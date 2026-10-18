@@ -728,6 +728,22 @@ body.sidebar-collapsed .sidebar .tab-btn { padding-inline: 0; }
 }
 .nm-toolbar > .spacer { flex: 1 1 auto; }
 
+/* v2.34.0 — شريط من **سطرين مرتّبين** (طلب المالك: «قم بترتيب الازرار و مربعات الادخال الى صفين»):
+   السطر الأول = أزرار الإجراءات، والسطر الثاني = صندوق البحث والفلاتر تحتها مباشرة (كانت تنزل
+   عشوائيًّا على ثلاثة أو أربعة أسطر). الفرز صنفٌ صريح على الصفّ (`nm-toolbar-2rows`) لا يعتمد على
+   `:has` ⇒ لا يمسّ أي شريط آخر، وسطرٌ وهميّ بعرض كامل (`::after`) هو الذي يفرض النزول بلا أي وسم
+   إضافي في HTML. */
+.nm-toolbar-2rows { flex-wrap: wrap; }
+.nm-toolbar-2rows > button,
+.nm-toolbar-2rows > .btn,
+.nm-toolbar-2rows > .spacer { order: 1; }
+.nm-toolbar-2rows::after { content: ''; order: 2; flex: 0 0 100%; height: 0; }
+.nm-toolbar-2rows > input,
+.nm-toolbar-2rows > select,
+.nm-toolbar-2rows > .nm-sub { order: 3; margin-top: 0.6rem; }
+/* صندوق البحث في السطر الثاني يأخذ عرضًا معقولًا (كان ١٥٠ بكسل من قواعد الصفوف) */
+.nm-toolbar-2rows > input[type="search"] { flex: 1 1 260px; min-width: 220px; max-width: 420px; }
+
 /* شريط شرائح (تبويبات فرعية) — حاوية واحدة وأزرار بعرض طبيعي */
 .nm-segmented {
   display: inline-flex;
