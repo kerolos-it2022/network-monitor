@@ -346,6 +346,8 @@
     'updates.updated': '🟢 Up to date',
     'updates.available': '🟠 Update available',
     'updates.newAvailable': 'A new update is available 🟠',
+    'updates.localNewer': '🟢 Your local version is newer than the published release',
+    'updates.localNewerSub': 'The latest release on GitHub is {lat} and your local copy is newer — there is nothing to download right now.',
     'common.now': 'now',
     'rollback.hint': 'Choose the version to roll back to — it runs through the same update mechanism (a safety copy first).',
     'cleanup.olderThan': 'Clear older than',

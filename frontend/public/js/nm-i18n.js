@@ -352,6 +352,8 @@
       'updates.updated': '🟢 محدَّث',
       'updates.available': '🟠 تحديث متاح',
       'updates.newAvailable': 'يتوفّر تحديث جديد 🟠',
+      'updates.localNewer': '🟢 نسختك المحلية أحدث من آخر إصدار منشور',
+      'updates.localNewerSub': 'آخر إصدار منشور على GitHub هو {lat}، ونسختك المحلية أحدث منه — لا يوجد ما يُنزَّل الآن.',
       'common.now': 'الآن',
       'rollback.hint': 'اختر الإصدار الذي تريد الرجوع إليه — سيُنفَّذ بنفس آلية التحديث (نسخة أمنية أولًا).',
       'cleanup.olderThan': 'مَسح الأَقدم من',

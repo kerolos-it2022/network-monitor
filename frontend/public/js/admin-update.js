@@ -277,20 +277,31 @@ async function updCheck(silent = false) {
     const remoteNewer = (r.remoteNewer !== undefined) ? !!r.remoteNewer : has;
     const localNewer = (r.localNewer !== undefined) ? !!r.localNewer : (!has && updIsNewer(cur, lat));
     const canInstall = remoteNewer;
+    // v2.50.0 — إذا كانت النسخة المحلية **أحدث** من آخر إصدار منشور (حالة التطوير: شغل لم يُرفع بعد)
+    // فلا يجوز أن نقول «يتوفّر تحديث جديد» ولا أن نُشعل شارة التنبيه — نُسمّي الاتجاه بصراحة.
+    const aheadOfPublish = has && localNewer;
     updSet('upd-current', 'v' + cur, 'upd-hero-value');
-    // النصوص كما كانت في الأصل تمامًا (فحص GitHub: أي فرق = «تحديث متاح»)، وأزرار التنزيل/التثبيت
-    // لا تظهر إلا لو كان على GitHub إصدار أحدث فعلًا (حماية من تنزيل نازل يُلغي شغلًا محليًا غير مرفوع).
-    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
-    updSet('upd-latest-sub', has ? T('updates.newAvailable', 'يتوفّر تحديث جديد 🟠') : T('updates.upToDate', 'أنت على أحدث إصدار ✓'), 'upd-hero-sub');
-    updSet('upd-state', has ? T('updates.available', '🟠 تحديث متاح') : T('updates.updated', '🟢 محدَّث'), 'upd-hero-value ' + (has ? 'upd-warn' : 'upd-ok'));
+    updSet('upd-latest', 'v' + lat, 'upd-hero-value ' + (aheadOfPublish ? 'upd-ok' : (has ? 'upd-warn' : 'upd-ok')));
+    updSet('upd-latest-sub',
+      aheadOfPublish ? NMI18N.t('updates.localNewerSub', { lat: 'v' + lat })
+        : (has ? T('updates.newAvailable', 'يتوفّر تحديث جديد 🟠') : T('updates.upToDate', 'أنت على أحدث إصدار ✓')),
+      'upd-hero-sub');
+    updSet('upd-state',
+      aheadOfPublish ? T('updates.localNewer', '🟢 نسختك المحلية أحدث من آخر إصدار منشور')
+        : (has ? T('updates.available', '🟠 تحديث متاح') : T('updates.updated', '🟢 محدَّث')),
+      'upd-hero-value ' + (has && !aheadOfPublish ? 'upd-warn' : 'upd-ok'));
     const now = Date.now();
     try { localStorage.setItem(UPD_LAST_KEY, String(now)); } catch (e) { /* تجاهل */ }
     updRenderLast(now);
-    updBadge(has);
+    updBadge(has && !aheadOfPublish);
     // v2.10.5 — إشعار بنتيجة الفحص (وإلا تبدو الصفحة صامتة)؛ ويظهر أيضًا في الفحص التلقائي لو وُجد فرق
     if (!silent || has) {
-      showToast(has ? ('🟠 يتوفّر تحديث جديد: v' + lat) : ('🟢 أنت على أحدث إصدار (v' + cur + ')'),
-        { type: has ? 'warning' : 'success', duration: has ? 6000 : 3000 });
+      if (aheadOfPublish) {
+        showToast(NMI18N.t('updates.localNewerSub', { lat: 'v' + lat }), { type: 'info', duration: 7000 });
+      } else {
+        showToast(has ? ('🟠 يتوفّر تحديث جديد: v' + lat) : ('🟢 أنت على أحدث إصدار (v' + cur + ')'),
+          { type: has ? 'warning' : 'success', duration: has ? 6000 : 3000 });
+      }
     }
     updShow('upd-changelog-btn', has);
     updShow('upd-safe-btn', canInstall && updMode === 'appliance');

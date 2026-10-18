@@ -594,4 +594,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // بلا أي طلب شبكة — نُعيد الرسم من آخر قائمة مجلوبة (نفس منطق البحث الفوري).
 document.addEventListener('nm:lang', function () {
   try { if (typeof renderDevicesView === 'function' && Array.isArray(lastDevicesList) && lastDevicesList.length) renderDevicesView(); } catch (e) {}
+  // v2.50.0 — شريط العطل المركزي (RCA) يُبنى بعيدًا عن الجدول ⇒ يُعاد جلبه عند تبديل اللغة أيضًا.
+  try { if (typeof loadIncidentsBanner === 'function') loadIncidentsBanner(); } catch (e) {}
 });
