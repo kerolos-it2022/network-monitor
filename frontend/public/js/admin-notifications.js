@@ -36,6 +36,26 @@ function toggleLogLang() {
 // تغيير لغة الواجهة يُعيد كتابة نصّ الزرّ؛ وإعادة رسم الجدول تتكفّل بها nm-lang.js (نقر التبويب).
 document.addEventListener('nm:lang', paintLogLangBtn);
 
+// ═══ v2.34.0 — شرائح شاشة الإشعارات (بنفس نمط شاشة «اكتشاف الأجهزة»): الإعدادات ⇄ سجل الإشعارات ═══
+// شريط الشرائح داخل #section-notifications فيبقى ظاهرًا في الشريحتين، والسجل قسمٌ مستقل يُخفى ويُظهر.
+const NTF_SUB_PANELS = { settings: 'ntf-settings-panel', logs: 'section-logs' };
+let currentNtfSub = 'settings';
+
+function showNotifSub(sub) {
+  currentNtfSub = NTF_SUB_PANELS[sub] ? sub : 'settings';
+  for (const [key, panelId] of Object.entries(NTF_SUB_PANELS)) {
+    const el = document.getElementById(panelId);
+    if (el) el.classList.toggle('hidden', key !== currentNtfSub);
+  }
+  const bar = document.getElementById('ntf-segments');
+  if (bar) {
+    bar.querySelectorAll('button[data-sub]').forEach((b) => {
+      b.classList.toggle('btn-primary', b.dataset.sub === currentNtfSub);
+    });
+  }
+  if (currentNtfSub === 'logs') loadNotificationLogs(); // أهمّل التخزين: افتح السجل ببيانات لحظية
+}
+
 async function loadNotificationSettings() {
   const r = await api('/api/notifications/settings');
   if (!r.success) return;
@@ -279,6 +299,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // v2.34.0 — تبويب «الإشعارات» صار يعرض الإعدادات + سجل الإشعارات معًا (شاشة واحدة)
   // ⇒ تحميل السجل يتم عند فتح نفس التبويب.
   document.getElementById('tab-notifications').addEventListener('click', loadNotificationLogs);
+  // شرائح الإعدادات/السجل: زرّ لكل شريحة + بداية دائمًا بشريحة الإعدادات عند فتح التبويب.
+  // ملاحظة: setTimeout(0) مُتعمَّد — admin-tabs يُظهِر القسمين معًا عند نقر التبويب، فنُطبّق الشريحة
+  // المختارة **بعدها** (لا نعتمد على ترتيب تسجيل المستمعين).
+  const ntfBar = document.getElementById('ntf-segments');
+  if (ntfBar) {
+    ntfBar.querySelectorAll('button[data-sub]').forEach((b) => {
+      b.addEventListener('click', () => showNotifSub(b.dataset.sub));
+    });
+  }
+  const ntfTab = document.getElementById('tab-notifications');
+  if (ntfTab) ntfTab.addEventListener('click', () => setTimeout(() => showNotifSub('settings'), 0));
   // v2.33.0 — فلتر حالة السجل (كل الحالات / تم الإرسال / فشل / مكتوم صيانة)
   const filterStatusEl = document.getElementById('logs-filter-status');
   if (filterStatusEl) {

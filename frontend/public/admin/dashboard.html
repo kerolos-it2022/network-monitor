@@ -470,7 +470,12 @@
     </section>
 
     <section id="section-notifications" class="hidden">
-      <div class="nm-card">
+      <!-- v2.34.0 — شريط شرائح بنفس نمط شاشة «اكتشاف الأجهزة»: الإعدادات ⇄ سجل الإشعارات في شاشة واحدة -->
+      <div id="ntf-segments" class="nm-segmented">
+        <button type="button" class="btn btn-primary" id="seg-ntf-settings" data-sub="settings" data-i18n="ntf.sub.settings">⚙️ الإعدادات</button>
+        <button type="button" class="btn" id="seg-ntf-logs" data-sub="logs" data-i18n="ntf.sub.logs">📋 السجل</button>
+      </div>
+      <div class="nm-card" id="ntf-settings-panel">
         <div class="nm-card-head">
           <h3 class="nm-card-title" data-i18n="card.notifications.title">🔔 إعدادات الإشعارات</h3>
           <span class="nm-chip" data-i18n="notify.chip">كل القنوات اختيارية — تُحفظ بزر «حفظ الإعدادات» بالأسفل</span>
