@@ -178,6 +178,7 @@
     'notify.sub.smart': '🧠 Notification intelligence',
     'ntf.sub.settings': '⚙️ Settings',
     'ntf.sub.logs': '📋 Log',
+    'ntf.lang.label': 'Log message language:',
     'backup.card.schedule': '⏰ Scheduled automatic backup',
     'backup.card.main': '💾 Database backup & restore',
     'backup.card.cleanup': '🧹 Clean up large log tables',

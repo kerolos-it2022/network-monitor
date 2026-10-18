@@ -478,7 +478,14 @@
       <div class="nm-card" id="ntf-settings-panel">
         <div class="nm-card-head">
           <h3 class="nm-card-title" data-i18n="card.notifications.title">🔔 إعدادات الإشعارات</h3>
-          <span class="nm-chip" data-i18n="notify.chip">كل القنوات اختيارية — تُحفظ بزر «حفظ الإعدادات» بالأسفل</span>
+          <div class="nm-row">
+            <span class="nm-chip" data-i18n="notify.chip">كل القنوات اختيارية — تُحفظ بزر «حفظ الإعدادات» بالأسفل</span>
+            <!-- v2.34.0 — لغة **رسائل** السجل: يتبع لغة الواجهة حتى أول ضغطة، ثم يحفظ اختيارك في هذا المتصفح.
+                 موضعه هنا (مع الإعدادات) بقرار المالك: «انقل زر لغة الاشعارات الى شاشة 🔔 إعدادات الإشعارات». -->
+            <span class="nm-sub" data-i18n="ntf.lang.label">لغة رسائل السجل:</span>
+            <button id="logs-lang-toggle" type="button" class="btn btn-sm"
+                    title="عرض رسائل السجل بالإنجليزية (هذه الشاشة فقط)">🌐 English</button>
+          </div>
         </div>
 
         <div class="nm-sub-section">
@@ -718,9 +725,7 @@
               <option value="channel" data-i18n="logs.sort.channel">📢 حسب القناة</option>
               <option value="status" data-i18n="logs.sort.status">📊 حسب الحالة</option>
             </select>
-            <!-- v2.34.0 — لغة **رسائل** السجل وحدها (الزرّ يتبع لغة الواجهة حتى أول ضغطة، ثم يحفظ اختيارك) -->
-            <button id="logs-lang-toggle" type="button" class="btn btn-sm"
-                    title="عرض رسائل السجل بالإنجليزية (هذه الشاشة فقط)">🌐 English</button>
+            <!-- v2.34.0 — زرّ لغة رسائل السجل انتقل إلى شاشة «🔔 إعدادات الإشعارات» (طلب المالك) -->
             <button id="logs-clear-btn" class="btn btn-danger btn-sm" data-i18n-attr="title:logs.clearTitle" title="مسح سجل الإِشعارات القديمة">
               <span data-i18n="logs.clear">🗑️ مسح الإشعارات</span>
             </button>

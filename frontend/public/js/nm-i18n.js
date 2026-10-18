@@ -184,6 +184,7 @@
       'notify.sub.smart': '🧠 ذكاء الإشعارات',
       'ntf.sub.settings': '⚙️ الإعدادات',
       'ntf.sub.logs': '📋 السجل',
+      'ntf.lang.label': 'لغة رسائل السجل:',
       'backup.card.schedule': '⏰ النسخ الاحتياطي التلقائي المجدول',
       'backup.card.main': '💾 النسخ الاحتياطي واستعادة قاعدة البيانات',
       'backup.card.cleanup': '🧹 تَنظيف جداول السِّجلّات الكبيرة',
