@@ -543,7 +543,12 @@ body.sidebar-collapsed .sidebar .tab-btn { padding-inline: 0; }
 
 /* الفوتر يلتصق بأسفل الشاشة عندما يكون المحتوى قصيرًا */
 .dashboard-main { display: flex; flex-direction: column; min-height: calc(100vh - 60px); }
-.dashboard-main > section { flex: 1 0 auto; }
+/* v2.34.0 — **بلا تمدّد** للأقسام (طلب المالك: «شيل الفراغ بين شاشة العرض و الازرار»):
+   `flex: 1 0 auto` كان يجعل كل قسم ظاهر يأكل حصة من الفراغ الزائد ⇒ في تبويب قصير (اكتشاف
+   الأجهزة) صار `#section-discovery` بطول ٢١٠px ومحتواه ٤٧px فقط (١٦٣px فراغ حول الأزرار)، ومثله
+   أسفل بطاقة المسح. الآن كل قسم بارتفاع محتواه الطبيعي، والفوتر يبقى ملتصقًا بالأسفل عبر
+   `margin-top: auto` أعلاه — فالفراغ الزائد (إن وُجد) يبقى **أسفل المحتوى** ولا يبدو حول العناصر. */
+.dashboard-main > section { flex: 0 0 auto; }
 .dashboard-main > .site-footer,
 .dashboard-main > footer { margin-top: auto; }
 
