@@ -2,7 +2,7 @@
 
 [English](README.md) · **العربية**
 
-[![الإصدار](https://img.shields.io/badge/version-2.50.2-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![الإصدار](https://img.shields.io/badge/version-2.50.3-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B%20(24%20LTS)-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
@@ -14,7 +14,7 @@
 **تلجرام** و**واتساب** و**إشعارات الهاتف (PWA)**. كل شيء يعمل في عملية Node.js واحدة مع قاعدة بيانات
 SQLite محلية: بلا حساب سحابي وبلا أي خدمة خارجية إلزامية.
 
-> **الإصدار الحالي: v2.50.2** — واجهة بلغتين (عربي + إنجليزي بإعداد واحد)، ومراقبة **خدمات** لكل جهاز
+> **الإصدار الحالي: v2.50.3** — واجهة بلغتين (عربي + إنجليزي بإعداد واحد)، ومراقبة **خدمات** لكل جهاز
 > بحالة `DEGRADED`، ونِسَب تشغيل زمنية صادقة مع **تغطية** البيانات، و**عطل مركزي واحد** (RCA)، و**هوية
 > ثابتة** لكل جهاز، وتحصين أمني متكامل، وصورة أبلاينس (Debian ISO) تُحدِّث نفسها بأمان.
 

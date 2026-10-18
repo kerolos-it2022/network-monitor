@@ -1,5 +1,5 @@
 {
-  "for": "2.50.2",
+  "for": "2.50.3",
   "removed": [
     "docs/archive/ARCHITECTURE_REVIEW-2026-10.md",
     "docs/screenshots/dashboard-devices.png",
