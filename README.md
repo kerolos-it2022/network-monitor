@@ -2,7 +2,7 @@
 
 **English** · [العربية](README.ar.md)
 
-[![Version](https://img.shields.io/badge/version-2.50.3-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+[![Version](https://img.shields.io/badge/version-2.50.4-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B%20(24%20LTS)-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
@@ -14,7 +14,7 @@ access points, servers — with **live status**, an **NOC wall screen**, automat
 alerts through **Telegram**, **WhatsApp** and **mobile push (PWA)**. Everything runs on one small Node.js
 process with a local SQLite database: no cloud account, no external service required.
 
-> **Current release: v2.50.3** — bilingual UI (Arabic + English with one setting), per-service monitoring
+> **Current release: v2.50.4** — bilingual UI (Arabic + English with one setting), per-service monitoring
 > with `DEGRADED`, time-weighted uptime with data coverage, single root-cause incident (RCA), stable device
 > identities, hardened multi-account security, and a Debian appliance ISO that updates itself safely.
 
