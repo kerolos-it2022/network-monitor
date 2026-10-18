@@ -21,15 +21,15 @@ process with a local SQLite database: no cloud account, no external service requ
 ## ✨ Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/noc-screen.png" width="92%" alt="NOC wall screen — internet chain and live cards" />
+  <img src="docs/screenshots/noc-screen.en.png" width="92%" alt="NOC wall screen — internet chain and live cards" />
 </p>
 <p align="center"><b>NOC wall screen</b> — the live view for a TV: internet chain, counters, per-device state</p>
 
 <p align="center">
-  <img src="docs/screenshots/dashboard-devices.png" width="49%" alt="Admin dashboard — devices" />
-  <img src="docs/screenshots/public-dashboard.png" width="49%" alt="Public status page" />
+  <img src="docs/screenshots/dashboard-devices.en.png" width="49%" alt="Admin dashboard — devices" />
+  <img src="docs/screenshots/public-dashboard.en.png" width="49%" alt="Public status page" />
 </p>
-<p align="center"><b>Admin dashboard</b> and the <b>public status page</b> — dark and light themes</p>
+<p align="center"><b>Admin dashboard</b> and the <b>public status page</b></p>
 
 ## ✅ Highlights
 
