@@ -1,0 +1,9 @@
+{
+  "for": "2.50.2",
+  "removed": [
+    "docs/archive/ARCHITECTURE_REVIEW-2026-10.md",
+    "docs/screenshots/dashboard-devices.png",
+    "docs/screenshots/noc-screen.png",
+    "docs/screenshots/public-dashboard.png"
+  ]
+}

@@ -36,6 +36,14 @@ try {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // v2.50.2 — جسر لمرة واحدة: المُحدِّث القديم نسخ فوق الشجرة فبقيت ملفات حُذفت من الإصدار الجديد — تُزال عند أول إقلاع.
+  setImmediate(() => {
+    try {
+      require('./services/cleanup-stale-files.service').cleanupStaleFiles();
+    } catch (e) {
+      console.error('[CLEANUP] فشل تنظيف الملفات المتبقية:', e.message);
+    }
+  });
   // بدء محرك المراقبة بعد نجاح تشغيل الخادم.
   require('./services/monitor.service').startMonitoring();
   // v2.5.0 — بدء مُجدوِل المسح الدوري (يَقرأ scan_settings ثم يُشغّل لو enabled=1).
