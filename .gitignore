@@ -5,6 +5,10 @@ node_modules/
 backend/.env
 .env
 .env.local
+# v2.50.0 — أي صيغة بيئة أخرى (production/staging…) لا تُرفع، والقالب وحده يُستثنى
+.env.*
+*.env
+!*.env.example
 
 # Database file (re-create from schema.sql)
 database/monitoring.db
@@ -83,9 +87,11 @@ appliance/noc-*.html
 # ذاكرة ZCode — نسخة محليّة فقط (تحتوي قواعد العمل والدروس — لا تُرفع لـ GitHub و قد تضم اعتمادات)
 /memory-backup/
 
-# v2.14.5 — تنظيف GitHub: مستندات التطوير الداخلية تبقى محليّة فقط
-/docs/*
-!/docs/screenshots/
+# v2.50.0 — مجلدات التوثيق **الداخلية** فقط تبقى محليّة.
+# ملاحظة مهمّة: كانت هنا قاعدة `/docs/*` (مع استثناء اللقطات) — وهي كانت ستبلع أي توثيق عام جديد
+# يُكتب في docs/ (مثل DEPLOY.md و ARCHITECTURE.md) فلا يراه git أصلًا. أُبدلت بتجاهل محدَّد بالاسم.
+/docs/spacekit/
+/docs/private/
 /_*.scratch.*
 /cdp-*.js
 /cdp-*.txt
@@ -109,3 +115,7 @@ _db-probe.scratch.py
 cdp-*.js
 # لقطات ومقارنات اختبار في جذر المشروع (الموثوقة فقط داخل docs/screenshots)
 /*.png
+
+# ═══ v2.50.0 — حماية من الرفع بالخطأ: مجلدات العمل الخاصة (محلّية بالكامل — ليست جزءًا من المنتج) ═══
+# الهدف: أي `git add -A` مستقبلي لا يستطيع سحبها إلى المستودع العام.
+/ui-redesign/

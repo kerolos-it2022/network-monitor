@@ -162,7 +162,9 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────
   # 2) النشر الاختياري على سيرفر الإنتاج عبر SSH (PM2)
-  #    يعمل فقط عند: push على main + وجود SERVER_HOST secret
+  #    v2.50.0 — صار **يدويًّا فقط** (workflow_dispatch) لا تلقائيًّا:
+  #    الرفع على main يجب ألّا ينشر في الإنتاج من غير قرار صريح من المالك.
+  #    للتشغيل: Actions ← CI/CD Pipeline ← Run workflow (مع وجود SERVER_HOST secret).
   # ─────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Production (SSH + PM2)
@@ -170,8 +172,8 @@ jobs:
     runs-on: ubuntu-latest
     # ملاحظة: لا نستخدم "environment: production" هنا لتفادي ظهور Environment فارغ
     # في تبويب Deployments على GitHub. النشر يُسجّل عبر سجلات SSH/PM2 على السيرفر مباشرة.
-    # النشر يعمل فقط عند push على main — والـ step الداخلي يتحقق من وجود SERVER_HOST secret.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # v2.50.0 — كان الشرط: push على main. الآن: تشغيل يدوي فقط.
+    if: github.event_name == 'workflow_dispatch'
 
     # v2.8.7 — إصلاح جذري: استخدام `secrets` داخل `if:` **غير مسموح** في ملفات ال workflows
     # (كان الملف كله غير صالح ⇒ كل التشغيلات تفشل فورًا بلا أي job: startup failure).

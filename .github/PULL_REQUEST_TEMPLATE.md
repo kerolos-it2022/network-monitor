@@ -1,72 +1,80 @@
 <!--
-.pull_request_template.md — Network Monitor
+PULL_REQUEST_TEMPLATE.md — Network Monitor
 ================================================================
-شكراً لمساهمتك! ✨ قبل إرسال PR، املأ الأقسام التالية لمراجعة أسرع.
-الرجاء عدم إزالة الأقسام — وإن لم تنطبق اكتب "لا ينطبق".
+Thanks for contributing! ✨ Fill in the sections below so the review is quick.
+Please keep the sections — write "N/A" if one does not apply.
+(يمكنك الكتابة بالعربية — العناوين تبقى كما هي.)
 -->
 
-## 📝 وصف التغيير
-> ما الذي يفعله هذا PR؟ ولماذا؟ اذكر الدوافع والمشكلة المحلولة بوضوح.
+## 📝 What this change does
+
+> What does this PR do, and why? State the motivation and the problem it solves.
 
 
 
 ---
 
-## 🔗 مرتبط بـ
-> أرفق رابط الـ Issue إن وُجد (مثال: Closes #123 / Refs #45 / Fixes #12).
+## 🔗 Related
+
+> Link the issue if there is one (Closes #123 / Refs #45 / Fixes #12).
 
 
 
 ---
 
-## 🏷️ نوع التغيير
-> ضع علامة ✅ على ما ينطبق (يُتاح اختيار أكثر من نوع).
+## 🏷️ Type of change
 
-- [ ] 🐛 إصلاح خطأ (Bug fix)
-- [ ] ✨ ميزة جديدة (Feature)
-- [ ] ♻️ تحسين / إعادة هيكلة (Refactor)
-- [ ] ⚡ تحسين أداء (Performance)
-- [ ] 🛡️ تحسين أمان (Security)
-- [ ] 📚 توثيق (Docs)
-- [ ] 🔧 صيانة/بنية تحتية (Chore/CI)
-- [ ] 💥 تغيير كسري (Breaking change)
+> Tick what applies (more than one is fine).
 
----
-
-## ✅ قائمة الفحص (Checklist)
-
-- [ ] تم تشغيل الكود محلياً والاختبار يدوياً.
-- [ ] `node --check` يمرّ على كل ملفات `backend/src/` المعدّلة دون أخطاء.
-- [ ] الواجهة (frontend) لا تزال تعمل عند التعديلات على backend (مثال: `/api/health`).
-- [ ] تحديث التوثائق المتأثرة (README / DEPLOY / CHANGELOG / SECURITY.md إن لزم).
-- [ ] لا توجد معلومات حساسة (`.env`, مفاتيح, كلمات مرور) في تغييراتي.
-- [ ] لا تغييرات كسرية (Breaks) أو تم توثيقها أدناه + bump إصدار ملحوظ.
+- [ ] 🐛 Bug fix
+- [ ] ✨ New feature
+- [ ] ♻️ Refactor / cleanup
+- [ ] ⚡ Performance
+- [ ] 🛡️ Security
+- [ ] 📚 Documentation
+- [ ] 🔧 Chore / CI
+- [ ] 💥 Breaking change
 
 ---
 
-## 💥 التغييرات الكسرية (إن وُجدت)
-> صف بالتفصيل ما قد ينكسر للمستخدمين الحاليين، وكيفية الترحيل/الترقية. وإلا فاكتب "لا يوجد".
+## ✅ Checklist
+
+- [ ] Ran the code locally and tested it manually.
+- [ ] `node --check` passes on every modified file in `backend/src/` (and `frontend/public/js/`).
+- [ ] `cd backend && npm test` passes.
+- [ ] Frontend still works with the backend change (e.g. `/api/health`).
+- [ ] Updated the affected docs (README / docs/DEPLOY.md / CHANGELOG / SECURITY).
+- [ ] No sensitive data (`.env`, tokens, keys, passwords) in my diff.
+- [ ] No breaking change, or it is documented below with a version bump.
 
 ---
 
-## 🖼️ أدلة / لقطات (اختياري)
-> لقطات شاشة، مخرجات `pm2 logs`, أو نتائج `curl /api/health` تُساعد المراجع.
+## 💥 Breaking changes (if any)
 
-<details><summary>📎 أدلة</summary>
+> Describe exactly what could break for existing users and how to migrate. Otherwise write "None".
+
+---
+
+## 🖼️ Evidence (optional)
+
+> Screenshots, `pm2 logs` output or `curl /api/health` results help the reviewer.
+
+<details><summary>📎 Evidence</summary>
 
 </details>
 
 ---
 
-## 🧪 اختبار (اختياري)
-> خطوات التشخيص التي اتّبعتها للتحقق من صحة التغيير:
+## 🧪 Testing (optional)
+
+> The steps you used to verify the change:
 
 ```bash
-# مثال:
+# for example:
 # cd backend && node src/server.js &
 # curl http://localhost:4000/api/health
 ```
 
 ---
 
-شكرًا على مساهمتك في تحسين Network Monitor! 🙏
+Thank you for improving Network Monitor! 🙏

@@ -1,61 +1,63 @@
 ---
-name: 🐛 تقرير خطأ
-about: أبلغ عن مشكلة أو سلوك غير متوقع في Network Monitor
+name: 🐛 Bug report
+about: Report a problem or unexpected behaviour in Network Monitor
 title: "[BUG]: "
 labels: ["bug", "needs-triage"]
 assignees:
   - kerolos-it2022
 ---
 
-## 📝 وصف المشكلة
-> وصف موجز وواضح للمشكلة.
+## 📝 What happened
+
+> A short, clear description of the problem.
+> (يمكنك الكتابة بالعربية — العلامات تبقى كما هي حتى تُقرأ آليًّا.)
 
 ---
 
-## 🔄 خطوات إعادة الإنتاج
+## 🔄 Steps to reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
-**السلوك المتوقع:** ما الذي كان ينبغي أن يحدث؟
-
-
-
-**السلوك الفعلي:** ماذا حدث فعلاً؟
+**Expected behaviour:** what should have happened?
 
 
 
-**التكرار:** [ ] دائماً  [ ] أحياناً (كم مرة؟ % )  [ ] مرة واحدة
+**Actual behaviour:** what happened instead?
 
----
 
-## 🖥️ بيئة التشغيل
 
-| البيان | القيمة |
-|-------|---------|
-| إصدار Network Monitor | (مثال: 2.1.1 — من `/api/update/status`) |
-| نظام التشغيل | (مثال: Ubuntu 24.04 LTS / Debian 12) |
-| إصدار Node.js | (نتيجة `node -v`) |
-| إصدار PM2 | (نتيجة `pm2 -v`) |
-| المتصفح + الإصدار | (إن كانت المشكلة في الواجهة) |
-| وسيط النشر | [ ] PM2  [ ] systemd  [ ] node مباشرة  [ ] Nginx أمامي |
-| نوع المراقبة | [ ] Ping  [ ] HTTP  [ ] HTTPS  [ ] TCP Port  [ ] SNMP |
+**Frequency:** [ ] always  [ ] sometimes (how often? %)  [ ] once
 
 ---
 
-## 📋 السجلات و الأدلة
+## 🖥️ Environment
+
+| Item | Value |
+|---|---|
+| Network Monitor version | (e.g. 2.50.0 — from `/api/update/status`) |
+| Operating system | (e.g. Ubuntu 24.04 LTS / Debian 12 / appliance ISO) |
+| Node.js version | (`node -v`) |
+| PM2 version | (`pm2 -v`) |
+| Browser + version | (if the problem is in the UI) |
+| How it runs | [ ] PM2  [ ] systemd  [ ] plain node  [ ] behind Nginx |
+| Check protocol involved | [ ] Ping  [ ] HTTP  [ ] HTTPS  [ ] TCP port  [ ] SNMP |
+
+---
+
+## 📋 Logs and evidence
 
 ```bash
-# الصق هنا أي سجلات ذات صلة (طرف pm2 logs --lines 50) أو رسائل الخطأ:
+# Paste any relevant logs here (`pm2 logs --lines 50`) or the error messages:
 ```
 
-<details><summary>📎 لقطة شاشة / مقطع (اختياري)</summary>
+<details><summary>📎 Screenshot / clip (optional)</summary>
 
 </details>
 
 ---
 
-## 🎯 السياق الإضافي
-> أي معلومات أخرى تساعد في التشخيص (تكوين الشبكة، عدد الأجهزة، جدار نار، ...).
+## 🎯 Additional context
 
+> Anything else that helps: network size, number of devices, firewall setup, recent upgrade…

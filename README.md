@@ -1,589 +1,336 @@
-# 📡 نظام مراقبة أجهزة الشبكة المحلية - Network Monitor
+# 📡 Network Monitor — local network device monitoring
 
-[![Version](https://img.shields.io/badge/version-2.31.2-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
+**English** · [العربية](README.ar.md)
+
+[![Version](https://img.shields.io/badge/version-2.50.0-blue.svg)](https://github.com/kerolos-it2022/network-monitor/releases)
 [![CI](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kerolos-it2022/network-monitor/actions/workflows/ci-cd.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B%20(24%20LTS)-green.svg)](https://nodejs.org/)
 [![PWA](https://img.shields.io/badge/PWA-ready-purple.svg)](https://web.dev/progressive-web-apps/)
+[![UI](https://img.shields.io/badge/UI-Arabic%20%2B%20English-teal.svg)](docs/I18N.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
-> **نظام مراقبة احترافي** لأجهزة الشبكة المحلية (فايروول، طابعات، NVR/DVR، سويتشات، راوترات، سيرفرات...) مع مراقبة لحظية، إدارة شاملة، وإشعارات فورية عبر **Telegram** و **WhatsApp** و **تطبيق الموبايل (PWA)**.
+A self-hosted monitor for the devices on your own LAN — firewalls, switches, routers, printers, NVR/DVR,
+access points, servers — with **live status**, an **NOC wall screen**, automatic **discovery**, and instant
+alerts through **Telegram**, **WhatsApp** and **mobile push (PWA)**. Everything runs on one small Node.js
+process with a local SQLite database: no cloud account, no external service required.
 
-> 🌟 **الإصدار الحالي: v2.32.1** — 🌗 الوضعان نهاري/ليلي في كل الصفحات · 📡 نافذة تفاصيل جهاز موسّعة (شارة «إنترنت أم محليًّا فقط» + نسب تشغيل 24/7/30) · 🏷️ ملصقات QR لكل جهاز · 🎨 هوية NOC الدائمة.
+> **Current release: v2.50.0** — bilingual UI (Arabic + English with one setting), per-service monitoring
+> with `DEGRADED`, time-weighted uptime with data coverage, single root-cause incident (RCA), stable device
+> identities, hardened multi-account security, and a Debian appliance ISO that updates itself safely.
 
-## 📜 سجل الإصدارات (موجز مجمّع)
+## ✨ Screenshots
 
-| المرحلة | الإصدارات | أبرز ما أضافه |
+<p align="center">
+  <img src="docs/screenshots/noc-screen.png" width="92%" alt="NOC wall screen — internet chain and live cards" />
+</p>
+<p align="center"><b>NOC wall screen</b> — the live view for a TV: internet chain, counters, per-device state</p>
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-devices.png" width="49%" alt="Admin dashboard — devices" />
+  <img src="docs/screenshots/public-dashboard.png" width="49%" alt="Public status page" />
+</p>
+<p align="center"><b>Admin dashboard</b> and the <b>public status page</b> — dark and light themes</p>
+
+## ✅ Highlights
+
+- 🔍 **Discovery in the style of Advanced IP Scanner** — a resident listener (NBNS / mDNS / LLMNR / SSDP)
+  collects the **real device names** from the network's own broadcasts, plus a pending basket, a trust list
+  and on-demand subnet sweeps (ports, MAC vendor, reverse DNS, suggested device type).
+- 📡 **Live monitoring every 10 seconds** (ping / HTTP / HTTPS / TCP port, per device) with a **NOC wall
+  screen**: network chain, real names, uptime bars and a red alert overlay you can silence.
+- 🧩 **Monitored services per device** (Odoo, web UIs, TCP ports…): a reachable host with a dead service
+  becomes **DEGRADED** and raises its own alert instead of hiding inside a green device.
+- 🧠 **One root-cause incident (RCA)** when a parent device drops: a single alert naming the upstream
+  culprit and the affected devices — while each device keeps its own downtime history.
+- 📈 **Honest uptime**: percentage **with coverage and data-quality** per device (24 h / 7 d / 30 d) and
+  90-day rollups kept after the raw logs are pruned.
+- 🪪 **Stable asset identity** (`NM-000123`): several MACs and an IP history per device — a DHCP change
+  never loses the identity, and a clash goes to a **review list** instead of merging silently.
+- 🔔 **Smart alerts**: Telegram + WhatsApp + Web Push · storm batching · daily report (optional AI summary)
+  · outage escalation with an optional repeating reminder · an interactive Telegram bot with inline buttons.
+- 🤖 **AI chat about your own network** — answers from your local database, through any OpenAI-compatible
+  key (optional). Internal IPs/MACs are redacted before anything leaves the box, and a local rules mode
+  answers with no internet at all.
+- 🏷️ **QR labels** per device — one scan from a phone shows the full device card.
+- 💾 Scheduled backups · 🧹 downtime archive & retention · 📄 printable weekly reports · 📊 Excel/CSV export.
+- 🔐 Multi-account (admin / viewer) · login lockout · audit log · CSRF protection · a System-status screen.
+- 🌐 **Two languages: Arabic (default) and English** — one setting in the dashboard switches the dashboard,
+  the public page and the NOC screen together, and the layout flips RTL ↔ LTR while IPs and dates stay
+  readable. Notifications keep their own language switch on the log screen.
+
+## 🧱 Tech stack
+
+| Layer | Choice |
+|---|---|
+| Runtime | Node.js ≥ 22 (24 LTS recommended) |
+| Server | Express — REST + SSE, static RTL/LTR pages |
+| Database | SQLite via better-sqlite3 (WAL, one synchronous connection) |
+| Frontend | Vanilla JS, no build step, installable PWA + service worker |
+| Notifications | Telegram Bot API · WhatsApp provider API · Web Push (VAPID, self-generated) |
+| Deployment | PM2 or systemd · Nginx reverse proxy (optional) · Debian 12 appliance ISO |
+
+## 🎯 Requirements
+
+| Requirement | Version | Notes |
 |---|---|---|
-| الأساس | v2.1 → v2.8.9 | بناء المنصة: مراقبة بالـ ping، NOC، مستخدمون، بنية قاعدة |
-| الإشعارات والذكاء | v2.13 → v2.16 | إصلاح الإشعارات جذريًّا + VAPID تلقائي + Web Push + بوت تلجرام تفاعلي + تجميع العواصف + تقرير يومي |
-| الأمان والهوية | v2.17 → v2.20 | نظام تحديث آمن (tags pagination) + ترتيب IP رقميًّا + شاشة NOC منسّقة + هوية عربية |
-| التوسّع | v2.20 → v2.24 | حسابات متعددة (مدير/عرض) + تصدير انقطاعات CSV + تصنيف الانقطاع + نسخ احتياطي مجدول |
-| الذكاء والأدوات | v2.25 → v2.29 | شات AI عربي + ملصقات QR + نافذة تفاصيل موسّعة + شارة إنترنت/محلي + مسح بنمط AIS + مستمع دائم NBNS/mDNS/LLMNR |
-| الوضعان والتنسيق | v2.30 → v2.32.1 | هوية NOC ثم إرجاع الوضعين نهاري/ليلي + تنظيف GitHub (تحرير 42.8GB) |
+| **Node.js** | **22 or newer (24 LTS recommended)** | `better-sqlite3@13` requires ≥ 22 |
+| **sqlite3 CLI** | any | Only to create the database file from `database/schema.sql` |
+| **pm2** | latest | `npm install -g pm2` (Linux production) |
+| **Git** | any | To clone and to update |
+| **Browser** | Chrome 90+ / Edge 90+ / Firefox 90+ / Safari 16.4+ | PWA + Web Push |
 
-**التفاصيل الكاملة لكل إصدار**: [CHANGELOG.md](CHANGELOG.md)
-
-## ✨ لقطات من النظام
-
-<p align="center">
-  <img src="docs/screenshots/noc-screen.png" width="92%" alt="شاشة NOC — سلسلة الإنترنت ومراقبة لحظية" />
-</p>
-<p align="center"><b>شاشة NOC</b> — الجدارية اللحظية: سلسلة الإنترنت، العدادات، الحالات</p>
-
-<p align="center">
-  <img src="docs/screenshots/dashboard-devices.png" width="49%" alt="لوحة التحكم — الأجهزة" />
-  <img src="docs/screenshots/public-dashboard.png" width="49%" alt="الصفحة العامة" />
-</p>
-<p align="center"><b>لوحة التحكم</b> و<b>الصفحة العامة</b> — بالوضعين نهاري/ليلي في كل الصفحات</p>
-
-## ✅ أبرز المميزات
-
-- 🔍 **اكتشاف أجهزة بنمط Advanced IP Scanner** — مستمع دائم (NBNS/mDNS/SSDP) يجمع أسماء الأجهزة الحقيقية من بثّ الشبكة نفسه، وسلة اعتماد + قائمة ثقة + مسح فوري.
-- 📡 **مراقبة لحظية** (فحص كل 10 ثوانٍ) مع شاشة **NOC** جدارية: سلسلة الشبكة، أسماء حقيقية، غطاء إنذار قابل للإيقاف من الإشعارات.
-- 🔔 **إشعارات ذكية**: تلجرام + واتساب + PWA · تجميع العواصف · تقرير يومي (مع تحليل AI اختياري) · تصعيد انقطاع + تذكير دوري · بوت تفاعلي بأزرار.
-- 🤖 **شات AI بالعربية** عن شبكتك (سياق من قاعدتك — بمفتاح أي مزوّد متوافق OpenAI، اختياري بالكامل).
-- 🏷️ **ملصقات QR** لكل جهاز: مسحة موبايل = تفاصيل كاملة.
-- 💾 نسخ احتياطي مجدول · 🧹 أرشفة وتنظيف سجل الانقطاع · 📄 تقارير أسبوعية للطباعة · 📊 تصدير Excel/CSV.
-- 🔐 حسابات متعددة (مدير/عرض) · 🔒 قفل محاولات الدخول · 🖥️ شاشة حالة النظام.
-- 🌐 **لغتان: عربي (افتراضي) وإنجليزي** بزر تبديل في شريط اللوحة — الإعداد واحد للوحة والصفحة العامة وشاشة NOC، والاتجاه ينقلب تلقائيًّا (RTL ↔ LTR) مع عزل قيم IP/التواريخ. التفاصيل والخارطة في `I18N.md`.
-
-### 🆕 في 2.33.0 (SpaceKit hardening — غير مُصدَر بعد)
-- 🧩 **خدمات مراقَبة لكل جهاز** (Odoo، واجهات ويب، منافذ TCP…) بحالة مستقلة: مضيف متصل + خدمة متوقفة = **DEGRADED** وتنبيه خاص بالخدمة — مع شاشة إدارة داخل نافذة الجهاز.
-- 📈 **تشغيل زمني صادق**: نسبة + **تغطية** + جودة بيانات لكل جهاز (24 ساعة/7 أيام/30 يومًا)، و**تجميعات محفوظة 90 يومًا** قبل تنظيف السجلات الخام.
-- 🧠 **عطل مركزي واحد** عند سقوط جهاز أعلى (RCA): إشعار واحد + قائمة المتأثرين مع الاحتفاظ بانقطاع كل جهاز.
-- 🪪 **هوية ثابتة للأجهزة** (`NM-000123`): عدة MACs وسجل عناوين IP بتاريخ — تغيّر DHCP لا يُفقد الهوية، وأي التباس يدخل **قائمة مراجعة** بلا دمج تلقائي.
-- 🎛️ **إعدادات عرض**: وضع العرض العام للزوار (lan/minimal/off) + عرض **عناوين IP** على الصفحة العامة وشاشة NOC **لأي مستخدم مسجَّل** (مدير أو عرض) — والزوار بلا عناوين دائمًا (قابل للإيقاف حتى للمسجّلين).
-- 🔒 **تحصين أمني شامل**: أدوات التشخيص بجلسة وصلاحيات، فصل العرض العام عن الجرد الداخلي، جلسات دائمة، CSRF، سجل تدقيق، وبذرة أدمن آمنة.
-- 🤖 **AI بخصوصية**: تنقيح العناوين/MAC قبل أي إرسال (مع معاينة شفافة)، ووضع محلي بقواعد يعمل بلا إنترنت.
-- ⚙️ **متطلب جديد**: **Node.js 22+ (24 LTS موصى به)** — تفاصيل الترقية والتراجع في `docs/spacekit/RELEASE_NOTES_2.33.0.md`.
-
-## ⚡ التشغيل السريع
+## ⚡ Quick start
 
 ```bash
-git clone https://github.com/kerolos-it2022/network-monitor.git
-cd network-monitor && cd backend && npm ci --omit=dev && npm start
-# ✨ أو استخدم صورة الأبلاينس الجاهزة (Debian Live) — انظر المجلد appliance/
-```
-
-📜 **تاريخ الإصدارات الكامل (v2.8.9 → الآن)**: مُوثَّق بالتفصيل في [CHANGELOG.md](CHANGELOG.md) — ورؤية خارطة المميزات القادمة في قائمة الاقتراحات المسجلة.
----
-
-## 📋 **جدول المحتويات**
-
-- [✨ المميزات الرئيسية](#-المميزات-الرئيسية)
-- [🎯 المتطلبات](#-المتطلبات)
-- [🚀 التثبيت السريع](#-التثبيت-السريع)
-- [🐧 النشر على سيرفر Linux](#-النشر-على-سيرفر-linux)
-- [💿 صورة الأبلاينس (Appliance ISO)](#-صورة-الأبلاينس-appliance-iso)
-- [🔄 نظام التحديثات من GitHub](#-نظام-التحديثات-من-github)
-- [🔍 Network Discovery (اكتشاف الشبكة)](#-network-discovery-اكتشاف-الشبكة)
-- [🤖 إعداد بوت تيليجرام](#-إعداد-بوت-تيليجرام)
-- [📱 إشعارات الموبايل (PWA + Web Push)](#-إشعارات-الموبايل-pwa--web-push)
-- [🔧 إعدادات متقدمة](#-إعدادات-متقدمة)
-- [📁 هيكل المشروع](#-هيكل-المشروع)
-- [🔌 مرجع API](#-مرجع-api)
-- [✅ اختبار سريع](#-اختبار-سريع)
-- [🛡️ الأمان](#️-الأمان)
-- [🗺️ خارطة الطريق](#️-خارطة-الطريق)
-
----
-
-## ✨ **المميزات الرئيسية**
-
-| الميزة | الوصف |
-|----------|---------|
-| 📊 **مراقبة لحظية** | Ping / HTTP / HTTPS / TCP Port كل 10 ثوانٍ (قابل للتعديل) |
-| 📡 **بثّ حيّ SSE** | تحديث لحظي لحالة الأجهزة لشاشة NOC والصفحة العامة (`/api/live/status`) + polling احتياطي تلقائي |
-| 📱 **PWA جاهز** | تثبيت على Android/iOS/Desktop، يعمل أوفلاين |
-| 🔔 **إشعارات فورية** | Telegram + WhatsApp + Web Push (VAPID) |
-| 🌐 **واجهة عربية RTL** | دعم كامل للغة العربية، وضع ليلي/نهاري |
-| 📊 **رسوم بيانية** | زمن الاستجابة، Uptime%، سجل الانقطاعات |
-| 🔍 **أدوات الشبكة** | Ping + Tracert مباشر عبر SSE |
-| 🔐 **أمان عالي** | bcrypt، Prepared Statements، Sessions آمنة |
-| 🐧 **جاهز لـ Linux** | سكريبت نشر آلي، PM2، systemd/Nginx، يدعم كل التوزيعات |
-| 💿 **صورة Appliance (ISO)** | Debian 12 live + نظام مثبَّت + **تحديث ذاتي آمن** بمساعد root منفصل |
-| 🔄 **تحديثات GitHub** | صفحة منظّمة: شريط حالة · تقدّم بخطوات · شارة تحديث متاح · **الرجوع لإصدار أقدم** · **نسخة احتياطية ثم تحديث** |
-| 🌍 **الوصول عن بُعد (ngrok)** | لوحة تحكم كاملة للنفق: الرابط العام · الدومين الثابت · التشغيل التلقائي · تحكّم آمن عبر مساعد root |
-| 🔍 **Network Discovery** | اكتشاف تلقائي للأجهزة على الشبكة |
-
----
-
-## 🎯 **المتطلبات**
-
-| المتطلب | الإصدار | ملاحظات |
-|-----------|---------|---------|
-| **Node.js** | **22 أو أعلى (24 LTS موصى به)** — `better-sqlite3@13` يشترط ≥22 | [تحميل](https://nodejs.org/) |
-| **Python 3** | 3.8+ | اختياري/احتياطي فقط — `better-sqlite3@13` يُثبَّت بثنائية جاهزة (بلا ترجمة) |
-| **sqlite3 CLI** | - | لإنشاء قاعدة البيانات |
-| **pm2** | أحدث إصدار | `npm install -g pm2` |
-| **Git** | - | لاستنساخ المشروع |
-| **متصفح حديث** | Chrome 90+ / Firefox 90+ / Safari 16.4+ / Edge 90+ | لـ PWA و Web Push |
-
-### أدوات البناء (لبناء `better-sqlite3`):
-| النظام | الأمر |
-|----------|-------|
-| **Debian/Ubuntu/Mint** | `sudo apt install -y python3 make g++ build-essential` |
-| **RHEL/CentOS/Fedora/Rocky/Alma** | `sudo dnf install -y python3 make gcc gcc-c++` |
-| **Arch/Manjaro** | `sudo pacman -S python make gcc` |
-| **Alpine** | `sudo apk add python3 make g++ build-base` |
-| **openSUSE** | `sudo zypper install python3 make gcc gcc-c++` |
-
----
-
-## 🚀 **التثبيت السريع (3 خطوات)**
-
-### **الطريقة الأولى: التثبيت المحلي (للتطوير/الاختبار)**
-
-```bash
-# 1. استنساخ المشروع
 git clone https://github.com/kerolos-it2022/network-monitor.git
 cd network-monitor
 
-# 2. إنشاء قاعدة البيانات
-mkdir -p database
-sqlite3 database/monitoring.db < database/schema.sql
+# 1) database
+mkdir -p database && sqlite3 database/monitoring.db < database/schema.sql
 
-# 3. إعداد متغيرات البيئة
-cp backend/.env.example backend/.env
-# عدّل backend/.env بأدواتك المفضلة (nano/vim/code)
+# 2) settings
+cp backend/.env.example backend/.env        # then edit backend/.env
 
-# 4. تثبيت التبعيات وتشغيل
+# 3) install + first admin + run
 cd backend && npm install
-node src/seedAdmin.js    # إنشاء مدير افتراضي
-npm start                # تشغيل الخادم
+node src/seedAdmin.js
+npm start
 ```
 
-> **📝 ملاحظة**: على Windows، إذا لم تتوفر `sqlite3`، استخدم [DB Browser for SQLite](https://sqlitebrowser.org/) لاستيراد `database/schema.sql`.
+| Page | URL |
+|---|---|
+| 🌐 Public status page | `http://localhost:4000/` |
+| 🖥️ NOC wall screen | `http://localhost:4000/noc.html` |
+| 🔐 Admin login | `http://localhost:4000/admin/login.html` |
+| 📊 Dashboard | `http://localhost:4000/admin/dashboard.html` |
 
----
+> 🔑 The first admin comes from `DEFAULT_ADMIN_USERNAME` / `DEFAULT_ADMIN_PASSWORD` in `backend/.env`
+> (weak defaults are refused unless `NM_ALLOW_WEAK_ADMIN=1`). **Change the password right after the first
+> login.**
+> 📝 On Windows without the `sqlite3` CLI, import `database/schema.sql` with
+> [DB Browser for SQLite](https://sqlitebrowser.org/).
 
-### **الوصول للواجهات**
+## 🐧 Deploying on a Linux server (recommended path)
 
-| الواجهة | الرابط |
-|----------|--------|
-| 🌐 **الصفحة العامة** (عرض حالة الأجهزة) | `http://localhost:4000/` |
-| 🖥️ **شاشة NOC** (للعرض على TV) | `http://localhost:4000/noc.html` |
-| 🔐 **تسجيل الدخول** | `http://localhost:4000/admin/login.html` |
-| 📊 **لوحة التحكم** | `http://localhost:4000/admin/dashboard.html` |
-
-> 🔑 **بيانات الدخول الافتراضية**: اسم المستخدم `admin` وكلمة المرور من متغيّر `DEFAULT_ADMIN_PASSWORD` في `backend/.env` (القيمة الاحتياطية الافتراضية داخل `backend/src/seedAdmin.js`) — ⚠️ **غيّرها فورًا** من لوحة التحكم بعد أول تسجيل دخول.
-
----
-
-## 🐧 **النشر على سيرفر Linux (الطريقة المعتمدة)**
-
-يدعم **جميع التوزيعات الرئيسية** — السكريبت يكتشف التوزيعة ومدير الحزم تلقائياً:
-
-| العائلة | التوزيعات | مدير الحزم |
-|----------|-----------|------------|
-| **Debian** | Ubuntu, Mint, Pop!_OS, Kali, Debian | `apt` |
-| **Red Hat** | RHEL, CentOS, Rocky, Alma, Fedora | `dnf` / `yum` |
-| **Arch** | Arch, Manjaro, EndeavourOS | `pacman` |
-| **Alpine** | Alpine Linux | `apk` |
-| **SUSE** | openSUSE, SLES | `zypper` |
-
-### 🚀 النشر السريع بـ سكريبت آلي (5 دقائق)
+`deploy.sh` detects the distribution (Debian/Ubuntu, RHEL family, Arch, Alpine, openSUSE) and does the whole
+install:
 
 ```bash
-# على جهازك: ادفع الكود لـ GitHub
-git remote add origin https://github.com/kerolos-it2022/network-monitor.git
-git push -u origin main
-
-# على السيرفر:
-sudo mkdir -p /opt && sudo chown $USER:$USER /opt
-cd /opt
-git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
-cd network-monitor
-sudo bash deploy.sh install
+sudo mkdir -p /opt && sudo chown "$USER":"$USER" /opt
+cd /opt && git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
+cd network-monitor && sudo bash deploy.sh install
 ```
 
-### 👉 **ما يفعله `deploy.sh install` تلقائياً:**
-1. ✅ **يكشف التوزيعة** ومدير الحزم المناسب
-2. ✅ **يحدّث النظام** ويثبّت الأدوات الأساسية (git, curl, traceroute, ...)
-3. ✅ يثبّت **أدوات البناء** (python3, make, g++)
-4. ✅ يثبّت **Node.js 24 LTS** (عبر NodeSource — والمشروع يشترط Node ≥22)
-5. ✅ يثبّت **PM2** عالمياً + **sqlite3 CLI**
-6. ✅ ينشئ `.env` + يولّد سرّ الجلسة عشوائيًّا + **مفاتيح VAPID تلقائياً**
-7. ✅ `npm install` + بناء `better-sqlite3` للنظام المستهدف
-8. ✅ يهيّئ قاعدة البيانات + ينشئ مديراً افتراضياً
-9. ✅ يشغّل التطبيق عبر **PM2** + يفعّل البدء التلقائي (systemd/OpenRC)
-10. ✅ يعرض روابط الوصول + تعليمات الموبايل
+It installs the build tools, **Node.js 24 LTS** and PM2, creates `backend/.env` with a random session secret
+and freshly generated VAPID keys, rebuilds `better-sqlite3` for the target system, prepares the database,
+seeds the admin, starts the app under PM2 and prints the access URLs.
 
-> 💡 **مهم**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند النقل من Windows إلى Linux.
-
-### 📋 **أوامر إدارة الخدمة (PM2)**
 ```bash
-pm2 status                    # حالة التطبيق
-pm2 logs network-monitor      # عرض السجلات اللحظية
-pm2 restart network-monitor   # إعادة تشغيل
-pm2 stop network-monitor      # إيقاف
-pm2 delete network-monitor    # إزالة من PM2
+pm2 status                  # service state
+pm2 logs network-monitor    # live logs
+pm2 restart network-monitor # restart after a config change
 ```
 
-### 📚 **أدلة النشر التفصيلية**
-| الدليل | المحتوى |
-|-------|---------|
-| [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي خطوة بخطوة (بدون سكريبت) |
-| [`DEPLOY.md`](./DEPLOY.md) | نشر إنتاجي كامل (Nginx, HTTPS, Firewall, Backup) |
-| [`linux-setup/`](./linux-setup/) | ملفات systemd + Nginx جاهزة (بديل عن PM2) |
-| [`docs/sessions/APPLIANCE-HANDOFF.md`](./docs/sessions/APPLIANCE-HANDOFF.md) | صورة الأبلاينس (ISO): البناء، التنصيب، والتشخيص |
-| [`appliance/boot-test/e2e.sh`](./appliance/boot-test/e2e.sh) | اختبار تنصيب كامل آليًّا في QEMU |
+Full production guide (Nginx, HTTPS, firewall, backups, multi-site notes):
+[docs/DEPLOY.md](docs/DEPLOY.md) · systemd/Nginx alternative to PM2: [docs/linux-setup/](docs/linux-setup/).
 
----
+## 💿 Appliance ISO (bootable Debian)
 
-## 💿 **صورة الأبلاينس (Appliance ISO)**
+- Built by [`.github/workflows/build-iso.yml`](.github/workflows/build-iso.yml) automatically on any `v*`
+  tag (attached to the GitHub Release together with `SHA256SUMS.txt`), or manually:
+  `cd appliance && NM_VERSION=v2.50.0 bash build.sh` (inside a `debian:bookworm` container).
+- The installer writes the system to disk and sets **one password for every door** — the web admin account,
+  the console menu on `tty1` and the Linux account `sysadmin` — through a single root helper.
+- On the installed system the web service runs as `netmon` with systemd hardening
+  (`ProtectSystem=strict`, `NoNewPrivileges`, `PrivateTmp`) and can only write inside
+  `/var/lib/network-monitor`. Updates go through a **separate root helper**: the dashboard writes a request
+  file containing **nothing but a tag**, `nm-update.path` triggers `nm-update.service` (root), which
+  downloads from the repository, `rsync`s the files, runs `npm ci` and restarts the service — the web
+  process can never write to its own code.
 
-- تُبنى تلقائيًّا عبر [`.github/workflows/build-iso.yml`](.github/workflows/build-iso.yml) عند دفع أي **وسم** `v*` (وتُرفَق بالـ Release مع ملف `SHA256SUMS.txt`)، أو يدويًّا.
-- بناء محلي: `cd appliance && NM_VERSION=v2.13.0 bash build.sh` (داخل حاوية `debian:bookworm`).
-- على النظام المثبَّت: خدمة `network-monitor` تعمل كمستخدم `netmon` مع تحصين systemd
-  (`ProtectSystem=strict` + `NoNewPrivileges` + `PrivateTmp`)، والتحديث يتم عبر **مساعد root منفصل**:
-  لوحة التحكم تكتب **ملف طلب** يحوي وسماً فقط ⇒ `nm-update.path` يُشغّل `nm-update.service` (root) ⇒
-  تنزيل من المستودع + `rsync` + `npm ci` + إعادة تشغيل. (خدمة الويب لا تستطيع الكتابة في كودها.)
+Details: [appliance/README.md](appliance/README.md).
 
----
+## 🔄 Updates from GitHub
 
-## 🔄 **نظام التحديثات من GitHub (GitHub Updates)**
+The **Updates** tab in the dashboard checks GitHub tags through the API and shows a status bar, step-by-step
+progress, a changelog modal, an update-available badge (checked when the tab opens and every 6 hours),
+**restore-a-previous-version** from the tag list, and a **backup-then-update** button.
 
-### ✨ المميزات
-- **فحص التحديثات** - التحقق من وجود إصدارات جديدة عبر GitHub API
-- **عرض سجل التغييرات** - عرض Changelog في مودال تفاعلي
-- **تحديث بنقرة واحدة** - Git Pull + npm install + PM2 Restart، وعلى الأبلاينس عبر مساعد root
-- **متابعة التقدّم** - `/api/appliance-update/progress` يعرض حالة التحديث وآخر سطور السجل
-- **شريط حالة + خطوات تقدّم** - إصدار حالي/متاح + آخر فحص + خطوات (تنزيل ← ملفات ← تبعيات ← إعادة تشغيل)
-- **↩️ الرجوع لإصدار أقدم** - قائمة وسوم GitHub (بكاش 10 دقائق) والتنفيذ بنفس مسار الطلب الآمن
-- **🛡️ نسخة احتياطية ثم تحديث** - `POST /api/backup/create` ثم طلب التحديث بعد نجاح النسخة
-- **شارة تحديث متاح + فحص تلقائي** - نقطة برتقالية على التبويب وفحص عند الفتح وكل 6 ساعات
-- **قسم «الوصول عن بُعد» (ngrok)** - إدارة النفق من اللوحة: عرض الرابط/الدومين/التشغيل التلقائي +
-  تحكّم (تشغيل · إيقاف · إعادة تشغيل) عبر مساعد `nm-remote` بملف طلب وقائمة بيضاء صارمة — بلا أي أمر من الويب
-- **سكريبت التحديث (update.sh)** - حفظ التغييرات المحلية، تحديث التبعيات، إعادة تشغيل PM2
+**Updates are never automatic** — nothing is downloaded or installed until you press the button, and on the
+appliance the actual work is done by the root helper described above. Manual path on a server:
 
-### 🎯 كيفية الاستخدام
-1. افتح لوحة التحكم → تبويب **"🔄 التحديثات"**
-2. اضغط **"🔍 فحص التحديثات"**
-3. إذا وجد تحديث → اضغط **"🚀 تطبيق التحديث"**
-4. النظام سينفذ: `git pull` → `npm install` → `pm2 restart` (وفي وضع الأبلاينس: ملف طلب ⇒ مساعد root ⇒ إعادة تشغيل تلقائية)
-
-### 📋 سكريبت التحديث (update.sh)
 ```bash
-# على السيرفر:
-cd /opt/network-monitor
-./update.sh
+cd /opt/network-monitor && ./update.sh
 ```
 
----
+## 🔍 Network discovery
 
-## 🔍 **Network Discovery (اكتشاف الشبكة)**
+- **Ping sweep** of the subnet, plus **24 common ports** per host (SSH, HTTP(S), RDP, SMB, RTSP…).
+- **MAC vendor lookup** (50+ vendors), **reverse DNS**, **SMB/NetBIOS name resolution** and a resident
+  NBNS/mDNS/LLMNR/SSDP listener that captures the name the device announces about itself.
+- Suggested **device type** (camera, printer, router, server, NAS…), response time and open ports.
+- Scan results land in a pending basket: pick the devices you want and add them to monitoring; a trust list
+  keeps the rest quiet.
 
-### 🔍 المميزات
-- **Ping Sweep** - مسح نطاق الشبكة بالكامل لاكتشاف الأجهزة المستجيبة
-- **Port Scanning** - مسح 24 منفذاً شائعاً (SSH, HTTP, HTTPS, RDP, SMB, RTSP، إلخ)
-- **MAC Vendor Lookup** - تحديد الشركة المصنعة من عنوان MAC (50+ بائع معروف)
-- **Reverse DNS Lookup** - حل اسم المضيف عبر DNS العكسي
-- **SMB/NetBIOS Name Resolution** - استخراج اسم الجهاز الحقيقي عبر nbtstat (Windows) / nmblookup (Linux)
-- **Device Type Detection** - تحديد نوع الجهاز تلقائياً (Camera, Printer, Router, Server, NAS، إلخ)
+## 🔔 Notifications
 
-### 🎯 كيفية الاستخدام
-1. افتح لوحة التحكم → تبويب **"🔍 اكتشاف الأجهزة"**
-2. أدخل نطاق الشبكة (مثال: `192.168.1.0/24`)
-3. اختر الخيارات: مسح المنافذ، استعلام SNMP
-4. اضغط **"🚀 بدء المسح"**
-5. ستظهر الأجهزة المكتشفة مع:
-   - IP، اسم مقترح، النوع، الشركة المصنعة (MAC)
-   - المنافذ المفتوحة، زمن الاستجابة
-6. حدد الأجهزة → اضغط **"➕ إضافة للمراقبة"**
+| Channel | Setup |
+|---|---|
+| **Telegram** | Create a bot with [@BotFather](https://t.me/BotFather), copy the token, get the chat id (`https://api.telegram.org/bot<TOKEN>/getUpdates` → `chat.id`), then enable the channel in **Notifications** and press *Test*. An interactive bot adds `/status`, `/down` and inline query buttons under outage messages. |
+| **WhatsApp** | Any provider API: URL + token + recipient number, enabled in **Notifications**. |
+| **Mobile push (PWA)** | No setup: the server generates its **VAPID keys on first boot** and keeps them in its settings file (stable keys keep phone subscriptions valid). Open the public page on the phone, press **🔔 Enable notifications**, then *Add to Home Screen*. |
 
----
+Per-channel test buttons tell you exactly why a channel was skipped (disabled, missing token, no registered
+phone…) instead of a generic failure, and every attempt is written to the **notification log** — a screen
+with filters, sorting, and its own **message-language switch** (see [docs/I18N.md](docs/I18N.md)).
 
-## 🤖 **إعداد بوت تيليجرام (للإشعارات)**
+## ⚙️ Configuration
 
-> **⚡ اختياري** - النظام يعمل بدونه، لكن الإشعارات تتطلبه.
+All names and comments live in [`backend/.env.example`](backend/.env.example). The essentials:
 
-1. افتح **[BotFather](https://t.me/BotFather)** في تيليجرام
-2. أرسل `/newbot` واتبع التعليمات
-3. احصل على توكن البوت من BotFather (شكله: أرقام ثم `:` ثم أحرف وأرقام ورموز)
-4. احصل على **Chat ID**:
-   - أرسل رسالة للبوت
-   - افتح: `https://api.telegram.org/bot<ضع-التوكن-هنا>/getUpdates`
-   - ابحث عن `"chat":{"id":123456789}` → هذا هو Chat ID
-5. أضف **اسم المتغيّر وقيمته** إلى `backend/.env` (اسم متغيّر التوكن مذكور في `backend/.env.example`، والـ Chat ID قيمة رقمية):
+| Variable | Purpose |
+|---|---|
+| `PORT` | HTTP port (default 4000) |
+| `DB_PATH` | SQLite file path (relative or absolute) |
+| `SESSION_SECRET` | Session secret — generated by `deploy.sh`, or randomly at boot |
+| `DEFAULT_ADMIN_USERNAME` / `DEFAULT_ADMIN_PASSWORD` | First-run admin only |
+| `SESSION_MAX_AGE` | Session lifetime in ms (default 12 h) |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Telegram alerts |
+| `WHATSAPP_API_URL` / `WHATSAPP_API_TOKEN` / `WHATSAPP_TO_NUMBER` | WhatsApp alerts |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push keys — **generated and stored automatically** when missing |
+| `MOBILE_ENABLED` | Master switch for phone notifications (1/0) |
+| `GITHUB_REPO_URL` / `GITHUB_BRANCH` / `GITHUB_TOKEN` | Update source (token optional, raises the API limit) |
+| `NM_MAX_CONCURRENT_CHECKS`, `NM_TOOLS_*`, `NM_WATCHDOG_*` | Load limits, diagnostics tools policy, engine watchdog |
 
-```env
-# داخل backend/.env — ضع هنا توكن البوت (المتغيّر المذكور في .env.example)
-TELEGRAM_CHAT_ID=123456789
-```
+> 🔐 Secrets belong in `backend/.env` only (never tracked by git) — the repository carries a template with
+> example values.
 
-> ⚠️ **لا تضع قيمًا حقيقية في ملفات المشروع أو المستودع** — القيم الحقيقية تُكتب فقط في `backend/.env` (غير مُتتبَّع في git).
-
----
-
-## 📱 **إشعارات الموبايل (PWA + Web Push)**
-
-النظام **PWA جاهز** - يعمل على Android/iOS/Desktop مع إشعارات فورية عبر **VAPID** (بدون Firebase).
-
-### 1️⃣ مفاتيح VAPID تُولَّد تلقائيًّا (v2.13.0 — لا خطوة يدوية)
-عند أول إقلاع بلا مفاتيح صالحة، يولّد الخادم زوجًا واحدًا ويحفظه في **ملف إعدادات الخدمة**:
-`/var/lib/network-monitor/env` في الأبلاينس، أو `backend/.env` في التثبيت اليدوي — وتبقى ثابتة بعد
-إعادة التشغيل (ثبات المفاتيح شرط بقاء تسجيلات الهواتف صالحة). لِذا **لا تحتاج** أي أمر توليد يدوي.
-
-### 2️⃣ تفعيل قنوات الإشعارات
-الأسماء الكاملة للمتغيّرات في [`backend/.env.example`](./backend/.env.example). ولو تركت الاعتمادات
-فارغة في لوحة التحكم بينما هي مضبوطة في ملف الإعدادات، فسيستعملها الخادم ويُخبرك بذلك في تبويب
-**🔔 الإشعارات** (حقل المصدر: قاعدة/ملف الإعدادات) بدل أن يظهر «غير مضبوط» مع إشعارات تعمل فعلًا.
-
-### 3️⃣ تفعيل من لوحة التحكم
-1. تسجيل دخول → تبويب **🔔 الإشعارات**
-2. فعّل القنوات المطلوبة (تلجرام · واتساب · **إشعارات الهاتف مفعّلة**)
-3. حفظ → اضغط **🔔 اختبار الإشعار** ⇒ يعرض سطرًا لكل قناة بنتيجتها أو بسبب تخطّيها
-
-### 4️⃣ على هاتفك (Android/iOS)
-1. افتح `http://<IP-السيرفر>:4000` من **Chrome** (Android) أو **Safari** (iOS 16.4+)
-2. اضغط **🔔 تفعيل الإشعارات** → اسمح
-3. اضغط قائمة المتصفح (⋮) → **Add to Home Screen** لتثبيت التطبيق
-4. **اختبر**: من لوحة التحكم → 🔔 اختبار الإشعار
-
-> ⚠️ **iOS**: يتطلب iOS 16.4+ و Safari. الأجهزة الأقدم لا تدعم Web Push لكن التطبيق يعمل كـ PWA.
-
----
-
-## 🔧 **إعدادات متقدمة**
-
-### 🔐 متغيرات البيئة الأساسية (`backend/.env`)
-
-الأسماء الكاملة مع الشرح موجودة في [`backend/.env.example`](./backend/.env.example). أهمّها:
-
-| المتغيّر | الوصف |
-|-----------|--------|
-| `PORT` | منفذ الخادم (افتراضي 4000) |
-| `DB_PATH` | مسار ملف قاعدة البيانات (نسبي أو مطلق) |
-| `SESSION_SECRET` | سرّ الجلسة — **يُولَّد تلقائيًّا** في `deploy.sh install`، وإلا يولّد الخادم مفتاحًا عشوائيًّا عند الإقلاع |
-| `DEFAULT_ADMIN_USERNAME` / `DEFAULT_ADMIN_PASSWORD` | حساب المدير الافتراضي (يُستخدم أول تشغيل فقط) |
-| `SESSION_MAX_AGE` | عمر الجلسة بالمللي ثانية (افتراضي 12 ساعة) |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | إشعارات تيليجرام (اختياري) |
-| `WHATSAPP_API_URL` / `WHATSAPP_API_TOKEN` / `WHATSAPP_TO_NUMBER` | إشعارات واتساب عبر مزوّد (اختياري) |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | مفاتيح Web Push — **تُولَّد وتُحفظ تلقائيًّا** عند أول إقلاع إن غابت |
-| `MOBILE_ENABLED` | مفتاح رئيسي لإشعارات الموبايل (1/0) — القيمة 0 تُعطّل القناة بسبب واضح |
-| `GITHUB_REPO_URL` / `GITHUB_BRANCH` / `GITHUB_TOKEN` | إعدادات التحديثات من GitHub (التوكن اختياري — يرفع حدّ الـ API) |
-
-> 📌 **قاعدة عامة**: أي قيمة سرّية (توكن/مفتاح/كلمة مرور) تبقى في `backend/.env` فقط — وليس في README أو الكود.
-> ملف `backend/.env.example` يحتوي على الأسماء مع قيم توضيحية فقط.
-
-### 🔐 توليد مفاتيح VAPID يدوياً (إذا احتجت)
-```bash
-cd backend
-node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY='+k.publicKey); console.log('VAPID_PRIVATE_KEY='+k.privateKey)"
-```
-> 💡 `web-push` مثبّت بالفعل ضمن تبعات `backend/`، فلا حاجة لأي إعداد إضافي.
-> الناتج جاهز للّصق مباشرة في `backend/.env`.
-
----
-
-## 📁 **هيكل المشروع**
+## 📁 Project structure
 
 ```
 network-monitor/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js         # نقطة البداية + Express + Static + تركيب المسارات
-│   │   ├── db.js             # اتصال better-sqlite3
-│   │   ├── seedAdmin.js      # إنشاء المدير الافتراضي
-│   │   ├── routes/           # auth, devices, locations, deviceTypes, notifications,
-│   │   │                     # tools, update, backup, map, topology, live (SSE),
-│   │   │                     # appliance-update (مساعد root للأبلاينس)
-│   │   ├── services/         # محرك المراقبة + الفاحصون + الإشعارات + إدارة الانقطاع
-│   │   │                     # + topology.service.js + live.service.js (ناقل البثّ الحيّ)
-│   │   └── middleware/       # requireAuth
+│   │   ├── server.js          # entry point (Express + static + routes)
+│   │   ├── app.js             # app wiring, health endpoint (reads the version from package.json)
+│   │   ├── db.js              # better-sqlite3 connection + safe migrations
+│   │   ├── seedAdmin.js       # first-run admin
+│   │   ├── routes/            # auth, devices, locations, device-types, map, topology, live (SSE),
+│   │   │                      # notifications, tools, update, appliance-update, backup, ai, system…
+│   │   ├── services/          # monitor engine, checkers, notifier, incidents/RCA, discovery,
+│   │   │                      # history & uptime, backups, ngrok remote, console password…
+│   │   └── middleware/        # session auth, roles, CSRF guard, audit
+│   ├── test/                  # node:test suite (169 tests) — `npm test`
 │   ├── package.json
-│   ├── .env.example
-├── frontend/
-│   └── public/
-│       ├── index.html        # الصفحة العامة
-│       ├── noc.html          # شاشة NOC (خريطة مباني + مسار الإنترنت + بثّ حيّ)
-│       ├── admin/            # login.html + dashboard.html
-│       ├── css/style.css
-│       └── js/               # public-dashboard, public-map, charts, admin-* (منها admin-update)
-├── database/
-│   └── schema.sql
-├── appliance/                # بناء صورة ISO + hooks + اختبار QEMU
-│   ├── build.sh              # باني ISO (live-build داخل debian:bookworm)
-│   ├── config/includes.chroot/usr/local/sbin/nm-update   # مساعد التحديث (root)
-│   ├── config/includes.chroot/etc/systemd/system/nm-update.{path,service}
-│   └── boot-test/e2e.sh      # تنصيب آلي كامل في QEMU
-├── linux-setup/              # ملفات systemd + Nginx (بديل عن PM2)
-├── docs/                     # التوثيق: plans/ (مخططات الميزات) + sessions/ (تقارير الجلسات)
-├── ecosystem.config.js       # إعدادات PM2
-├── CHANGELOG.md              # سجل التغييرات (Keep a Changelog)
-├── DEPLOY.md                 # دليل النشر المفصل
-├── LICENSE                   # رخصة مغلقة — جميع الحقوق محفوظة
-├── deploy.sh                 # سكريبت النشر التلقائي
-├── update.sh                 # سكريبت التحديث التلقائي
-└── .github/
-    ├── workflows/ci-cd.yml     # CI: فحص صياغة (backend+frontend) + اختبار صحة + نشر SSH اختياري
-    ├── workflows/build-iso.yml # بناء ISO عند الوسوم + إرفاقه بالـ Release مع SHA256
-    ├── release.yml             # تصنيف ملاحظات الإصدارات تلقائيًّا
-    ├── dependabot.yml          # تحديثات تلقائية للتبعيات + GitHub Actions
-    ├── CODEOWNERS              # مالكو المستودع/موافقات تلقائية على PRs
-    ├── SECURITY.md             # سياسة الإبلاغ عن الثغرات
-    ├── PULL_REQUEST_TEMPLATE.md
-    └── ISSUE_TEMPLATE/         # قوالب تقرير الأخطاء + طلبات الميزات
+│   └── .env.example
+├── frontend/public/
+│   ├── index.html             # public status page
+│   ├── noc.html               # NOC wall screen
+│   ├── admin/                 # login.html + dashboard.html
+│   ├── css/                   # style.css (pages) + ui.css (shared design layer) + noc.css
+│   ├── js/                    # public-*, admin-*, noc.js, nm-i18n(+en), nm-format, nm-lang…
+│   ├── sw.js                  # service worker (PWA + push)
+│   └── manifest.json
+├── database/schema.sql        # full schema (fresh installs) + migrations at boot
+├── appliance/                 # ISO build (live-build), chroot hooks, root helpers, install-to-disk
+├── docs/                      # bilingual guides, screenshots, linux-setup, archive
+├── deploy.sh · update.sh · ecosystem.config.js · nginx*.conf
+└── .github/                   # CI, ISO build, release notes, security policy, templates
 ```
 
----
+## 🔌 API (summary)
 
-## 🔌 **مرجع API**
+Base URL `http://<host>:4000/api`. `🔒` = session required (admin for writes unless noted).
 
-**Base URL**: `http://<host>:4000/api`
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Server health **and current version** |
+| `/live/status` | GET | Server-Sent Events stream: device states + counters (snapshot, then changes) |
+| `/auth/login` · `/auth/logout` · `/auth/me` | POST/POST/GET | Session handling |
+| `/devices` · `/devices/:id` | GET/POST/PUT/DELETE | Device CRUD |
+| `/devices/:id/history?range=24h\|7d\|30d` | GET | Status history, uptime with coverage |
+| `/devices/export/excel` · `/devices/import/excel` | GET/POST | 🔒 Excel round-trip |
+| `/locations` · `/device-types` | GET/POST/PUT/DELETE | Locations and types (writes 🔒) |
+| `/map/tree` · `/topology` · `/topology/layout` | GET/POST | Location tree, network chain, saved layout |
+| `/notifications/settings` · `/notifications/test` · `/notifications/logs` | GET/PUT/POST/GET | 🔒 Notifications |
+| `/notifications/register` · `/notifications/vapid-public` | POST/DELETE · GET | Phone registration + VAPID public key |
+| `/tools/ping` · `/tools/tracert` | GET | Live diagnostics over SSE |
+| `/backup/info` · `/backup/list` · `/backup/restore` | GET/POST | 🔒 Backups |
+| `/update/check` · `/update/perform` · `/update/history` | POST/GET | 🔒 GitHub updates |
+| `/appliance-update/mode` · `/progress` · `/request` | GET/POST | 🔒 Appliance update helper |
+| `/public/status` · `/public/topology` | GET | Sanitised data for the public page |
 
-| المسار | الطريقة | الحماية | الوصف |
-|--------|---------|---------|-------|
-| `/health` | GET | لا | فحص صحة الخادم |
-| `/live/status` | GET | لا | **بثّ حيّ SSE** لحالات الأجهزة + العدّادات (لقطة ثم تغييرات فقط) |
-| `/auth/login` | POST | لا | تسجيل الدخول |
-| `/auth/logout` | POST | 🔒 | تسجيل الخروج |
-| `/auth/me` | GET | لا | الجلسة الحالية |
-| `/devices` | GET | لا | قائمة كل الأجهزة |
-| `/devices` | POST | 🔒 | إضافة جهاز |
-| `/devices/:id` | PUT/DELETE | 🔒 | تعديل/حذف جهاز |
-| `/devices/:id/history?range=24h\|7d\|30d` | GET | لا | سجل الحالة + Uptime |
-| `/devices/export/excel` | GET | 🔒 | تصدير Excel |
-| `/devices/import/excel` | POST | 🔒 | استيراد Excel |
-| `/locations` | GET/POST/PUT/DELETE | الكتابة 🔒 | إدارة المواقع |
-| `/locations/reorder` | POST | 🔒 | حفظ ترتيب بطاقات «خريطة المواقع» |
-| `/device-types` | GET/POST/PUT/DELETE | الكتابة 🔒 | إدارة الأنواع |
-| `/map/tree` · `/map/public/tree` | GET | الأول 🔒 | شجرة المواقع (لوحة التحكم / عام) |
-| `/topology` | GET | لا | سلسلة الشبكة + المواضع + تمييز انقطاع المسار |
-| `/topology/layout` | POST | 🔒 | حفظ مواضع بطاقات «وضع الرسم» |
-| `/backup/info` · `/backup/list` · `/backup/download` | GET | 🔒 | معلومات/قائمة/تنزيل نسخة احتياطية |
-| `/backup/restore` · `/backup/restore-existing` | POST | 🔒 | استعادة نسخة (مع نسخة أمنية قبل الاستبدال) |
-| `/appliance-update/mode` · `/progress` | GET | 🔒 | وضع الأبلاينس + تقدّم التحديث |
-| `/appliance-update/request` | POST | 🔒 | كتابة ملف طلب تحديث (وسم فقط) |
-| `/notifications/settings` | GET/PUT | 🔒 | إعدادات الإشعارات |
-| `/notifications/register` | POST/DELETE | لا | تسجيل/إلغاء موبايل |
-| `/notifications/vapid-public` | GET | لا | مفتاح VAPID العام (يُولَّد ويُحفظ عند غيابه) |
-| `/notifications/test` | POST | 🔒 | اختبار إشعار |
-| `/notifications/logs` | GET | 🔒 | آخر 100 إشعار |
-| `/tools/ping` | GET | لا | Ping مباشر (SSE) |
-| `/tools/tracert` | GET | لا | Traceroute مباشر (SSE) |
-| `/update/check` | POST | 🔒 | فحص التحديثات |
-| `/update/perform` | POST | 🔒 | تنفيذ التحديث |
-| `/update/progress` | GET | 🔒 | تقدّم تحديث الأبلاينس (حالة + سجل) |
-| `/update/history` | GET | لا | سجل الـ 20 commit الأخيرة |
-
----
-
-## ✅ **اختبار سريع بعد التشغيل**
+## ✅ Testing
 
 ```bash
-# 1. فحص الصحة
+cd backend && npm test        # node:test — 169 tests (API, security, i18n parity, notifier, history…)
 curl http://localhost:4000/api/health
-# {"success":true,"data":"ok"}
-
-# 2. افتح المتصفح
-# http://localhost:4000/          # الصفحة العامة
-# http://localhost:4000/noc.html  # شاشة NOC
-# http://localhost:4000/admin/login.html  # تسجيل الدخول
-
-# 3. سجل دخول بالحساب الإداري (المُعرَّف في backend/.env) ⚠️ غيّر كلمة المرور فورًا بعد الدخول
-# 4. اضغط تبويب "الأنواع" → أضف نوعاً (مثل "Router")
-# 5. اضغط تبويب "المواقع" → أضف موقعاً
-# 6. اضغط تبويب "الأجهزة" → أضف جهازاً
-#    IP: 192.168.1.1، النوع: Router، البروتوكول: ping
-# 7. انتظر 30 ثانية → سيظهر الجهاز بحالة "متصل" ✅
-
-# 8. جرّب أدوات الشبكة
-# http://localhost:4000/ → قسم "أدوات الشبكة" → Ping / Tracert
 ```
 
----
+Every push and pull request runs the same checks in CI (`.github/workflows/ci-cd.yml`): syntax check for
+backend and frontend JavaScript, a server health test, and the full test suite on Node 24. The CI never
+deploys on its own — deployment is a manual, deliberate step.
 
-## 🛡️ **الأمان**
+## 🛡️ Security
 
-| الطبقة | الوصف |
-|--------|--------|
-| **كلمات المرور** | bcryptjs (10 rounds) |
-| **SQL Injection** | Prepared Statements فقط |
-| **Sessions** | express-session + سر عشوائي طويل (من `.env` أو مولَّد عند الإقلاع) |
-| **XSS/CSRF** | Helmet + SameSite Cookies |
-| **API Tokens** | مقنعة في الواجهة (آخر 4 خانات) |
-| **VAPID Keys** | خاصة في `.env` فقط، عامة في API |
-| **Mobile Registrations** | معطلة تلقائياً عند انتهاء الصلاحية (404/410 من FCM) |
-| **الأبلاينس (systemd)** | `ProtectSystem=strict` + `NoNewPrivileges` + `PrivateTmp` + مسار كتابة واحد (`/var/lib/network-monitor`) |
-| **تحديث الأبلاينس** | مساعد root منفصل: خدمة الويب تكتب **وسم إصدار فقط** — لا أوامر ولا مسارات، والمستودع مُثبَّت داخل الأداة |
+| Layer | Implementation |
+|---|---|
+| Passwords | bcrypt (10 rounds), login lockout after repeated failures |
+| SQL | Prepared statements only |
+| Sessions | `express-session` with a long random secret, httpOnly cookies, persistent store |
+| Web | Helmet headers, SameSite cookies, CSRF guard on state-changing routes |
+| Access | Admin/viewer roles; the public page and NOC see **sanitised** data with no internal inventory |
+| Secrets | Masked in the UI (last 4 characters), stored only in `backend/.env` |
+| Appliance | systemd hardening + a separate root helper for updates and remote access (tag/whitelisted action only) |
+| Audit | Login, settings changes, updates, restores and destructive actions are recorded |
 
----
+Report a vulnerability as described in [SECURITY.md](.github/SECURITY.md) (Arabic: [docs/SECURITY.ar.md](docs/SECURITY.ar.md)).
 
-## 🗺️ **خارطة الطريق**
+## 🗺️ Roadmap
 
-| الميزة | الحالة | الأولوية |
-|---------|--------|----------|
-| تحديثات لحظية عبر SSE | ✅ **منفَّذ في v2.8.7** (`/api/live/status`) | عالية |
-| تحديثات لحظية عبر WebSocket | 📋 مخطط (لو احتجنا أوامر من الشاشة) | منخفضة |
-| تقارير PDF قابلة للتصدير | 📋 مخطط (Excel منفَّذ) | متوسطة |
-| صلاحيات متعددة (Admin / Operator) | 📋 مخطط | عالية |
-| دعم SNMP / MikroTik / Sophos (المصادر الخارجية) | 📋 مخطط (v2.6.0) | متوسطة |
-| الانتقال إلى PostgreSQL | 📋 مخطط | عند النمو |
-| مهلة هدوء (cooldown) للإشعارات | 📋 مخطط | متوسطة |
+| Item | State |
+|---|---|
+| Multi-account roles (admin / viewer) | ✅ done |
+| Live updates over SSE | ✅ done (`/api/live/status`) |
+| SNMP polling + Synology/NAS data | ✅ done |
+| Weekly printable report, QR labels, Excel/CSV export | ✅ done |
+| MikroTik / Sophos / ESXi read-only sources | 📋 planned (opt-in, read-only) |
+| Quarterly/weekly PDF export | 📋 planned (Excel + print today) |
+| WebSocket instead of SSE | 📋 only if bi-directional control is ever needed |
+| PostgreSQL backend | 📋 only if the dataset outgrows SQLite |
 
-> انظر [`docs/sessions/PROGRESS.md`](./docs/sessions/PROGRESS.md) و [`CHANGELOG.md`](./CHANGELOG.md) لتفاصيل ما تم تنفيذه وما تأجل.
+## 📚 Documentation
 
----
+| Document | Language |
+|---|---|
+| [docs/DEPLOY.md](docs/DEPLOY.md) | English — production deployment (Nginx, HTTPS, firewall, backup, upgrades) |
+| [docs/DEPLOY.ar.md](docs/DEPLOY.ar.md) | العربية |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | English — how the pieces fit together |
+| [docs/ARCHITECTURE.ar.md](docs/ARCHITECTURE.ar.md) | العربية |
+| [docs/I18N.md](docs/I18N.md) · [docs/I18N.ar.md](docs/I18N.ar.md) | English · العربية — the bilingual UI model |
+| [appliance/README.md](appliance/README.md) · [appliance/README.ar.md](appliance/README.ar.md) | English · العربية — building and installing the ISO |
+| [docs/SECURITY.ar.md](docs/SECURITY.ar.md) | العربية — security policy |
+| [CHANGELOG.md](CHANGELOG.md) | Full release history |
 
-## 📚 **ملفات التوثيق المرتبطة**
+## 🤝 Contributing
 
-| الملف | الوصف |
-|-------|---------|
-| [`CHANGELOG.md`](./CHANGELOG.md) | سجل التغييرات الكامل (Keep a Changelog) |
-| [`docs/sessions/`](./docs/sessions/) | تقارير الجلسات (HANDOFF · PROGRESS · APPLIANCE-HANDOFF · دليل الترقية) — ابدأ بـ [`HANDOFF.md`](./docs/sessions/HANDOFF.md) |
-| [`docs/sessions/APPLIANCE-HANDOFF.md`](./docs/sessions/APPLIANCE-HANDOFF.md) | حالة الأبلاينس/الـ ISO وتشخيصه |
-| [`DEPLOY.md`](./DEPLOY.md) | دليل النشر المفصل (Nginx، HTTPS، Firewall، Backup) |
-| [`docs/sessions/PROGRESS.md`](./docs/sessions/PROGRESS.md) | سجل تقدم البناء |
-| [`RUN-ON-LINUX.md`](./RUN-ON-LINUX.md) | التثبيت اليدوي على Linux خطوة بخطوة |
-| [`deploy.sh`](./deploy.sh) | سكريبت النشر التلقائي |
-| [`update.sh`](./update.sh) | سكريبت التحديث التلقائي |
-| [`ecosystem.config.js`](./ecosystem.config.js) | إعدادات PM2 |
-| [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) | CI: فحص صياغة + اختبار صحة + نشر SSH اختياري |
-| [`.github/workflows/build-iso.yml`](.github/workflows/build-iso.yml) | بناء ISO عند الوسوم + إرفاقه بالـ Release مع SHA256 |
-| [`.github/dependabot.yml`](.github/dependabot.yml) | تحديثات تلقائية للتبعيات + GitHub Actions |
-| [`.github/SECURITY.md`](.github/SECURITY.md) | سياسة الإبلاغ عن الثغرات الأمنية |
+This is a proprietary, source-available project — see the license below before reusing any part of it.
+Bug reports and feature requests are welcome through the issue templates; please run
+`cd backend && npm test` and `node --check` on any file you touched before opening a pull request
+(the same checks CI runs).
 
----
+## 📄 License
 
-## 🤝 **المساهمة**
+**Proprietary — all rights reserved.** The source is published in a public repository for reading and review
+only. No right to use, copy, modify, distribute or sell it — in whole or in part — is granted without prior
+written permission from the copyright holder. See [LICENSE](LICENSE).
 
-1. Fork المشروع
-2. أنشئ فرع: `git checkout -b feature/amazing-feature`
-3. Commit: `git commit -m 'Add amazing feature'`
-4. Push: `git push origin feature/amazing-feature`
-5. افتح Pull Request
+## 🙏 Built with
 
-> 💡 قبل الـ PR: شغّل `node --check` على أي ملف JS عدّلته (نفس ما يفعله الـ CI)،
-> وراجع [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
-
----
-
-## 📄 **الترخيص**
-
-هذا المشروع **مملوك — جميع الحقوق محفوظة**. الكود منشور في مستودع عام للاطّلاع والمراجعة فقط،
-ولا يُمنح أي حق في استخدامه أو نسخه أو تعديله أو توزيعه أو بيعه — كليًّا أو جزئيًّا — دون إذن
-كتابي مسبق من صاحب الحقوق. راجع ملف [LICENSE](LICENSE) للنص الكامل.
+[Express](https://expressjs.com/) · [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) ·
+[web-push](https://github.com/web-push-libs/web-push) · [Chart.js](https://www.chartjs.org/) ·
+[PM2](https://pm2.keymetrics.io/)
 
 ---
 
-## 🙏 **الشكر والتقدير**
-
-- [Express.js](https://expressjs.com/) - إطار العمل
-- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - قاعدة بيانات سريعة
-- [web-push](https://github.com/web-push-libs/web-push) - إشعارات Web Push
-- [Chart.js](https://www.chartjs.org/) - الرسوم البيانية
-- [PM2](https://pm2.keymetrics.io/) - إدارة العمليات
-
----
-
-**⭐ إذا أعجبك المشروع، لا تنسَ إضافة نجمة على GitHub!**
-
-[⬆️ العودة للأعلى](#-نظام-مراقبة-أجهزة-الشبكة-المحلية---network-monitor)
-
----
-
----
-
-> 📜 التاريخ الكامل لكل الإصدارات (v2.1 → الآن): [CHANGELOG.md](CHANGELOG.md)
+**⭐ If this project is useful to you, a star on GitHub is appreciated.**

@@ -1,5 +1,11 @@
 # Architecture review and implementation plan
 
+> 📦 **Archived document (2026-10).** Kept for reference: this is the review that drove the hardening pass.
+> Most of the findings (A1–A15) are implemented today, so read it as a snapshot, not as current state.
+> Current documentation: [../ARCHITECTURE.md](../ARCHITECTURE.md) (English) ·
+> [../ARCHITECTURE.ar.md](../ARCHITECTURE.ar.md) (العربية). File paths mentioned below refer to the
+> repository layout of that date.
+
 Date: 2026-10-17. Scope: local repository, no production deployment.
 
 ## Architecture and review coverage

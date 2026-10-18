@@ -1,42 +1,47 @@
 ---
-name: ✨ طلب ميزة
-about: اقترح فكرة أو تحسيناً لـ Network Monitor
+name: ✨ Feature request
+about: Suggest an idea or an improvement for Network Monitor
 title: "[FEATURE]: "
 labels: ["enhancement", "needs-triage"]
 assignees:
   - kerolos-it2022
 ---
 
-## 💡 المشكلة / الدوافع
-> ما المشكلة التي تحلّها هذه الميزة؟ أو ما الذي يجعل المشروع أفضل بها؟ اربطها بحالة استخدام فعلية.
+## 💡 Problem / motivation
+
+> Which problem does this feature solve, or what does it make better? Link it to a real use case.
+> (يمكنك الكتابة بالعربية.)
 
 
 
 ---
 
-## 🎯 الحل المقترح
-> شرح موجز وواضح للميزة/التغيير الذي تتصوره، وكيف سيبدو للمستخدم النهائي.
+## 🎯 Proposed solution
+
+> A short, clear description of the feature or change you imagine, and how it looks to the end user.
 
 
 
 ---
 
-## 🔁 البدائل المحتملة
-> أي حلول بديلة فكرت بها؟ ما الذي يجعل المقترح أفضل؟
+## 🔁 Alternatives considered
+
+> Any other approaches you thought about? Why is this one better?
 
 
 
 ---
 
-## 🎨 أمثلة / مراجع (اختياري)
-- روابط أو لقطات لأمثلة مماثلة في أنظمة أخرى.
-- وثائق، مكتبات، ...
+## 🎨 Examples / references (optional)
+
+- Links or screenshots of similar features in other tools.
+- Docs, libraries…
 
 ---
 
-## 📊 معلومات إضافية
-| البيان | القيمة |
-|-------|---------|
-| تأثير المتوقع | [ ] تحسين تجربة المستخدم  [ ] تكامل/مدخل جديد  [ ] أداء  [ ] أمان  [ ] قابلية الصيانة |
-| هل أنت مستعد للمساهمة في التطوير؟ | [ ] نعم  [ ] جزئياً  [ ] لا |
+## 📊 Extra information
 
+| Item | Value |
+|---|---|
+| Expected impact | [ ] UX improvement  [ ] new integration/input  [ ] performance  [ ] security  [ ] maintainability |
+| Are you willing to help build it? | [ ] yes  [ ] partially  [ ] no |

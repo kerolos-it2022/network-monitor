@@ -1,100 +1,104 @@
-# 🔒 سياسة الأمان — Security Policy
+# 🔒 Security Policy
 
-نأخذ أمان مشروع **Network Monitor** على محمل الجدية. نشكرك على مساعدتنا في الحفاظ على أمانه ولجميع مستخدميه.
+**English** · [العربية](../docs/SECURITY.ar.md)
 
----
-
-## 🔍 النطاق المدعوم
-
-تغطّي هذه السياسة أحدث إصدار مدعوم من المشروع:
-
-| البيان | القيمة |
-|-------|---------|
-| اسم المشروع | Network Monitor |
-| المستودع | [`kerolos-it2022/network-monitor`](https://github.com/kerolos-it2022/network-monitor) |
-| الإصدار الحالي | [![Version](https://img.shields.io/github/v/release/kerolos-it2022/network-monitor)](https://github.com/kerolos-it2022/network-monitor/releases) |
-| منصة التشغيل | Node.js 20+ على Linux (PM2/systemd/Nginx) |
-
-> **الثغرات في الإصدارات غير المدعومة:** الرجاء الترقية لأحدث إصدار قبل الإبلاغ — لا تصدر إصلاحات للإصدارات القديمة.
+We take the security of **Network Monitor** seriously. Thank you for helping keep it and its users safe.
 
 ---
 
-## 📣 كيفية الإبلاغ عن ثغرة أمنية
+## 🔍 Supported scope
 
-> ⚠️ **رجاءً لا تفتح Issue عام** للثغرات الأمنية — فهذا يعرض المستخدمين للخطر.
+This policy covers the latest released version of the project.
 
-### الطريقة الموصى بها (خاصة وآمنة):
+| Item | Value |
+|---|---|
+| Project | Network Monitor |
+| Repository | [`kerolos-it2022/network-monitor`](https://github.com/kerolos-it2022/network-monitor) |
+| Current version | [![Version](https://img.shields.io/github/v/release/kerolos-it2022/network-monitor)](https://github.com/kerolos-it2022/network-monitor/releases) |
+| Platform | Node.js **22+** (24 LTS recommended) on Linux — PM2/systemd/Nginx, or the Debian appliance |
 
-1. استخدم **GitHub Security Advisories** (موصى به):
-   - انتقل إلى: `https://github.com/kerolos-it2022/network-monitor/security/advisories/new`
-   - اضغط **"Report a vulnerability"** واملأ النموذج.
-   - هذا يضمن أن يكون التواصل خاصاً وليّناً.
-
-2. **إن تعذّر ذلك** (مثلًا لا تملك صلاحية فتح Advisory): افتح Issue **بعنوان عام فقط**
-   («طلب قناة تواصل أمني») **بدون أي تفاصيل تقنية**، وسنردّ عليك بقناة خاصة.
-
-### 🧾 تفاصيل يجب تضمينها في أي تقرير:
-
-   - وصف الثغرة ونوعها (XSS، SQL Injection، SSRF، IDOR، ...).
-   - خطوات إعادة الإنتاج بالتفصيل (أو PoC).
-   - الإصدار المتأثر.
-   - الأثر المحتمل ودرجة الخطورة (مثال: CVSS).
-   - أي اقتراح للإصلاح إن وُجد.
-
-### وقت الاستجابة المتوقع
-
-| المرحلة | الوقت |
-|---------|--------|
-| 📥 تأكيد الاستلام | خلال 48 ساعة |
-| 🔍 تقييم أولي + توجيه | خلال 5 أيام عمل |
-| 🛠️ الإصلاح + الإفصاح المنسّق | حسب الخطورة (انظر الجدول أدناه) |
-
-| خطورة الثغرة | مهلة الإصلاح المستهدفة |
-|---------------|--------------------------|
-| حرجة (Critical) | خلال 7 أيام |
-| عالية (High) | خلال 14 يوماً |
-| متوسطة (Medium) | خلال 30 يوماً |
-| منخفضة (Low) | في الإصدار التالي المخطط |
+> **Unsupported versions:** please upgrade to the latest release before reporting — fixes are only produced
+> for current versions.
 
 ---
 
-## ✅ الإفصاح المنسّق (Coordinated Disclosure)
+## 📣 Reporting a vulnerability
 
-نلتزم بمبدأ **الإفصاح المنسّق المسؤول**:
+> ⚠️ **Please do not open a public issue for a security problem** — that puts every user at risk.
 
-- نسعى لتصحيح الثغرة قبل أي إعلان عام.
-- ننشر **GitHub Security Advisory** عند الإصلاح ليعلم المستخدمون بنقطة التصحيح.
-- نمنحك فضل الإبلاغ في الإفصاح العام (إن رغبت).
-- لن نُقاضى الباحثين حسني النية الذين يتبعون هذه السياسة (.Safe Harbor).
+### Recommended path (private, tracked)
+
+1. **GitHub Security Advisories** (preferred):
+   `https://github.com/kerolos-it2022/network-monitor/security/advisories/new` → *Report a vulnerability*.
+   This keeps the whole conversation private.
+2. **If that is not possible** (for example you cannot open an advisory), open a public issue with a
+   **generic title only** (“Request for a security contact channel”) and **no technical detail**; we will
+   answer with a private channel.
+
+### 🧾 Include in the report
+
+- What the issue is and its class (XSS, SQL injection, SSRF, IDOR…).
+- Reproduction steps in detail (or a PoC).
+- The affected version.
+- Expected impact and severity (CVSS if you have it).
+- Any suggested fix.
+
+### Expected response times
+
+| Stage | Time |
+|---|---|
+| 📥 Acknowledgement | within 48 hours |
+| 🔍 Initial assessment and triage | within 5 working days |
+| 🛠️ Fix + coordinated disclosure | depending on severity (table below) |
+
+| Severity | Target fix window |
+|---|---|
+| Critical | within 7 days |
+| High | within 14 days |
+| Medium | within 30 days |
+| Low | next planned release |
 
 ---
 
-## 🛡️ البيانات الحساسة (ما قد نرغب بمعرفته فوراً)
+## ✅ Coordinated disclosure
 
-نرجئ لك الاهتمام العاجل بأي ثغرة تؤثر على:
+We follow responsible disclosure:
 
-- **سرية أو سلامة الجلسات** (SESSION_SECRET، كعكات الجلسة).
-- **تخزين/إفصاح كلمات المرور** (bcrypt hashes، DEFAULT_ADMIN_PASSWORD).
-- **SQL Injection** على أي من مسارات API.
-- **Authentication/Authorization bypass** (تجاوز `requireAuth`).
-- **تنفيذ كود عن بُعد** (RCE) عبر `update.routes.js` أو غيره.
-- **تسريب `.env`** أو مفاتيح الطرف الثالث (Telegram، VAPID, ...).
+- We aim to fix the issue before any public statement.
+- We publish a **GitHub Security Advisory** once a fix ships, so users know the patched point.
+- We credit the reporter in the public disclosure if they wish.
+- We will not pursue good-faith researchers who follow this policy (safe harbour).
 
 ---
 
-## 🧪 بيئة الاختبار الآمنة
+## 🛡️ High-priority areas
 
-إذا كنت ترغب في إعادة الإنتاج:
-- استخدم **بيئة معزولة** (VM أو WSL جديد) — لا تخترج بيانات الإنتاج أو الأجهزة الحقيقية.
-- لا تختبر أدوات الشبكة (Ping/Tracert/Scan) على أجهزة خارج نطاقك الخاص.
-- نشجّع على فحص الكود بعد توقّف الخادم (`backend/src/`) قبل أي تشغيل.
+Please give immediate attention to anything affecting:
+
+- **Session confidentiality or integrity** (`SESSION_SECRET`, session cookies).
+- **Password storage or disclosure** (bcrypt hashes, `DEFAULT_ADMIN_PASSWORD`).
+- **SQL injection** on any API route.
+- **Authentication / authorization bypass** (getting past the session or role checks).
+- **Remote code execution** — via the update routes, or via the appliance root helpers and their request
+  files (the design rule is that the web process can never pass a command or a path, only a tag or a
+  whitelisted action).
+- **Leakage of `.env`** or of third-party credentials (Telegram, WhatsApp, VAPID, GitHub token).
 
 ---
 
-## 📜 الترخيص والمسؤولية
+## 🧪 Testing safely
 
-المشروع تحت رخصة **MIT**. لا يوجد ضمان (as-is). نعمل بأقصى جهد لإصلاح الثغرات، لكن جدولة الإصلاح تخضع للموارد المتاحة.
+- Use an **isolated environment** (a VM or a fresh WSL) — never production data or real devices.
+- Do not point the network tools (ping / tracert / scan) at hosts outside your own range.
+- Reading the code with the server stopped (`backend/src/`) is encouraged before running anything.
 
 ---
 
-**شكراً لك على مساهمتك في حماية المشروع! 🙏**
+## 📜 License and liability
+
+This project is **proprietary** (`UNLICENSED`) — see [LICENSE](../LICENSE). It is provided **as is**, without
+warranty. We fix reported vulnerabilities with our best effort, but scheduling depends on available resources.
+
+---
+
+**Thank you for helping keep the project safe! 🙏**

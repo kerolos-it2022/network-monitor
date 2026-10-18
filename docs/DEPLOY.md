@@ -1,574 +1,359 @@
-# 🚀 دليل النشر على سيرفر Linux (Production Deployment)
+# 🚀 Production deployment (Linux)
 
-دليل كامل لتركيب نظام مراقبة أجهزة الشبكة على **أي توزيعة Linux** رئيسية — باستخدام Node.js + PM2.
+**English** · [العربية](DEPLOY.ar.md)
+
+How to install Network Monitor on a Linux server — the automatic path with `deploy.sh`, the manual path
+step by step, reverse proxy + HTTPS, backups and upgrades. This guide merges and replaces the former
+`RUN-ON-LINUX.md`.
 
 ---
 
-## 📋 التوزيعات المدعومة
+## 📋 Supported distributions
 
-| العائلة | التوزيعات | مدير الحزم |
+| Family | Distributions | Package manager |
 |---|---|---|
-| **Debian** | Ubuntu، Debian، Linux Mint، Pop!_OS، Kali | `apt` |
-| **Red Hat** | RHEL، CentOS، Rocky Linux، AlmaLinux، Fedora | `dnf` / `yum` |
-| **Arch** | Arch Linux، Manjaro، EndeavourOS | `pacman` |
+| **Debian** | Ubuntu, Debian, Linux Mint, Pop!_OS, Kali | `apt` |
+| **Red Hat** | RHEL, CentOS, Rocky, AlmaLinux, Fedora | `dnf` / `yum` |
+| **Arch** | Arch, Manjaro, EndeavourOS | `pacman` |
 | **Alpine** | Alpine Linux | `apk` |
-| **SUSE** | openSUSE (Tumbleweed/Leap)، SLES | `zypper` |
+| **SUSE** | openSUSE, SLES | `zypper` |
 
-> **السكريبت يكتشف التوزيعة ومدير الحزم تلقائياً** — لا حاجة لاختيار يدوي.
+`deploy.sh` detects the distribution and package manager itself.
 
----
+## 📋 Requirements
 
-## 📋 المتطلبات العامة
-
-| العنصر | الإصدار | ملاحظات |
+| Item | Version | Notes |
 |---|---|---|
-| Linux Kernel | 4.x أو أحدث | أي توزيعة من القائمة أعلاه |
-| Node.js | **24 LTS** (≥22 إلزامي) | السكريبت يثبّته تلقائياً |
-| PM2 | آخر إصدار | السكريبت يثبّته تلقائياً (إدارة العمليات) |
-| RAM | 512 MB minimum | 1 GB موصى به لمراقبة 50+ جهاز |
-| صلاحيات | sudo / root | مطلوبة لتثبيت الحزم |
-| اتصال إنترنت | مطلوب | لتحميل الحزم و NodeSource |
-
-> **ملاحظة**: النشر المباشر أخفّ وأسرع وخالٍ من التعقيد. السكريبت `deploy.sh` يتولّى كل شيء تلقائياً.
+| Kernel | 4.x or newer | any distribution above |
+| Node.js | **24 LTS** (**≥ 22 required**) | installed by the script (`better-sqlite3@13` needs ≥ 22) |
+| PM2 | latest | process manager, installed by the script |
+| RAM | 512 MB minimum | 1 GB recommended for 50+ devices |
+| Privileges | sudo / root | to install packages |
+| Internet | required | to fetch packages and NodeSource |
 
 ---
 
-## ⚡ النشر السريع (5 دقائق)
+## ⚡ Quick deploy (≈5 minutes, recommended)
 
-### 1) على جهاز التطوير: ادفع المشروع لـ GitHub
 ```bash
-# في جذر المشروع على جهازك
-git remote add origin https://github.com/kerolos-it2022/network-monitor.git
-git push -u origin main
-```
-
-### 2) على سيرفر Linux: استنسخ المشروع
-```bash
-# أي توزيعة Linux مدعومة:
-sudo mkdir -p /opt
-sudo chown $USER:$USER /opt
+# on the server
+sudo mkdir -p /opt && sudo chown "$USER":"$USER" /opt
 cd /opt
 git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
 cd network-monitor
-```
-
-### 3) شغّل سكريبت النشر
-```bash
 sudo bash deploy.sh install
 ```
 
-### 👉 ما سيفعله السكريبت تلقائياً:
-1. ✅ **كشف التوزيعة** ومدير الحزم المناسب (apt/dnf/yum/pacman/apk/zypper)
-2. ✅ **تحديث الحزم** (apt update + upgrade على Debian-based)
-3. ✅ تثبيت **الأدوات الأساسية**: git, curl, wget, ca-certificates, sudo, gnupg, **traceroute**
-4. ✅ تثبيت **أدوات البناء**: python3, make, g++/gcc (ضرورية لـ better-sqlite3)
-5. ✅ تثبيت **Node.js 24 LTS** (عبر NodeSource على Debian/RHEL، أو مدير الحزم على الباقي)
-6. ✅ تثبيت **PM2** عالمياً (إدارة العمليات)
-7. ✅ تثبيت **sqlite3 CLI** (لاستيراد مخطط قاعدة البيانات)
-8. ✅ إنشاء `backend/.env` من القالب + توليد `SESSION_SECRET` عشوائي + **توليد مفاتيح VAPID تلقائياً**
-9. ✅ تثبيت حزم الخادم: `npm install` (يشمل `web-push`, `axios`, `better-sqlite3`, `xlsx` ...)
-10. ✅ تهيئة قاعدة البيانات + إنشاء حساب المدير الافتراضي
-11. ✅ تشغيل التطبيق عبر PM2 + ضبط بدء تلقائي مع النظام (systemd)
-12. ✅ إظهار عنوان URL للوصول + إرشادات تفعيل إشعارات الموبايل
+### What `deploy.sh install` does
 
-**ملاحظة هامة**: السكريبت يعيد بناء `better-sqlite3` من المصدر على النظام المستهدف، مما يحل مشكلة عدم التوافق عند نقل المشروع من Windows إلى Linux.
+1. Detects the distribution and package manager (`apt`/`dnf`/`yum`/`pacman`/`apk`/`zypper`).
+2. Updates packages and installs the basics: git, curl, wget, ca-certificates, gnupg, **traceroute**.
+3. Installs the build tools (python3, make, g++, build-essential) needed by `better-sqlite3`.
+4. Installs **Node.js 24 LTS** (NodeSource on Debian/RHEL, the distribution package elsewhere).
+5. Installs **PM2** globally and the **sqlite3** CLI.
+6. Creates `backend/.env` from the template, generates a random `SESSION_SECRET` **and VAPID keys**.
+7. Runs `npm install` and rebuilds `better-sqlite3` **for the target system** (this is what solves the
+   “built on Windows, broken on Linux” problem).
+8. Prepares the database and seeds the default admin.
+9. Starts the app under PM2 with boot-time startup (systemd / OpenRC) and prints the access URLs.
+
+The former manual sequence is available below if you prefer to see every step.
 
 ---
 
-## ⚙️ إعدادات ما بعد التثبيت (مهمة!)
+## 🛠️ Manual install (no script)
 
-### 1) عدّل ملف `.env` بقيم إنتاجية حقيقية
 ```bash
-cd /opt/network-monitor
-nano backend/.env   # أو: vi backend/.env
+# 1) Node.js 24 LTS
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash -
+sudo apt-get install -y nodejs            # Debian/Ubuntu
+node -v                                   # must print v24.x
+
+# 2) build tools (needed by better-sqlite3)
+# Debian/Ubuntu: sudo apt install -y python3 make g++ build-essential
+# RHEL/CentOS:   sudo dnf install -y python3 make gcc gcc-c++
+# Arch:          sudo pacman -S python make gcc
+# Alpine:        sudo apk add python3 make g++ build-base
+# openSUSE:      sudo zypper install python3 make gcc gcc-c++
+
+# 3) project + dependencies
+cd /opt && git clone https://github.com/kerolos-it2022/network-monitor.git network-monitor
+cd network-monitor/backend && npm install
+
+# 4) database
+mkdir -p ../database && sqlite3 ../database/monitoring.db < ../database/schema.sql
+
+# 5) settings
+cp .env.example .env && nano .env         # PORT, DB_PATH, admin account, Telegram… (optional)
+npm install -g pm2                        # 6) process manager
+
+# 7) first admin + run
+node src/seedAdmin.js
+npm start                                 # or: pm2 start ../ecosystem.config.js
+pm2 startup && pm2 save                   # start automatically at boot (run the printed command)
 ```
 
-غيّر على الأقل:
-```env
-DEFAULT_ADMIN_PASSWORD=كلمة_مرور_قوية_جداً_فريدة
-TELEGRAM_BOT_TOKEN=ضع_التوكين_الجديد_هنا
-TELEGRAM_CHAT_ID=ضع_الـ_chat_id_هنا
+---
 
-# لإشعارات الموبايل (PWA + Web Push) — مُولّدة تلقائياً من deploy.sh
-VAPID_PUBLIC_KEY=...     # مولّد تلقائياً
-VAPID_PRIVATE_KEY=...    # مولّد تلقائياً
+## ⚙️ Post-install configuration (important)
+
+Edit `backend/.env` — at minimum:
+
+```env
+DEFAULT_ADMIN_PASSWORD=a-strong-unique-password
+TELEGRAM_BOT_TOKEN=your-new-token
+TELEGRAM_CHAT_ID=your-chat-id
+VAPID_PUBLIC_KEY=...        # generated automatically by deploy.sh
+VAPID_PRIVATE_KEY=...       # generated automatically by deploy.sh
 VAPID_SUBJECT=mailto:you@example.com
 MOBILE_ENABLED=1
 ```
 
-> 💡 `deploy.sh install` يولّد مفاتيح VAPID تلقائياً ويكتبها في `.env`. لو أردت إعادة توليدها يدوياً:
-> ```bash
-> cd /opt/network-monitor/backend
-> node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY='+k.publicKey); console.log('VAPID_PRIVATE_KEY='+k.privateKey)"
-> ```
-> الناتج جاهز للّصق مباشرةً في `backend/.env`.
-
-بعد التعديل:
-```bash
-sudo bash deploy.sh restart
-```
-
-### 2) تأكد من الوصول
-```bash
-# عنوان IP المحلي للسيرفر
-ip a | grep inet      # على أي توزيعة
-# أو:
-hostname -I          # على Debian/Ubuntu
-
-# اختبار محلي
-curl http://localhost:4000/api/health
-# يجب أن يرجع: {"success":true,"data":"ok"}
-```
-
-افتح في المتصفح: `http://<IP-السيرفر>:4000/`
-
-### 🔑 بيانات الدخول الافتراضية
-
-| الحقل | القيمة |
-|------|--------|
-| اسم المستخدم | `admin` |
-| كلمة المرور | `ChangeMe123!` |
-
-> ⚠️ **غيّرها فورًا** بعد أول تسجيل دخول من لوحة التحكم (تبويب الملف الشخصي)، أو عدّل `DEFAULT_ADMIN_PASSWORD` في `backend/.env` ومن ثم أعد التشغيل.
-> تشغيل `node src/seedAdmin.js` يطبع اسم المستخدم وكلمة المرور على الطرفية عند إنشاء الحساب.
-
-**على الأبلاينس (ISO) — كلمة مرور واحدة لكل الأبواب:** كلمة مرور `admin` هي نفسها التي تدخل بها على
-شاشة الكونسول (tty1) وعلى لينكس مباشرة. عند التثبيت تُكتب في ثلاثة أماكن من مصدر واحد
-(`nm-sync-console-password`): قاعدة بيانات اللوحة (`seedAdmin`) · بوابة الكونسول `/etc/nm-console.conf`
-· ومستخدم لينكس `sysadmin` (للدخول من لوحة المفاتيح على tty2 وما بعدها؛ SSH مُعطَّل في nftables أصلًا).
-وأي تغيير لاحق — من تبويب «الملف الشخصي» في اللوحة أو من خيار [6] في قائمة الكونسول — يُحدِّثها جميعًا
-تلقائيًّا (اللوحة تحدّث نفسها، ثم تنادي المساعد نفسه بصلاحية sudo مقيَّدة بأمر واحد).
-
-### 3) تفعيل إشعارات الموبايل (PWA)
-
-النظام الآن **PWA قابل للتثبيت** على أي جهاز. للسماح بإشعارات Web Push:
-
-1. **على الخادم**: تأكد من ضبط مفاتيح VAPID في `.env` (يتم تلقائياً مع `deploy.sh install`).
-2. **في لوحة التحكم** → تبويب الإشعارات → فعّل "إشعارات الهاتف مفعّلة" → احفظ.
-3. **على الهاتف**:
-   - افتح `http://<IP-السيرفر>:4000` من Chrome
-   - اضغط **🔔 تفعيل الإشعارات** أعلى الصفحة → اسمح بالإشعارات
-   - Add to Home Screen من قائمة Chrome (⋮)
-4. **اختبار**: من لوحة التحكم → تبويب الإشعارات → اضغط **🔔 اختبار إشعار الهاتف**.
-
-> ⚠️ **HTTPS إلزامي لإشعارات Web Push على الشبكة الخارجية** — راجع قسم "Reverse Proxy + HTTPS" أدناه.
-> على الشبكة المحلية `http://localhost:4000` يعمل من Chrome (لكن Safari iOS يتطلب HTTPS دائماً).
-
----
-
-## 🔄 العمليات اليومية
-
-| العملية | الأمر |
-|---|---|
-| عرض السجلات الحية | `sudo bash deploy.sh logs` |
-| إعادة التشغيل | `sudo bash deploy.sh restart` |
-| إيقاف النظام | `sudo bash deploy.sh stop` |
-| حالة العملية | `sudo bash deploy.sh status` |
-| تحديث بعد `git pull` | `sudo bash deploy.sh update` |
-| حذف التطبيق (بياناتك تبقى) | `sudo bash deploy.sh uninstall` |
-
-### 🔄 تحديث النظام إلى أحدث نسخة
-
-تبويب "التحديثات" في لوحة التحكم يقرأ "أحدث إصدار" من **git tags** (وليس من الكود) — لذا يجب جلب الـ tags مع كل تحديث وإلا ستظهر نسخة قديمة في الواجهة.
+Then `sudo bash deploy.sh restart`. To regenerate VAPID keys by hand:
 
 ```bash
-cd /opt/network-monitor
-git fetch --tags          # مهم: يجلب التاغات الجديدة (مثل v2.3.0)
-git pull                  # يجلب كود أحدث نسخة
-sudo bash deploy.sh update
-```
-
-> ⚠️ **عند إصدار نسخة جديدة من جهاز التطوير**: ارفع الكود **والتاغ** معًا، وإلا فلن يَرى الخادم النسخة الجديدة في تبويب التحديثات:
-> ```bash
-> # من جهاز التطوير بعد كل التزام إصدار:
-> git tag -a v<X.Y.Z> -m "Release v<X.Y.Z>"
-> git push origin main --follow-tags     # الأنسب: يرفع الكود + التاغات المرتبطة
-> # أو يدويًا:
-> git push origin main && git push origin v<X.Y.Z>
-> ```
-
-> ⚠️ **ترتيب إلزامي (مؤكَّد ميدانيًّا: أبلاينس بـ Node v18.20.4):** رقِّ Node أولًا ثم حدّث التطبيق
-> **فورًا**، ولا تُعِد تشغيل الجهاز بين الخطوتين — الخدمة تبقى شغّالة لأن المكتبة الحالية محمّلة في الذاكرة،
-> لكن إعادة التشغيل قبل إتمام التحديث تفشل (المكتبة القديمة لا تُحمَّل على Node 24).
->
-### 🖥️ ترقية الأبلاينس في المكان (in-place) إلى 2.33.0
-
-> ✅ **من 2.33.0 صار المُحدِّث يرقّي Node تلقائيًّا**: أداة `nm-node-upgrade` تُستدعى من `nm-update`
-> **قبل** نسخ ملفات التطبيق — فإن كان Node أقل من 22 رقّته إلى 24 LTS (NodeSource)، وإن تعذّرت
-> الترقية توقف التحديث بلا لمس الكود العامل (وتظهر الرسالة في اللوحة). تُعطّلها بـ
-> `NM_SKIP_NODE_UPGRADE=1` في بيئة الخدمة. الخطوات اليدوية أدناه تبقى **خطة بديلة**
-> (أو للأجهزة التي لم يصلها التحديث بعد).
-
-أبلاينس مُبنًّى من ISO قديم يثبّت **Node 18** (من مستودع دبيان 12)، والمشروع من 2.33.0 يشترط **Node ≥ 22**
-(`better-sqlite3@13` لا يُحمَّل على 18 — الأثر: الخدمة لا تقلع بعد التحديث).
-لذلك: **رقِّ Node أولًا، ثم حدّث التطبيق** (مرة واحدة فقط؛ الأجهزة المُنشأة من الـ ISO الجديد تأتي بـ Node 24).
-
-```bash
-# 0) اعرف الوضع الحالي + خُذ نسخة قاعدة آمنة (الأفضل من اللوحة: تبويب النسخ الاحتياطي → تصدير .db)
-node -v ; npm -v
-
-# 1) ترقية Node إلى 24 LTS
-apt-get update && apt-get install -y ca-certificates curl gnupg
-curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
-apt-get install -y nodejs
-node -v      # يجب أن يطبع v24.x
-
-# 2) ثم من اللوحة: «🔄 التحديثات» → «🔍 فحص التحديثات» → «🛡️ نسخة احتياطية + تحديث»
-#    (مُحدِّث الأبلاينس nm-update ينزّل أرشيف الوسم، يُحدّث الكود بلا لمس قاعدة البيانات،
-#     ثم npm ci ثم إعادة تشغيل الخدمة — المتابعة: tail -f /var/lib/network-monitor/update/update.log)
-
-# 3) تحقّق بعد التحديث
-systemctl status network-monitor --no-pager | head -5      # active (running)
-curl -s localhost:4001/api/health                          # version = 2.33.0
-curl -s -o /dev/null -w "%{http_code}\n" localhost:4001/api/devices   # 401 (كان مكشوفًا 200 قبل التحديث)
-```
-
-**التراجع:** من اللوحة «↩️ الرجوع لإصدار أقدم» لاختيار الوسم السابق (نفس المسار الآمن)، وإعادة Node لأي إصدار
-عند الحاجة عبر `curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs`
-ثم `cd /opt/network-monitor/backend && npm ci --omit=dev`، والقاعدة من نسختك الاحتياطية عند اللزوم.
-
-### ⚠️ ملاحظات الانتقال من 2.2.0 إلى 2.3.0
-
-نسخة 2.3.0 تُصلح مشاكل VAPID و SSE (مسح الأجهزة عبر reverse proxy). بعد `deploy.sh update`:
-
-**1) مفاتيح VAPID العاطلة (إن وُلِّدت في 2.2.0 عبر fallback)**
-في 2.2.0 قد يكون `deploy.sh` كَتب مفتاحًا عامًّا 64-بايت (عاطل) في `backend/.env`، فظهر خطأ المتصفح `Vapid public key should be 65 bytes long`. الحل في 2.3.0: شرط التوليد صار يَتحقق من **طول المفتاح** (≥86 char) ويُعيد التوليد تلقائيًا. لتفعيله:
-
-```bash
-sudo sed -i '/^VAPID_PUBLIC_KEY=/d; /^VAPID_PRIVATE_KEY=/d' /opt/network-monitor/backend/.env
-sudo bash /opt/network-monitor/deploy.sh update
-# أو ولّد يدويًا والصقها في backend/.env:
 cd /opt/network-monitor/backend
 node -e "const k=require('web-push').generateVAPIDKeys(); console.log('VAPID_PUBLIC_KEY='+k.publicKey); console.log('VAPID_PRIVATE_KEY='+k.privateKey)"
 ```
 
-**2) إعدادات Nginx العاطلة لمسار SSE**
-نسخة 2.2.0 شحنَت `nginx.example.conf` بـ hardcoded `Connection "upgrade"` ولا `proxy_buffering off` — ما يَكسر `/api/scan/stream/` (المتصفح قد يَتلقى تقدم المسح ثم يَنقطع). نسخة 2.3.0 تُصلحها، ثم نسخة **2.4.0** فَصلت `map` عن `server{}` في ملفين لتفادي فشل `nginx -t`. حدّث الإعداد على الخادم:
+Verify access:
 
 ```bash
-# 1) server block (يُوضع في sites-available — سياق http عبر sites-enabled)
-sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor
-sudo ln -sf /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/
-
-# 2) map block (يُوضع في conf.d — سياق http {})
-sudo cp /opt/network-monitor/nginx.connection-map.conf /etc/nginx/conf.d/connection-map.conf
-
-sudo nginx -t && sudo systemctl reload nginx
+hostname -I                          # server IP
+curl http://localhost:4000/api/health   # {"success":true,"data":"ok"}
 ```
 
-> 💡 **لماذا ملفان؟** كِتلة `map $http_upgrade $connection_upgrade {...}` تُقبَل فقط داخل `http { }`، وليس داخل `server { }` أو `location { }`. لو نَسخ المُستخدم ملفًّا واحدًا يَحوي `map` + `server` إلى `sites-available/` (الذي يُضمَّن داخل `http{}`)، فقد يَنجح MA على بعض إصدارات nginx، لكن نَسخه إلى `conf.d/` مع `server{}` داخله يَفشل مُباشرةً. الفَصل يَضمن أَن `map` دائمًا في سياق `http{}` الصّحيح.
+Open `http://<server-ip>:4000/`.
 
-> 📌 **لو كان لديك setup قديم** من 2.3.x يَحوي `map` داخل `nginx.example.conf`: احذف الـ block القَديم من `/etc/nginx/sites-available/network-monitor` (أَو أَعد النَّسخ من نسخة 2.4.0 الجديدة التي لا تَحوي `map`)، واعتمد على `conf.d/connection-map.conf` فقط.
+### 🔑 First login
 
-### أوامر PM2 المباشرة (بديلة)
-```bash
-pm2 status                       # قائمة العمليات
-pm2 logs network-monitor         # السجلات الحية
-pm2 restart network-monitor      # إعادة تشغيل
-pm2 stop network-monitor         # إيقاف
-pm2 monit                        # لوحة مراقبة موارد
-```
+The admin comes from `DEFAULT_ADMIN_USERNAME` / `DEFAULT_ADMIN_PASSWORD`. Weak defaults are refused unless
+`NM_ALLOW_WEAK_ADMIN=1`, so set a real password before the first run. **Change it from the dashboard right
+after the first login** (Profile tab).
+
+### On the appliance ISO: one password for every door
+
+The admin password is also the console password (`tty1`) and the Linux `sysadmin` password. The installer
+writes it to three places from a single source (`nm-sync-console-password`): the dashboard database
+(`seedAdmin`), the console gate `/etc/nm-console.conf`, and the Linux account `sysadmin`. Any later change —
+from the Profile tab or from option `[6]` in the console menu — updates all three automatically (the
+dashboard updates itself, then calls the same helper through one narrowly-scoped sudo rule).
+
+### Mobile notifications (PWA)
+
+1. Server: VAPID keys present in `.env` (automatic with `deploy.sh install`).
+2. Dashboard → Notifications → enable “Phone notifications” → save.
+3. Phone: open `http://<server-ip>:4000` in Chrome → **🔔 Enable notifications** → allow → *Add to Home
+   Screen*.
+4. Test from the dashboard (per-channel test button).
+
+> ⚠️ **Web Push requires HTTPS outside localhost.** `http://localhost:4000` works in Chrome, but iOS Safari
+> always requires HTTPS — see the reverse proxy section below. If you only use the LAN, a trusted local
+> certificate (mkcert) is enough.
 
 ---
 
-## 🌐 الوصول من خارج السيرفر (Reverse Proxy + HTTPS)
+## 🔄 Daily operations
 
-### الخطوة 1: تثبيت Nginx + Certbot
+| Task | Command |
+|---|---|
+| Live logs | `sudo bash deploy.sh logs` |
+| Restart | `sudo bash deploy.sh restart` |
+| Stop | `sudo bash deploy.sh stop` |
+| Status | `sudo bash deploy.sh status` |
+| Update after `git pull` | `sudo bash deploy.sh update` |
+| Uninstall (your data stays) | `sudo bash deploy.sh uninstall` |
+
+Direct PM2 equivalents: `pm2 status` · `pm2 logs network-monitor` · `pm2 restart network-monitor` ·
+`pm2 stop network-monitor` · `pm2 monit`.
+
+### Updating to a newer release
+
+The dashboard’s **Updates** tab reads “latest release” from **git tags**, so fetch tags with every update:
+
 ```bash
-# Debian/Ubuntu:
-sudo apt update && sudo apt install -y nginx certbot python3-certbot-nginx
-
-# RHEL/CentOS/Rocky/Fedora:
-sudo dnf install -y nginx certbot python3-certbot-nginx
-
-# Arch:
-sudo pacman -S nginx certbot certbot-nginx
-
-# Alpine:
-sudo apk add nginx certbot
-
-# openSUSE:
-sudo zypper install nginx certbot python3-certbot-nginx
+cd /opt/network-monitor
+git fetch --tags
+git pull
+sudo bash deploy.sh update
 ```
 
-### الخطوة 2: ضبط Nginx
-```bash
-# 1) server block (يَقبل فقط server{...}، بلا map التي فُصلت)
-sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor
+> ⚠️ When you publish a release from your dev machine, push **the code and the tag together**, otherwise the
+> server will not see the new version:
+> ```bash
+> git tag -a vX.Y.Z -m "Release vX.Y.Z"
+> git push origin main --follow-tags      # or: git push origin main && git push origin vX.Y.Z
+> ```
 
-# 2) map block (يَجب أن يَكون في conf.d — سياق http {})
+> ⚠️ **Order matters on old appliances (Node 18 → 24): raise Node first, then update the app immediately**,
+> and do not reboot between the two steps — the running service keeps working because the current library is
+> already loaded in memory, but restarting before the update finishes fails (the old library will not load on
+> Node 24). Since v2.33.0 the updater calls `nm-node-upgrade` itself before copying application files, so
+> this is normally automatic (disable with `NM_SKIP_NODE_UPGRADE=1`).
+
+**Rollback:** the Updates tab offers *restore a previous version* from the tag list (same safe path). Node
+can be reverted separately (`setup_18.x` + `npm ci --omit=dev`) and the database restored from your backup.
+
+---
+
+## 🌐 Reverse proxy + HTTPS
+
+### 1. Install Nginx + Certbot
+
+```bash
+sudo apt install -y nginx certbot python3-certbot-nginx     # Debian/Ubuntu
+sudo dnf install -y nginx certbot python3-certbot-nginx     # RHEL family
+sudo pacman -S nginx certbot certbot-nginx                  # Arch
+sudo apk add nginx certbot                                  # Alpine
+sudo zypper install nginx certbot python3-certbot-nginx     # openSUSE
+```
+
+### 2. Configure Nginx (two files on purpose)
+
+```bash
+# server block → sites-available (http context through sites-enabled)
+sudo cp /opt/network-monitor/nginx.example.conf /etc/nginx/sites-available/network-monitor
+sudo ln -sf /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/
+
+# map block → conf.d (must live directly inside http {})
 sudo cp /opt/network-monitor/nginx.connection-map.conf /etc/nginx/conf.d/connection-map.conf
 
-# عدّل server_name إلى دومينك (مثل: monitor.company.com)
-sudo nano /etc/nginx/sites-available/network-monitor
-
-# فعّل (على Debian/Ubuntu فقط):
-sudo ln -s /etc/nginx/sites-available/network-monitor /etc/nginx/sites-enabled/ 2>/dev/null || true
-
-sudo nginx -t
-sudo systemctl reload nginx   # أو: sudo rc-service nginx reload على Alpine
+sudo nano /etc/nginx/sites-available/network-monitor   # set server_name to your domain
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### الخطوة 3: تفعيل HTTPS مجاناً عبر Let's Encrypt
+> 💡 **Why two files?** `map $http_upgrade $connection_upgrade {...}` is only valid inside `http { }`, never
+> inside `server { }`. Keeping the `map` in `conf.d/` guarantees the right context on every nginx version.
+> The shipped server block also disables `proxy_buffering` for the SSE endpoints, which is required for the
+> live scan/log streams.
+
+### 3. Free TLS with Let's Encrypt
+
 ```bash
 sudo certbot --nginx -d monitor.company.com
 ```
 
+### No public domain? Three LAN-friendly options
+
+| Option | Result | Notes |
+|---|---|---|
+| **mkcert** (recommended for LAN) | trusted local certificate, no browser warnings, PWA/Web Push work | `mkcert -install` then `mkcert net-monitor.local localhost 127.0.0.1 <server-ip>`; point nginx at the two generated `.pem` files and add `net-monitor.local` to each client’s hosts file |
+| **Self-signed** | quick, but every browser shows “connection is not private” | `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout … -out … -subj "/CN=net-monitor.local"` |
+| **Tunnel (Tailscale / ngrok / Cloudflare)** | HTTPS from anywhere without a domain | Tailscale gives `https://device.tailnet.ts.net`; the dashboard can manage an ngrok tunnel itself (Remote access tab) |
+
 ---
 
-## 🌐 **بدون دومين حقيقي؟ — 3 خيارات للعمل على الشبكة المحلية مع HTTPS**
+## 💾 Backups and restore
 
-> **Let's Encrypt يتطلب دومين عام صالح.** لو لم يكن لديك دومين، لديك هذه الحلول:
-
-### 🥇 الخيار 1: **mkcert** — الأفضل للتطوير المحلي (مُوصى به)
-يُنشئ شهادة **موثوقة محلياً** بدون تحذيرات المتصفح، ويعمل مع PWA/Web Push.
+The database lives at `/opt/network-monitor/database/monitoring.db`.
 
 ```bash
-# 1. تثبيت mkcert
-sudo apt install libnss3-tools
-curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
-chmod +x mkcert-v*-linux-amd64 && sudo mv mkcert-v*-linux-amd64 /usr/local/bin/mkcert
-
-# 2. إنشاء CA محلي وشهادة لـ net-monitor.local
-mkcert -install
-mkcert net-monitor.local localhost 127.0.0.1 192.168.1.50
-# (ضع IP السيرفر الحقيقي مكان 192.168.1.50)
-
-# ينتج: net-monitor.local+3.pem و net-monitor.local+3-key.pem
-```
-
-**إعداد Nginx:**
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name net-monitor.local;
-
-    ssl_certificate /path/to/net-monitor.local+3.pem;
-    ssl_certificate_key /path/to/net-monitor.local+3-key.pem;
-
-    location / {
-        proxy_pass http://localhost:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-
-server {
-    listen 80;
-    server_name net-monitor.local;
-    return 301 https://$server_name$request_uri;
-}
-```
-
-**حل اسم الدومين محلياً** — على **كل جهاز** سيصل للنظام، أضف في `/etc/hosts` (لينكس/ماك) أو `C:\Windows\System32\drivers\etc\hosts` (ويندوز):
-```
-192.168.1.50  net-monitor.local
-```
-(ضع IP السيرفر الحقيقي)
-
-✅ **النتيجة:** HTTPS موثوق محلياً، PWA/Web Push يعملان، لا تحذيرات متصفح.
-
----
-
-### 🥈 الخيار 2: **Self-Signed Certificate** — سريع لكن مع تحذير متصفح
-```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout /etc/ssl/private/net-monitor.key \
-  -out /etc/ssl/certs/net-monitor.crt \
-  -subj "/CN=net-monitor.local" \
-  -addext "subjectAltName=DNS:net-monitor.local,DNS:localhost,IP:127.0.0.1,IP:192.168.1.50"
-```
-**العيب:** المتصفح سيظهر تحذير "Your connection is not private" ويجب النقر **Advanced → Proceed** في كل متصفح/جهاز.
-
----
-
-### 🥉 الخيار 3: **أنفاق آمنة (Tailscale / ngrok / Cloudflare Tunnel)** — للوصول من خارج الشبكة بدون دومين
-| الأداة | الميزة | HTTPS |
-|--------|--------|-------|
-| **Tailscale** | VPN mesh مجاني، يعطيك `https://device-name.tailnet.ts.net` | ✅ تلقائي |
-| **ngrok** | نفق سريع: `ngrok http 4000` → يعطيك `https://xxx.ngrok.io` | ✅ تلقائي |
-| **Cloudflare Tunnel** | `cloudflared tunnel run` → دومين مجاني `*.trycloudflare.com` | ✅ تلقائي |
-
-**مثال Tailscale (الأسهل للوصول من أي مكان):**
-```bash
-# على السيرفر:
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
-# سيعطيك: https://your-device.tailnet.ts.net
-# يعمل من أي جهاز عليه Tailscale
-```
-
----
-
-## 📋 ملخص سريع: ماذا تختار؟
-
-| السيناريو | الحل الأنسب |
-|------------|-------------|
-| **تطوير/اختبار على الشبكة المحلية فقط** | **mkcert + hosts file** (لا تحذيرات، يعمل PWA/Web Push) |
-| **وصول سريع مؤقت من خارج الشبكة** | **ngrok** أو **Cloudflare Tunnel** |
-| **وصول دائم من أي مكان بدون دومين** | **Tailscale** (يمنحك دومين `*.ts.net` مع HTTPS تلقائي) |
-| **إنتاج حقيقي لعملاء/شركة** | **اشترِ دومين + Let's Encrypt** (الخيار الاحترافي) |
-
----
-
-قاعدة البيانات موجودة في: `/opt/network-monitor/database/monitoring.db`
-
-```bash
-# نسخ احتياطي يدوي
+# manual
 cp /opt/network-monitor/database/monitoring.db /backups/nm-$(date +%F).db
 
-# أو آلياً عبر cron يومياً (الساعة 2 صباحاً):
+# daily at 02:00
 crontab -e
-# أضف هذا السطر:
 0 2 * * * cp /opt/network-monitor/database/monitoring.db /backups/nm-$(date +\%F).db
 ```
 
-للاستعادة:
+Restore:
+
 ```bash
 sudo bash deploy.sh stop
-cp backup-2026-07-19.db /opt/network-monitor/database/monitoring.db
+cp /backups/nm-2026-10-18.db /opt/network-monitor/database/monitoring.db
 sudo bash deploy.sh restart
 ```
 
+The dashboard also has a backup tab (create, list, download, restore — a safety copy is taken before any
+restore), and a scheduled automatic backup. Before a big upgrade it is worth running
+`PRAGMA integrity_check` on a copy.
+
 ---
 
-## 🌍 النشر في عدة شركات
+## 🌍 Running for several companies
 
-المشروع مُصمَّم ليكون **قابلاً لإعادة الاستخدام** في عدة شركات:
+The project is designed to be deployed per company, not multi-tenant:
 
-### الطريقة الموصى بها: نشر منفصل لكل شركة
-لكل شركة:
-1. سيرفر Linux مستقل (فيزيائي أو VM أو VPS) — أي توزيعة مدعومة.
-2. استنساخ نفس المستودع من GitHub.
-3. ملف `.env` مستقل بإعدادات تلك الشركة (Bot Token مختلف لكل شركة غالباً).
-4. أجهزة شبكة تلك الشركة فقط تُضاف عبر لوحة التحكم.
+1. One Linux server per company (physical, VM or VPS).
+2. Clone the same repository.
+3. A separate `backend/.env` per company (usually a different Telegram bot).
+4. Only that company’s devices are added through its dashboard.
 
-### مزايا هذا النهج:
-- ✅ عزل كامل: لا تشارك شركة بيانات مع أخرى.
-- ✅ استقلالية الأعطال: توقف شركة لا يوقف الأخرى.
-- ✅ إعدادات تلجرام مختلفة لكل شركة (Bot منفصل).
-- ✅ أداء أفضل (كل سيرفر يراقب شبكته المحلية مباشرة).
+This gives full data isolation, independent failures, per-company notification accounts and the best
+performance (each server watches its own LAN directly).
 
 ---
 
 ## 🔥 Firewall
 
-### ufw (Debian/Ubuntu)
 ```bash
-sudo ufw allow 22/tcp           # SSH
-sudo ufw allow 4000/tcp         # مراقبة
-sudo ufw enable
-```
+# ufw (Debian/Ubuntu)
+sudo ufw allow 22/tcp && sudo ufw allow 4000/tcp && sudo ufw enable
 
-### firewalld (RHEL/CentOS/Fedora)
-```bash
+# firewalld (RHEL family)
 sudo firewall-cmd --permanent --add-port=22/tcp
 sudo firewall-cmd --permanent --add-port=4000/tcp
 sudo firewall-cmd --reload
-```
 
-### iptables (Alpine/أي Linux)
-```bash
+# iptables (Alpine / anything)
 sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 4000 -j ACCEPT
-# حفظ القواعد حسب التوزيعة
 ```
 
 ---
 
-## 🐛 استكشاف الأخطاء
+## 🐛 Troubleshooting
 
-### التطبيق لا يبدأ
+**The app does not start** — `sudo bash deploy.sh logs`, `sudo bash deploy.sh status`,
+`pm2 logs network-monitor --err`.
+
+**`better-sqlite3` fails to build** — install the build tools for your distribution (see the manual install
+section), then:
+
 ```bash
-sudo bash deploy.sh logs             # راجع آخر السجلات
-sudo bash deploy.sh status           # حالة العملية
-pm2 logs network-monitor --err       # أخطاء فقط
-```
-
-### `better-sqlite3` فشل في البناء
-السكريبت يعيد بناءه تلقائياً عند النشر. لو حدث خطأ:
-```bash
-# Debian/Ubuntu:    sudo apt install -y python3 make g++ build-essential
-# RHEL/CentOS/Fed:  sudo dnf install -y python3 make gcc gcc-c++
-# Arch:             sudo pacman -S python make gcc
-# Alpine:           sudo apk add python3 make g++ build-base
-# openSUSE:         sudo zypper install python3 make gcc gcc-c++
-
 cd /opt/network-monitor/backend
 npm rebuild better-sqlite3
 sudo bash deploy.sh restart
 ```
 
-**على Alpine Linux**: السكريبت يستخدم `--build-from-source` تلقائياً.
+On Alpine the script uses `--build-from-source` automatically.
 
-### المنفذ 4000 محجوز
-```bash
-# ابحث عن العملية المستخدمة للمنفذ
-sudo lsof -i :4000 2>/dev/null || sudo ss -tlnp | grep :4000
-# أو غيّر المنفذ في backend/.env
-nano /opt/network-monitor/backend/.env
-# PORT=4001
-```
-ثم: `sudo bash deploy.sh restart`
+**Port 4000 is taken** — find it (`sudo ss -tlnp | grep :4000`) or change `PORT` in `backend/.env`, then
+restart.
 
-### Ping لا يعمل ( ICMP محجوب)
-على Linux النشر المباشر، الـ ping يعمل افتراضياً بدون صلاحيات إضافية.
-لو واجهت مشاكل، تأكد أن المستخدم الذي يشغّل العملية له صلاحية:
-```bash
-# قد تحتاج setcap (نادر)
-sudo setcap cap_net_raw+p $(which node)
-sudo bash deploy.sh restart
-```
+**Ping does not work** — on a plain Linux install ICMP needs no extra privileges; if your setup blocks raw
+sockets: `sudo setcap cap_net_raw+p $(which node)` and restart.
 
-### على Alpine: PM2 لا يبدأ مع النظام
-Alpine يستخدم OpenRC بدلاً من systemd. لتشغيل PM2 مع الإقلاع:
-```bash
-sudo apk add pm2  # بعض إصدارات Alpine توفره
-# أو يدوياً: أنشئ خدمة OpenRC
-sudo rc-update add nodejs default  # إن وُجدت
-```
+**PM2 does not start at boot on Alpine** — Alpine uses OpenRC instead of systemd; add PM2 to the startup
+(`rc-update`) or use the provided systemd unit as a reference.
 
-### إعادة ضبط حساب المدير
-```bash
-cd /opt/network-monitor/backend
-node src/seedAdmin.js
-```
+**Reset the admin account** — `cd /opt/network-monitor/backend && node src/seedAdmin.js`.
 
 ---
 
-## 📋 ما الذي يثبّته السكريبت على كل توزيعة؟
+## ✅ Pre-production checklist
 
-| الحزمة | Debian/Ubuntu | RHEL/CentOS | Arch | Alpine | openSUSE |
-|---|---|---|---|---|---|
-| git + curl + wget | ✓ | ✓ | ✓ | ✓ | ✓ |
-| python3 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| make + g++ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| build-essential / base-devel / build-base | ✓ | ✓ (group) | ✓ | ✓ | ✓ (pattern) |
-| Node.js 24 LTS | NodeSource | NodeSource | pacman | apk | zypper |
-| sqlite3 CLI | ✓ | ✓ (sqlite) | ✓ | ✓ | ✓ |
-| PM2 | npm -g | npm -g | npm -g | npm -g | npm -g |
+- [ ] `DEFAULT_ADMIN_PASSWORD` is strong and unique
+- [ ] `SESSION_SECRET` is set (generated by the script — verify)
+- [ ] Telegram token + chat id (and/or WhatsApp credentials) configured
+- [ ] Firewall enabled; only the needed ports open
+- [ ] `backend/.env` copied somewhere safe (it holds the secrets)
+- [ ] HTTPS configured if the dashboard is reachable from outside the LAN
+- [ ] Daily backup of `monitoring.db` scheduled
+- [ ] Login, adding a device and one real Telegram alert tested
+- [ ] `node -v` prints **v22 or newer**
+- [ ] `cd backend && npm test` passes before an upgrade
+- [ ] A backup plus `PRAGMA integrity_check` taken before an upgrade
+- [ ] Display settings (public page + NOC) and AI redaction reviewed after the upgrade
+- [ ] For large networks: raise `check_interval_seconds` (30/60 s) on non-critical devices
 
----
+## 📚 Related documents
 
-## ✅ قائمة فحص قبل النشر في الإنتاج
-
-- [ ] غيّرت `DEFAULT_ADMIN_PASSWORD` إلى كلمة مرور قوية
-- [ ] غيّرت `SESSION_SECRET` (السكريبت يولّده تلقائياً، لكن تأكد)
-- [ ] أضفت Bot Token + Chat ID في `.env`
-- [ ] فعلت firewall (ufw / firewalld / iptables)
-- [ ] نسخت `backend/.env` إلى مكان آمن (يحتوي على أسرار)
-- [ ] فعّلت HTTPS عبر Nginx + Certbot (للوصول من خارج الشبكة المحلية)
-- [ ] ضبطت نسخ احتياطي يومي لـ `monitoring.db`
-- [ ] اختبرت تسجيل الدخول + إضافة جهاز + وصول إشعار تلجرام
-- [ ] `node -v` يطبع **v22 أو أحدث** (المشروع 2.33.0 يشترط Node ≥22 — `better-sqlite3@13`)
-- [ ] `cd backend && npm test` يمرّ (**115/115**) قبل الترقية
-- [ ] أخذت نسخة احتياطية + `PRAGMA integrity_check` قبل الترقية
-- [ ] راجعت «إعدادات العرض» (العرض العام + شاشة NOC) و«مساعد AI» (التنقيح) بعد الترقية
-- [ ] يُستحسن: ضبط `check_interval_seconds` للأجهزة غير الحرجة على الشبكات الكبيرة (30/60 ثانية)
-
-> 📘 تفاصيل الترقية والسلوك المتغيّر والتراجع: `docs/spacekit/RELEASE_NOTES_2.33.0.md`
+| Document | Content |
+|---|---|
+| [../README.md](../README.md) | Project overview and quick start |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | How the components fit together |
+| [I18N.md](I18N.md) | The bilingual UI model |
+| [../appliance/README.md](../appliance/README.md) | Building and installing the appliance ISO |
+| [linux-setup/](linux-setup/) | systemd unit + Nginx config (alternative to PM2) |
+| [../CHANGELOG.md](../CHANGELOG.md) | Release history |

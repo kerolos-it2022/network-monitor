@@ -3,7 +3,7 @@
 #
 # التشغيل من جذر المشروع (Docker لازم يكون شغّالًا):
 #   docker run --rm -v "$PWD:/work" node:24-bookworm bash /work/appliance/tests/verify-password-doors.sh
-#   (على ويندوز: مرّر المسار بصيغة E:/network-monitor-2.31.0:/work وبلا MSYS_NO_PATHCONV)
+#   (على ويندوز: مرّر مسار المشروع بصيغة /d/../repo:/work وبلا MSYS_NO_PATHCONV)
 #
 # ما تفحصه: صياغة السكربتات · صلاحية قاعدة sudo (visudo) · أن المساعد يكتب بوابة الكونسول + حساب لينكس
 # بكلمة واحدة · أن **كود خدمة اللوحة نفسه** (بمستخدم netmon عبر sudo -n) يزامن الأبواب · أن الباسورد

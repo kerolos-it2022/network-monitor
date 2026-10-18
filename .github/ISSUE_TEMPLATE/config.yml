@@ -1,22 +1,23 @@
-# إعدادات قوالب Issues
+# Issue template configuration
 # ===========================
-# نعطّل الـ blank issues لتشجيع المستخدمين على استخدام القوالب المنظَّمة (bug_report / feature_request)
-# للحصول على معلومات كافية للتشخيص منذ البداية.
+# Blank issues are disabled so reports arrive with the details needed to diagnose them
+# (bug_report / feature_request).
 blank_issues_enabled: false
 
 contact_links:
-  - name: 💬 سؤال عام أو نقاش
+  - name: 💬 General question or discussion
     url: https://github.com/kerolos-it2022/network-monitor/discussions
     about: |
-      للأسئلة العامة، الاستخدام، النقاشات، والأفكار قبل تحويلها إلى طلب ميزة.
-      استخدم GitHub Discussions بدل فتح Issue.
+      For general questions, usage, discussions and ideas before they become a feature request.
+      Please use GitHub Discussions instead of opening an issue.
+      (للأسئلة العامة والنقاشات استخدم Discussions.)
 
-  - name: 🔒 الإبلاغ عن ثغرة أمنية
+  - name: 🔒 Report a security vulnerability
     url: https://github.com/kerolos-it2022/network-monitor/security/advisories/new
     about: |
-      ⚠️ لا تفتح Issue عام للثغرات الأمنية.
-      استخدم GitHub Security Advisories (خاص وآمن) — راجع SECURITY.md.
+      ⚠️ Never open a public issue for a security problem.
+      Use GitHub Security Advisories (private and safe) — see SECURITY.md.
 
-  - name: 📚 الوثائق (README / DEPLOY / RUN-ON-LINUX)
+  - name: 📚 Documentation
     url: https://github.com/kerolos-it2022/network-monitor#readme
-    about: راجع الوثائق أولاً — قد تكون الإجابة موجودة في README / DEPLOY.md / RUN-ON-LINUX.md.
+    about: Check the docs first — the answer may already be in README.md, docs/DEPLOY.md, docs/ARCHITECTURE.md or docs/I18N.md.
