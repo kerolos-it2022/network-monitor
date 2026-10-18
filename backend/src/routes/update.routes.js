@@ -1,0 +1,890 @@
+// update.routes.js: API للتحقق من التحديثات وتنفيذها
+const express = require('express');
+const { spawn, exec } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const router = express.Router();
+const requireAuth = require('../middleware/requireAuth');
+const { uiText, uiLangCode } = require('../services/ui-text.service');
+const REPO_DIR = path.join(__dirname, '../../../'); // Project root (../../../ from backend/src/routes)
+const PACKAGE_JSON_PATH = path.join(REPO_DIR, 'backend', 'package.json');
+
+// ─────────────────────────────────────────────────────────────
+// إعدادات GitHub (قابلة للتهيئة عبر .env لدعم الـ forks والمستودعات الخاصة)
+// ─────────────────────────────────────────────────────────────
+// GITHUB_REPO_URL: رابط المستودع (مثال: https://github.com/owner/repo.git)
+// GITHUB_TOKEN: رمز وصول شخصي (اختياري — مطلوب للمستودعات الخاصة ويُرفع حد API)
+const GITHUB_REPO_URL = process.env.GITHUB_REPO_URL || '';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+
+// تفكيك owner/repo من رابط المستودع أو القيمة الافتراضية العامة
+function getRepoConfig() {
+  const DEFAULT = { owner: 'kerolos-it2022', repo: 'network-monitor' };
+  if (!GITHUB_REPO_URL) return DEFAULT;
+  // أنماط مدعومة: https://github.com/owner/repo(.git)?  أو  owner/repo
+  const match = GITHUB_REPO_URL.match(/github\.com[/:]([^/]+)\/([^/\.?#]+?)(?:\.git)?(?:[?#].*)?$/i)
+             || GITHUB_REPO_URL.match(/^([^/]+)\/([^/\.]+)$/);
+  if (match && match[1] && match[2]) {
+    return { owner: match[1], repo: match[2] };
+  }
+  return DEFAULT;
+}
+
+// رؤوس HTTP الموحّدة لطلبات GitHub API (مع مصادقة عند توفر التوكن)
+function githubApiHeaders() {
+  const headers = {
+    'User-Agent': 'Network-Monitor-Updater',
+    'Accept': 'application/vnd.github.v3+json'
+  };
+  if (GITHUB_TOKEN) headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  return headers;
+}
+
+// رابط نسخة الأرشيف لـ tag (للتحميل البديل عند غياب assets)
+function getArchiveUrl(tag) {
+  const { owner, repo } = getRepoConfig();
+  return `https://github.com/${owner}/${repo}/archive/refs/tags/${tag}.zip`;
+}
+
+// ── وضع الـ appliance: فحص وتحديث عبر GitHub API + أرشيف الإصدار (بدون git/PM2) ──
+// v2.33.0 — منطق الإصدارات في خدمة واحدة (services/update-version.service.js) لتُختبَر مباشرة:
+// مقارنة semver حقيقية (وليس نصية). نسخة المستودع المحلي قد تكون أحدث من آخر تاج منشور
+// (العمل على إصدار لم يُرفع بعد) — وهذا **طبيعي** ويُعرَض كما هو، مع منع أي تنزيل نازل.
+const { semverParts, isNewerVersion, compareVersions } = require('../services/update-version.service');
+async function getLatestTagFromApi() {
+  try {
+    const { owner, repo } = getRepoConfig();
+    // v2.13.7 — إصلاح عيب حرج: كان يُجلب أول 30 وسمًا فقط (per_page=30) والمستودع فيه
+    // 57 وسمًا ⇒ أحدث الوسوم (v2.13.x) كانا خارج النافذة والمُحدِّث يعرض/يثبّت إصدارًا
+    // قديمًا (كان آخر ما يُرى v2.13.0). الآن: ترقيم صفحات حتى نفاد القائمة ثم ترتيب semver.
+    const collected = [];
+    let page = 1;
+    while (page <= 5) {   // سقف حماية: 5×100 = 500 وسم — أكبر من أي توقع
+      const res = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/tags?per_page=100&page=${page}`,
+        { headers: githubApiHeaders(), signal: AbortSignal.timeout(20000) }
+      );
+      if (!res.ok) break;
+      const batch = await res.json();
+      if (!Array.isArray(batch) || batch.length === 0) break;
+      collected.push(...batch);
+      if (batch.length < 100) break;   // آخر صفحة
+      page++;
+    }
+    const vTags = collected.map((t) => t && t.name).filter((n) => typeof n === 'string' && /^v/i.test(n));
+    // GitHub لا يرتب semver — نرتب تنازليًا بأنفسنا
+    return vTags.sort((a, b) => (isNewerVersion(b, a) ? 1 : isNewerVersion(a, b) ? -1 : 0));
+  } catch {
+    return [];
+  }
+}
+
+// v2.17.1 — سجل حالة لمسار تحديث الويب (يُدمج في /progress ليه يظهر في «آخر عملية»):
+//   سابقًا مسار الويب كتب نتيجته في الذاكرة فقط ⇒ ظلّ التذييل يعرض رسالة قديمة
+//   («تم التحديث إلى v2.14.0») بعدما تجاوزها النظام بإصدارات عدّة.
+function webUpdateStatusPath() {
+  return path.join(__dirname, '../../database', 'update-web-status.json');
+}
+function writeWebUpdateStatus(rec) {
+  try {
+    rec.at = new Date().toISOString();
+    fs.mkdirSync(path.dirname(webUpdateStatusPath()), { recursive: true });
+    fs.writeFileSync(webUpdateStatusPath(), JSON.stringify(rec, null, 2));
+  } catch (e) {}
+}
+function readWebUpdateStatus() {
+  try { return JSON.parse(fs.readFileSync(webUpdateStatusPath(), 'utf8')); } catch (e) { return null; }
+}
+function performUpdateArchive(tag) {
+    // v2.17.1 — سجل «قيد التحديث» فور البدء.
+    writeWebUpdateStatus({ state: 'running', message: uiText('⏳ جارٍ التحديث إلى ', '⏳ Updating to ') + tag + '…', code: 'update.running' });
+  return new Promise((resolve) => {
+    const TMP_ZIP = `/tmp/nm-update-${tag}.zip`;
+    const TMP_SRC = '/tmp/nm-update-src';
+    const archiveUrl = GITHUB_TOKEN
+      ? `https://api.github.com/repos/${getRepoConfig().owner}/${getRepoConfig().repo}/zipball/${tag}`
+      : getArchiveUrl(tag);
+    const authHdr = GITHUB_TOKEN ? `-H "Authorization: Bearer ${GITHUB_TOKEN}" ` : '';
+    const steps = [
+      { name: uiText('تحميل أرشيف الإصدار ', 'Downloading release archive ') + tag, cmd: `curl -fL --retry 2 -m 300 ${authHdr}-o ${TMP_ZIP} "${archiveUrl}"` },
+      { name: uiText('فك الأرشيف', 'Extracting archive'), cmd: `rm -rf ${TMP_SRC} && mkdir -p ${TMP_SRC} && unzip -q -o ${TMP_ZIP} -d ${TMP_SRC}` },
+      { name: uiText('تحديث ملفات التطبيق', 'Updating application files'), cmd: `cd ${TMP_SRC} && SRC=$(ls -d */ | head -n1) && cp -a "$SRC/backend" ${REPO_DIR}/ && cp -a "$SRC/frontend" ${REPO_DIR}/ && mkdir -p ${REPO_DIR}/database && cp -a "$SRC"/database/. ${REPO_DIR}/database/`
+      + `; if [ -f "$SRC/appliance/config/includes.chroot/usr/local/sbin/nm-remote" ]; then install -m 0755 "$SRC/appliance/config/includes.chroot/usr/local/sbin/nm-remote" /usr/local/sbin/nm-remote && echo 'nm-remote helper updated'; fi`
+      + `; if [ -f "$TMP_SRC/appliance/config/includes.chroot/usr/local/sbin/nm-update" ]; then install -m 0755 "$TMP_SRC/appliance/config/includes.chroot/usr/local/sbin/nm-update" /usr/local/sbin/nm-update && echo 'nm-update helper updated'; fi` },
+      { name: uiText('تحديث التبعيات', 'Updating dependencies'), cmd: `cd ${REPO_DIR}/backend && npm ci --omit=dev` },
+      { name: uiText('إعادة تشغيل الخدمة', 'Restarting the service'), cmd: `if systemctl is-active --quiet network-monitor 2>/dev/null; then systemctl restart network-monitor; else pm2 restart network-monitor --update-env 2>/dev/null || true; fi` },
+      // v2.14.8 — إصلاح ذاتي: كل تحديث يعيد تنشيط مراقب طلبات الوصول عن بُعد (كان يموت
+      // بعد أول إعادة تشغيل للجهاز لأن الوحدة غير مفعّلة إقلاعيًا). `; true` يضمن ألا
+      // تفشل هذه الخطوة أبدًا على المنصات بلا systemd (pm2 فقط) — صمت تام هناك.
+      { name: uiText('تنشيط مساعد الوصول عن بُعد (تلقائي)', 'Activating the remote-access helper (automatic)'), cmd: `systemctl enable --now nm-remote.path 2>/dev/null; systemctl try-restart nm-remote.service 2>/dev/null; true` }
+    ];
+    let i = 0;
+    const results = [];
+    function next() {
+      if (i >= steps.length) {
+        try { writeWebUpdateStatus({ state: 'success', code: 'update.completed', message: uiText('✅ تم التحديث إلى ', '✅ Updated to ') + tag.replace(/^v/i, '') + uiText(' بنجاح', ' successfully') }); } catch (e) {}
+        resolve({ success: true, code: 'update.completed', message: uiText('تم التحديث عبر أرشيف الإصدار وإعادة التشغيل بنجاح', 'Updated via the release archive and restarted successfully'), steps: results, viaArchive: true });
+        return;
+      }
+      const st = steps[i];
+      exec(st.cmd, { cwd: REPO_DIR, timeout: 600000 }, (err, stdout, stderr) => {
+        if (err) {
+          try { writeWebUpdateStatus({ state: 'failed', code: 'update.failed', message: uiText('❌ فشل التحديث («', '❌ Update failed (“') + st.name + uiText('»): ', '”): ') + (err.message || '') }); } catch (e) {}
+          resolve({ success: false, error: uiText('فشل في خطوة "', 'Failed at step "') + st.name + '": ' + err.message + '\n' + stderr, steps: results });
+          return;
+        }
+        results.push({ step: st.name, output: (stdout || '').trim().slice(0, 500) });
+        i++;
+        next();
+      });
+    }
+    next();
+  });
+}
+
+// قراءة الإصدار من package.json (في مجلد backend)
+function getCurrentVersion() {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
+    const version = packageJson.version || 'unknown';
+    console.log('[UPDATE] Current version from package.json:', version);
+    return version;
+  } catch (error) {
+    console.error('[UPDATE] Error reading package.json:', error.message);
+    return 'unknown';
+  }
+}
+
+// الحصول على الفرع الحالي
+function getCurrentBranch() {
+  return new Promise((resolve) => {
+    exec('git branch --show-current', { cwd: REPO_DIR }, (err, stdout) => {
+      resolve(err ? 'unknown' : stdout.trim());
+    });
+  });
+}
+
+// التحقق من أننا في مستودع Git
+function isGitRepo() {
+  return new Promise((resolve) => {
+    exec('git rev-parse --is-inside-work-tree', { cwd: REPO_DIR }, (err, stdout) => {
+      resolve(!err && stdout.trim() === 'true');
+    });
+  });
+}
+
+// الحصول على أحدث إصدار من git tags
+async function getLatestVersionFromTags() {
+  try {
+    // الحصول على أحدث tag يتوافق مع نمط semver (بدون الحاجة لجلب الفرع)
+    return new Promise((resolve) => {
+      exec('git tag -l "v*" --sort=-v:refname', { cwd: REPO_DIR }, (err, stdout) => {
+        if (err || !stdout.trim()) {
+          console.log('[UPDATE] No tags found or error:', err?.message);
+          resolve(null);
+          return;
+        }
+        // أول tag هو الأحدث (مرتب تنازلياً)
+        const latestTag = stdout.trim().split('\n')[0];
+        // إزالة 'v' من البداية إذا وجدت
+        const version = latestTag.replace(/^v/, '');
+        console.log('[UPDATE] Latest tag found:', latestTag, '-> version:', version);
+        resolve(version);
+      });
+    });
+  } catch (error) {
+    console.error('[UPDATE] getLatestVersionFromTags error:', error.message);
+    return null;
+  }
+}
+
+// التحقق من وجود الفرع على المستودع البعيد
+async function checkBranchExists(branch) {
+  try {
+    const { stdout } = await new Promise((resolve, reject) => {
+      exec(`git ls-remote --heads origin ${branch}`, { cwd: REPO_DIR }, (err, stdout, stderr) => {
+        if (err) {
+          console.error('[UPDATE] checkBranchExists error:', err.message);
+          reject(err);
+        } else {
+          resolve({ stdout, stderr });
+        }
+      });
+    });
+    const exists = stdout.trim() !== '';
+    console.log(`[UPDATE] Branch "${branch}" exists on remote:`, exists);
+    return exists;
+  } catch (error) {
+    console.error('[UPDATE] checkBranchExists failed:', error.message);
+    return false;
+  }
+}
+
+// الحصول على الفرع الافتراضي للمستودع البعيد
+// fallback: GITHUB_BRANCH إن ضُبط في .env، وإلا 'main'
+const DEFAULT_BRANCH_FALLBACK = process.env.GITHUB_BRANCH || 'main';
+async function getDefaultBranch() {
+  try {
+    return new Promise((resolve) => {
+      exec('git remote show origin | grep "HEAD branch" | cut -d" " -f5', { cwd: REPO_DIR }, (err, stdout) => {
+        if (err || !stdout.trim()) {
+          resolve(DEFAULT_BRANCH_FALLBACK);
+        } else {
+          resolve(stdout.trim());
+        }
+      });
+    });
+  } catch (error) {
+    return DEFAULT_BRANCH_FALLBACK;
+  }
+}
+
+// تصنيف خطأ git إلى رسالة عربية واضحة بدل الرسالة الفنية الخام
+// يَلتقط: صلاحيات .git/، شبكة، .git مكسورة، مصادقة... إلخ.
+function classifyGitError(error) {
+  const msg = (error && error.message) ? String(error.message) : '';
+  const lower = msg.toLowerCase();
+
+  // صلاحيات .git/ (FETCH_HEAD / index / refs مملوكة لمستخدم آخر)
+  if (/permission denied|cannot open|fatal:\s*not a git repository/i.test(msg)) {
+    return {
+      category: 'permissions',
+      message: uiText('فشل في الوصول إلى مجلد .git/ — غالبًا بسبب ملكية خاطئة (تَعمل العملية كمستخدم مختلف).',
+        'Failed to access the .git/ directory — usually caused by wrong ownership (the process runs as a different user).'),
+      hint: uiText('على الخادم: sudo chown -R $USER:$USER /opt/network-monitor/.git  (شغّل كمستخدم العملية، لا root)',
+        'On the server: sudo chown -R $USER:$USER /opt/network-monitor/.git  (run as the process user, not root)'),
+    };
+  }
+  // مشكلة شبكة / DNS / GitHub غير مُتاح
+  if (/could not resolve host|connection timed out|connection refused|failed to connect|temporary failure in name resolution|network is unreachable/i.test(msg)) {
+    return {
+      category: 'network',
+      message: uiText('تعذّر الوصول إلى المستودع البعيد — تحقق من اتصال الخادم بالإنترنت/GitHub.',
+        'Could not reach the remote repository — check the server’s internet/GitHub connection.'),
+      hint: uiText('حاول مجددًا لاحقًا؛ تحقق من DNS/الجدار الناري： nslookup github.com',
+        'Try again later; check DNS/firewall: nslookup github.com'),
+    };
+  }
+  // مصادقة (مستودع خاص بدون token، أو token منتهٍ)
+  if (/authentication failed|could not read username|403|401|requests require authentication/i.test(msg)) {
+    return {
+      category: 'auth',
+      message: uiText('المستودع يتطلب مصادقة. تحقق من GITHUB_TOKEN إن كان المستودع خاصًا.',
+        'The repository requires authentication. Check GITHUB_TOKEN if the repository is private.'),
+      hint: uiText('اضبط GITHUB_TOKEN في backend/.env أو اجعل المستودع عامًا.',
+        'Set GITHUB_TOKEN in backend/.env or make the repository public.'),
+    };
+  }
+  // غير مُصنّف: نُعيد الرسالة الخام كما هي
+  return { category: 'unknown', message: msg || uiText('خطأ غير معروف', 'Unknown error'), hint: null };
+}
+
+// التحقق من وجود تحديثات متاحة
+async function checkForUpdates(branch = 'main') {
+  try {
+    // وضع الـ appliance: لا .git ولا git — الفحص عبر GitHub API (الأرشيف يُستخدم في performUpdate)
+    if (!(await isGitRepo())) {
+      const currentVersion = getCurrentVersion();
+      const sorted = await getLatestTagFromApi();
+      const latestTag = sorted[0] || null;                       // الأحدث semver
+      const latestVersion = latestTag ? latestTag.replace(/^v/i, '') : currentVersion;
+      // سلوك المشروع: نُبلّغ بكل فرق بين نسختنا وآخر ما نُشِر على GitHub (hasUpdate)،
+      // والقابل للتنزيل/التثبيت هو الأحدث فعلًا فقط (remoteNewer) ⇒ لا تنزيل نازل.
+      const cmp = compareVersions(currentVersion, latestVersion);
+      const hasUpdate = cmp.differenceFromGithub;
+      return {
+        success: true,
+        isGitRepo: false,
+        viaArchive: true,
+        hasUpdate,
+        remoteNewer: cmp.remoteNewer,
+        localNewer: cmp.localNewer,
+        currentVersion,
+        latestVersion,
+        branch,
+        changelog: cmp.remoteNewer
+          ? uiText('تحديث متاح (' + latestVersion + ') — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)',
+            'Update available (' + latestVersion + ') — will be installed via the release archive (appliance mode)')
+          : (latestTag ? cmp.note : uiText('لا توجد تاجات إصدارات على GitHub', 'No release tags on GitHub')),
+        note: cmp.note,
+        updateAvailable: cmp.remoteNewer
+      };
+    }
+    // ملاحظة: checkBranchExists يَنفّذ `git ls-remote` (read-only عبر الشبكة، لا يَكتب .git/).
+    // إن نجح وفشل `git fetch` فيما بَعد، فالجذر ليس "الفرع غير موجود" بل صلاحيات .git/ أو شبكة.
+    // لذلك نُجَرّب `git fetch` الفِعلي أَوّلًا، ونَلتقط رسالة الخطأ الأَصلية بدل الإصمات على الرسالة المُضلِّلة.
+    const branchExists = await checkBranchExists(branch);
+
+    // جلب أحدث التغييرات + التاجات صراحةً (--tags يَضمن وصول تاجات الإصدارات حتى لو
+    // remote.origin.tagOpt=--no-tags أو التاج خفيف lightweight؛ --force آمن هنا لأن origin هو المصدر)
+    await new Promise((resolve, reject) => {
+      exec(`git fetch --tags --force origin ${branch}`, { cwd: REPO_DIR }, (err, stdout, stderr) => {
+        if (err) {
+          // نَرفع err كَكائن يَحمل stderr لِيَصِل إلى classifyGitError
+          const enriched = new Error((err.message || 'git fetch failed') + (stderr ? `\n${stderr}` : ''));
+          enriched.stderr = stderr;
+          enriched.cmd = 'git fetch --tags --force origin';
+          reject(enriched);
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    // إن فَشل `git fetch` رَغم نَجاح `ls-remote` لا يَجب أصلًا الوصول إلى هنا.
+    // لكن لو وَصلنا و`branchExists=false` فهذا يَعني فعلاً أن الفرع غير موجود على الـ remote.
+    if (!branchExists) {
+      const defaultBranch = await getDefaultBranch();
+      return {
+        success: false,
+        error: uiText('الفرع "' + branch + '" غير موجود على المستودع البعيد. الفرع الافتراضي هو: ' + defaultBranch,
+          'Branch "' + branch + '" does not exist on the remote repository. The default branch is: ' + defaultBranch),
+        currentVersion: getCurrentVersion(),
+        latestVersion: getCurrentVersion(),
+        branch,
+        changelog: uiText('الفرع "' + branch + '" غير موجود. الفرع الافتراضي: ' + defaultBranch,
+          'Branch "' + branch + '" does not exist. Default branch: ' + defaultBranch),
+        updateAvailable: false
+      };
+    }
+
+    // الحصول على الإصدار الحالي من package.json
+    const currentVersion = getCurrentVersion();
+    
+    // الحصول على أحدث إصدار من التاجات (بدون حاجة للفرع)
+    const latestVersion = await getLatestVersionFromTags();
+    
+    if (!latestVersion) {
+      return { 
+        success: true, 
+        hasUpdate: false, 
+        currentVersion, 
+        latestVersion: currentVersion,
+        branch,
+        changelog: uiText('لا توجد تاجات إصدارات', 'No release tags'),
+        updateAvailable: false 
+      };
+    }
+
+    // v2.33.0 — الفحص يبلّغ بكل فرق بين نسختنا وآخر ما نُشِر على GitHub (سلوك المشروع الأصلي)،
+    // ويُبيّن **اتجاه** الفرق: على GitHub أحدث ⇒ يوجد ما يُثبَّت، ونسختنا أحدث ⇒ لا شيء يُنزَّل
+    // (وضع طبيعي أثناء العمل على إصدار لم يُرفع بعد). بذلك لا يظهر زر تنزيل نازل أبدًا.
+    const cmp = compareVersions(currentVersion, latestVersion);
+    const hasUpdate = cmp.differenceFromGithub;
+
+    // الحصول على ملخص التغييرات (عند وجود إصدار أحدث على GitHub فقط)
+    let changelog = '';
+    if (cmp.remoteNewer) {
+      await new Promise((resolve) => {
+        exec(`git log --oneline --graph --decorate v${currentVersion}..v${latestVersion}`, { cwd: REPO_DIR }, (err, stdout) => {
+          changelog = err ? uiText('غير متاح', 'Not available') : stdout.trim();
+          resolve();
+        });
+      });
+    }
+
+    return {
+      success: true,
+      hasUpdate,
+      remoteNewer: cmp.remoteNewer,
+      localNewer: cmp.localNewer,
+      currentVersion,
+      latestVersion,
+      branch,
+      changelog: changelog || (cmp.localNewer ? cmp.note : uiText('لا توجد تغييرات', 'No changes')),
+      note: cmp.note,
+      updateAvailable: cmp.remoteNewer
+    };
+  } catch (error) {
+    // تصنيف الخطأ إلى رسالة عربية واضحة بدل "الفرع main غير موجود" المُضلِّلة
+    const classified = classifyGitError(error);
+    return {
+      success: false,
+      error: classified.message,
+      hint: classified.hint,
+      errorCategory: classified.category,
+      rawError: error.message,
+      currentVersion: getCurrentVersion(),
+      latestVersion: getCurrentVersion(),
+      branch,
+      changelog: classified.hint || classified.message,
+      updateAvailable: false
+    };
+  }
+}
+
+// تنفيذ التحديث
+async function performUpdate(branch = 'main') {
+    // وضع الـ appliance: تحديث عبر أرشيف الإصدار (بدون git/PM2)
+    if (!(await isGitRepo())) {
+      const sorted = await getLatestTagFromApi();
+      const tag = sorted[0] || null;
+      if (!tag) {
+        return { success: false, error: uiText('تعذر جلب الإصدارات من GitHub — تحقق من الإنترنت، أو أضف GITHUB_TOKEN في backend/.env للمستودعات الخاصة.',
+          'Could not fetch releases from GitHub — check the internet connection, or add GITHUB_TOKEN in backend/.env for private repositories.') };
+      }
+      if (!isNewerVersion(tag, getCurrentVersion())) {
+        return { success: true, code: 'update.up_to_date', message: uiText('أنت بالفعل على أحدث إصدار (أو أحدث من المتاح)', 'You are already on the latest version (or newer than available)'), alreadyUpdated: true };
+      }
+      return performUpdateArchive(tag);
+    }
+    return new Promise((resolve) => {
+    const steps = [
+      { name: uiText('جلب أحدث التغييرات', 'Fetching the latest changes'), cmd: `git fetch --tags --force origin ${branch}` },
+      { name: uiText('سحب التغييرات', 'Pulling changes'), cmd: `git pull origin ${branch}` },
+      { name: uiText('تحديث التبعيات', 'Updating dependencies'), cmd: 'npm ci --omit=dev', cwd: path.join(__dirname, '../../backend') }
+    ];
+
+    let currentStep = 0;
+    const results = [];
+
+    function runNextStep() {
+      if (currentStep >= steps.length) {
+        // إعادة تشغيل PM2
+        exec('pm2 restart network-monitor --update-env', (err) => {
+          if (err) {
+            resolve({ success: false, error: uiText('فشل إعادة تشغيل PM2: ', 'Failed to restart PM2: ') + err.message, steps: results });
+          } else {
+            resolve({ success: true, code: 'update.completed', message: uiText('تم التحديث وإعادة التشغيل بنجاح', 'Updated and restarted successfully'), steps: results });
+          }
+        });
+        return;
+      }
+
+      const step = steps[currentStep];
+      const options = { cwd: step.cwd || path.join(__dirname, '../..') };
+      
+      exec(step.cmd, options, (err, stdout, stderr) => {
+        if (err) {
+          resolve({ 
+            success: false, 
+            error: uiText('فشل في خطوة "', 'Failed at step "') + step.name + '": ' + err.message + '\n' + stderr, 
+            steps: results 
+          });
+          return;
+        }
+        
+        results.push({ step: step.name, output: stdout.trim() });
+        currentStep++;
+        runNextStep();
+      });
+    }
+
+    runNextStep();
+  });
+}
+
+// GET /api/update/status - التحقق من حالة التحديث (🔒 يتطلب تسجيل دخول — يكشف إصدارات النظام)
+router.get('/status', requireAuth, async (req, res) => {
+  try {
+    const branch = req.query.branch || 'main';
+    const isRepo = await isGitRepo();
+    
+    if (!isRepo) {
+      // v2.17.1 — على الأبلاينس (بلا git) كانت الحالة ترجع success:false
+      // («ليس مستودع Git») فتظهر بطاقات الإصدار مشوشة؛ الآن نفس منطق الأرشيف:
+      const currentVersion = getCurrentVersion();
+      const sortedTags = await getLatestTagFromApi();
+      const latestTagV = sortedTags[0] || null;
+      const latestVersion = latestTagV ? latestTagV.replace(/^v/i, '') : currentVersion;
+      const cmpStatus = compareVersions(currentVersion, latestVersion);
+      const viaArchiveResult = {
+        success: true,
+        isGitRepo: false,
+        viaArchive: true,
+        hasUpdate: cmpStatus.differenceFromGithub,
+        remoteNewer: cmpStatus.remoteNewer,
+        localNewer: cmpStatus.localNewer,
+        currentVersion,
+        latestVersion,
+        updateAvailable: cmpStatus.remoteNewer,
+        note: cmpStatus.note,
+        changelog: cmpStatus.remoteNewer
+          ? uiText('تحديث متاح (' + latestVersion + ') — سيُثبَّت عبر أرشيف الإصدار (وضع الـ appliance)',
+            'Update available (' + latestVersion + ') — will be installed via the release archive (appliance mode)')
+          : cmpStatus.note,
+      };
+      return res.json(viaArchiveResult);
+    }
+
+    const [currentVersion, currentBranch, updateInfo] = await Promise.all([
+      getCurrentVersion(),
+      getCurrentBranch(),
+      checkForUpdates('main')
+    ]);
+
+    res.json({
+      success: true,
+      isGitRepo: true,
+      currentVersion,
+      currentBranch,
+      updateAvailable: updateInfo.updateAvailable || false,
+      latestVersion: updateInfo.latestVersion,
+      changelog: updateInfo.changelog,
+      branch: updateInfo.branch
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/update/check - التحقق من وجود تحديث (🔒)
+router.post('/check', requireAuth, async (req, res) => {
+  try {
+    const branch = req.body.branch || 'main';
+    const result = await checkForUpdates(branch);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// v2.24.0 — قفل التزامن عبر كل مسارات التشغيل: إن كانت هناك عمليتا تحديد جارية قريبتان
+// (سجل nm-update أو سجل الويب، ≤30 دقيقة) نرفض بدل تشغيل ثانٍ يتقاطع مع الأول.
+function recentActiveUpdateCrossPath() {
+  // سجل مسار الجذر (nm-update): نفس منطق appliance-update.routes — dataDir من cwd+DB_PATH.
+  const nmStatus = path.join(
+    path.dirname(path.resolve(process.cwd(), process.env.DB_PATH || '../database/monitoring.db')),
+    'update', 'status.json'
+  );
+  const cands = [];
+  try { cands.push(JSON.parse(fs.readFileSync(nmStatus, 'utf8'))); } catch (e) {}
+  try { cands.push(JSON.parse(fs.readFileSync(webUpdateStatusPath(), 'utf8'))); } catch (e) {}
+  const now = Date.now();
+  let newest = null;
+  for (const c of cands) {
+    if (!c || !['in_progress', 'running', 'rebooting'].includes(String(c.state || ''))) continue;
+    const ts = Date.parse(c.at || '');
+    if (!Number.isFinite(ts) || now - ts > 1000 * 60 * 30) continue;
+    if (!newest || ts > newest.ts) newest = { ts, rec: c };
+  }
+  return newest;
+}
+
+// POST /api/update/perform - تنفيذ التحديث (🔒 يعدّل النظام)
+router.post('/perform', requireAuth, async (req, res) => {
+  try {
+    const branch = req.body.branch || 'main';
+    // v2.24.0 — قفل التزامن: تشغيل واحد في كل مرة عبر أي مسار.
+    const crossPathActive = recentActiveUpdateCrossPath();
+    if (crossPathActive) {
+      const mins = Math.max(1, Math.round((Date.now() - crossPathActive.ts) / 60000));
+      return res.status(409).json({
+        success: false,
+        error: uiText('التحديث جارٍ بالفعل (بدأ منذ ' + mins + ' دقيقة — ' + String(crossPathActive.rec.message || crossPathActive.rec.state) + ') — انتظر اكتماله ثم أعد المحاولة إن لزم.',
+          'An update is already running (started ' + mins + ' minute(s) ago — ' + String(crossPathActive.rec.message || crossPathActive.rec.state) + ') — wait for it to finish, then retry if needed.'),
+        update_in_progress: true,
+      });
+    }
+    
+    // SEC-03 — تدقيق طلب التحديث (المستخدم/الفرع) قبل أي تنفيذ.
+    require('../services/audit.service').record('update_perform', req, { target: branch });
+
+    // التحقق من وجود تحديث أولاً
+    const check = await checkForUpdates(branch);
+    if (!check.success) {
+      return res.json({ success: false, error: check.error });
+    }
+    
+    if (!check.updateAvailable) {
+      return res.json({ success: true, code: 'update.up_to_date', message: uiText('أنت بالفعل على أحدث إصدار', 'You are already on the latest version'), alreadyUpdated: true });
+    }
+
+    // تنفيذ التحديث في الخلفية
+    res.json({ 
+      success: true, 
+      message: uiText('بدأ التحديث...', 'Update started...'),
+      updateId: Date.now()
+    });
+
+    // تنفيذ التحديث في الخلفية
+    performUpdate(branch).then(result => {
+      console.log('[UPDATE] Result:', result);
+      // يمكن إضافة webhook أو event للإعلام بالنتيجة
+    }).catch(err => {
+      console.error('[UPDATE] Error:', err);
+    });
+    
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/update/history - سجل التحديثات (🔒 يكشف git log)
+router.get('/history', requireAuth, async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    exec('git log --oneline -20', { cwd: path.join(__dirname, '../..') }, (err, stdout) => {
+      if (err) {
+        return res.json({ success: false, error: err.message });
+      }
+      
+      const commits = stdout.trim().split('\n').filter(l => l).map(line => {
+        const [hash, ...msgParts] = line.split(' ');
+        return {
+          hash: hash.substring(0, 8),
+          message: msgParts.join(' '),
+          shortHash: hash.substring(0, 8)
+        };
+      });
+      
+      res.json({ success: true, history: commits });
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/update/branches - جلب الفروع المتاحة من المستودع البعيد (🔒)
+router.get('/branches', requireAuth, async (req, res) => {
+  try {
+    // جلب الفروع من البعيد
+    exec('git ls-remote --heads origin', { cwd: REPO_DIR }, (err, stdout, stderr) => {
+      if (err) {
+        console.error('[UPDATE] Failed to fetch branches:', err.message);
+        // إرجاع الفرع الافتراضي ك fallback
+        return res.json({ success: true, branches: ['main'], defaultBranch: 'main' });
+      }
+      
+      const branches = stdout.trim().split('\n')
+        .filter(line => line.trim())
+        .map(line => {
+          const match = line.match(/refs\/heads\/(.+)$/);
+          return match ? match[1] : null;
+        })
+        .filter(Boolean);
+      
+      // الحصول على الفرع الافتراضي
+      exec('git remote show origin | grep "HEAD branch" | cut -d" " -f5', { cwd: REPO_DIR }, (err2, stdout2) => {
+        const defaultBranch = (err2 || !stdout2.trim()) ? 'main' : stdout2.trim();
+        
+        // التأكد من وجود الفرع الافتراضي في القائمة
+        if (!branches.includes(defaultBranch) && branches.length > 0) {
+          branches.unshift(defaultBranch);
+        }
+        
+        res.json({ 
+          success: true, 
+          branches: branches.length > 0 ? branches : ['main'],
+          defaultBranch: defaultBranch
+        });
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/update/download - تحميل أحدث إصدار من GitHub (مع بث تقدم SSE) (🔒)
+router.get('/download', requireAuth, async (req, res) => {
+  try {
+    const branch = req.query.branch || 'main';
+    
+    // إعداد SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    
+    const sendEvent = (event, data) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+    
+    const sendError = (message) => {
+      sendEvent('error', { message });
+      res.end();
+    };
+    
+    sendEvent('start', { message: uiText('جاري التحضير لتحميل التحديث...', 'Preparing to download the update...') });
+    
+    // التحقق من وجود تحديث
+    const check = await checkForUpdates(branch);
+    if (!check.success) {
+      sendError(check.error || uiText('فشل في فحص التحديثات', 'Failed to check for updates'));
+      return;
+    }
+    
+    if (!check.updateAvailable) {
+      sendEvent('line', { code: 'update.up_to_date', message: uiText('✅ أنت بالفعل على أحدث إصدار (', '✅ You are already on the latest version (') + check.currentVersion + ')' });
+      sendEvent('done', { code: 'update.up_to_date', message: uiText('لا يوجد تحديث متاح', 'No update available') });
+      return;
+    }
+    
+    sendEvent('line', { message: uiText('📦 إصدار جديد متاح: ', '📦 New release available: ') + check.latestVersion + uiText(' (الحالي: ', ' (current: ') + check.currentVersion + ')' });
+    
+    // جلب معلومات الإصدار من GitHub API
+    sendEvent('line', { message: uiText('🔍 جاري جلب معلومات الإصدار من GitHub...', '🔍 Fetching release information from GitHub...') });
+    
+    try {
+      const https = require('https');
+      const { owner: repoOwner, repo: repoName } = getRepoConfig();
+      
+      // استخدام GitHub API لجلب أحدث إصدار
+      const githubApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`;
+      
+      const releaseData = await new Promise((resolve, reject) => {
+        https.get(githubApiUrl, { 
+          headers: githubApiHeaders()
+        }, (response) => {
+          let data = '';
+          response.on('data', chunk => data += chunk);
+          response.on('end', () => {
+            try {
+              if (response.statusCode === 200) {
+                resolve(JSON.parse(data));
+              } else {
+                reject(new Error(`GitHub API error: ${response.statusCode} - ${data}`));
+              }
+            } catch (e) {
+              reject(e);
+            }
+          });
+        }).on('error', reject);
+      });
+      
+      if (releaseData) {
+        sendEvent('line', { message: uiText('📋 الإصدار: ', '📋 Release: ') + (releaseData.tag_name || releaseData.name) });
+        sendEvent('line', { message: uiText('📅 تاريخ النشر: ', '📅 Published at: ') + (releaseData.published_at ? new Date(releaseData.published_at).toLocaleString(uiLangCode() === 'ar' ? 'ar-EG' : 'en-GB') : uiText('غير معروف', 'Unknown')) });
+        
+        if (releaseData.body) {
+          const shortBody = releaseData.body.substring(0, 500);
+          sendEvent('line', { message: uiText('📝 ملاحظات الإصدار:\n', '📝 Release notes:\n') + shortBody + (releaseData.body.length > 500 ? '...' : '') });
+        }
+        
+        // عرض الأصول المتاحة للتحميل
+        if (releaseData.assets && releaseData.assets.length > 0) {
+          sendEvent('line', { message: uiText('📎 الأصول المتاحة (', '📎 Available assets (') + releaseData.assets.length + '):' });
+          releaseData.assets.forEach(asset => {
+            const sizeMB = (asset.size / 1024 / 1024).toFixed(2);
+            sendEvent('line', { message: `  - ${asset.name} (${sizeMB} MB) - ${asset.download_count}` + uiText(' تحميل', ' downloads') });
+          });
+          
+          // تحميل أول أصل (عادة الكود المصدري)
+          const sourceAsset = releaseData.assets.find(a => a.name.includes('source') || a.name.endsWith('.zip') || a.name.endsWith('.tar.gz'));
+          const assetToDownload = sourceAsset || releaseData.assets[0];
+          
+          sendEvent('line', { message: uiText('⬇️ جاري تحميل: ', '⬇️ Downloading: ') + assetToDownload.name + ` (${(assetToDownload.size / 1024 / 1024).toFixed(2)} MB)...` });
+          
+          // تحميل الملف مع عرض التقدم
+          await downloadWithProgress(assetToDownload.browser_download_url, assetToDownload.name, sendEvent);
+          
+          sendEvent('line', { message: uiText('✅ تم تحميل ', '✅ Downloaded ') + assetToDownload.name + uiText(' بنجاح', ' successfully') });
+          sendEvent('line', { message: uiText('💡 لتطبيق التحديث، اضغط زر "🚀 تطبيق التحديث"', '💡 To apply the update, press the "🚀 Apply update" button') });
+        } else {
+          // لا توجد أصول، استخدم كود المصدر
+          const sourceUrl = getArchiveUrl(check.latestVersion);
+          sendEvent('line', { message: uiText('⬇️ جاري تحميل الكود المصدري من: ', '⬇️ Downloading the source code from: ') + sourceUrl });
+          await downloadWithProgress(sourceUrl, `network-monitor-${check.latestVersion}.zip`, sendEvent);
+          sendEvent('line', { message: uiText('✅ تم تحميل الكود المصدري بنجاح', '✅ Source code downloaded successfully') });
+        }
+      }
+      
+      sendEvent('done', { message: uiText('اكتمل التحميل', 'Download completed'), latestVersion: check.latestVersion });
+      
+    } catch (githubError) {
+      sendEvent('line', { message: uiText('⚠️ لا يوجد إصدار منشور على GitHub، جاري تحميل الكود المصدري من الـ tag...', '⚠️ No published release on GitHub, downloading the source code from the tag...') });
+      
+      // تحميل الكود المصدري مباشرة من الـ tag
+      const { owner: repoOwner, repo: repoName } = getRepoConfig();
+      const sourceUrl = `https://github.com/${repoOwner}/${repoName}/archive/refs/tags/v${check.latestVersion}.zip`;
+      
+      sendEvent('line', { message: uiText('⬇️ جاري تحميل الكود المصدري: ', '⬇️ Downloading the source code: ') + `network-monitor-v${check.latestVersion}.zip` });
+      
+      try {
+        await downloadWithProgress(sourceUrl, `network-monitor-v${check.latestVersion}.zip`, sendEvent);
+        sendEvent('line', { message: uiText('✅ تم تحميل الكود المصدري بنجاح', '✅ Source code downloaded successfully') });
+        sendEvent('line', { message: uiText('💡 لتطبيق التحديث، اضغط زر "🚀 تطبيق التحديث"', '💡 To apply the update, press the "🚀 Apply update" button') });
+        sendEvent('done', { message: uiText('اكتمل التحميل', 'Download completed'), latestVersion: check.latestVersion });
+      } catch (downloadError) {
+        sendEvent('line', { message: uiText('❌ فشل التحميل: ', '❌ Download failed: ') + downloadError.message });
+        sendEvent('line', { message: uiText('🔗 فتح صفحة الإصدارات في المتصفح...', '🔗 Opening the releases page in the browser...') });
+        sendEvent('done', { message: uiText('افتح الرابط يدوياً: ', 'Open the link manually: ') + `https://github.com/${repoOwner}/${repoName}/releases` });
+      }
+    }
+    
+  } catch (error) {
+    sendError(error.message);
+  }
+});
+
+// دالة تحميل مع عرض التقدم
+function downloadWithProgress(url, filename, sendEvent) {
+  return new Promise((resolve, reject) => {
+    const https = require('https');
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    
+    // حفظ في مجلد مؤقت
+    const tempDir = os.tmpdir();
+    const filePath = path.join(tempDir, filename);
+    
+    const request = https.get(url, { 
+      headers: { 'User-Agent': 'Network-Monitor-Updater' },
+      // متابعة التحويلات
+      maxRedirects: 10
+    }, (response) => {
+      // التعامل مع التحويلات
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        const redirectUrl = response.headers.location;
+        sendEvent('line', { message: uiText('🔄 تحويل إلى: ', '🔄 Redirecting to: ') + redirectUrl });
+        downloadWithProgress(redirectUrl, filename, sendEvent).then(resolve).catch(reject);
+        return;
+      }
+      
+      if (response.statusCode !== 200) {
+        reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+        return;
+      }
+      
+      const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+      let downloaded = 0;
+      let lastPercent = -1;
+      
+      const fileStream = fs.createWriteStream(filePath);
+      
+      response.on('data', (chunk) => {
+        downloaded += chunk.length;
+        if (totalSize > 0) {
+          const percent = Math.round((downloaded / totalSize) * 100);
+          if (percent !== lastPercent && percent % 10 === 0) {
+            sendEvent('progress', { 
+              percent, 
+              downloaded: `${(downloaded / 1024 / 1024).toFixed(2)} MB`,
+              total: `${(totalSize / 1024 / 1024).toFixed(2)} MB`
+            });
+            lastPercent = percent;
+          }
+        }
+      });
+      
+      response.pipe(fileStream);
+      
+      fileStream.on('finish', () => {
+        fileStream.close();
+        sendEvent('line', { message: uiText('💾 تم الحفظ في: ', '💾 Saved to: ') + filePath });
+        resolve(filePath);
+      });
+      
+      fileStream.on('error', (err) => {
+        fs.unlink(filePath, () => {});
+        reject(err);
+      });
+    });
+    
+    request.on('error', (err) => {
+      reject(err);
+    });
+    
+    // مهلة 5 دقائق
+    request.setTimeout(300000, () => {
+      request.destroy();
+      reject(new Error(uiText('انتهت مهلة التحميل (5 دقائق)', 'Download timed out (5 minutes)')));
+    });
+  });
+}
+
+module.exports = router;

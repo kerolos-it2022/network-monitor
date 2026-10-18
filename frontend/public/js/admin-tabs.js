@@ -1,0 +1,199 @@
+// v2.33.0 — عنوان موحّد للصفحة: الشريط العلوي يعرض اسم القسم المفتوح (وأيقونته)
+// بدل عنوان ثابت «لوحة التحكم» — كل شاشة صار لها عنوان واضح (نفس نمط NOC/العامة).
+// v2.34.0 — قيمة التبويب قد تكون **قسمًا واحدًا أو قائمة أقسام** (طلب المالك: ضمّ «الإشعارات»
+// و«سجل الإشعارات» في شاشة واحدة ⇒ تبويب واحد يعرض القسمين).
+const TAB_TO_SECTION = {
+  'tab-devices': 'section-devices',
+  'tab-locations': 'section-locations',
+  'tab-types': 'section-types',
+  'tab-discovery': 'section-discovery',
+  'tab-discovered': 'section-discovered',
+  'tab-scheduler': 'section-scheduler',
+  'tab-discovery-content': 'section-discovery-content',
+  'tab-map': 'section-map',
+  'tab-topology': 'section-topology',
+  'tab-notifications': ['section-notifications', 'section-logs'],
+  'tab-ai': 'section-ai',
+  'tab-profile': 'section-profile',
+  'tab-backup': 'section-backup',
+  // v2.23.0 — «حالة النظام» ثم «التَحديثات» آخر اختيار دائمًا (المهام الإدارية النادرة).
+  'tab-remote': 'section-remote',
+  // إعدادات العرض (العام + شاشة NOC الداخلية) — SEC-02/MON-02.
+  'tab-display': 'section-display',
+  'tab-system': 'section-system',
+  'tab-updates': 'section-updates',
+};
+
+
+// مفاتيح الترجمة لعناوين الأقسام (الشريط العلوي + عنوان تبويب المتصفح).
+const TAB_TITLE_KEYS = {
+  'tab-devices': 'tabs.devices',
+  'tab-locations': 'tabs.locations',
+  'tab-types': 'tabs.types',
+  'tab-discovery': 'tabs.discovery',
+  'tab-discovered': 'tabs.pending',
+  'tab-scheduler': 'tabs.scheduler',
+  'tab-map': 'tabs.map',
+  'tab-topology': 'tabs.topology',
+  'tab-notifications': 'tabs.notifications',
+  'tab-ai': 'tabs.ai',
+  'tab-profile': 'tabs.profile',
+  'tab-backup': 'tabs.backup',
+  'tab-remote': 'tabs.remote',
+  'tab-display': 'tabs.display',
+  'tab-system': 'tabs.system',
+  'tab-updates': 'tabs.updates',
+};
+
+// مترجم آمن (يعمل حتى لو تأخّر تحميل نظام الترجمة).
+function TTitle(key, fallback) {
+  try { return (window.NMI18N && NMI18N.t(key)) || fallback || key; } catch (e) { return fallback || key; }
+}
+
+let currentTabId = 'tab-devices';
+
+function setPageTitle(tabId) {
+  const key = TAB_TITLE_KEYS[tabId];
+  if (!key) return;
+  currentTabId = tabId;
+  const title = TTitle(key);
+  const el = document.querySelector('.admin-topbar h1');
+  if (el) el.textContent = title;
+  // عنوان تبويب المتصفح: بلا إيموجي + لاحقة لوحة التحكم (مترجمة أيضًا)
+  document.title = title.replace(/^\S+\s*/, '') + ' — ' + TTitle('topbar.dashboard', T('topbar.dashboard', T('public.adminLink', 'لوحة التحكم')));
+}
+
+// تغيير اللغة يُعيد كتابة العنوان فورًا (بلا حاجة لتغيير التبويب)
+document.addEventListener('nm:lang', function () { try { setPageTitle(currentTabId); } catch (e) {} });
+
+function showSection(tabId) {
+  // تحديث الأزرار.
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+  const btn = document.getElementById(tabId);
+  if (btn) btn.classList.add('active');
+  setPageTitle(tabId);
+
+  // إظهار أقسام التبويب (قسم أو أكثر) وإخفاء البقية.
+  const target = [].concat(TAB_TO_SECTION[tabId] || []);
+  const all = new Set();
+  Object.values(TAB_TO_SECTION).forEach((v) => [].concat(v).forEach((s) => all.add(s)));
+  all.forEach((secId) => {
+    const s = document.getElementById(secId);
+    if (!s) return;
+    s.classList.toggle('hidden', !target.includes(secId));
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  Object.keys(TAB_TO_SECTION).forEach((tabId) => {
+    const el = document.getElementById(tabId);
+    if (el) el.addEventListener('click', () => showSection(tabId));
+  });
+  // افتراضياً: قسم الأجهزة ظاهر (أول تبويب).
+  showSection('tab-devices');
+
+  // ═══ v2.7.2 — sidebar بحالتين على الحاسوب + drawer للموبايل ═══
+  // - حاسوب (>=768px): زرّ ☰ يَدور بين حالتين:
+  //     open   → القائمة كاملة (أَيقونات + نصوص، عرض 242px).
+  //     rail   → مَطويةّ (أَيقونات فقط، عرض 60px، tooltip عبر title) — class
+  //              `sidebar-collapsed` على <body>.
+  //   (تمّ إلغاء حالة hidden بناءً على طلب المستخدم — الدورة الآن open ⇄ rail فقط.)
+  //   الحالة محفُوظة في localStorage (نفس مفتاح v2.7.1 لِـ التوافق الرجعي).
+  // - موبايل (<768px): drawer كامل فوق الشاشة مع خلفية معتمة (كما v2.7.1 — لا تغيير).
+  const SIDEBAR_STATE_KEY = 'nm.adminSidebarCollapsed'; // اِسم تاريخيّ (نتائج: open/collapsed)
+  const sidebar = document.getElementById('admin-sidebar');
+  const toggle = document.getElementById('sidebar-toggle');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const isMobile = () => window.innerWidth <= 768;
+
+  // نصوص عربية تَعكس حالة الزرّ على الحاسوب (تُحدَّث ديناميكياً في title/aria-label).
+  const STATE_TITLES = {
+    open:   T('sidebar.toggleTitle', 'القائمة مفتوحة — اِضغط للطيّ'),
+    rail:   T('tabs.sidebarRailTitle', 'القائمة مطويةّ — اِضغط للتَوسيع'),
+  };
+
+  function openSidebarDrawer() {
+    if (!sidebar) return;
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+  }
+  function closeSidebarDrawer() {
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  // تَطبيق حالة الـ sidebar على الحاسوب (open/rail) عبر classes على <body>.
+  // ملاحظة: نُبقي إِزالة `sidebar-hidden` احتياطاً لِمَن تَرِكة قيمة 'hidden'
+  // في localStorage من إِصدار سابق — حتى لا تَبقى القائمة مَخفيةّ بالخطأ.
+  function applyDesktopState(state) {
+    document.body.classList.remove('sidebar-collapsed', 'sidebar-hidden');
+    if (state === 'rail') document.body.classList.add('sidebar-collapsed');
+    document.body.setAttribute('data-sidebar-state', state);
+    if (toggle) {
+      // open/rail = القائمة ظاهرة → expanded=true.
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.title = STATE_TITLES[state] || STATE_TITLES.open;
+      toggle.setAttribute('aria-label', STATE_TITLES[state] || STATE_TITLES.open);
+    }
+  }
+
+  // اِسترجاع الحالة الحالية من <body> (data-sidebar-state)؛ الافتراضي open.
+  function currentDesktopState() {
+    return document.body.getAttribute('data-sidebar-state') || 'open';
+  }
+  // الدورة: open → rail → open ... (تمّ إلغاء حالة hidden).
+  function nextDesktopState(state) {
+    if (state === 'open') return 'rail';
+    return 'open';
+  }
+  // تَطبيع القيمة المَقروءة من localStorage لِـ التوافق الرجعي مع v2.7.1
+  // (التي كانت تَستخدم 'collapsed'/'open' فقط). قيمة 'hidden' من إِصدار سابق
+  // تُربَط آمناً على 'open' (تمّ إلغاء حالة الإِخفاء).
+  function normalizeSavedState(raw) {
+    if (raw === 'collapsed' || raw === 'rail') return 'rail';
+    return 'open'; // يشمل 'open' و'hidden' وغياب القيمة وأي قيمة غير معروفة.
+  }
+
+  // اِسترجاع الحالة المحفوظة عند الإقلاع (حاسوب فقط).
+  try {
+    const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
+    const state = normalizeSavedState(saved);
+    if (!isMobile()) applyDesktopState(state);
+  } catch (_) {}
+
+  if (toggle) toggle.addEventListener('click', () => {
+    if (isMobile()) {
+      if (sidebar && sidebar.classList.contains('open')) closeSidebarDrawer();
+      else openSidebarDrawer();
+    } else {
+      const next = nextDesktopState(currentDesktopState());
+      applyDesktopState(next);
+      // خَزن القيمة بشكل متوافق: rail = 'collapsed' (كما v2.7.1)، open = 'open'.
+      const stored = next === 'rail' ? 'collapsed' : next;
+      try { localStorage.setItem(SIDEBAR_STATE_KEY, stored); } catch (_) {}
+    }
+  });
+  // نقر الخلفية يُغلق الـ drawer (موبايل).
+  if (backdrop) backdrop.addEventListener('click', closeSidebarDrawer);
+  // اِختيار قسم في الموبايل يُغلق الـ drawer تلقائياً (لِـ تَجَنُّب التَرك مفتوحًا).
+  // على الحاسوب: لا تأثير (القائمة تَبقى في حالتها open/rail).
+  Object.keys(TAB_TO_SECTION).forEach((tabId) => {
+    const el = document.getElementById(tabId);
+    if (el) el.addEventListener('click', () => {
+      if (isMobile()) closeSidebarDrawer();
+    });
+  });
+  // مفتاح ESC يُغلق الـ drawer (موبايل) — لا تأثير له على حالات الحاسوب.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) closeSidebarDrawer();
+  });
+  // اِستجابة لِـ تَغيير حجم النافذة: لو اِنتقلنا من الموبايل للحاسوب و الـ drawer مفتوح
+  //، نُغلقه و نَترك حالات الحاسوب (open/rail) تَحكمها localStorage. لو العكس لا شَيء.
+  window.addEventListener('resize', () => {
+    if (!isMobile() && sidebar && sidebar.classList.contains('open')) closeSidebarDrawer();
+  });
+});

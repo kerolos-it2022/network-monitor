@@ -1,0 +1,75 @@
+#!/bin/bash
+# nm-node-upgrade — يضمن أن Node على الجهاز ≥ الحد المطلوب (افتراضيًا 22) قبل تثبيت تبعيات الإصدار الجديد.
+# ─────────────────────────────────────────────────────────────────────────────
+# لماذا وُجد (v2.33.0): الأبلاينس المُبنى من ISO قديم يثبّت **Node 18** من مستودع دبيان،
+# و`better-sqlite3@13` (تبعية 2.33.0) لا يُحمَّل على أقل من 22 — فتحديث الكود بلا ترقية Node
+# يترك خدمة لا تقلع (NODE_MODULE_VERSION mismatch). هذا الملف يُستدعى من `nm-update` **قبل**
+# خطوة `npm ci` فيصبح التحديث في المكان ضغطة واحدة.
+#
+# السلوك: idempotent وخجول — لا يفعل شيئًا إن كان Node كافيًا، ولا يفشل التحديث إن تعذّرت
+# الترقية لسبب بيئي (بل يُسجّل ويخرج بالرمز 3 ليقرّر المستدعي: nm-update يعامل 3 كإيقاف آمن).
+#   الرموز: 0 = لا حاجة/تمّت · 3 = تعذّرت الترقية (بيئة/شبكة) · 1 = ترقية فشلت وبقيت النسخة أقل
+# متغيّرات: NM_NODE_MIN_MAJOR (افتراضي 22) · NM_NODE_TARGET (افتراضي 24) · NM_SKIP_NODE_UPGRADE=1
+# ─────────────────────────────────────────────────────────────────────────────
+set -uo pipefail
+
+NODE_MIN_MAJOR="${NM_NODE_MIN_MAJOR:-22}"
+NODE_TARGET="${NM_NODE_TARGET:-24}"
+# NM_TEST_NO_APT=1 — لأغراض الاختبار فقط: يمنع أي apt/تغيير على النظام.
+
+log() { printf '[nm-node-upgrade] %s\n' "$*"; }
+
+node_major() {
+  # يطبع رقم الإصدار الرئيسي من node -v، أو لا شيء لو node غير موجود
+  command -v node >/dev/null 2>&1 || return 1
+  node -v 2>/dev/null | sed -n 's/^v\([0-9][0-9]*\).*/\1/p'
+}
+
+CUR="$(node_major || true)"
+CUR_TXT="${CUR:+v$CUR}"; [ -n "$CUR_TXT" ] || CUR_TXT="غير معروف"
+if [ -n "${CUR}" ] && [ "$CUR" -ge "$NODE_MIN_MAJOR" ]; then
+  log "Node $(node -v) ≥ $NODE_MIN_MAJOR — لا حاجة لترقية"
+  exit 0
+fi
+
+if [ "${NM_SKIP_NODE_UPGRADE:-0}" = "1" ]; then
+  log "تخطّي الترقية بأمر NM_SKIP_NODE_UPGRADE=1 (الحالي: $CUR_TXT)"
+  exit 3
+fi
+
+if [ "${NM_TEST_NO_APT:-0}" = "1" ]; then
+  log "NM_TEST_NO_APT=1 — تخطّي الترقية (اختبار)"
+  exit 3
+fi
+
+if ! command -v apt-get >/dev/null 2>&1; then
+  log "apt-get غير متاح على هذه البيئة — تخطّي الترقية (الحالي: $CUR_TXT)"
+  exit 3
+fi
+
+log "الحالي: $CUR_TXT · المطلوب: ≥$NODE_MIN_MAJOR · الهدف: v$NODE_TARGET LTS"
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq || { log "تعذّر apt-get update"; exit 3; }
+apt-get install -y -qq ca-certificates curl gnupg || { log "تعذّر تجهيز متطلبات الترقية"; exit 3; }
+
+SETUP="$(mktemp /tmp/nm-node-setup.XXXXXX.sh)"
+trap 'rm -f "$SETUP"' EXIT
+if ! curl -fsSL --retry 3 -m 180 -o "$SETUP" "https://deb.nodesource.com/setup_${NODE_TARGET}.x"; then
+  log "تعذّر تنزيل مُهيّئ NodeSource (شبكة؟) — لا نُغيّر شيئًا"
+  exit 3
+fi
+head -n1 "$SETUP" | grep -q '^#!' || { log "ملف المُهيّئ غير متوقّع — توقف"; exit 3; }
+
+bash "$SETUP" || { log "فشل تنفيذ مُهيّئ NodeSource"; exit 3; }
+apt-get install -y -qq nodejs || { log "فشل تثبيت nodejs من NodeSource"; exit 3; }
+
+AFTER="$(node_major || true)"
+AFTER_TXT="${AFTER:+v$AFTER}"; [ -n "$AFTER_TXT" ] || AFTER_TXT="غير معروف"
+if [ -z "$AFTER" ] || [ "$AFTER" -lt "$NODE_MIN_MAJOR" ]; then
+  log "الترقية لم تحقّق الحد المطلوب (الآن: $AFTER_TXT)"
+  exit 1
+fi
+
+log "تمت الترقية إلى $(node -v) (npm $(npm -v 2>/dev/null || echo '?'))"
+exit 0

@@ -1,0 +1,21 @@
+#!/bin/sh
+# 0130-prune-kernels.hook.chroot — v2.7.5
+# bookworm قد يُثبّت نواتين بينما شجرة /usr/lib/modules لن واحدة فقط — النواة
+# اليتيمة تقلع لكن modprobe ext4 يفشل داخل النظام الحي ("unknown filesystem
+# type") فيموت المثبّت عند mount قرص الهدف.
+# العلامة المعتمدة: /usr/lib/modules/$VK/modules.dep (ملف فيزيائي — merged-usr).
+set -e
+
+for VK in $(ls /boot 2>/dev/null | sed -n 's/^vmlinuz-//p'); do
+  if [ ! -e "/usr/lib/modules/$VK/modules.dep" ]; then
+    echo "[nm-prune] kernel without modules tree — removing: $VK"
+    apt-get purge -y "linux-image-$VK" 2>&1 | tail -2 || true
+    # fallback صارم: نمسح ملفاته يدويًّا حتى لا تصل binary/live أبدًا.
+    if [ -e "/boot/vmlinuz-$VK" ]; then
+      rm -f "/boot/vmlinuz-$VK" "/boot/initrd.img-$VK" "/boot/config-$VK" "/boot/System.map-$VK"
+      rm -rf "/usr/lib/modules/$VK"
+    fi
+  fi
+done
+
+echo "[nm-prune] remaining kernels: $(ls /boot 2>/dev/null | sed -n 's/^vmlinuz-//p' | tr '\n' ' ')"

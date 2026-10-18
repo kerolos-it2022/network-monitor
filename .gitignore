@@ -1,0 +1,123 @@
+# Dependencies
+node_modules/
+
+# Environment files (keep .env.example only)
+backend/.env
+.env
+.env.local
+# v2.50.0 — أي صيغة بيئة أخرى (production/staging…) لا تُرفع، والقالب وحده يُستثنى
+.env.*
+*.env
+!*.env.example
+
+# Database file (re-create from schema.sql)
+database/monitoring.db
+
+# Logs / OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# PM2
+.pm2/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# Runtime artifacts
+*.pid
+
+# Test / sample data files
+test_import.xlsx
+
+# Datesbase runtime artifacts (backups, WAL/SHM/journal) — لا تُرفع
+database/backups/
+# مجلدات النّسخ الاحتياطية الفاسدة / المستردّة (أَسماء متغيّرة) — لا تُلتزم
+database/_corrupt_backup_*/
+database/corrupt_*/
+*.db-journal
+*.db-wal
+*.db-shm
+*.db.bak
+
+# ZCode workspace (اجتهاد محلي للذكاء)
+.zcode/
+
+# Root-level package-lock (npm files belong to backend/)
+/package-lock.json
+
+
+# Appliance build artifacts (live-build output)
+appliance/.build/
+appliance/build.log
+appliance/live-image-*
+appliance/*.iso
+# v2.12.2 — ملف `SHA256SUMS.txt` يتولّد من جديد داخل الـ CI لكل إصدار (`sha256sum *.iso >`)
+# ويُرفق بالـ Release؛ فالنسخة المتعقّبة في المستودع كانت بقايا بناء قديمة (هاش v2.8.7).
+appliance/SHA256SUMS.txt
+
+# GUI test screenshots (local testing artifacts)
+gui-test-screenshots/
+
+# QEMU boot-test screenshots (local artifacts)
+appliance/boot-test/
+appliance/noc-*.html
+
+
+# ===== Local diagnostics / scratch at repo root (not part of the product) =====
+# سكربتات ولقطات تشخيص استُعملت أثناء تطوير topology/NOC (v2.8.x) — محليّة فقط.
+/cdp-*.js
+/check-*.js
+/verify-*.js
+/verify-*.py
+/cdp-*.py
+/*.png
+/commit-msg*.txt
+/cdp-*.out.txt
+
+# لقطات تحقق الوضع النهاري/الليلي (محليّة — لا تُرفع)
+/verify/
+
+# ZCode tool config (نسخة محليّة من قواعد التجاهل — ليست جزءًا من المنتج)
+.zcodeignore
+
+# ذاكرة ZCode — نسخة محليّة فقط (تحتوي قواعد العمل والدروس — لا تُرفع لـ GitHub و قد تضم اعتمادات)
+/memory-backup/
+
+# v2.50.0 — مجلدات التوثيق **الداخلية** فقط تبقى محليّة.
+# ملاحظة مهمّة: كانت هنا قاعدة `/docs/*` (مع استثناء اللقطات) — وهي كانت ستبلع أي توثيق عام جديد
+# يُكتب في docs/ (مثل DEPLOY.md و ARCHITECTURE.md) فلا يراه git أصلًا. أُبدلت بتجاهل محدَّد بالاسم.
+/docs/_notes/
+# local load-test artifact written by backend/scripts/load-verify.js
+backend/scripts/load-verify-results.json
+/docs/private/
+/_*.scratch.*
+/cdp-*.js
+/cdp-*.txt
+/commit-msg*.txt
+/PLAN-*.md
+/verify-*.js
+/*[ ][1]*.png
+/all-locs.png
+/auto-nest.png
+/cards-final.png
+/clean-board.png
+/cmp*.png
+/diag-board.png
+/*-capture*.png
+
+# ═══ v2.30.7 — منع عودة ملفات العمل المؤقتة (جرد 2026-10-15) ═══
+_classify-probe.scratch.js
+_db-probe.scratch.py
+*.scratch.js
+*.scratch.py
+cdp-*.js
+# لقطات ومقارنات اختبار في جذر المشروع (الموثوقة فقط داخل docs/screenshots)
+/*.png
+
+# ═══ v2.50.0 — حماية من الرفع بالخطأ: مجلدات العمل الخاصة (محلّية بالكامل — ليست جزءًا من المنتج) ═══
+# الهدف: أي `git add -A` مستقبلي لا يستطيع سحبها إلى المستودع العام.
+/ui-redesign/

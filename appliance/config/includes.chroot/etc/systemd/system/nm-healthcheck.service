@@ -1,0 +1,9 @@
+# nm-healthcheck.service (v2.11.9) — فحص صحة محرك المراقبة (one-shot) يطلقه nm-healthcheck.timer.
+# التصميم: oneshot + timer (لا daemon) — أبسط وأخف، ويعمل بصلاحية root عبر systemd فقط.
+[Unit]
+Description=Network Monitor — engine health check (one shot)
+After=network-monitor.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nm-healthcheck

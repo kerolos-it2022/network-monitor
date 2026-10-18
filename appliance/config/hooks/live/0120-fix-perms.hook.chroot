@@ -1,0 +1,22 @@
+#!/bin/sh
+# 0120-fix-perms.hook.chroot — ضبط صلاحيات سكريبتات appliance
+# (git على ويندوز قد لا يحمل exec bit، ووحدات systemd لا تحتمل exec bits).
+set -e
+chmod +x /usr/local/sbin/nm-console /usr/local/sbin/nm-install-to-disk
+chmod +x /usr/local/sbin/nm-update 2>/dev/null || true
+# v2.9.0 — مساعد «الوصول عن بُعد» (ngrok) + وحدتاه
+chmod +x /usr/local/sbin/nm-remote 2>/dev/null || true
+chmod 644 /etc/systemd/system/nm-console.service /etc/systemd/system/network-monitor.service 2>/dev/null || true
+chmod 644 /etc/systemd/system/nm-update.service /etc/systemd/system/nm-update.path 2>/dev/null || true
+chmod 644 /etc/systemd/system/nm-remote.service /etc/systemd/system/nm-remote.path 2>/dev/null || true
+# v2.11.9 — سكريبت حراسة المحرك + وحدتاه
+chmod +x /usr/local/sbin/nm-healthcheck 2>/dev/null || true
+chmod +x /usr/local/sbin/nm-node-upgrade 2>/dev/null || true
+# v2.33.x — مساعد مزامنة كلمة مرور الأبواب (شاشة الكونسول + دخول لينكس) وقاعدة sudo الخاصة به:
+# قاعدة sudo تُتجاهل تمامًا لو لم تكن root:root وبصلاحية 440 أو أقل ⇒ الضبط هنا لا في git
+# (git على ويندوز لا يحفظ أنماط الملفات).
+chmod +x /usr/local/sbin/nm-sync-console-password 2>/dev/null || true
+chown root:root /etc/sudoers.d/nm-console-sync 2>/dev/null || true
+chmod 440 /etc/sudoers.d/nm-console-sync 2>/dev/null || true
+chmod 644 /etc/systemd/system/nm-healthcheck.service /etc/systemd/system/nm-healthcheck.timer 2>/dev/null || true
+chmod 644 /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null || true

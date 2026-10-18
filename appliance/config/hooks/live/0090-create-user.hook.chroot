@@ -1,0 +1,8 @@
+#!/bin/sh
+# 0090-create-user.hook.chroot — مستخدم خدمة netmon (بلا تسجيل دخول) + مجلد البيانات.
+set -e
+
+useradd --system --home-dir /var/lib/network-monitor --shell /usr/sbin/nologin netmon 2>/dev/null || true
+mkdir -p /var/lib/network-monitor
+chown netmon:netmon /var/lib/network-monitor
+chmod 750 /var/lib/network-monitor

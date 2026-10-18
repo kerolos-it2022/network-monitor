@@ -1,0 +1,12 @@
+# nm-healthcheck.timer (v2.11.9) — تشغيل حراسة محرك المراقبة كل دقيقتين.
+# OnBootSec: أول فحص بعد 3 دقائق من الإقلاع (مهلة إقلاع الخدمات).
+[Unit]
+Description=Network Monitor — engine health check timer
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

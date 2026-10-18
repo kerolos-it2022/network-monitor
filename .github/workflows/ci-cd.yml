@@ -1,0 +1,246 @@
+# CI/CD Pipeline — Network Monitor (بدون Docker)
+# فحص الكود + اختبار صحة الخادم + نشر اختياري عبر SSH + إشعارات Discord
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, "fix/**", "feat/**"]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  # OPS-01 : ترقية Node إلى 24 LTS — better-sqlite3@13 يشترط Node ≥22
+  # (الفحص محليًّا: 61/61 اختبارًا تنجح على Node 24.22.0 + better-sqlite3 13.0.3).
+  NODE_VERSION: '24'
+  PORT: '4000'
+
+# v2.8.7 — صلاحيات دنيا: هذا المسار يقرأ الكود فقط (لا يكتب في المستودع).
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # 1) فحص الكود + اختبار صحة الخادم
+  # ─────────────────────────────────────────────────────────────
+  lint-and-test:
+    name: Lint & Health Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+
+      - name: 🟢 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        # better-sqlite3@13 يوفّر prebuilt لـ Node 22/24 على Linux (أسرع وأقل هشاشة).
+        # لو احتاج بناءً من المصدر مستقبلًا يُضاف fallback صريح هنا.
+        run: npm ci
+
+      - name: 🔍 Syntax check — backend + frontend (node --check)
+        # v2.8.7 — إصلاح جوهري: كان العدّاد `status` يُضبط داخل subshell (بسبب الأنبوب `| while`)
+        # فيضيع الفشل ولا يفشل الفحص أبدًا. الآن نقرأ القائمة بـ process substitution،
+        # ونفحص كذلك ملفات الواجهة (frontend/public/js).
+        run: |
+          set -e
+          echo "::group::node --check — backend/src + frontend/public/js"
+          status=0
+          while IFS= read -r file; do
+            if node --check "$file" 2>err.log; then
+              echo "  ✓ $file"
+            else
+              echo "  ✗ $file"
+              cat err.log
+              status=1
+            fi
+          done < <(find src ../frontend/public/js -name '*.js' -type f | sort)
+          rm -f err.log
+          echo "::endgroup::"
+          if [ "$status" -ne 0 ]; then
+            echo "❌ فشل فحص الصياغة — راجع الملفات أعلاه"
+            exit 1
+          fi
+          echo "✅ كل الملفات سليمة صياغيًا"
+
+      - name: 🧪 Automated tests — npm test (node:test)
+        # QA-01 — كانت npm test تفشل عمدًا («no test specified»). الآن تشمل:
+        # SEC-01 (أمان أدوات التشخيص: مصادقة/حقن/سياسة نطاقات/حدود)، SEC-02 (فصل العرض العام
+        # المنقّى عن الجرد الداخلي + وضع العرض)، أساس التطبيق، ودوال نقية (IP/CIDR/المحدِّدات).
+        run: npm test
+
+      - name: 🗄️ Initialize database for health test
+        run: |
+          cd ..
+          mkdir -p database
+          sqlite3 database/monitoring.db < database/schema.sql
+          # إنشاء مدير افتراضي للتشغيل
+          cd backend
+          node src/seedAdmin.js
+
+      - name: 🩺 Health check — run server & probe /api/health
+        run: |
+          set -e
+          echo "::group::تشغيل الخادم وفحص /api/health"
+          # تشغيل الخادم في الخلفية
+          PORT=${PORT} node src/server.js > server.log 2>&1 &
+          SERVER_PID=$!
+
+          # انتظار حتى يستجيب الخادم (مع مهلة 30 ثانية)
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://localhost:${PORT}/api/health > health.json 2>/dev/null; then
+              echo "✅ الخادم استجاب عند المحاولة #$i"
+              cat health.json
+              echo ""
+              # التحقق من محتوى الاستجابة
+              if grep -q '"success":true' health.json; then
+                echo "✅ فحص الصحة ناجح: {success:true, data:ok}"
+                kill $SERVER_PID 2>/dev/null || true
+                wait $SERVER_PID 2>/dev/null || true
+                exit 0
+              fi
+            fi
+            sleep 0.5
+          done
+
+          # فشل الوصول للخادم
+          echo "❌ الخادم لم يستجب خلال 30 ثانية"
+          echo "::group::سجلات الخادم"
+          cat server.log || true
+          echo "::endgroup::"
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit 1
+
+      - name: 📤 Upload server logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-logs
+          path: |
+            backend/server.log
+            backend/health.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────
+  # 1.b) كناري للخط الحالي (تجريبي — continue-on-error ولا يمنع الدمج).
+  #      OPS-01 نُفِّذت: المسار الأساسي (1) يعمل الآن على Node 24 LTS وbetter-sqlite3@13.
+  #      هذه الوظيفة تتبّع الخط الأحدث (26.x) مبكرًا قبل أي اعتماد مستقبلي.
+  node-current-canary:
+    name: Node current (26) — canary
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🟢 Setup Node.js 26
+        uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - name: 📦 Install dependencies (rebuild native for this Node)
+        run: npm ci
+      - name: 🧪 Run test suite on Node 26
+        run: npm test
+
+  # ─────────────────────────────────────────────────────────────
+  # 2) النشر الاختياري على سيرفر الإنتاج عبر SSH (PM2)
+  #    v2.50.0 — صار **يدويًّا فقط** (workflow_dispatch) لا تلقائيًّا:
+  #    الرفع على main يجب ألّا ينشر في الإنتاج من غير قرار صريح من المالك.
+  #    للتشغيل: Actions ← CI/CD Pipeline ← Run workflow (مع وجود SERVER_HOST secret).
+  # ─────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production (SSH + PM2)
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    # ملاحظة: لا نستخدم "environment: production" هنا لتفادي ظهور Environment فارغ
+    # في تبويب Deployments على GitHub. النشر يُسجّل عبر سجلات SSH/PM2 على السيرفر مباشرة.
+    # v2.50.0 — كان الشرط: push على main. الآن: تشغيل يدوي فقط.
+    if: github.event_name == 'workflow_dispatch'
+
+    # v2.8.7 — إصلاح جذري: استخدام `secrets` داخل `if:` **غير مسموح** في ملفات ال workflows
+    # (كان الملف كله غير صالح ⇒ كل التشغيلات تفشل فورًا بلا أي job: startup failure).
+    # الحل الرسمي: تمرير السرّ إلى env ثم فحص الـ env في الشرط.
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_PORT: ${{ secrets.SERVER_PORT }}
+
+    steps:
+      - name: 🛑 Skip if SERVER_HOST not configured
+        if: env.SERVER_HOST == ''
+        run: |
+          echo "ℹ️ لم يُضبط secret SERVER_HOST — تم تخطّي النشر."
+          echo "لتفعيل النشر التلقائي، أضف secrets: SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, SERVER_PORT"
+          exit 0
+
+      - name: 🚀 Deploy via SSH
+        if: env.SERVER_HOST != ''
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/network-monitor 2>/dev/null || {
+              echo "❌ /opt/network-monitor غير موجود — نفّذ deploy.sh install أولاً على السيرفر"
+              exit 1
+            }
+            echo "📥 سحب أحدث التغييرات من main..."
+            git fetch origin main
+            git reset --hard origin/main
+            cd backend
+            echo "📦 تحديث التبعيات (إنتاج فقط)..."
+            npm ci --omit=dev
+            echo "🔄 إعادة تشغيل PM2..."
+            pm2 restart network-monitor --update-env
+            pm2 save
+            echo "✅ النشر اكتمل"
+
+  # ─────────────────────────────────────────────────────────────
+  # 3) إشعارات Discord (دائمًا — نجاح/فشل)
+  # ─────────────────────────────────────────────────────────────
+  notify:
+    name: Discord Notification
+    needs: [lint-and-test]
+    runs-on: ubuntu-latest
+    if: always()
+    # v2.8.7 — نفس الإصلاح: سرّ Discord يُمرَّر عبر env (استخدامه في if: يجعل الملف غير صالح).
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+    steps:
+      - name: 📢 Notify Discord
+        # يعمل فقط إذا أُعدّ secret DISCORD_WEBHOOK على المستودع
+        if: env.DISCORD_WEBHOOK != ''
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: ${{ github.workflow }}
+          description: |
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.event.head_commit.message }}
+            **Author:** ${{ github.actor }}
+          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          color: ${{ job.status == 'success' && 0x57F287 || 0xED4245 }}

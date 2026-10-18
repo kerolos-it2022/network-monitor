@@ -1,0 +1,279 @@
+#!/bin/bash
+# nm-remote — تنفيذ أوامر «الوصول عن بُعد» (ngrok) نيابةً عن خدمة الويب (root، عبر nm-remote.path → nm-remote.service).
+# ─────────────────────────────────────────────────────────────────────────────
+# v2.10.1 — تطابق تام مع قائمة كونسول الجهاز: install · set-authtoken · set-api-key · set-domain
+#           · clear-domain · list-domains · start · stop · restart · autostart-on · autostart-off
+#
+# حدود الأمان (الجهاز قد يكون مكشوفًا على الإنترنت عبر ngrok):
+#   • لا تستقبل الأداة أي أمر من خدمة الويب: تقرأ **ملف طلب واحد** فيه:
+#         { "action": "<فعل من قائمة بيضاء>", "value": "<قيمة اختيارية مُتحقَّق منها>" }
+#     وأي فعل خارج القائمة ⇒ رفض بلا أي تنفيذ.
+#   • لا sourcing ولا eval ولا تنفيذ لنصّ من الملف؛ القيم تُستخرَج بـ sed ثم تُقارَن بـ regex صارم.
+#   • 🔐 **الأسرار (مفتاح الحساب / مفتاح API) لا تُطبع ولا تُسجَّل ولا تُعاد في أي ملف حالة**:
+#       - تُكتب فقط في إعداد ngrok (/root/.config/ngrok/ngrok.yml) بصلاحية 0600.
+#       - السجل يذكر «تم التحديث (القيمة مخفية)» فقط.
+#   • ملف الطلب يُحذف فورًا، وملفات الحالة/السجل تُكتب داخل مجلد root بكتابة ذرّية (mv، بلا روابط رمزية).
+#   • الدومينات المجلوبة تُحفَظ كأسماء فقط في remote/domains.json (بلا أي مفتاح).
+# ─────────────────────────────────────────────────────────────────────────────
+set -uo pipefail
+
+# v2.10.6 — معلومة إصدار للفحص السريع على الجهاز:  /usr/local/sbin/nm-remote --version
+if [ "${1:-}" = "--version" ]; then echo "nm-remote v2.10.6"; exit 0; fi
+
+DATA_DIR="/var/lib/network-monitor"
+REQ_FILE="$DATA_DIR/remote-request.json"
+STATE_DIR="$DATA_DIR/remote"
+STATUS_FILE="$STATE_DIR/status.json"
+LOG_FILE="$STATE_DIR/remote.log"
+DOMAINS_FILE="$STATE_DIR/domains.json"
+TMP_ROOT="$STATE_DIR/tmp"
+NGROK_BIN="/usr/local/bin/ngrok"
+NGROK_PKG_URL="https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz"
+DOMAIN_FILE="/etc/nm-ngrok-domain"
+NGROK_LOG="/var/log/ngrok.log"
+UNIT="ngrok-tunnel.service"
+UNIT_PATH="/etc/systemd/system/$UNIT"
+CFG_DIR="/root/.config/ngrok"
+CFG_FILE="$CFG_DIR/ngrok.yml"
+
+# أسماء حقول إعداد ngrok + أوامر الإعداد (نُبنى بها الأنماط والاستدعاءات — بلا أي نصّ سرّي في الملف)
+FIELD_ONE="authtoken"
+FIELD_TWO="api_key"
+CMD_SET_ONE="add-authtoken"
+CMD_SET_TWO="add-api-key"
+
+install -d -o root -g root -m 0755 "$STATE_DIR"
+install -d -o root -g root -m 0700 "$TMP_ROOT"
+
+log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG_FILE"; }
+domain_of() { head -1 "$DOMAIN_FILE" 2>/dev/null || true; }
+tunnel_pid() { pgrep -f "$NGROK_BIN http" 2>/dev/null | head -1; }
+
+# هل الحقل مضبوط بقيمة فعلية؟ — **فحص وجود فقط** بلا أي طباعة للقيمة.
+has_field() {
+  [ -f "$CFG_FILE" ] || return 1
+  grep -qE "^[[:space:]]*$1[[:space:]]*:[[:space:]]*[^[:space:]]" "$CFG_FILE" 2>/dev/null
+}
+state_one() { if has_field "$FIELD_ONE"; then echo "set"; else echo "not_set"; fi; }
+state_two() { if has_field "$FIELD_TWO"; then echo "set"; else echo "not_set"; fi; }
+
+status() { # state action message — بلا أي قيم أسرار (حالة set/not_set فقط)
+  local t="$TMP_ROOT/.status.$$"
+  printf '{"state":"%s","action":"%s","message":"%s","%s":"%s","%s":"%s","at":"%s"}\n' \
+    "$1" "${2:-}" "${3:-}" "$FIELD_ONE" "$(state_one)" "$FIELD_TWO" "$(state_two)" "$(date -Iseconds)" > "$t"
+  chmod 644 "$t" 2>/dev/null || true
+  mv -f "$t" "$STATUS_FILE"
+}
+fail() { log "FAILED: ${ACTION:-?} — $1"; status failed "${ACTION:-}" "$1"; rm -f "$REQ_FILE"; exit 1; }
+
+[ -f "$REQ_FILE" ] || { log "لا يوجد ملف طلب — إنهاء."; exit 0; }
+
+# ── قراءة الفعل والقيمة ثم حذف ملف الطلب فورًا ──
+ACTION="$(sed -n 's/.*"action"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REQ_FILE" | head -n1)"
+VALUE="$(sed -n 's/.*"value"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REQ_FILE" | head -n1)"
+rm -f "$REQ_FILE"
+[ -n "$ACTION" ] || fail "ملف الطلب لا يحوي فعلًا صالحًا"
+case "$ACTION" in
+  start|stop|restart|autostart-on|autostart-off|install|update-ngrok|set-domain|clear-domain|set-authtoken|set-api-key|list-domains) ;;
+  *) fail "فعل غير مسموح: $ACTION" ;;
+esac
+
+# ── تحقّق صارم من القيم ──
+require_domain() { [[ "$VALUE" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$ ]] || fail "دومين غير صالح (مثال: myname.ngrok-free.app)"; }
+require_value() { [[ "$VALUE" =~ ^[A-Za-z0-9_+=./:-]{20,200}$ ]] || fail "قيمة غير صالحة (لا مسافات ولا علامات تنصيص — 20 حرفًا فأكثر)"; }
+
+# ملاحظة مهمّة: لا نُسجّل قيم الأسرار إطلاقًا — فقط اسم الفعل وحالة الحقول.
+log "=== طلب: $ACTION (حقل1: $(state_one) · حقل2: $(state_two) · pid: $(tunnel_pid || echo -)) ==="
+status in_progress "$ACTION" "جارٍ التنفيذ…"
+
+# ── كتابة وحدة التشغيل (بالدومين الثابت الحالي) ──
+write_unit() {
+  local D; D="$(domain_of)"
+  cat > "$UNIT_PATH" <<EOF
+[Unit]
+Description=ngrok tunnel for Network Monitor web UI
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+# v2.10.8 — السبب الجذري لفشل «تشغيل النفق رمز 1» من اللوحة:
+# تحت systemd لا يُضبط HOME للخدمات ⇒ ngrok لم يكن يجد إعداداته (/root/.config/ngrok/ngrok.yml)
+# فيفشل البدء ولا يظهر أي endpoint في ngrok — بينما الكونسول يعمل لأنه شل root وفيه HOME=/root.
+Environment=HOME=/root
+ExecStart=$NGROK_BIN http 80${D:+ --domain=$D}
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:$NGROK_LOG
+StandardError=append:$NGROK_LOG
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+}
+
+start_tunnel() {
+  [ -x "$NGROK_BIN" ] || return 2
+  [ "$(state_one)" = "set" ] || return 3
+  if [ -f "$NGROK_LOG" ] && [ "$(stat -c %s "$NGROK_LOG" 2>/dev/null || echo 0)" -gt 2097152 ]; then
+    : > "$NGROK_LOG" 2>/dev/null || true
+  fi
+  write_unit
+  systemctl start "$UNIT" 2>/dev/null || return 1
+  sleep 4
+  [ -n "$(tunnel_pid)" ] && return 0
+  return 1
+}
+stop_tunnel() {
+  systemctl stop "$UNIT" 2>/dev/null || true
+  pkill -f "$NGROK_BIN http" 2>/dev/null || true
+  sleep 1
+  return 0
+}
+
+case "$ACTION" in
+  start)
+    if [ -n "$(tunnel_pid)" ]; then status success start "النفق يعمل بالفعل — لا حاجة لتشغيله"; exit 0; fi
+    start_tunnel; RC=$?
+    case "$RC" in
+      0) : ;;
+      2) fail "ngrok غير مثبّت على الجهاز (استخدم زر التثبيت أو كونسول الجهاز)" ;;
+      3) fail "المفتاح (حقل1) غير مضبوط — اضبطه من هذه الصفحة أو من كونسول الجهاز: Remote access → [2]" ;;
+      *)
+        # v2.10.8 — نُرفق آخر سطور سجل ngrok (منقّاة من أي أسرار) لتشخيص السبب الحقيقي فورًا
+        TAIL="$(grep -viE 'token|api[_-]?key|secret' "$NGROK_LOG" 2>/dev/null | tail -n 3 | tr '\n' ' ' | cut -c1-260)"
+        fail "تعذّر تشغيل النفق — آخر سطور سجل ngrok: ${TAIL:-لا يوجد سجل} (أو راجع: journalctl -u $UNIT -n 30)"
+        ;;
+    esac
+    ;;
+  stop) stop_tunnel ;;
+  restart)
+    stop_tunnel
+    start_tunnel; RC=$?
+    if [ "$RC" != "0" ]; then
+      # v2.10.8 — نفس تشخيص التشغيل: نُرفق آخر سطور سجل ngrok (منقّاة من الأسرار)
+      TAIL="$(grep -viE 'token|api[_-]?key|secret' "$NGROK_LOG" 2>/dev/null | tail -n 3 | tr '\n' ' ' | cut -c1-260)"
+      fail "تعذّر إعادة تشغيل النفق (رمز $RC) — آخر سطور سجل ngrok: ${TAIL:-لا يوجد سجل}"
+    fi
+    ;;
+  autostart-on)
+    [ -x "$NGROK_BIN" ] || fail "ngrok غير مثبّت على الجهاز"
+    [ "$(state_one)" = "set" ] || fail "المفتاح (حقل1) غير مضبوط — اضبطه أولًا"
+    write_unit
+    systemctl enable "$UNIT" >/dev/null 2>&1 || fail "تعذّر تفعيل التشغيل التلقائي"
+    systemctl restart "$UNIT" 2>/dev/null || true
+    sleep 3
+    [ -n "$(tunnel_pid)" ] || fail "تم التفعيل لكن النفق لم يعمل — راجع السجل"
+    ;;
+  autostart-off)
+    systemctl disable "$UNIT" >/dev/null 2>&1 || true
+    stop_tunnel
+    ;;
+  install)
+    if [ -x "$NGROK_BIN" ]; then
+      status success install "ngrok مثبّت بالفعل ($("$NGROK_BIN" --version 2>/dev/null))"; exit 0
+    fi
+    log "تنزيل ngrok من المصدر الثابت…"
+    curl -fL --retry 2 -m 300 -o "$TMP_ROOT/ngrok.tgz" "$NGROK_PKG_URL" >>"$LOG_FILE" 2>&1 || fail "فشل تنزيل حزمة ngrok (تحقّق من الإنترنت)"
+    tar xzf "$TMP_ROOT/ngrok.tgz" -C /usr/local/bin ngrok || fail "فشل فكّ الحزمة"
+    chmod +x "$NGROK_BIN" || fail "تعذّر ضبط صلاحية التنفيذ"
+    rm -f "$TMP_ROOT/ngrok.tgz"
+    [ -x "$NGROK_BIN" ] || fail "الملف التنفيذي غير موجود بعد التثبيت"
+    ;;
+  update-ngrok)
+    # v2.18.0 — تنزيل أحدث إصدار stable واستبدال الثنائي ثم إعادة تشغيل النفق إن كان يعمل
+    WAS_TUNNEL_ACTIVE=0
+    systemctl is-active --quiet "$NGROK_UNIT" 2>/dev/null && WAS_TUNNEL_ACTIVE=1
+    log "تنزيل أحدث إصدار stable من ngrok…"
+    curl -fL --retry 2 -m 300 -o "$TMP_ROOT/ngrok-stable.tgz" "$NGROK_PKG_URL" >>"$LOG_FILE" 2>&1 || fail "فشل تنزيل حزمة ngrok (تحقّق من الإنترنت)"
+    tar xzf "$TMP_ROOT/ngrok-stable.tgz" -C /usr/local/bin ngrok || fail "فشل فكّ الحزمة"
+    chmod +x "$NGROK_BIN" || fail "تعذّر ضبط صلاحية التنفيذ"
+    rm -f "$TMP_ROOT/ngrok-stable.tgz"
+    [ -x "$NGROK_BIN" ] || fail "الملف التنفيذي غير موجود بعد التحديث"
+    if [ "$WAS_TUNNEL_ACTIVE" = 1 ]; then
+      systemctl try-restart "$NGROK_UNIT" 2>/dev/null || true
+      status success update-ngrok "تم تحديث ngrok إلى ($($NGROK_BIN --version 2>/dev/null)) — النفق أُعيد تشغيله"
+    else
+      status success update-ngrok "تم تحديث ngrok إلى ($($NGROK_BIN --version 2>/dev/null)) — النفق كان متوقفًا"
+    fi
+    ;;
+  set-authtoken)
+    require_value
+    [ -x "$NGROK_BIN" ] || fail "ngrok غير مثبّت — ثبّته أولًا"
+    install -d -o root -g root -m 0700 "$CFG_DIR"
+    HOME=/root "$NGROK_BIN" config "$CMD_SET_ONE" "$VALUE" >>"$LOG_FILE" 2>&1 || fail "تعذّر حفظ القيمة في إعداد ngrok"
+    chmod 600 "$CFG_FILE" 2>/dev/null || true
+    log "حفظ حقل1: تم التحديث (القيمة مخفية)"
+    ;;
+  set-api-key)
+    require_value
+    [ -x "$NGROK_BIN" ] || fail "ngrok غير مثبّت — ثبّته أولًا"
+    install -d -o root -g root -m 0700 "$CFG_DIR"
+    HOME=/root "$NGROK_BIN" config "$CMD_SET_TWO" "$VALUE" >>"$LOG_FILE" 2>&1 || fail "تعذّر حفظ حقل2 في إعداد ngrok"
+    chmod 600 "$CFG_FILE" 2>/dev/null || true
+    log "حفظ حقل2: تم التحديث (القيمة مخفية)"
+    ;;
+  list-domains)
+    [ -x "$NGROK_BIN" ] || fail "ngrok غير مثبّت — ثبّته أولًا"
+    [ "$(state_two)" = "set" ] || fail "حقل2 (مفتاح API) غير مضبوط — أضِفه أولًا (من dashboard.ngrok.com → API keys)"
+    RAW="$TMP_ROOT/domains.raw"
+    if ! HOME=/root "$NGROK_BIN" api reserved-domains list > "$RAW" 2>>"$LOG_FILE"; then
+      rm -f "$RAW"; fail "تعذّر جلب الدومينات من حساب ngrok (راجع السجل)"
+    fi
+    TMPD="$TMP_ROOT/.domains.$$"
+    {
+      printf '{"domains":['
+      FIRST=1
+      while IFS= read -r DM; do
+        [ -n "$DM" ] || continue
+        [ "$FIRST" = "1" ] || printf ','
+        printf '"%s"' "$DM"
+        FIRST=0
+      done < <(grep -oE '"(domain|hostname)"[[:space:]]*:[[:space:]]*"[^"]+"' "$RAW" \
+                 | sed 's/.*"\([^"]*\)"$/\1/' \
+                 | grep -E '^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$' | sort -u)
+      printf '],"at":"%s"}\n' "$(date -Iseconds)"
+    } > "$TMPD"
+    chmod 644 "$TMPD" 2>/dev/null || true
+    mv -f "$TMPD" "$DOMAINS_FILE"
+    rm -f "$RAW"
+    log "list-domains: تم جلب القائمة (بلا مفاتيح)"
+    ;;
+  set-domain)
+    require_domain
+    printf '%s\n' "$VALUE" > "$DOMAIN_FILE"
+    chmod 644 "$DOMAIN_FILE"
+    write_unit
+    if [ -n "$(tunnel_pid)" ]; then stop_tunnel; fi
+    start_tunnel || fail "تعذّر تشغيل النفق بالدومين الجديد"
+    ;;
+  clear-domain)
+    rm -f "$DOMAIN_FILE"
+    write_unit
+    if [ -n "$(tunnel_pid)" ]; then stop_tunnel; start_tunnel || fail "تعذّر إعادة التشغيل بعد الرجوع للديناميكي"; fi
+    ;;
+esac
+
+# ── تحقّق نهائي حسب نوع الفعل ──
+case "$ACTION" in
+  start|restart|autostart-on|set-domain|clear-domain)
+    [ -n "$(tunnel_pid)" ] || fail "النفق لا يعمل بعد التنفيذ — راجع: journalctl -u $UNIT -n 30"
+    ;;
+esac
+
+# ── رسائل النجاح (بلا أي قيم أسرار) ──
+case "$ACTION" in
+  install)       status success install       "تم تثبيت ngrok ✓ ($("$NGROK_BIN" --version 2>/dev/null))" ;;
+  set-authtoken) status success set-authtoken "تم حفظ حقل1 ✓ (القيمة مخفية ولا تُسجَّل)" ;;
+  set-api-key)   status success set-api-key   "تم حفظ حقل2 ✓ (القيمة مخفية ولا تُسجَّل)" ;;
+  list-domains)  status success list-domains  "تم جلب الدومينات من حساب ngrok ✓" ;;
+  set-domain)    status success set-domain    "تم تعيين الدومين $VALUE وإعادة تشغيل النفق ✓" ;;
+  clear-domain)  status success clear-domain  "تم الرجوع للدومين الديناميكي ✓" ;;
+  start)         status success start         "تم تشغيل النفق ✓" ;;
+  restart)       status success restart       "تمت إعادة تشغيل النفق ✓" ;;
+  stop)          status success stop          "تم إيقاف النفق ✓" ;;
+  autostart-on)  status success autostart-on  "تم تفعيل التشغيل التلقائي عند الإقلاع ✓" ;;
+  autostart-off) status success autostart-off "تم تعطيل التشغيل التلقائي وإيقاف النفق ✓" ;;
+  *)             status success "$ACTION"     "تم التنفيذ ✓" ;;
+esac
+exit 0

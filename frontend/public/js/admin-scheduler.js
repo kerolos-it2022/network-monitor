@@ -1,0 +1,169 @@
+// admin-scheduler.js (v2.5.0)
+// ─────────────────────────────────────────────────────────────
+// إدارة تبويب "المسح الدوري" (scan_settings + scan_runs):
+//   - جَلب/حِفظ الإعدادات (PUT /api/scan-scheduler/settings).
+//   - start/stop/run-now عبر endpoints.
+//   - عرض الحالة الحالية + سِجل المسحات.
+// ─────────────────────────────────────────────────────────────
+
+let schedulerRunsRefreshHandle = null;
+
+async function loadSchedulerSettings() {
+  const r = await api('/api/scan-scheduler/settings');
+  if (!r || !r.success) {
+    console.warn('Failed to load scheduler settings:', r?.error);
+    return;
+  }
+  const s = r.data || {};
+  document.getElementById('sched-enabled').checked = s.enabled === 1;
+  document.getElementById('sched-interval').value = s.interval_minutes || 15;
+  document.getElementById('sched-subnets').value = s.subnets || '';
+  document.getElementById('sched-scan-ports').checked = s.scan_ports_enabled === 1;
+  document.getElementById('sched-scan-snmp').checked = s.scan_snmp_enabled === 1;
+  document.getElementById('sched-snmp-community').value = s.snmp_community || 'public';
+  document.getElementById('sched-new-device-alert').checked = s.new_device_alert === 1;
+}
+
+async function loadSchedulerStatus() {
+  const r = await api('/api/scan-scheduler/status');
+  const el = document.getElementById('sched-current-status');
+  if (!el) return;
+  if (!r || !r.success) {
+    el.textContent = T('s2j.could_not_fetch_the_status', 'تعذّر جلب الحالة.');
+    return;
+  }
+  const d = r.data || {};
+  const runningTxt = d.is_running ? T('tail.scanning_now', '🟡 جارٍ مسح الآن...') : T('tail.no_scan_running_right_now', '🟢 لا يَعمل مسح حاليًّا');
+  const enabledTxt = d.enabled ? T('tail.enabled', '✅ مُفعّل') : T('tail.stopped', '⏸️ متوقف');
+  const lastTxt = d.last_run
+    ? `${T('frag.last_scan', 'آخر مسح ')}#${d.last_run.runId}: ${d.last_run.status} (${T('s2.found', 'وُجدت ')}${d.last_run.devices_found} / ${T('s2.added', 'أُضيفت ')}${d.last_run.devices_added} / ${T('s2.lost', 'ضاعت ')}${d.last_run.devices_lost})`
+    : T('tail.no_previous_scans', 'لا توجد مسحات سابقة');
+  el.innerHTML = `${enabledTxt} — ${runningTxt}<br><span style="font-size:0.9em;color:var(--muted);">${lastTxt}`;
+  if (d.last_run && d.last_run.error) {
+    el.innerHTML += `<br><span style="color:#b00;font-size:0.85em;">${T('tail.error', 'خطأ')}: ${esc(d.last_run.error)}</span>`;
+  }
+}
+
+async function loadSchedulerRuns() {
+  const r = await api('/api/scan-scheduler/runs?limit=20');
+  const tbody = document.getElementById('sched-runs-table-body');
+  if (!tbody) return;
+  if (!r || !r.success) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:#b00;">⚠️ ${esc(r?.error || T('tail.could_not_fetch', 'تعذّر الجلب'))}</td></tr>`;
+    return;
+  }
+  const rows = r.data || [];
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="is-empty">${T('frag.no_scans_logged_yet', 'لا توجد مسحات مُسجَّلة بعد.')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((row) => {
+    const statusBadge = row.status === 'completed' ? T('tail.completed', '✅ مكتمل')
+      : (row.status === 'failed' ? T('tail.failed', '❌ فشل') : (row.status === 'cancelled' ? T('tail.cancelled', '⏹ مُلغى') : T('tail.running', '🟡 جارٍ')));
+    // v2.11.7 — نُميّز المسح اليدوي (من شاشة «🔍 اكتشاف الأجهزة») عن المسح الدوري.
+    const sourceBadge = row.source === 'manual'
+      ? ` <span style="background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:0 0.3rem; font-size:0.7rem; color:var(--muted);">${T('tail.manual', '✋ يدوي')}</span>`
+      : '';
+    return `<tr>
+      <td class="col-center">${esc(row.id)}</td>
+      <td class="col-ltr">${esc(row.subnet)}${sourceBadge}</td>
+      <td class="col-ltr">${esc(row.started_at ? NMFormat.dateTime(row.started_at) : '—')}</td>
+      <td class="col-ltr">${esc(row.ended_at ? NMFormat.dateTime(row.ended_at) : '—')}</td>
+      <td class="col-center">${esc(row.devices_found)}</td>
+      <td class="col-center">${esc(row.devices_added)}</td>
+      <td class="col-center">${esc(row.devices_lost)}</td>
+      <td class="col-status">${statusBadge}</td>
+      <td>${esc(row.error_message || '—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveSchedulerSettings() {
+  const patch = {
+    enabled: document.getElementById('sched-enabled').checked ? 1 : 0,
+    interval_minutes: parseInt(document.getElementById('sched-interval').value, 10) || 15,
+    subnets: document.getElementById('sched-subnets').value.trim(),
+    scan_ports_enabled: document.getElementById('sched-scan-ports').checked ? 1 : 0,
+    scan_snmp_enabled: document.getElementById('sched-scan-snmp').checked ? 1 : 0,
+    snmp_community: document.getElementById('sched-snmp-community').value.trim() || 'public',
+    new_device_alert: document.getElementById('sched-new-device-alert').checked ? 1 : 0,
+  };
+  if (!patch.subnets) {
+    showToast(T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', T('s2j.enter_at_least_one_subnet_cidr_example_192_1', 'الرجاء إدخال شبكة فرعية واحدة على الأقل (CIDR). مثال: 192.168.1.0/24')))))))))), { type: 'warning' });
+    return;
+  }
+  // v2.7.1 (مَطلب 5) — تَأكيد قبل حفظ وتطبيق إعدادات المسح الدوري.
+  const ok = await confirmAction({
+    title: T('s2j.confirm_saving_the_settings', 'تَأكيد حفظ الإِعدادات'),
+    message: T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', T('s2j.save_and_apply_the_periodic_scan_settings', 'تَأكيد حفظ وتطبيق إعدادات المسح الدوري؟')))))))))),
+    confirmText: T('sched.confirmSave', '✓ تَأكيد الحفظ'),
+  });
+  if (!ok) return;
+  const r = await api('/api/scan-scheduler/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  if (r && r.success) {
+    showToast(T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', T('s2j.periodic_scan_settings_were_saved_and_applie', 'تم حفظ إعدادات المسح الدوري وتطبيقها.')))))))))), { type: 'success' });
+    await loadSchedulerStatus();
+    await loadSchedulerRuns();
+  } else {
+    showToast(T('s2j.save_failed', 'فشل الحفظ:') + ' ' + (r?.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
+  }
+}
+
+async function runSchedulerNow() {
+  const r = await api('/api/scan-scheduler/run-now', { method: 'POST' });
+  if (r && r.success) {
+    showToast(T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', T('s2j.the_scan_has_started_watch_the_results_in_th', 'بدأ المسح الفوري — ترقّب النتائج في سجل المسحات.')))))))))), { type: 'success' });
+    await loadSchedulerStatus();
+    await loadSchedulerRuns();
+  } else {
+    showToast(T('s2j.could_not_start_the_scan', 'فشل بدء المسح الفوري:') + ' ' + (r?.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
+  }
+}
+
+async function stopScheduler() {
+  const r = await api('/api/scan-scheduler/stop', { method: 'POST' });
+  if (r && r.success) {
+    showToast(T('s2j.the_periodic_scan_was_stopped', 'تم إيقاف المسح الدوري.'), { type: 'success' });
+    // أَيضًا نُحدّث checkbox يدويًّا
+    document.getElementById('sched-enabled').checked = false;
+    await loadSchedulerStatus();
+  } else {
+    showToast(T('s2j.stop_failed', 'فشل الإيقاف:') + ' ' + (r?.error || T('tail.unknown_error', 'خطأ غير معروف')), { type: 'error' });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('sched-save-btn')?.addEventListener('click', saveSchedulerSettings);
+  document.getElementById('sched-run-now-btn')?.addEventListener('click', runSchedulerNow);
+  document.getElementById('sched-stop-btn')?.addEventListener('click', stopScheduler);
+
+  // إِدخال بسيط في cache: لِمُزامنة المحادثات المُتَأثِّرة فقَط عند فَتح التَّبويب
+  const observer = new MutationObserver(() => {
+    const section = document.getElementById('section-scheduler');
+    if (!section) return;
+    const visible = !section.classList.contains('hidden');
+    if (visible) {
+      // lazy-load
+      loadSchedulerSettings().catch(() => {});
+      loadSchedulerStatus().catch(() => {});
+      loadSchedulerRuns().catch(() => {});
+      if (!schedulerRunsRefreshHandle) {
+        schedulerRunsRefreshHandle = setInterval(() => {
+          loadSchedulerStatus().catch(() => {});
+          loadSchedulerRuns().catch(() => {});
+        }, 15000);
+      }
+    } else {
+      if (schedulerRunsRefreshHandle) {
+        clearInterval(schedulerRunsRefreshHandle);
+        schedulerRunsRefreshHandle = null;
+      }
+    }
+  });
+  const s = document.getElementById('section-scheduler');
+  if (s) observer.observe(s, { attributes: true, attributeFilter: ['class'] });
+});

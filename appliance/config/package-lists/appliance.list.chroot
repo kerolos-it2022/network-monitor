@@ -1,0 +1,49 @@
+# appliance.list.chroot — حزم نظام appliance (دبيان 12).
+linux-image-amd64
+live-boot
+
+# أساس النظام
+systemd
+systemd-sysv
+locales
+console-setup
+kbd
+
+# ضبط الشبكة على النظام المثبَّت (live-boot يغني عنها في الوضع الحي فقط)
+ifupdown
+isc-dhcp-client
+
+# تكامل VMware/ESXi: إيقاف وتشغيل نظيف من واجهة ESXi + مزامنة الوقت
+open-vm-tools
+
+# إدارة عن بعد (SSH) + صلاحيات sudo لمستخدم sysadmin
+openssh-server
+sudo
+
+# خادم الويب العكسي + تشغيل المشروع
+nginx
+# ملاحظة OPS-01 : nodejs/npm يُثبَّتان من NodeSource (Node 24 LTS) عبر الـ hook
+# رقم 0050-install-nodejs.hook.chroot — لأن حزمة دبيان 12 الافتراضية هي Node 18
+# والمشروع صار يشترط Node ≥22 (better-sqlite3@13). أُزيلا من هذه القائمة عمدًا.
+
+# أدوات شبكة يستعملها المشروع (فحص ping/traceroute/DNS)
+iputils-ping
+traceroute
+dnsutils
+
+# مثبّت القرص (nm-install-to-disk)
+rsync
+e2fsprogs
+dosfstools
+parted
+unzip
+grub2-common
+grub-pc-bin
+grub-efi-amd64-bin
+mtools
+
+# تأمين وشهادات
+nftables
+openssl
+ca-certificates
+curl

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!-- index.html: الصفحة العامة لعرض حالة أجهزة الشبكة (بدون تسجيل دخول). -->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="public.title">مراقبة أجهزة الشبكة</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/ui.css?v=2.50.1" />
+
+  <!-- ===== PWA Meta ===== -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="Real-time local network device monitoring with instant alerts" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Network Monitor" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <script>/* ضبط اللغة قبل أول رسم (بلا وميض إنجليزي في الوضع العربي) — نفس نمط سكربت الوضع الليلي */
+  try { if (localStorage.getItem('nm.lang') === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; } } catch (e) {}</script>
+</head>
+<body>
+  <!-- شريط علوي بالعنوان وملخص الحالة -->
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1><span data-i18n="public.title">مراقبة أجهزة الشبكة</span></h1>
+      <a href="admin/login.html" class="admin-link" id="admin-link" data-i18n="topbar.dashboard">لوحة التحكم</a>
+    </div>
+    <div id="summary-bar" class="summary-bar"><span data-i18n="tail.loading">جارٍ التحميل…</span></div>
+    <button id="theme-toggle" class="theme-toggle" type="button" data-i18n="topbar.themeDark">🌙 وضع ليلي</button>
+    <button id="lang-toggle" class="theme-toggle" type="button" data-lang-scope="local" title="Switch language (Arabic / English)" data-i18n="topbar.lang" data-i18n-attr="title:lang.switchTitle">🌐 العربية</button>
+    <button id="notify-btn" class="theme-toggle" type="button" title="تفعيل إشعارات الهاتف" data-i18n="public.notifyOn" data-i18n-attr="title:tail.enable_mobile_notifications">🔔 تفعيل الإشعارات</button>
+    <a id="noc-link" class="noc-link-btn" href="/noc.html" target="_blank" title="شاشة عرض كبيرة للحالة — للـ TV وغرفة المراقبة" data-i18n-attr="title:tail.large_status_display_for_the_tv_and_the_cont"><span data-i18n="public.tvScreen">📺 عرض الشاشة</span> <span class="noc-tv-badge">TV</span></a>
+  </header>
+
+  <!-- أدوات الفلترة والبحث + مبدّل نمط العرض + الترتيب -->
+  <section class="filters-bar">
+    <input id="search-input" type="search" placeholder="بحث بالاسم أو IP…"  data-i18n-attr="placeholder:tail.search_by_name_or_ip"/>
+    <select id="filter-type" title="فلترة حسب نوع الجهاز" data-i18n-attr="title:tail.filter_by_device_type"><option value="" data-i18n="public.filter.type">كل الأنواع</option></select>
+    <select id="filter-location" title="فلترة حسب الموقع" data-i18n-attr="title:tail.filter_by_location"><option value="" data-i18n="public.filter.location">كل المواقع</option></select>
+    <select id="filter-status" title="فلترة حسب الحالة" data-i18n-attr="title:tail.filter_by_status">
+      <option value="" data-i18n="public.filter.status">كل الحالات</option>
+      <option value="online" data-i18n="tail.online">✅ متصل</option>
+      <option value="offline" data-i18n="tail.offline">❌ متوقف</option>
+      <option value="unknown" data-i18n="tail.unknown">❓ غير معروف</option>
+    </select>
+    <select id="filter-sort" title="ترتيب الأجهزة" data-i18n-attr="title:tail.sort_devices">
+      <option value="name" data-i18n="tail.sort_by_name">🔤 ترتيب: حسب الاسم</option>
+      <option value="ip" data-i18n="tail.sort_by_ip">🌐 ترتيب: حسب IP</option>
+      <option value="status" data-i18n="tail.sort_by_status">📶 ترتيب: حسب الحالة</option>
+      <option value="type" data-i18n="tail.sort_by_type">🏷️ ترتيب: حسب النوع</option>
+      <option value="location" data-i18n="tail.sort_by_location">📍 ترتيب: حسب الموقع</option>
+      <option value="last_checked" data-i18n="tail.sort_last_check">⏰ ترتيب: حسب آخر فحص</option>
+    </select>
+      <div class="view-toggle" role="group" aria-label="نمط العرض" data-i18n-attr="aria-label:tail.view_mode">
+        <button type="button" id="view-cards-btn" class="view-btn active" title="عرض بطاقات" data-i18n-attr="title:public.view.cards">🗂️</button>
+        <button type="button" id="view-table-btn" class="view-btn" title="عرض جدول" data-i18n-attr="title:public.view.table">📋</button>
+        <a id="noc-link-btn" class="view-btn" href="/noc.html" title="شاشة NOC (عرض العمليات)" style="text-decoration:none;" data-i18n-attr="title:tail.noc_screen_operations_view">🖥️</a>
+      </div>
+    </section>
+
+    <!-- قسم أدوات الشبكة -->
+    <section class="tools-bar">
+      <div class="tools-title" data-i18n="public.tools.title">🛠️ أدوات الشبكة</div>
+      <div class="tools-input-row">
+        <input id="tools-ip-input" type="text" placeholder="أدخل IP أو اسم المضيف..."  data-i18n-attr="placeholder:tail.enter_an_ip_or_hostname"/>
+        <button id="tools-ping-btn" class="btn btn-primary" type="button" title="تنفيذ Ping" data-i18n="public.tools.ping" data-i18n-attr="title:tail.run_ping">📡 Ping</button>
+        <button id="tools-tracert-btn" class="btn btn-primary" type="button" title="تنفيذ Tracert" data-i18n="public.tools.tracert" data-i18n-attr="title:tail.run_tracert">🌐 Tracert</button>
+        <button id="speedtest-btn" class="btn btn-primary" type="button" title="قياس سرعة الانترنت" data-i18n="public.tools.speed" data-i18n-attr="title:tail.measure_the_internet_speed">⚡ قياس السرعة</button>
+        <button id="tools-stop-btn" class="btn btn-danger hidden" type="button" title="إيقاف العملية" data-i18n="public.tools.stop" data-i18n-attr="title:tail.stop_the_operation">⏹ إيقاف</button>
+        <button id="tools-clear-btn" class="btn hidden" type="button" title="مسح المخرجات" data-i18n="public.tools.clear" data-i18n-attr="title:tail.clear_the_output">🗑️ مسح</button>
+      </div>
+      <div class="tools-status hidden" id="tools-status">
+        <span id="tools-status-text"><span data-i18n="s2j.working">جاري التنفيذ...</span></span>
+        <span class="tools-spinner"></span>
+      </div>
+      <pre id="tools-output" class="tools-output hidden"></pre>
+    </section>
+
+    <!-- شبكة بطاقات الأجهزة (نمط البطاقات) -->
+  <main>
+    <div id="cards-uptime-bar" class="map-uptime-bar" aria-live="polite" aria-atomic="true"></div>
+    <div id="devices-grid" class="devices-grid"></div>
+
+    <!-- نمط الجدول (مخفي افتراضياً) -->
+    <div id="devices-table-view" class="hidden">
+      <div id="table-uptime-bar" class="map-uptime-bar" aria-live="polite" aria-atomic="true"></div>
+      <div class="nm-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-status"><span data-i18n="s2.status">الحالة</span></th>
+              <th><span data-i18n="s2.name">الاسم</span></th>
+              <th class="col-ltr">IP</th>
+              <th><span data-i18n="s2.type">النوع</span></th>
+              <th><span data-i18n="devices.th.location">الموقع</span></th>
+              <th class="col-ltr"><span data-i18n="s2.last_check">آخر فحص</span></th>
+              <th class="col-center"><span data-i18n="s3.last_outage">آخر انقطاع</span></th>
+              <th class="col-actions"><span data-i18n="tail.open">فتح</span></th>
+              <th class="col-actions" data-i18n="common.details">تفاصيل</th>
+            </tr>
+          </thead>
+          <tbody id="devices-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal تفاصيل الجهاز -->
+  <div id="device-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="modal-close-btn" type="button" class="modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
+      <h2 id="modal-device-name" data-i18n="common.none">—</h2>
+      <div id="modal-uptime" class="modal-uptime"></div>
+      <div id="device-connect-chip" class="connect-chip" style="margin:0.5rem 0;"></div>
+      <div class="modal-chart-wrap">
+        <canvas id="modal-chart-canvas" height="120"></canvas>
+      </div>
+      <h3><span data-i18n="s3.recent_outages">آخر الانقطاعات</span></h3>
+      <ul id="modal-downtime-list" class="downtime-list"></ul>
+    </div>
+  </div>
+
+  <!-- ===== popup قياس سرعة الانترنت (v2.7.5) — القياس من المتصفح عبر Cloudflare ===== -->
+  <div id="speedtest-modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button type="button" class="modal-close speedtest-close" aria-label="إغلاق" title="إغلاق" data-i18n-attr="aria-label:common.close title:common.close">✕</button>
+      <h3><span data-i18n="tail.internet_speed_test">⚡ قياس سرعة الانترنت</span></h3>
+      <div class="st-server-row">
+        <label for="st-server"><span data-i18n="tail.server">الخادم:</span></label>
+        <select id="st-server">
+          <option value="cloudflare" data-i18n="tail.cloudflare_full_test_download_upload">🟠 Cloudflare — قياس كامل (تنزيل + رفع)</option>
+          <option value="jsdelivr" data-i18n="tail.jsdelivr_cdn_download_only">🟣 jsDelivr CDN — تنزيل فقط</option>
+          <option value="unpkg" data-i18n="tail.unpkg_cdn_download_only">🟢 unpkg CDN — تنزيل فقط</option>
+        </select>
+      </div>
+      <div class="speedtest-results">
+        <div class="st-item"><span class="st-value" id="st-ping">—</span><span class="st-label"><span data-i18n="s3.response_time">زمن الاستجابة</span></span></div>
+        <div class="st-item"><span class="st-value" id="st-download">—</span><span class="st-label"><span data-i18n="tail.download">تنزيل ↓</span></span></div>
+        <div class="st-item"><span class="st-value" id="st-upload">—</span><span class="st-label"><span data-i18n="tail.upload">رفع ↑</span></span></div>
+      </div>
+      <div class="st-progress"><div id="st-progress-fill" class="st-progress-fill"></div></div>
+      <div id="st-status" class="st-status"><span data-i18n="tail.press_start_test_the_test_runs_from_your_bro">اضغط «ابدأ القياس» — يتم القياس من متصفحك مباشرة.</span></div>
+      <button type="button" id="st-start-btn" class="btn btn-primary"><span data-i18n="tail.start_the_test">▶ ابدأ القياس</span></button>
+    </div>
+  </div>
+
+  <!-- ذيل الصفحة -->
+  <footer class="site-footer">
+    &copy; 2026 <a href="https://github.com/kerolos-it2022/network-monitor" target="_blank" rel="noopener">KeRo-IT</a> — <span data-i18n="footer.rights">جميع الحقوق محفوظة</span>
+  </footer>
+
+  <!-- Chart.js من CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/nm-format.js"></script>
+  <script src="js/nm-i18n.js"></script>
+  <script src="js/nm-i18n-en.js"></script>
+  <script src="js/nm-lang.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/public-dashboard.js"></script>
+  <script src="js/public-speedtest.js"></script>
+
+  <!-- ===== تسجيل Service Worker (PWA + Push Notifications) ===== -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function (reg) {
+            console.log('[PWA] Service Worker مُسجّل:', reg.scope);
+          })
+          .catch(function (err) {
+            console.warn('[PWA] فشل تسجيل Service Worker:', err);
+          });
+      });
+    }
+  </script>
+
+  <!-- v2.7.5 — زرّ «لوحة التحكم»: فحص الجلسة قبل التوجيه.
+       لو في جلسة صالحة (مِثلاً بَعْد «تذكّرني») نَتوجّه لِـ dashboard مباشرة،
+       وإلا نَفتح صفحة تسجيل الدخول كما كان. -->
+  <script>
+    (function () {
+      var link = document.getElementById('admin-link');
+      if (!link) return;
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        fetch('/api/auth/me', { credentials: 'include' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            window.location.href = (data && data.success)
+              ? 'admin/dashboard.html'
+              : 'admin/login.html';
+          })
+          .catch(function () {
+            window.location.href = 'admin/login.html';
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

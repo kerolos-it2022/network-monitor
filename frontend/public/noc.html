@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="tail.noc_network_operations_centre">NOC — مركز مراقبة وتتبع الشبكة</title>
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="stylesheet" href="css/noc.css">
+<link rel="stylesheet" href="css/ui.css?v=2.50.1">
+<script>
+  // v2.8.5 — تطبيق الوضع النهاري قبل أول رسم (بلا وميض). التفضيل مشترك مع الصفحة العامة.
+  try {
+    if (localStorage.getItem('nm.publicTheme') === 'light') document.documentElement.classList.add('noc-day');
+  } catch (e) {}
+</script>
+  <script>/* ضبط اللغة قبل أول رسم (بلا وميض إنجليزي في الوضع العربي) — نفس نمط سكربت الوضع الليلي */
+  try { if (localStorage.getItem('nm.lang') === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; } } catch (e) {}</script>
+</head>
+<body class="page-noc">
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-icon">🖥️</span>
+      <div>
+        <h1 data-i18n="noc.brand">مراقبة الشبكة — NOC</h1>
+        <span class="tag" id="noc-version-tag" data-i18n="noc.tag">مركز عمليات الشبكة</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="clock" data-i18n="common.none">—</span>
+      <button class="btn-action" id="lang-toggle" type="button" data-lang-scope="local" title="Switch language (Arabic / English)" data-i18n="topbar.lang" data-i18n-attr="title:lang.switchTitle">🌐 العربية</button>
+      <a class="btn-action" href="/" title="الرجوع إلى الصفحة العامة (إدارة الأجهزة والأدوات)" data-i18n="topbar.publicPage" data-i18n-attr="title:tail.back_to_the_public_page_device_management_an">🏠 الصفحة العامة</a>
+      <button class="btn-action" id="noc-theme-toggle" onclick="nocToggleTheme()" title="تبديل الوضع النهاري/الليلي (يُحفظ ويُشارَك مع الصفحة العامة)" data-i18n="noc.themeLight" data-i18n-attr="title:tail.toggle_day_night_mode_saved_and_shared_with">
+        ☀️ وضع نهاري
+      </button>
+      <button class="btn-action" id="btn-audio" onclick="toggleAudioAlert()" title="تشغيل تنبيه صوتي عند انقطاع أي جهاز" data-i18n-attr="title:tail.play_a_sound_alert_when_any_device_drops">
+        <span id="audio-icon">🔔</span> <span data-i18n="noc.sound">تنبيه صوتي</span>
+      </button>
+      <button class="btn-action" onclick="toggleFullscreen()" data-i18n="noc.fullscreen">
+        ⛶ ملء الشاشة
+      </button>
+    </div>
+  </header>
+
+  <!-- v2.11.9 — بانر تحذير توقف محرك المراقبة (يُحدَّث من /api/health) -->
+  <div class="engine-alert" id="engine-alert"></div>
+
+  <!-- v2.12.0 — شريط تنشيط الصوت: يظهر عند استرجاع «تنبيه صوتي مُفعَّل» بعد إعادة التحميل -->
+  <div class="audio-hint" id="audio-hint"><span data-i18n="tail.sound_alert_is_on_click_anywhere_to_enable_a">🔊 التنبيه الصوتي مُفعَّل — اضغط في أي مكان لتنشيط الصوت</span></div>
+
+  <!-- v2.13.3 — غطاء إنذار الانقطاع: شاشة حمراء كاملة بأسماء الأجهزة المتوقفة — يُخفى بزر فقط -->
+  <div class="outage-overlay" id="outage-overlay" role="alert" aria-live="assertive">
+    <div class="oo-title"><span data-i18n="tail.device_outage">⚠️ انقطاع جهاز</span></div>
+    <div class="oo-list" id="outage-overlay-list"></div>
+    <button type="button" class="oo-close" id="outage-overlay-close"><span data-i18n="s3.got_it_hide_the_alert">أعرف — إخفاء التنبيه</span></button>
+  </div>
+
+  <!-- Counters Bar -->
+  <div class="counters">
+    <div class="counter c-ok">
+      <div class="num" id="c-up">—</div>
+      <div class="lbl" data-i18n="noc.online">🟢 أجهزة متصلة</div>
+    </div>
+    <div class="counter c-bad">
+      <div class="num" id="c-down">—</div>
+      <div class="lbl" data-i18n="noc.offline">🔴 أجهزة منقطعة</div>
+    </div>
+    <div class="counter c-warn">
+      <div class="num" id="c-path">—</div>
+      <div class="lbl" data-i18n="noc.blocked">⛔ مسدودة عبر المسار</div>
+    </div>
+    <div class="counter c-purple">
+      <div class="num" id="c-locs">—</div>
+      <div class="lbl" data-i18n="noc.sites">🏢 إجمالي المواقع والمباني</div>
+    </div>
+    <div class="counter c-info">
+      <div class="num" id="c-total">—</div>
+      <div class="lbl" data-i18n="noc.activeDevices">📊 إجمالي الأجهزة النشطة</div>
+    </div>
+  </div>
+
+  <!-- Filter & Navigation Toolbar -->
+  <div class="toolbar">
+    <div class="views-tabs">
+      <!-- v2.33.0 — حُذف تبويبا «🪟 مقسّوم (خريطة + أنواع الأجهزة)» و«🔗 مسار الإنترنت» (قرار المالك:
+           مكرّران — للخريطة ولأنواع الأجهزة تبويبان مستقلان، وسلسلة مسار الإنترنت تظهر داخل «عرض شامل»). -->
+      <button class="tab-btn active" data-view="all" onclick="setViewMode('all')"><span data-i18n="tail.overview">عرض شامل</span></button>
+      <button class="tab-btn" data-view="map" onclick="setViewMode('map')"><span data-i18n="s3.building_map">🗺️ خريطة المباني</span></button>
+      <button class="tab-btn" data-view="grid" onclick="setViewMode('grid')"><span data-i18n="tail.device_types">🖧 أنواع الأجهزة</span></button>
+      <!-- v2.8.6 — لوحة وضع الرسم انتقلت لتبويب مستقل (لا تزاحم «خريطة المباني») -->
+      <button class="tab-btn" data-view="draw" onclick="setViewMode('draw')"><span data-i18n="s3.drawn_plan">✏️ التخطيط المرسوم</span></button>
+    </div>
+    <div class="filter-controls">
+      <input type="text" id="search-input" class="search-box" placeholder="🔍 بحث بالاسم أو الآي بي..." oninput="onSearchOrFilterChange()" data-i18n-attr="placeholder:tail.search_by_name_or_ip_2">
+      <button class="filter-pill active" data-st="all" onclick="setStatusFilter('all')" data-i18n="common.all">الكل</button>
+      <button class="filter-pill" data-st="down" onclick="setStatusFilter('down')"><span data-i18n="s3.offline_only">🔴 المنقطع فقط</span></button>
+      <button class="filter-pill" data-st="up" onclick="setStatusFilter('up')"><span data-i18n="s3.online">🟢 المتصل</span></button>
+    </div>
+  </div>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main id="noc-main-content">
+    
+    <!-- 1. HERO BACKBONE UPLINK -->
+    <section id="hero-section">
+      <div class="section-title">
+        <span data-i18n="noc.backbone">🔗 مسار الإنترنت والبنية التحتية الرئيسية</span>
+        <span class="badge" id="hero-status-badge"><span data-i18n="tail.active">نشط</span></span>
+        <div class="bar"></div>
+      </div>
+      <div class="hero-chain" id="hero-chain-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- 2. SITES & BUILDINGS MAP — v2.8.6: نسخة مطابقة لـ«خريطة المواقع» في لوحة التحكم -->
+    <section id="map-section">
+      <div class="section-title">
+        <span><span data-i18n="tail.building_map_same_order_as_location_map_in_t">🗺️ خريطة المباني (بنفس ترتيب «خريطة المواقع» في لوحة التحكم)</span></span>
+        <span class="badge" id="map-locs-count">—</span>
+        <div class="bar"></div>
+      </div>
+      <div class="map-container">
+        <div id="map-empty-note" class="noc-board-note" hidden>
+          <span data-i18n="s2j.no_locations_or_devices_yet_add_them_from_th">لا توجد مواقع أو أجهزة بعد — أضِفها من لوحة التحكم ← خريطة المواقع.</span>
+        </div>
+        <div id="noc-map-grid" class="map-grid" role="list" aria-label="شبكة المباني" data-i18n-attr="aria-label:tail.building_grid"></div>
+      </div>
+    </section>
+
+    <!-- 3. DEVICES CATEGORIZED BY TYPE -->
+    <section id="categories-section">
+      <div class="section-title">
+        <span><span data-i18n="tail.device_types">🖧 أنواع الأجهزة</span></span>
+        <span class="badge" id="devices-count-badge">—</span>
+        <div class="bar"></div>
+      </div>
+      <div id="categories-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- 4. v2.8.6 — التخطيط المرسوم: لوحة «وضع الرسم» كما رسمها الأدمن (تبويب مستقل) -->
+    <section id="draw-section" style="display:none">
+      <div class="section-title">
+        <span><span data-i18n="tail.drawn_plan_the_draw_mode_board_as_the_admin">✏️ التخطيط المرسوم (لوحة «وضع الرسم» — كما رسمها الأدمن)</span></span>
+        <span class="badge" id="draw-locs-count">—</span>
+        <div class="bar"></div>
+        <!-- v2.11.5 — أزرار العرض في الأعلى مثل لوحة التحكم (كانت عائمة أسفل اللوحة) -->
+        <div class="chain-zoom-controls" role="group" aria-label="تكبير وتصغير وملاءمة اللوحة" data-i18n-attr="aria-label:tail.zoom_in_out_and_fit_the_board">
+          <button type="button" class="map-btn" id="draw-zoom-in" title="تكبير" onclick="zoomMap(0.15)" data-i18n-attr="title:s2.zoom_in">+</button>
+          <button type="button" class="map-btn" id="draw-zoom-out" title="تصغير" onclick="zoomMap(-0.15)" data-i18n-attr="title:s2.zoom_out">−</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-reset" title="إعادة ضبط 100%" onclick="resetMapZoom()" data-i18n-attr="title:s2.reset_to_100">↺ 100%</button>
+          <button type="button" class="map-btn wide" id="draw-zoom-fit" title="ملاءمة الشاشة" onclick="fitMapToScreen()" data-i18n-attr="title:s2.fit_to_screen"><span data-i18n="s2.full_view">⛶ عرض كامل</span></button>
+        </div>
+      </div>
+      <div class="map-container">
+        <div id="draw-empty-note" class="noc-board-note" hidden>
+          <span data-i18n="noc.drawEmpty">لا توجد مواقع مرسومة على لوحة وضع الرسم بعد — ارسمها من لوحة التحكم ← وضع الرسم (💾 حفظ التخطيط).</span>
+        </div>
+        <!-- dir="rtl" مثبّت عمدًا: لوحة الرسم مرتكزة على الحافة اليمنى (transform-origin: 100% 0) وحساب
+             التمرير يفترض RTL ⇒ لا نُغيّره مع لغة الواجهة. الإصلاح الجذري في مرحلة لاحقة. -->
+        <div class="map-wrapper" id="map-wrapper" dir="rtl">
+          <div id="map-board-inner">
+            <svg class="mv-links" width="2800" height="1450" xmlns="http://www.w3.org/2000/svg" id="map-svg-links"></svg>
+            <div id="map-cards-container"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div>
+      <span class="live-dot"></span>
+      <span id="update-status" style="margin-inline-start:6px"><span data-i18n="tail.live_refreshes_every_10_seconds">مراقبة حية — يتحدث تلقائياً كل 10 ثوانٍ</span></span>
+    </div>
+    <div id="last-updated-time"><span data-i18n="tail.last_update">آخر تحديث: —</span></div>
+  </footer>
+
+  <!-- v2.8.6 — نافذة تفاصيل الجهاز: نفس حقول نافذة «خريطة المواقع» في لوحة التحكم -->
+  <div id="noc-device-modal" class="noc-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="noc-modal-card">
+      <button type="button" class="noc-modal-close" id="noc-modal-close" aria-label="إغلاق" data-i18n-attr="aria-label:common.close">✕</button>
+      <div class="details-header">
+        <span class="details-icon" id="noc-modal-icon">🖥️</span>
+        <div class="details-title-wrap">
+          <h4 class="details-title" id="noc-modal-name">—</h4>
+          <span class="details-status-badge" id="noc-modal-status">—</span>
+        </div>
+      </div>
+      <div class="details-fields" id="noc-modal-fields">
+        <p class="details-placeholder"><span data-i18n="tail.click_a_device_on_the_map_to_see_its_details">انقر على جهاز داخل الخريطة لعرض تفاصيله هنا.</span></p>
+      </div>
+      <!-- v2.15.3 — أزرار فتح واجهة الجهاز (زي الصفحة العامة) -->
+      <div class="details-actions" id="noc-modal-actions"></div>
+    </div>
+  </div>
+
+<script src="js/nm-format.js"></script>
+<script src="js/nm-i18n.js"></script>
+<script src="js/nm-i18n-en.js"></script>
+<script src="js/nm-lang.js"></script>
+<script src="js/noc.js"></script>
+</body>
+</html>

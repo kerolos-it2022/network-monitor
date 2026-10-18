@@ -1,0 +1,1152 @@
+/* ui.css — طبقة التصميم الموحّدة لكل الشاشات (لوحة التحكم · الصفحة العامة · NOC · الدخول).
+   تُحمَّل بعد style.css/noc.css لِتُوحّد: المقاسات · الحدود · الألوان الدلالية · الأزرار · الحقول ·
+   الجداول · البطاقات · الأشرطة · الحالات الفارغة. لا تُغيّر أي منطق — تنسيقات فقط، وكل الأصناف
+   الجديدة مُسبَّقة بـ nm- حتى لا تتعارض مع القديم. */
+
+/* ═══════════════════════════ 1) الرموز الموحّدة (Tokens) ═══════════════════════════ */
+:root {
+  /* ألوان دلالية واحدة لكل الشاشات (نفس درجات NOC القديمة → الآن الجميع على نفس السلّم) */
+  --nm-ok: #22c55e;
+  --nm-bad: #ef4444;
+  --nm-warn: #f59e0b;
+  --nm-info: #2563eb;
+  --nm-idle: #94a3b8;
+
+  /* خلفيات خفيفة للحالات (تنبيهات/شارات) */
+  --nm-ok-soft: rgba(34, 197, 94, 0.12);
+  --nm-bad-soft: rgba(239, 68, 68, 0.10);
+  --nm-warn-soft: rgba(245, 158, 11, 0.13);
+  --nm-info-soft: rgba(37, 99, 235, 0.09);
+
+  /* مقاسات موحّدة */
+  --nm-r-lg: 12px;
+  --nm-r-md: 10px;
+  --nm-r-sm: 8px;
+  --nm-r-pill: 999px;
+  --nm-control-h: 38px;
+  --nm-control-h-sm: 30px;
+  --nm-gap: 0.75rem;
+
+  /* خطوط موحّدة */
+  --nm-fs-xs: 0.78rem;
+  --nm-fs-sm: 0.85rem;
+  --nm-fs-md: 0.92rem;
+  --nm-fs-lg: 1.02rem;
+  --nm-fs-xl: 1.18rem;
+
+  --nm-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --nm-shadow-md: 0 8px 26px rgba(15, 23, 42, 0.10);
+  --nm-ring: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  --nm-accent-border: rgba(37, 99, 235, 0.42);
+  --nm-accent-strong: #1d4ed8;
+  --nm-ok-border: rgba(34, 197, 94, 0.38);
+  --nm-bad-border: rgba(239, 68, 68, 0.38);
+  --nm-warn-border: rgba(245, 158, 11, 0.40);
+  --nm-hover: rgba(15, 23, 42, 0.035);
+}
+
+body.dark {
+  --nm-info-soft: rgba(59, 130, 246, 0.16);
+  --nm-ok-soft: rgba(34, 197, 94, 0.16);
+  --nm-bad-soft: rgba(239, 68, 68, 0.16);
+  --nm-warn-soft: rgba(245, 158, 11, 0.16);
+  --nm-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --nm-shadow-md: 0 8px 26px rgba(0, 0, 0, 0.45);
+  --nm-ring: 0 0 0 3px rgba(59, 130, 246, 0.28);
+  --nm-accent-border: rgba(96, 165, 250, 0.55);
+  --nm-accent-strong: #1d4ed8;
+  --nm-hover: rgba(255, 255, 255, 0.05);
+}
+
+/* عزل النصوص اللاتينية (IP · إصدار · اسم إنجليزي) داخل سياق عربي — يمنع تشوّه الاتجاه */
+.nm-ltr, code, kbd, samp {
+  unicode-bidi: isolate;
+  direction: ltr;
+  text-align: start;
+  display: inline-block;
+  max-width: 100%;
+}
+.nm-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+/* ═══════════════════════════ 2) بطاقات وأقسام ═══════════════════════════ */
+.nm-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--nm-shadow);
+  margin-bottom: 1rem;
+}
+.nm-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nm-gap);
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+.nm-card-title {
+  margin: 0;
+  font-size: var(--nm-fs-lg);
+  font-weight: 700;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.nm-card-desc {
+  margin: 0 0 0.85rem;
+  font-size: var(--nm-fs-sm);
+  line-height: 1.9;
+  color: var(--muted);
+}
+.nm-sub {
+  font-size: var(--nm-fs-xs);
+  color: var(--muted);
+}
+.nm-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 0.9rem 0;
+  border: 0;
+}
+.nm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--nm-gap);
+}
+.nm-row {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-gap);
+  flex-wrap: wrap;
+}
+.nm-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nm-gap);
+  flex-wrap: wrap;
+}
+.nm-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+
+/* بطاقة مؤشّر (KPI) — شكل واحد لكل شاشات: الرقم · التسمية · ملاحظة */
+.nm-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--nm-gap);
+}
+.nm-kpi {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-md);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 84px;
+  /* طلب المالك: نصّ البطاقة يبدأ من **أعلى** البطاقة (بدل التوسيط) فتتصفّ التسميات على سطر واحد */
+  justify-content: flex-start;
+}
+.nm-kpi-label {
+  font-size: var(--nm-fs-xs);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.nm-kpi-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+  word-break: break-word;
+}
+.nm-kpi-sub {
+  font-size: var(--nm-fs-xs);
+  color: var(--muted);
+  line-height: 1.6;
+}
+.nm-kpi-value.is-ok { color: var(--nm-ok); }
+.nm-kpi-value.is-warn { color: var(--nm-warn); }
+.nm-kpi-value.is-bad { color: var(--nm-bad); }
+.nm-kpi-value.is-muted { color: var(--muted); font-weight: 600; }
+
+/* ═══════════════════════════ 3) أزرار ═══════════════════════════ */
+.btn,
+button.btn,
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: var(--nm-control-h);
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-sm);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: var(--nm-fs-sm);
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.btn:hover { background: var(--nm-hover); border-color: var(--nm-accent-border); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: none; box-shadow: var(--nm-ring); border-color: var(--accent); }
+.btn:disabled, .btn[disabled], .btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--nm-accent-strong);
+  border-color: var(--nm-accent-strong);
+}
+.btn-danger { color: var(--nm-bad); border-color: var(--nm-bad-border); }
+.btn-danger:hover { background: var(--nm-bad-soft); border-color: var(--nm-bad); }
+.btn-ok { color: var(--nm-ok); border-color: var(--nm-ok-border); }
+.btn-ok:hover { background: var(--nm-ok-soft); border-color: var(--nm-ok); }
+.btn-sm {
+  min-height: var(--nm-control-h-sm);
+  padding: 0.25rem 0.6rem;
+  font-size: var(--nm-fs-xs);
+}
+.btn-icon { padding: 0.3rem 0.5rem; min-width: var(--nm-control-h-sm); }
+
+/* ═══════════════════════════ 4) حقول ونماذج ═══════════════════════════ */
+.nm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  min-width: 0;
+}
+.nm-label {
+  font-size: var(--nm-fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.nm-hint {
+  font-size: var(--nm-fs-xs);
+  color: var(--muted);
+  line-height: 1.7;
+}
+.nm-input,
+.nm-select,
+.nm-textarea,
+input.nm-input,
+select.nm-select,
+textarea.nm-textarea {
+  width: 100%;
+  min-height: var(--nm-control-h);
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--nm-fs-md);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.nm-textarea { min-height: 84px; padding: 0.55rem 0.7rem; line-height: 1.9; resize: vertical; }
+.nm-input:focus,
+.nm-select:focus,
+.nm-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--nm-ring);
+}
+.nm-input::placeholder, .nm-textarea::placeholder { color: var(--muted); opacity: 0.85; }
+.nm-input:disabled, .nm-select:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* صفّ اختيار (checkbox) — موضع المربّع موحّد: يسار النص (سلوك كل الشاشات الحالي) */
+.nm-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--nm-fs-sm);
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  min-height: var(--nm-control-h-sm);
+}
+.nm-check input[type="checkbox"],
+.nm-check input[type="radio"],
+.checkbox-label input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 1.05rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+.nm-check span { line-height: 1.6; }
+
+/* ═══════════════════════════ 5) جدول موحّد ═══════════════════════════ */
+.nm-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-lg);
+  background: var(--card-bg);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+table.data-table,
+table.nm-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+}
+table.data-table th,
+table.nm-table th {
+  background: var(--bg);
+  color: var(--muted);
+  font-size: var(--nm-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+table.data-table td,
+table.nm-table td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--nm-fs-sm);
+  text-align: right;
+  vertical-align: middle;
+}
+table.data-table tbody tr:last-child td,
+table.nm-table tbody tr:last-child td { border-bottom: none; }
+table.data-table tbody tr:hover,
+table.nm-table tbody tr:hover { background: var(--nm-hover); }
+
+/* ═══════════════════════════ 6) حالات · شارات · تنبيهات ═══════════════════════════ */
+.nm-empty {
+  border: 1px dashed var(--border);
+  border-radius: var(--nm-r-lg);
+  padding: 1.4rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--nm-fs-sm);
+  line-height: 1.9;
+  background: transparent;
+}
+.nm-empty .nm-empty-icon { display: block; font-size: 1.5rem; margin-bottom: 0.35rem; opacity: 0.85; }
+
+.nm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--nm-r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: var(--nm-fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nm-chip.is-ok { color: var(--nm-ok); background: var(--nm-ok-soft); border-color: var(--nm-ok-border); }
+.nm-chip.is-bad { color: var(--nm-bad); background: var(--nm-bad-soft); border-color: var(--nm-bad-border); }
+.nm-chip.is-warn { color: var(--nm-warn); background: var(--nm-warn-soft); border-color: var(--nm-warn-border); }
+.nm-chip.is-info { color: var(--accent); background: var(--nm-info-soft); border-color: var(--nm-accent-border); }
+
+.nm-note {
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-md);
+  background: var(--bg);
+  padding: 0.65rem 0.85rem;
+  font-size: var(--nm-fs-sm);
+  line-height: 1.85;
+  color: var(--text);
+}
+.nm-note.is-info { background: var(--nm-info-soft); border-color: var(--nm-accent-border); }
+.nm-note.is-warn { background: var(--nm-warn-soft); border-color: var(--nm-warn-border); }
+.nm-note.is-bad { background: var(--nm-bad-soft); border-color: var(--nm-bad-border); }
+.nm-note.is-ok { background: var(--nm-ok-soft); border-color: var(--nm-ok-border); }
+.nm-note b { font-weight: 700; }
+
+/* شريط نسبة موحّد — التعبئة تبدأ من اليمين في RTL (block child داخل حاوية rtl) */
+.nm-bar {
+  height: 10px;
+  border-radius: var(--nm-r-pill);
+  background: rgba(127, 127, 127, 0.18);
+  overflow: hidden;
+  position: relative;
+}
+.nm-bar > * {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--nm-ok);
+  transition: width 0.4s ease, background 0.3s ease;
+}
+.nm-bar.is-lg { height: 12px; }
+
+/* شريط تقدّم موحّد (بديل upd-bar) */
+.nm-progress {
+  height: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-pill);
+  background: var(--bg);
+  overflow: hidden;
+}
+.nm-progress > * {
+  display: block;
+  height: 100%;
+  width: 0%;
+  /* RTL: البداية يمينًا ⇒ الجسم يتقدّم لليسار (270deg يجعل البداية أزرق والنهاية أخضر) */
+  background: linear-gradient(270deg, #0284c7, var(--nm-ok));
+  transition: width 0.4s ease;
+}
+
+/* كتلة نصّ تقني (سجل/shell) — تُقرأ من اليسار لليمين */
+.nm-pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-md);
+  padding: 0.7rem 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--nm-fs-xs);
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: auto;
+  max-height: 240px;
+  direction: ltr;
+  text-align: left;
+}
+
+/* قائمة خطوات (تحديث النظام) */
+.nm-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.nm-steps li {
+  position: relative;
+  padding-inline-start: 1.7rem;
+  font-size: var(--nm-fs-sm);
+  color: var(--muted);
+  line-height: 1.8;
+}
+.nm-steps li::before {
+  content: '○';
+  position: absolute;
+  inset-inline-start: 0.35rem;
+  color: var(--muted);
+}
+.nm-steps li.is-active { color: var(--text); font-weight: 700; }
+.nm-steps li.is-active::before { content: '◉'; color: var(--nm-warn); }
+.nm-steps li.is-done { color: var(--nm-ok); }
+.nm-steps li.is-done::before { content: '✓'; color: var(--nm-ok); }
+
+/* ═══════════════════════════ 7) مواءمة الأصناف القديمة (بلا كسر أي شاشة) ═══════════════════════════ */
+
+/* البطاقة القديمة form-card → شكل .nm-card */
+.form-card {
+  border-radius: var(--nm-r-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--nm-shadow);
+}
+.form-card > h3:first-child,
+.form-card > .form-card-title {
+  font-size: var(--nm-fs-lg);
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* الحقول القديمة داخل form-grid → نفس شكل .nm-input */
+.form-grid label { font-size: var(--nm-fs-sm); gap: 0.3rem; }
+.form-grid input:not([type="checkbox"]):not([type="radio"]),
+.form-grid select,
+.form-grid textarea {
+  min-height: var(--nm-control-h);
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--nm-r-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--nm-fs-md);
+}
+.form-grid input:not([type="checkbox"]):not([type="radio"]):focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--nm-ring);
+}
+.form-actions { flex-wrap: wrap; gap: 0.5rem; }
+
+/* الشريط العلوي للوحة: عنوان الصفحة الموحّد */
+.admin-topbar {
+  min-height: 56px;
+  padding: 0.5rem 1rem;
+  gap: 0.6rem;
+}
+.admin-page-title {
+  margin: 0;
+  font-size: var(--nm-fs-lg);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+.admin-topbar .btn, .admin-topbar .admin-link { min-height: var(--nm-control-h-sm); padding: 0.3rem 0.65rem; font-size: var(--nm-fs-xs); }
+
+/* القائمة الجانبية: عنصر نشط واضح — «بطاقة» مستديرة + شريط لوني جانبي سميك (طلب المالك،
+   بنفس ستايل بطاقة العدّاد لكن الشريط على الجانب). **موضع الشريط: اليمين** (طلب المالك) =
+   inline-start في RTL. الشريط موجود على **كل** العناصر بشفافية كاملة حتى لا تتزحزح العناوين
+   عند التبديل، فيتلوّن وحده في العنصر النشط. */
+.sidebar .tab-btn {
+  width: calc(100% - 0.7rem);
+  margin: 0.12rem 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 0;
+  border-inline-start: 4px solid transparent;
+  border-radius: var(--nm-r-md);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.sidebar .tab-btn:hover { background: var(--nm-hover); }
+.sidebar .tab-btn.active {
+  background: var(--nm-info-soft);
+  color: var(--accent);
+  font-weight: 700;
+  border-inline-start-color: var(--accent);
+  box-shadow: var(--nm-shadow);
+}
+body.dark .sidebar .tab-btn.active { background: rgba(59, 130, 246, 0.18); }
+body.sidebar-collapsed .sidebar .tab-btn { padding-inline: 0; }
+
+/* الفوتر يلتصق بأسفل الشاشة عندما يكون المحتوى قصيرًا */
+.dashboard-main { display: flex; flex-direction: column; min-height: calc(100vh - 60px); }
+/* v2.34.0 — **بلا تمدّد** للأقسام (طلب المالك: «شيل الفراغ بين شاشة العرض و الازرار»):
+   `flex: 1 0 auto` كان يجعل كل قسم ظاهر يأكل حصة من الفراغ الزائد ⇒ في تبويب قصير (اكتشاف
+   الأجهزة) صار `#section-discovery` بطول ٢١٠px ومحتواه ٤٧px فقط (١٦٣px فراغ حول الأزرار)، ومثله
+   أسفل بطاقة المسح. الآن كل قسم بارتفاع محتواه الطبيعي، والفوتر يبقى ملتصقًا بالأسفل عبر
+   `margin-top: auto` أعلاه — فالفراغ الزائد (إن وُجد) يبقى **أسفل المحتوى** ولا يبدو حول العناصر. */
+.dashboard-main > section { flex: 0 0 auto; }
+.dashboard-main > .site-footer,
+.dashboard-main > footer { margin-top: auto; }
+
+/* شريط النِسَب في الصفحة العامة: نفس لغة البطاقات */
+.map-uptime-bar {
+  border-radius: var(--nm-r-lg);
+  box-shadow: var(--nm-shadow);
+  padding: 0.55rem 0.8rem;
+}
+.uptime-bar { height: 10px; }
+/* RTL: مقياس «كلّما ارتفع كان أفضل» ⇒ يبدأ أحمر يمينًا وينتهي أخضر يسارًا */
+.uptime-fill { background: linear-gradient(270deg, var(--offline), var(--warning), var(--online)); }
+
+/* بطاقات الأجهزة في الصفحة العامة: عمود مرن ⇒ الشارة أسفل البطاقة دائمًا (صفوف مستوية) */
+.device-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--nm-r-lg);
+  border-width: 1px;
+  border-inline-start-width: 5px;
+  box-shadow: var(--nm-shadow);
+}
+.device-card:hover { box-shadow: var(--nm-shadow-md); }
+.device-card .name { font-size: var(--nm-fs-lg); }
+.device-card .ip, .device-card .meta { font-size: var(--nm-fs-sm); line-height: 1.7; }
+/* الشارة ترجع لموضعها الأصلي: ملتصقة بحافة البطاقة (البداية = اليمين في RTL) بعرضها الطبيعي
+   بدل ما كانت في المنتصف — مع بقاء تثبيتها أسفل البطاقة (margin-top: auto) لتناسق الصفوف. */
+.device-card .status-badge { margin-top: auto; align-self: flex-start; padding: 0.22rem 0.7rem; font-size: var(--nm-fs-xs); }
+.status-online,  .device-card.status-online  { border-inline-start-color: var(--online); }
+.status-offline, .device-card.status-offline { border-inline-start-color: var(--offline); }
+.status-unknown, .device-card.status-unknown { border-inline-start-color: var(--unknown); }
+.status-warning, .device-card.status-warning { border-inline-start-color: var(--warning); }
+
+/* أزرار نمط العرض (بطاقات/جدول) كمجموعة واحدة موحّدة */
+.view-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-sm);
+  background: var(--card-bg);
+}
+.view-toggle button { min-height: var(--nm-control-h-sm); border: none; border-radius: 6px; background: transparent; }
+.view-toggle button.active { background: var(--nm-info-soft); }
+
+/* شريط الفلاتر: نفس ارتفاع كل العناصر */
+.filters-bar { gap: 0.5rem; }
+.filters-bar input, .filters-bar select, .sort-select {
+  min-height: var(--nm-control-h);
+  border-radius: var(--nm-r-sm);
+  font-size: var(--nm-fs-sm);
+}
+.topbar { min-height: 56px; padding: 0.5rem 1rem; position: sticky; top: 0; z-index: 60; }
+.topbar h1 { font-size: var(--nm-fs-xl); }
+.summary-bar { font-size: var(--nm-fs-sm); }
+.theme-toggle, .admin-link { min-height: var(--nm-control-h-sm); display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.6rem; font-size: var(--nm-fs-xs); }
+
+/* أدوات الشبكة (الصفحة العامة) */
+.tools-bar { border-radius: var(--nm-r-lg); box-shadow: var(--nm-shadow); }
+.tools-title { font-size: var(--nm-fs-lg); display: flex; align-items: center; gap: 0.4rem; }
+.tools-input-row input { min-height: var(--nm-control-h); border-radius: var(--nm-r-sm); font-size: var(--nm-fs-md); }
+.tools-output { border-radius: var(--nm-r-md); }
+
+/* الجداول الملفوفة (data-table داخل حاوية قديمة بلا حدود) */
+.admin-wrap { padding: 1rem 1.1rem; }
+
+/* نصوص وعناوين داخل الأقسام المكتوبة بأنماط مضمّنة: توحيد المقاسات */
+.nm-title-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nm-gap);
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+.nm-strong { font-weight: 700; }
+.nm-muted { color: var(--muted); }
+.nm-center { text-align: center; }
+
+/* لوحة الإعلامات/الطباعة على الشاشات الصغيرة جدًا */
+@media (max-width: 600px) {
+  .nm-card { padding: 0.85rem 0.75rem; }
+  .admin-page-title { font-size: var(--nm-fs-md); }
+}
+
+/* ═══════════════════════════ 8) أقسام فرعية داخل البطاقة (بديل الحقول المتشعّبة) ═══════════════════════════ */
+.nm-sub-section {
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-md);
+  background: var(--bg);
+  padding: 0.85rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+.nm-sub-section:last-of-type { margin-bottom: 0; }
+.nm-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--nm-fs-md);
+  font-weight: 700;
+  margin: 0 0 0.55rem;
+}
+.nm-sub-section > .nm-hint { display: block; margin-top: 0.45rem; }
+
+/* شبكات بأعمدة ثابتة (تُطبَّق فوق form-grid) */
+.form-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .form-grid.cols-2, .form-grid.cols-3 { grid-template-columns: 1fr; }
+}
+
+/* بطاقة اختيار (ميزة تُشغَّل/تُطفأ) — خلفية البطاقة داخل قسم فرعي فاتح ⇒ بلا صندوق داخل صندوق */
+.nm-option-card {
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-sm);
+  background: var(--card-bg);
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.nm-option-card .nm-option-title { font-weight: 700; font-size: var(--nm-fs-sm); }
+.nm-option-card .nm-option-desc { font-size: var(--nm-fs-xs); color: var(--muted); line-height: 1.8; }
+.nm-option-card .nm-inline-num { max-width: 130px; }
+/* v2.34.0 — بطاقات الخيارات في صفٍّ واحد متساوية الشكل: `align-self: stretch` يلغي محاذاة
+   الأسفل التي تأتي من `.form-grid` (كانت تترك البطاقة الأقصر نازلة ٣٠px فتظهر غير مرتّبة)،
+   وآخر سطر وصف يُلتصق بأسفل البطاقة فتصطفّ الأوصاف على خطٍّ واحد (طلب المالك: «نسّق البطاقات»). */
+.form-grid > .nm-option-card { align-self: stretch; }
+.nm-option-card > .nm-option-desc:last-child { margin-top: auto; }
+
+/* ═══════════════════════════ 9) أسماء قديمة يستعملها جافاسكربت (تعمل كما هي بعد التوحيد) ═══════════════════════════ */
+.upd-hero-value { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.upd-hero-sub { font-size: var(--nm-fs-xs); color: var(--muted); margin-top: 0.2rem; line-height: 1.7; }
+.upd-hero-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--nm-r-md); padding: 0.75rem 0.85rem; }
+.upd-hero-label { font-size: var(--nm-fs-xs); color: var(--muted); margin-bottom: 0.3rem; }
+.upd-note { font-size: var(--nm-fs-sm); color: var(--muted); padding: 0.6rem 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--nm-r-md); line-height: 1.8; }
+
+/* خطوات التحديث: الجافاسكربت يضيف .active/.done (بلا سابقة is-) */
+.nm-steps li.active { color: var(--text); font-weight: 700; }
+.nm-steps li.active::before { content: '◉'; color: var(--nm-warn); }
+.nm-steps li.done { color: var(--nm-ok); }
+.nm-steps li.done::before { content: '✓'; color: var(--nm-ok); }
+
+/* سطور «اسم: قيمة» مع عزل القيم اللاتينية/الرقمية */
+.nm-kv { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; font-size: var(--nm-fs-sm); }
+.nm-kv > .k { color: var(--muted); }
+.nm-kv > .v { font-weight: 700; }
+
+/* صفوف قوائم البيانات (تفاصيل الجداول) */
+.nm-list-rows { list-style: none; margin: 0; padding: 0; }
+.nm-list-rows li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 0.45rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--nm-fs-sm);
+}
+.nm-list-rows li:last-child { border-bottom: none; }
+.nm-list-rows li .v { color: var(--muted); white-space: nowrap; }
+
+/* بطاقة عنصر قائمة (نسخة احتياطية/جهاز مكتشف) */
+.nm-listitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-md);
+  background: var(--card-bg);
+  margin-bottom: 0.5rem;
+}
+.nm-listitem-title { font-weight: 700; font-size: var(--nm-fs-sm); }
+.nm-listitem-sub { font-size: var(--nm-fs-xs); color: var(--muted); line-height: 1.7; }
+.nm-listitem-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* ═══════════════════════════ 10) أشرطة الأدوات والشرائح ═══════════════════════════ */
+.nm-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.nm-toolbar > .spacer { flex: 1 1 auto; }
+
+/* v2.34.0 — شريط من **سطرين مرتّبين** (طلب المالك: «قم بترتيب الازرار و مربعات الادخال الى صفين»):
+   السطر الأول = أزرار الإجراءات، والسطر الثاني = صندوق البحث والفلاتر تحتها مباشرة (كانت تنزل
+   عشوائيًّا على ثلاثة أو أربعة أسطر). الفرز صنفٌ صريح على الصفّ (`nm-toolbar-2rows`) لا يعتمد على
+   `:has` ⇒ لا يمسّ أي شريط آخر، وسطرٌ وهميّ بعرض كامل (`::after`) هو الذي يفرض النزول بلا أي وسم
+   إضافي في HTML. */
+.nm-toolbar-2rows { flex-wrap: wrap; }
+.nm-toolbar-2rows > button,
+.nm-toolbar-2rows > .btn,
+.nm-toolbar-2rows > .spacer { order: 1; }
+.nm-toolbar-2rows::after { content: ''; order: 2; flex: 0 0 100%; height: 0; }
+.nm-toolbar-2rows > input,
+.nm-toolbar-2rows > select,
+.nm-toolbar-2rows > .nm-sub { order: 3; margin-top: 0.6rem; }
+/* صندوق البحث في السطر الثاني يأخذ عرضًا معقولًا (كان ١٥٠ بكسل من قواعد الصفوف) */
+.nm-toolbar-2rows > input[type="search"] { flex: 1 1 260px; min-width: 220px; max-width: 420px; }
+
+/* شريط شرائح (تبويبات فرعية) — حاوية واحدة وأزرار بعرض طبيعي */
+.nm-segmented {
+  display: inline-flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  padding: 0.25rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-md);
+  background: var(--bg);
+}
+.nm-segmented .btn { border-color: transparent; background: transparent; }
+.nm-segmented .btn:hover { background: var(--nm-hover); }
+.nm-segmented .btn.btn-primary { background: var(--accent); border-color: var(--accent); }
+.nm-segmented .btn.active:not(.btn-primary) { background: var(--nm-info-soft); color: var(--accent); border-color: var(--nm-accent-border); }
+
+/* شارة عدّ صغيرة (أرقام الانتظار) */
+.nm-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.32rem;
+  margin-inline-start: 0.3rem;
+  border-radius: var(--nm-r-pill);
+  background: var(--nm-bad);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* صفوف سجل عمليات التحديث (يُولّدها admin-update.js) */
+.upd-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: var(--nm-fs-sm);
+}
+.upd-row:last-child { border-bottom: none; }
+.upd-row > span:last-child { color: var(--muted); min-width: 0; }
+
+/* ═══════════════════════════ 11) تنسيق شامل لكل القوائم المنسدلة ومربّعات الإدخال ═══════════════════════════ */
+/* أي select/input/textarea في الصفحات التي تستعمل هوية التطبيق (لوحة التحكم · الصفحة العامة · الدخول)
+   يأخذ الشكل الموحّد تلقائيًّا — بلا حاجة لإضافة صنف لكل عنصر. شاشة NOC مستثناة (لها هويتها الداكنة). */
+body:not(.page-noc) select,
+body:not(.page-noc) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+body:not(.page-noc) textarea {
+  min-height: var(--nm-control-h);
+  padding: 0.42rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--nm-fs-md);
+  line-height: 1.5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+body:not(.page-noc) select { cursor: pointer; padding-inline-end: 0.5rem; }
+body:not(.page-noc) select:disabled,
+body:not(.page-noc) input:disabled,
+body:not(.page-noc) textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+body:not(.page-noc) select:focus,
+body:not(.page-noc) input:not([type="checkbox"]):not([type="radio"]):focus,
+body:not(.page-noc) textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--nm-ring);
+}
+body:not(.page-noc) select:hover,
+body:not(.page-noc) input:not([type="checkbox"]):not([type="radio"]):hover { border-color: var(--nm-accent-border); }
+body:not(.page-noc) input::placeholder,
+body:not(.page-noc) textarea::placeholder { color: var(--muted); opacity: 0.9; }
+/* حقول القراءة فقط (مثل معلومات الحساب) تبدو خاملة بوضوح */
+body:not(.page-noc) input[readonly] { background: var(--card-bg); color: var(--muted); }
+
+/* ── 11.1) الوضع الليلي: الحقل يُرى كحقل ──
+   كان الحقل بخلفية الصفحة الداكنة تمامًا وحدود رقيقة جدًّا فيبدو كأنه فراغ بلا إطار.
+   هنا: خلفية أغمق قليلًا من البطاقة (فيُفهم أنه حقل) + حدود أفتح تُرى بوضوح. */
+:root { --nm-field-bg: var(--bg); --nm-field-border: var(--border); }
+body.dark {
+  color-scheme: dark;                 /* عناصر المتصفح الأصلية (سهم القائمة · أيقونة الساعة · مؤشّرات الأرقام) داكنة */
+  --nm-field-bg: #0b1220;
+  --nm-field-border: #4b5d78;         /* أفتح من --border فيظهر إطار كل حقل */
+}
+body:not(.page-noc) select,
+body:not(.page-noc) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+body:not(.page-noc) textarea,
+.nm-input, .nm-select, .nm-textarea {
+  background: var(--nm-field-bg);
+  border-color: var(--nm-field-border);
+}
+body.dark:not(.page-noc) input[readonly]:not([type="checkbox"]) { background: #131c2e; }
+body.dark:not(.page-noc) input::placeholder, body.dark:not(.page-noc) textarea::placeholder { color: #8fa3bd; }
+
+/* صفوف الاختيار (checkbox) — نفس الشكل في كل الشاشات القديمة والجديدة */
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--nm-fs-sm);
+  line-height: 1.8;
+  cursor: pointer;
+  user-select: none;
+}
+.checkbox-label > input[type="checkbox"],
+.checkbox-label > input[type="radio"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 1.05rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+/* ملاحظات/حالات داخل بطاقة: عرض متراصّ للقراءة */
+.nm-note.is-info { color: var(--text); }
+
+/* ═══════════════════════════ 12) محاذاة صفوف الجداول — نموذج واحد لكل الصفحات ═══════════════════════════ */
+/* القاعدة (بأمر المالك — لا توسيط في الموقع): كل الأعمدة تبدأ من اليمين، والرأس يتبع نفس
+   محاذاة قيمه. أعمدة القيم اللاتينية (IP · MAC · وقت) تحتفظ بعزل الاتجاه LTR لنصّ القيمة
+   نفسها، لكن الخلية تُحاذى يمينًا فيزيائيًّا (نستخدم right لا start لأن اتجاه الخليّة نفسها ltr). */
+table.data-table th, table.nm-table th { vertical-align: middle !important; }
+table.data-table td, table.nm-table td { vertical-align: middle; }
+
+table.data-table .col-center, table.nm-table .col-center { text-align: right; }
+table.data-table th.col-center, table.nm-table th.col-center { text-align: right; }
+
+table.data-table .col-ltr, table.nm-table .col-ltr {
+  text-align: right;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+table.data-table th.col-ltr, table.nm-table th.col-ltr { text-align: right; }
+
+table.data-table .col-actions, table.nm-table .col-actions { text-align: right; white-space: nowrap; }
+table.data-table th.col-actions, table.nm-table th.col-actions { text-align: right; }
+table.data-table .col-actions .btn, table.nm-table .col-actions .btn { margin: 0 0 0 0.12rem; }
+
+table.data-table td.is-empty, table.nm-table td.is-empty {
+  text-align: start;
+  color: var(--muted);
+  padding: 1.2rem 0.75rem;
+  font-size: var(--nm-fs-sm);
+}
+
+/* خلية حالة الجهاز (نقطة/شارة) — تبدأ من اليمين مع رأسها */
+table.data-table td.col-status, table.data-table th.col-status { text-align: right; }
+
+/* الجدول على الشاشات الصغيرة: تمرير أفقي محترم بلا كسر الأعمدة */
+.nm-table-wrap > table.data-table { min-width: 640px; }
+
+/* جدول الصفحة العامة: نفس هوامش البطاقات والفلاتر (كان ملتصقًا بحافة الشاشة) */
+#devices-table-view { padding: 0 1.5rem 2rem; }
+/* شريط نسبة التشغيل في نمط البطاقات كان خارج الحاوية المبطّنة (فرق 1.5rem عن نمط الجدول)
+   ⇒ نُطابق حاشيته الجانبية بحاشية شبكة البطاقات/الجدول ليكون الشكل واحدًا في النمطين. */
+#cards-uptime-bar { margin-inline: 1.5rem; }
+#devices-table-view .map-uptime-bar { margin-bottom: 1rem; }
+@media (max-width: 600px) { #devices-table-view { padding: 0 0.5rem 1.5rem; } }
+@media (max-width: 600px) { #cards-uptime-bar { margin-inline: 0.5rem; } }
+
+/* ═══════════════════════════ 13) محاذاة يمين لكل ما كان في المنتصف (طلب المالك) ═══════════════════════════ */
+/* السبب الجذري لكروت «ذكاء الإشعارات»: قاعدة قديمة في style.css (‎.form-grid label { flex-direction: column }‎)
+   تسبق .nm-check فتقلب صفّ الاختيار عمودًا رأسيًّا، وعندها يصبح align-items:center توسيطًا أفقيًّا.
+   الإصلاح: إعادة الصفّ الأفقي داخل شبكات الحقول + تثبيت البداية (اليمين في RTL). */
+.form-grid label.nm-check,
+.form-grid label.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: start;
+}
+.nm-option-card { align-items: stretch; text-align: start; }
+.nm-option-card .nm-option-title,
+.nm-option-card .nm-option-desc,
+.nm-option-card .nm-check,
+.nm-option-card .nm-row,
+.nm-option-card .nm-field { text-align: start; justify-content: flex-start; }
+.nm-check, .checkbox-label { justify-content: flex-start; text-align: start; }
+
+/* رسائل «لا توجد بيانات»: تبدأ من اليمين بدل المنتصف */
+.nm-empty, .nm-empty .nm-empty-icon { text-align: start; }
+table.data-table td.is-empty, table.nm-table td.is-empty { text-align: start; }
+
+/* سطر الحقوق في ذيل الصفحة: **في المنتصف** في اللغتين (قرار المالك 2026-10-18 */
+.site-footer { text-align: center; }
+
+/* ملاحظة: قاعدة الإنجليزية الخاصة أُزيلت — التوسيط صار للغتين معًا. */
+
+/* ═══════════════════════════ 14) شارات الحالة وملخص الأجهزة (v2.33.0) ═══════════════════════════ */
+/* شارة حالة: نقطة ملوّنة + الكلمة على خلفية باهتة — والكلمة مكتوبة دائمًا (لا اعتماد على اللون وحده). */
+.nm-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--nm-r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: var(--nm-fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.7;
+}
+.nm-pill .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+.nm-pill.is-ok { color: var(--nm-ok); background: var(--nm-ok-soft); border-color: var(--nm-ok-border); }
+.nm-pill.is-bad { color: var(--nm-bad); background: var(--nm-bad-soft); border-color: var(--nm-bad-border); }
+.nm-pill.is-warn { color: var(--nm-warn); background: var(--nm-warn-soft); border-color: var(--nm-warn-border); }
+.nm-pill.is-muted { color: var(--muted); background: var(--bg); border-color: var(--border); }
+
+/* بطاقات الملخص: أرقامها أوضح قليلًا من بطاقات KPI العامة (رأس شاشة الأجهزة) */
+/* ═══════════════════════ 15) بطاقات الأرقام بستايل NOC (لتبويب الأجهزة) ═══════════════════════ */
+/* محاكاة بطاقات شاشة NOC (رقم كبير ملوّن + شريط لوني أعلى + توسيط) لكن برموز ألوان اللوحة
+   فتظهر صحيحة في الوضعين النهاري والليلي — تُستعمل في ملخص تبويب الأجهزة. */
+.nm-counter {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  background: linear-gradient(180deg, var(--card-bg), var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--nm-r-lg);
+  padding: 0.75rem 0.9rem 0.7rem;
+  color: var(--muted);                      /* اللون الافتراضي للشريط/الرقم (حالة محايدة) */
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.nm-counter::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: currentColor;                 /* الشريط يأخذ لون الحالة */
+  opacity: 0.85;
+}
+.nm-counter:hover { transform: translateY(-2px); box-shadow: var(--nm-shadow-md); }
+.nm-counter .num {
+  font-size: 1.9rem;
+  font-weight: 900;
+  line-height: 1.12;
+  color: currentColor;                      /* الرقم بلون الحالة أيضًا */
+  font-variant-numeric: tabular-nums;
+}
+.nm-counter .lbl {
+  margin-top: 0.2rem;
+  font-size: var(--nm-fs-xs);
+  font-weight: 700;
+  color: var(--muted);                      /* التسمية هادئة دائمًا */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.nm-counter.is-ok { color: var(--nm-ok); }
+.nm-counter.is-bad { color: var(--nm-bad); }
+.nm-counter.is-warn { color: var(--nm-warn); }
+.nm-counter.is-info { color: var(--accent); }
+.nm-counter.is-muted { color: var(--muted); }
+.nm-counter.is-ok { border-color: var(--nm-ok-border); }
+.nm-counter.is-bad { border-color: var(--nm-bad-border); }
+.nm-counter.is-warn { border-color: var(--nm-warn-border); }
+
+/* شبكة الملخص: ٥ بطاقات في صف · صفّان على المتوسط · عمود واحد على الموبايل */
+.nm-counter-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--nm-gap); }
+@media (max-width: 900px) { .nm-counter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .nm-counter-grid { grid-template-columns: 1fr; } }
+
+/* خانة بحث الأجهزة: نفس شكل حقول اللوحة مع مساحة مريحة في شريط الأدوات */
+#devices-search { min-width: 220px; max-width: 320px; flex: 1 1 220px; }
+
+/* ═══════════════════════════ 16) انتظام مربّعات الإدخال والقوائم المنسدلة ═══════════════════════════ */
+/* (أ) السبب الجذري لتراصّ القوائم فوق بعضها: .nm-input/.nm-select عرضها 100% (وهو صحيح داخل عمود)،
+   لكن داخل صفّ أفقي (‎.nm-row‎) كانت القائمة تأخذ **سطرًا كاملًا** فينزل ما بعدها لسطر جديد،
+   فيظهر الصفّ مرصوصًا عموديًّا. هنا داخل الصفوف فقط: عرض طبيعي + مرونة بالسحب. */
+.nm-row > input, .nm-row > select, .nm-row > textarea,
+.nm-row-between > input, .nm-row-between > select,
+.nm-toolbar > input, .nm-toolbar > select,
+.nm-card-head > input, .nm-card-head > select,
+.nm-actions > input, .nm-actions > select {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 150px;
+}
+/* الحقل المُغلَّف (تسمية فوق حقل) داخل صفّ: يقاسم الصفّ مع أخيه بالتساوي بدل أن يبقى ضيّقًا */
+.nm-row > .nm-field, .nm-row-between > .nm-field, .nm-toolbar > .nm-field {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+/* قائمة طويلة الخيارات لا تدفع الصفّ: تُقصّ بحدّ أقصى وتظل قابلة للسحب */
+.nm-row > select, .nm-row-between > select, .nm-card-head > select, .nm-actions > select { max-width: 320px; }
+/* صفّ الأزرار: القائمة/الحقل بجانب الأزرار بنفس حجم خطّها (كان النصّ أكبر من نصّ الزرّ المجاور).
+   ملاحظة: يجب تكرار body:not(.page-noc) وإلا سبقتها قاعدة الحقول العامة (أعلى تخصيصًا). */
+body:not(.page-noc) .nm-actions > select,
+body:not(.page-noc) .nm-actions > input { font-size: var(--nm-fs-sm); }
+
+/* (ب) مربّعات الإدخال تلتقي على خطّ واحد داخل الصفّ مهما اختلف طول التسمية أو التفصيل الجانبي:
+   ندفع محتوى كل حقل إلى **أسفل خليّته**، وآخر عنصر في الحقل هو مربّع الإدخال ⇒ كل المربّعات على خطّ واحد.
+   (كانت المربّعات تظهر متدرّجة 183/167/146 بكسل لأن التسميات مختلفة الطول.) */
+.nm-field,
+.form-grid > label:not(.nm-check):not(.checkbox-label),
+.form-grid.cols-2 > label:not(.nm-check):not(.checkbox-label),
+.form-grid.cols-3 > label:not(.nm-check):not(.checkbox-label) {
+  justify-content: flex-end;
+}
+/* (ج) عرض موحّد لكل حقول الشبكة: صناديق متساوية بدل 17/90/305 بكسل */
+.form-grid input:not([type="checkbox"]):not([type="radio"]),
+.form-grid select,
+.form-grid textarea { width: 100%; }
+/* (د) خلايا الشبكة لا تتمطّط: كل خليّة بارتفاع محتواها وتُحاذى من الأسفل ⇒ المربّعات على خطّ واحد */
+.form-grid { align-items: end; }
+/* (هـ) خليّة فيها مربّع اختيار فقط: **بنفس بنية الخلايا المجاورة بالحرف** —
+   التسمية في سطر التسميات (نفس ارتفاع تسميات جيرانها)، والمربّع في سطر الحقول بارتفاع
+   الحقل نفسه ومتمركز على مركزه. (كانت التسمية تنزل لسطر الحقول فيبدو الصفّ غير مصطفّ.) */
+@supports selector(label:has(> input[type="checkbox"])) {
+  .form-grid > label:has(> input[type="checkbox"]):not(:has(input:not([type="checkbox"]))) {
+    flex-direction: column;
+    /* ⚠ في العربية flex-end = **الشمال** (نهاية المحور الداخلي) — استعملناها بالغلط فالتسمية
+       والمربّع اتزنقوا على شمال الخليّة. الصحيح flex-start لأنها تعني «بداية السطر» = اليمين. */
+    align-items: flex-start;
+    justify-content: space-between;
+    height: 100%;
+  }
+  .form-grid > label:has(> input[type="checkbox"]):not(:has(input:not([type="checkbox"]))) > input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-block-end: calc((var(--nm-control-h) - 1.05rem) / 2);   /* مركز المربّع = مركز الحقول */
+  }
+}
+/* حقول الساعة (🕒 ساعة النسخ · 🗓️ من/إلى · الساعة اليومية): المتصفح **يفرض** عليها الاتجاه
+   اليساري ولا يقبل تغييره (مُختبَر: حتى direction:rtl المضمّنة والبصمة dir="rtl" تُتجاهل)،
+   فيظهر الوقت في أقصى يسار الحقل — عكس كل الحقول في الصفحة. الحل: محاذاة النصّ لليمين
+   وإخفاء أيقونة الساعة الأصلية (كل تسميات هذه الحقول فيها 🕒 أو كلمة «الساعة» أصلًا)
+   ⇒ الوقت يبدأ من اليمين مثل «عدد النسخ» والقوائم تمامًا. */
+body:not(.page-noc) input[type="time"] { text-align: right; }
+body:not(.page-noc) input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+/* ملاحظة: جرّبنا صنف `span-all` (خليّة تأخذ سطرًا كاملًا) لبطاقة الجدولة ثم أُزيل — المالك طلب
+   «خد التنسيق من أي شاشة تانية»، فصارت البطاقة تستعمل نفس مكوّنات بطاقة الإشعارات
+   (.nm-row + .nm-check + .nm-field) بلا أي صنف خاص. */
+
+/* التفصيل الصغير (مثل «(URL)») لا يكسر السطر: يبقى مع التسمية */
+.form-grid label small, .nm-field small { font-weight: 400; }
+
+/* ═══════════════════════════ 17) الوضع الإنجليزي (LTR) — انعكاس ما ثُبِّت على العربية ═══════════════════════════
+   الأصل عربي RTL بأمر المالك: «الجدول والحقول تبدأ من اليمين، وما كان في الوسط يصير يمين». هنا نعكس
+   **نفس المعنى** لا نفس الخاصية: «البداية» في الإنجليزية هي اليسار. كل قاعدة هنا محصورة بـ html[dir="ltr"]
+   ⇒ وضع العربية لا يتغيّر بحرف واحد (نفس القاعدة الفيزيائية كما هي).
+   ملاحظة: خلايا القيم اللاتينية (.col-ltr) تبقى direction:ltr + isolate في اللغتين ⇒ لا يتشوّه IP/وقت،
+   ويتغيّر فقط حدّ محاذاتها (يسار في الإنجليزية). */
+html[dir="ltr"] table.data-table th, html[dir="ltr"] table.data-table td,
+html[dir="ltr"] table.nm-table th, html[dir="ltr"] table.nm-table td { text-align: left; }
+
+html[dir="ltr"] table.data-table .col-center, html[dir="ltr"] table.nm-table .col-center,
+html[dir="ltr"] table.data-table th.col-center, html[dir="ltr"] table.nm-table th.col-center,
+html[dir="ltr"] table.data-table .col-actions, html[dir="ltr"] table.nm-table .col-actions,
+html[dir="ltr"] table.data-table th.col-actions, html[dir="ltr"] table.nm-table th.col-actions,
+html[dir="ltr"] table.data-table td.col-status, html[dir="ltr"] table.data-table th.col-status { text-align: left; }
+
+html[dir="ltr"] table.data-table .col-ltr, html[dir="ltr"] table.nm-table .col-ltr,
+html[dir="ltr"] table.data-table th.col-ltr, html[dir="ltr"] table.nm-table th.col-ltr { text-align: left; }
+
+html[dir="ltr"] table.data-table .col-actions .btn,
+html[dir="ltr"] table.nm-table .col-actions .btn { margin: 0 0.12rem 0 0; }
+
+/* حقول الوقت: المتصفح يفرض عليها اتجاهًا يساريًّا، فقاعدتنا العربية كانت «حاذِ النصّ يمينًا».
+   في الإنجليزية تُحاذى يسارًا (بداية السطر) مع بقاء إخفاء أيقونة الساعة. */
+html[dir="ltr"] body:not(.page-noc) input[type="time"] { text-align: left; }
+
+/* صفوف التفاصيل (النافذة المنبثقة): كانت مثبّتة «يمين» لأن قيمها لاتينية وتظهر شمالًا مع plaintext. */
+html[dir="ltr"] .df-value { text-align: left; }
+html[dir="ltr"] .df-label { text-align: left; }
+
+/* أشرطة التقدّم والجهوزية: التعبئة تبدأ من بداية السطر (كانت 270deg = من اليمين في العربية). */
+html[dir="ltr"] .nm-progress > * { background: linear-gradient(90deg, var(--nm-info), var(--accent)); }
+html[dir="ltr"] .uptime-fill { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+/* الشريط الجانبي: كان مخفيًّا بإزاحة يمين (translateX(100%)) لأنه في يمين الصفحة — ينعكس للشمال. */
+html[dir="ltr"] body.sidebar-hidden .sidebar { transform: translateX(-100%); }
+@media (max-width: 768px) {
+  html[dir="ltr"] .sidebar { transform: translateX(-100%); box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15); }
+  html[dir="ltr"] .sidebar.open { transform: translateX(0); }
+}
+
+/* أسهم الطيّ في عناوين الخلايا — تنعكس مع الاتجاه */
+html[dir="ltr"] .map-zone-toggle { transform: rotate(90deg); }

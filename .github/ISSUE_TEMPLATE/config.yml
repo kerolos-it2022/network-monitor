@@ -1,0 +1,17 @@
+# Issue template configuration
+# ===========================
+# Blank issues are disabled so reports arrive with the details needed to diagnose them
+# (bug_report / feature_request).
+blank_issues_enabled: false
+
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/kerolos-it2022/network-monitor/security/advisories/new
+    about: |
+      ⚠️ Never open a public issue for a security problem.
+      Use GitHub Security Advisories (private and safe) — see SECURITY.md.
+      (للثغرات الأمنية لا تفتح Issue عامًّا — استخدم الرابط أعلاه.)
+
+  - name: 📚 Documentation
+    url: https://github.com/kerolos-it2022/network-monitor#readme
+    about: Check the docs first — the answer may already be in README.md, docs/DEPLOY.md, docs/ARCHITECTURE.md or docs/I18N.md.

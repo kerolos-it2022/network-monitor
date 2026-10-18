@@ -1,0 +1,1800 @@
+/* style.css: تنسيقات الواجهة العامة ولوحة التحكم — متغيرات لونية، بطاقات الأجهزة، المودال، الوضع الليلي. */
+
+:root {
+  /* v2.29.2 - هوية NOC الدائمة لكل الصفحات (قرار المستخدم) */
+  --bg: #f5f7fa;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --online: #22c55e;
+  --offline: #ef4444;
+  /* v2.8.9 — انقطاع **جزئي** في موقع (فيه متصل + منقطع) ⇒ برتقالي بدل الأحمر */
+  --partial-offline: #d97706;
+  --unknown: #9ca3af;
+  --warning: #eab308;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* v2.7.1 — خلفيات بطاقات zones في خريطة المواقع (نَهاري). تَستَعملها kindColor()
+     في admin-map.js + public-map.js بدَل rgba ثابت لِـ تَناسُق الوَضع الليلي. */
+  --zone-internet-bg: rgba(37, 99, 235, 0.16);     /* أَزرق خَفيف */
+  --zone-bg: rgba(148, 163, 184, 0.10);             /* أَصفر/برتقالي خَفيف */
+  --zone-unassigned-bg: rgba(148, 163, 184, 0.10); /* رمادي خَفيف */
+}
+
+body.dark {
+  /* v2.29.2 — مطابق لـ :root: الوضعان متطابقان (هوية NOC الوحيدة) */
+  --bg: #0f172a;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --card-bg: #1e293b;
+  --border: #334155;
+  --accent: #3b82f6;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  /* v2.7.0 — متغيّرات ليلية لِـ خريطة المواقع (PB) */
+  --map-zone-bg-offset: rgba(255, 255, 255, 0.04);   /* خلفية header بطاقة مُجَدَّدة */
+  --map-subzone-border: var(--border);
+  --map-device-hover: rgba(255, 255, 255, 0.06);
+  --online-glow: rgba(34, 197, 94, 0.40);
+  --offline-glow: rgba(239, 68, 68, 0.40);
+  --partial-offline: #f59e0b;                       /* v2.8.9 — برتقالي (ليلي) */
+  --partial-offline-glow: rgba(245, 158, 11, 0.40); /* v2.8.9 */
+  --unknown-glow: rgba(156, 163, 175, 0.20);
+  /* v2.7.1 — خلفيات بطاقات zones ليلية: أَكثر تَباينًا على الخلفية الداكنة #1e293b */
+  --zone-internet-bg: rgba(37, 99, 235, 0.16);   /* أَزرق أَوضح */
+  --zone-bg: rgba(148, 163, 184, 0.10);            /* أَصفر خَفيف على داكن */
+  --zone-unassigned-bg: rgba(148, 163, 184, 0.10); /* رمادي على داكن */
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  direction: inherit;
+}
+
+.hidden { display: none !important; }
+
+/* ===== شريط علوي ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+.topbar-title { display: flex; align-items: center; gap: 1rem; }
+.topbar h1 { font-size: 1.25rem; margin: 0; }
+.admin-link {
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.admin-link:hover { background: var(--bg); }
+.summary-bar {
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.theme-toggle {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* ===== زر عرض الشاشة TV في الصفحة العامة (مميز وبدون خط) ===== */
+#noc-link,
+.noc-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-decoration: none !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+#noc-link:visited,
+.noc-link-btn:visited {
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+#noc-link:hover,
+.noc-link-btn:hover {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.42);
+  filter: brightness(1.08);
+}
+
+#noc-link:active,
+.noc-link-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.25);
+  text-decoration: none !important;
+}
+
+.noc-tv-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+body.dark #noc-link,
+body.dark .noc-link-btn {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 55%, #3b82f6 100%);
+  border-color: rgba(96, 165, 250, 0.35);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+body.dark #noc-link:hover,
+body.dark .noc-link-btn:hover {
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.55);
+  filter: brightness(1.12);
+}
+
+/* ===== أدوات الفلترة ===== */
+.filters-bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filters-bar input,
+.filters-bar select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.filters-bar input { flex: 1; min-width: 200px; }
+
+/* تنسيق قوائم الترتيب في لوحة التحكم */
+.sort-select {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+/* ===== مبدّل نمط العرض (بطاقات / جدول) ===== */
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+.view-btn {
+  padding: 0.45rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.view-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.view-btn:not(.active):hover {
+  background: var(--bg);
+}
+
+/* ===== شبكة البطاقات ===== */
+.devices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  padding: 0 1.5rem 2rem;
+}
+.device-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-right-width: 6px;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.1s ease;
+}
+.device-card:hover { transform: translateY(-2px); }
+.device-card .name { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.25rem; }
+.device-card .ip { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+.device-card .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+.device-card .status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 0.5rem;
+}
+
+.status-online  { border-right-color: var(--online);  }
+.status-offline { border-right-color: var(--offline); }
+.status-unknown { border-right-color: var(--unknown); }
+.status-warning { border-right-color: var(--warning); }
+
+.badge-online  { background: var(--online); }
+.badge-offline { background: var(--offline); }
+.badge-unknown { background: var(--unknown); }
+.badge-warning { background: var(--warning); }
+
+/* ===== المودال ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+}
+.modal-content {
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  inset-inline-end: 0.75rem;   /* منطقي: ينعكس تلقائيًّا مع اتجاه الصفحة */
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+.modal-uptime { font-size: 1.1rem; margin: 0.5rem 0 1rem; font-weight: 600; }
+.modal-chart-wrap { margin-bottom: 1rem; }
+.downtime-list { list-style: none; padding: 0; margin: 0; }
+.downtime-list li {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* ===== جداول لوحة التحكم ===== */
+.admin-wrap { padding: 1rem 1.5rem; }
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+}
+table.data-table th,
+table.data-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-size: 0.9rem;
+}
+table.data-table th { background: var(--bg); font-weight: 600; }
+table.data-table tr.public-row { cursor: pointer; }
+table.data-table tr.public-row:hover { background: var(--bg); }
+
+/* أيقونة دائرية ملوّنة لحالة الجهاز في الجدول. */
+.status-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-inline-end: 0.4rem;   /* منطقي: يسار النصّ في العربية، يمينه في الإنجليزية */
+}
+.status-dot.online  { background: var(--online);  box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
+.status-dot.offline { background: var(--offline); box-shadow: 0 0 0 2px rgba(239,68,68,0.15); }
+.status-dot.unknown { background: var(--unknown); box-shadow: 0 0 0 2px rgba(156,163,175,0.15); }
+.status-dot.warning { background: var(--warning); box-shadow: 0 0 0 2px rgba(234,179,8,0.15); }
+
+/* v2.30.1 — الروابط المجبلة ذات كلاس .btn بلا خط تحتي */
+a.btn { text-decoration: none !important; }
+.btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-danger { color: var(--offline); }
+button.tab-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+button.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ===== القائمة الجانبية للوحة الإِدارة (v2.7.0 — sidebar) ===== */
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  /* z-index أعلى من الـ sidebar (110) حتى لا يَتغطّى الهيدر بِـ القائمة الجانبية الثابتة. */
+  z-index: 120;
+  flex-wrap: wrap;
+  /* إِزاحة جانبية تُباعد عرض الـ sidebar الثابت (242px — RTL: اليمين) لِتَجنّب التَداخل.
+     تَتغيّر مع حالات الـ sidebar (rail/hidden) عبر الأَصناف على <body> بالأسفل. */
+  margin-inline-start: 242px;
+  /* انتقال سلس مُتوافق مع .dashboard-main و .sidebar. */
+  transition: margin-inline-start 0.22s ease;
+}
+.admin-topbar h1 { font-size: 1.25rem; margin: 0; }
+/* زرّ 🍔 يَظهر في كل الأَحجام الآن (v2.7.1) — في الحاسوب يَطوي/يَوسّع القائمة الجانبية
+   (rail mode: أَيقونات فقط)، في الموبايل يَفتح/يُغلق الـ drawer كما سابقاً.
+   v2.7.2: زرّ بثلاث حالات (open/rail/hidden) + تناسق بصريّ مع باقي أَزرار الهيدر. */
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  /* تَطابق padding زرّ .btn في الهيدر لِتناسق الارتفاع (0.4rem 0.75rem). */
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.sidebar-toggle:hover { background: var(--bg); }
+.sidebar-toggle:active { transform: scale(0.95); }
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* مؤشّر بصريّ خفيف عند كَون القائمة مَخفيةّ (aria-pressed=true) */
+.sidebar-toggle[aria-pressed="true"] { border-color: var(--accent); }
+
+/* sidebar عمودي ثابت (RTL: على اليمين عبر inset-inline-start: 0) */
+.sidebar {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 242px;
+  background: var(--card-bg);
+  border-inline-end: 1px solid var(--border);
+  box-shadow: -1px 0 4px rgba(0,0,0,0.04);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 110;
+  padding-block: 0.5rem;
+  transition: width 0.22s ease, transform 0.22s ease;
+  /* RTL: الـ sidebar ثابت على اليمين (dir=rtl يجعل inset-inline-start = right) */
+  /* v2.7.2: transform transition لِحالة hidden (translateX) بِجانب width لِحالة rail. */
+}
+.sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.sidebar-list li { display: block; }
+
+/* tab-btn داخل sidebar: عمودي (border-inline-end بدَل border-bottom) */
+.sidebar .tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  border: none;
+  border-inline-end: 3px solid transparent;   /* RTL: شريط نشط على اليمين */
+  border-radius: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: start;
+  line-height: 1.3;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.sidebar .tab-btn:hover { background: var(--bg); color: var(--text); }
+.sidebar .tab-btn.active {
+  color: var(--accent);
+  border-inline-end-color: var(--accent);
+  background: var(--bg);
+  font-weight: 600;
+}
+.tab-btn-icon { flex: 0 0 auto; font-size: 1.05rem; line-height: 1; }
+.tab-btn-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* منطقة المحتوى الرئيسية — margin لِتَجنّب التَداخل مع الـ sidebar الثابت */
+.dashboard-main { margin-inline-start: 242px; padding: 1rem 1.5rem; transition: margin-inline-start 0.22s ease; }
+
+/* ═══ v2.7.1 — وضع rail: القائمة الجانبية مَطويةّ لأيقونات فقط (60px) ═══ */
+/* يُفعّل بِـ class على <body> «sidebar-collapsed». يَخفي labels، يُوسّط الأَيقونات،
+   ويُصغّر عرض الـ sidebar + margin المحتوى. */
+body.sidebar-collapsed .sidebar { width: 60px; }
+body.sidebar-collapsed .dashboard-main { margin-inline-start: 60px; }
+/* الهيدر يَتبع نفس التَغيير (إِزاحة 60px بدَل 242) لِيَبقى متناسقاً مع الـ sidebar المَطوي. */
+body.sidebar-collapsed .admin-topbar { margin-inline-start: 60px; }
+body.sidebar-collapsed .sidebar .tab-btn {
+  justify-content: center;
+  padding-inline: 0;
+  gap: 0;
+}
+body.sidebar-collapsed .sidebar .tab-btn-label { display: none; }
+body.sidebar-collapsed .sidebar .tab-btn-icon { font-size: 1.25rem; }
+/* title attribute على الأَزرار يَعرض tooltip أَصلي عند الطيّ بِـ hover. */
+/* في الوَضع المَطوي على الحاسوب لا نُريد overflow-x في الـ sidebar (overflow-y auto فقط). */
+body.sidebar-collapsed .sidebar { overflow-x: hidden; }
+
+/* ═══ حالة hidden — للتوافق الرجعي فقط (تمّ إلغاء الإِخفاء من دورة الزرّ) ═══ */
+/* الجافا سكريبت لم يَعُد يَصل إِلى حالة hidden في الدورة (open → rail → open)،
+   لكننا نُبقي هذه القواعد لِـ أي مستخدم عنده قيمة 'hidden' قديمة في localStorage:
+   عند الإقلاع تُربَط آمناً على 'open'، و class `sidebar-hidden` يُزال دائماً في
+   applyDesktopState. هذه القواعد احتياط فقط. */
+body.sidebar-hidden .sidebar { transform: translateX(100%); }
+body.sidebar-hidden .dashboard-main { margin-inline-start: 0; }
+body.sidebar-hidden .admin-topbar { margin-inline-start: 0; }
+
+/* خلفية معتمة للـ drawer في الموبايل */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 105;
+}
+
+/* ===== drawer للموبايل (< 768px) — sidebar قَابل للطيّ ===== */
+@media (max-width: 768px) {
+  .sidebar-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .sidebar {
+    transform: translateX(100%);   /* RTL: مخفي إِلى اليمين خَارج الشاشة */
+    transition: transform 0.25s ease;
+    box-shadow: -2px 0 12px rgba(0,0,0,0.15);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-backdrop.open { display: block; }
+  .dashboard-main { margin-inline-start: 0; }
+  /* في الموبايل الـ sidebar drawer يَطفو فوق الهيدر، فالهيدر يَأخذ كامل العرض. */
+  .admin-topbar { margin-inline-start: 0; padding: 0.6rem 0.9rem; gap: 0.6rem; }
+  .admin-topbar h1 { font-size: 1.05rem; }
+}
+
+/* ===== modal تأكيد موحّد (v2.7.0 — confirmAction) ===== */
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+.confirm-modal.hidden { display: none; }
+.confirm-modal-content {
+  position: relative;
+  background: var(--card-bg, #fff);
+  color: var(--text, #333);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  box-shadow: 0 12px 44px rgba(0,0,0,0.28);
+  padding: 1.25rem 1.25rem 1.1rem;
+  width: min(440px, 95vw);
+  max-height: 85vh;
+  overflow: auto;
+  direction: inherit;
+}
+.confirm-modal-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.confirm-modal-message {
+  margin: 0 0 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-line;   /* يَحترم \n في الرِسالة */
+}
+.confirm-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+.confirm-modal.danger .confirm-modal-content {
+  border-color: var(--offline);
+}
+.confirm-modal.danger #confirm-modal-ok-btn {
+  background: var(--offline);
+  color: #fff;
+  border-color: var(--offline);
+}
+
+/* ===== container رسائل toast الموقّتة (v2.7.0 — showToast) ===== */
+.toast-container {
+  position: fixed;
+  inset-block-end: 1.25rem;
+  inset-inline-end: 1.25rem;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: min(380px, 90vw);
+  pointer-events: none;        /* لا يَحجِب النقرات خَلفها */
+}
+.toast-item {
+  pointer-events: auto;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  direction: inherit;
+  animation: toast-slide-in 0.22s ease-out;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+.toast-item.success { border-inline-start-color: var(--online); }
+.toast-item.error   { border-inline-start-color: var(--offline); }
+.toast-item.warning { border-inline-start-color: var(--warning); }
+.toast-item.info     { border-inline-start-color: var(--accent); }
+.toast-item .toast-icon { flex: 0 0 auto; font-size: 1.1rem; line-height: 1; }
+.toast-item .toast-text { flex: 1 1 auto; min-width: 0; word-wrap: break-word; }
+.toast-item .toast-close {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  margin-inline-start: 0.25rem;
+}
+.toast-item .toast-close:hover { color: var(--text); }
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== نموذج (form) ===== */
+.form-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  gap: 0.25rem;
+}
+.form-grid input,
+.form-grid select {
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+/* لا نطبّق تنسيق text-input على checkboxes/radios (تبقيها نظيفة الظهور) */
+.form-grid input[type="checkbox"],
+.form-grid input[type="radio"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+/* تسمية checkbox: تظهر افقيًا (المربع + النص جنبًا إلى جنب) بدلًا من عموديًا */
+.form-grid label.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.form-grid label.checkbox-label span {
+  user-select: none;
+}
+.form-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+.error-msg { color: var(--offline); font-size: 0.9rem; }
+
+/* ===== ذيل الصفحة (حقوق الملكية) ===== */
+.site-footer {
+  text-align: center;
+  padding: 1.5rem 1rem 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+.site-footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.site-footer a:hover { text-decoration: underline; }
+
+/* ===== قسم أدوات الشبكة (الصفحة العامة) ===== */
+.tools-bar {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin: 0 1.5rem 1rem;
+  box-shadow: var(--shadow);
+}
+.tools-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+}
+.tools-input-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.tools-input-row input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.tools-output {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  max-height: 400px;
+  overflow: auto;
+  font-family: 'Consolas', 'Monospace', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tools-output.hidden { display: none; }
+
+/* حالة التحميل للأدوات */
+.tools-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+.tools-status.hidden { display: none; }
+.tools-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: tools-spin 0.8s linear infinite;
+}
+@keyframes tools-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* RTL للـ pre */
+.tools-output { direction: ltr; text-align: left; }
+
+/* ===== أزرار فتح الواجهة (صفحة عامة) ===== */
+.card-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.open-device-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: opacity 0.2s;
+}
+.open-device-btn:hover { opacity: 0.85; }
+
+/* زر الفتح في الجدول */
+table.data-table td .open-device-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+/* ===== تأجيل رسم البطاقات على الموبايل ===== */
+@media (max-width: 600px) {
+  .topbar { flex-direction: column; align-items: stretch; }
+  .summary-bar { text-align: right; }
+}
+
+/* ===== شجرة المواقع الهرمية (D3) — v2.5.1 + v2.5.2 (internet/zone + zoom) ===== */
+.d3-tree {
+  direction: inherit;
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  padding: 0.5rem;
+  min-height: 320px;
+  overflow: auto;           /* سَماح بِـ scroll + zoom بدون تَسرّب للصفحة */
+  overscroll-behavior: contain;
+  cursor: grab;
+}
+.d3-tree:active { cursor: grabbing; }
+.d3-tree svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;          /* أَهم: نَرفض قَص الشجرة الواسعة (zoom/scroll بدلًا من القَص) */
+}
+
+/* العُقد */
+.map-node { transition: opacity 0.15s ease; cursor: pointer; }
+.map-node.kind-root { cursor: default; }
+.map-node.kind-device { cursor: pointer; }
+.map-node:hover { opacity: 0.88; }
+.map-node-bg { transition: fill 0.15s ease, stroke 0.15s ease; }
+
+/* أَلوان خلفية العُقد بحسب kind (نَدعُم أَنماط CSS بدل inline fillOpacity) */
+.map-node.kind-internet .map-node-bg { fill: rgba(37, 99, 235, 0.18); stroke: #2563eb; }
+.map-node.kind-zone .map-node-bg { fill: rgba(234, 179, 8, 0.18); stroke: #eab308; }
+.map-node.kind-unassigned .map-node-bg { fill: rgba(156, 163, 175, 0.18); stroke: #9ca3af; }
+/* نَتعامل مع overflow على أَي نوع: نَغلّف الـ text */
+.map-node:hover .map-node-bg { filter: brightness(0.95); }
+
+/* نص العُقدة */
+.map-label {
+  font-family: var(--font, system-ui, "Segoe UI", Tahoma, sans-serif);
+  font-weight: 500;
+  user-select: none;
+  direction: inherit;
+  unicode-bidi: plaintext;
+}
+.map-meta {
+  user-select: none;
+  opacity: 0.85;
+  direction: inherit;
+  unicode-bidi: plaintext;
+}
+
+/* روابط الشجرة */
+.map-link { opacity: 0.7; }
+
+/* زر طي/تَوسيع */
+.map-toggle {
+  font-weight: 700;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.map-node:hover .map-toggle { opacity: 1; }
+
+/* scrollbar أَنيق */
+.d3-tree::-webkit-scrollbar { width: 8px; height: 8px; }
+.d3-tree::-webkit-scrollbar-thumb { background: var(--border, #ccc); border-radius: 4px; }
+.d3-tree::-webkit-scrollbar-thumb:hover { background: var(--muted, #999); }
+.d3-tree::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== شجرة المواقع HTML/CSS (v2.5.3 — بلا zoom + transitions سلسة + لوحة تَفاصيل) ===== */
+/* admin-map.js يَبني ul/li متداخلة بدلًا من SVG؛ هذا الـ block يَدعمها.
+   متغيرات inline تُضبط من admin-map.js على كل li:
+     --node-bg : لون الخلفية (kind أَو status)
+     --node-border : لون الإِطار (تَلخيص حالة الأَبناء)
+     --node-border-w : سُمك الإِطار (2px لو offline)
+*/
+.map-tree,
+.map-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  direction: inherit;
+}
+.map-tree { padding: 0.25rem 0; }
+
+.map-node-html {
+  position: relative;
+  border: var(--node-border-w, 1px) solid var(--node-border, #9e9e9e);
+  background: var(--node-bg, var(--card-bg, #fff));
+  border-radius: 6px;
+  margin: 4px 0;                           /* تَنفّس أَوسع (v2.5.3) */
+  padding: 0;
+  user-select: none;
+  overflow: hidden;                        /* أَبناء مطوية لا تَظهر */
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.map-node-html:hover {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);   /* elevation أَنيس (v2.5.3) */
+}
+.map-node-html.kind-root {
+  border-width: 2px;
+  font-weight: 700;
+}
+.map-node-html.kind-device {
+  display: inline-block;
+  margin-inline-start: 0.4rem;
+  border-width: 2px;
+}
+.map-node-html.kind-unassigned,
+.map-node-html.kind-internet,
+.map-node-html.kind-zone {
+  border-width: 2px;
+}
+/* طي/تَوسيع سلس عبر max-height + opacity بدل display:none الفَوري (v2.5.3) */
+.map-node-html > .map-children {
+  max-height: 8000px;                      /* حد آمن كافٍ لِـ شَجَرٍ كَبير */
+  opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.map-node-html.collapsed > .map-children {
+  max-height: 0;
+  opacity: 0;
+}
+
+.map-node-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;                   /* تَنفّس أَكبر (v2.5.3) */
+  cursor: pointer;
+  direction: inherit;
+  unicode-bidi: plaintext;
+  transition: background 0.15s ease;
+}
+.map-node-html.kind-root > .map-node-row { cursor: default; }
+.map-node-html:hover > .map-node-row { background: rgba(127, 127, 127, 0.06); }
+
+.map-toggle {
+  width: 1.2rem;
+  text-align: center;
+  font-weight: 700;
+  opacity: 0.6;
+  flex: 0 0 auto;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.map-node-html:hover > .map-node-row > .map-toggle { opacity: 1; }
+.map-node-html:not(.has-children) > .map-node-row > .map-toggle { visibility: hidden; }
+/* سهم مطوي مَدوَّر (v2.5.3) */
+.map-node-html.collapsed > .map-node-row > .map-toggle { transform: rotate(-90deg); }
+
+.map-icon { flex: 0 0 auto; font-size: 1.05em; }
+/* v2.5.4 — المسار الرقمي الهرمي (1.2.3): خافت + monospace لِـ يُظهر التَسلسل دون
+   أَن يَجذب الانتباه عن اسم العقدة. */
+.map-path {
+  flex: 0 0 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--muted, #888);
+  background: color-mix(in srgb, var(--text, #444) 6%, transparent);
+  padding: 0.05rem 0.32rem;
+  border-radius: 4px;
+  line-height: 1.4;
+  unicode-bidi: plaintext;
+  user-select: text;
+  min-width: 1.6rem;
+  text-align: center;
+}
+/* الجذر: مسار "1" أَبرز قَليلًا */
+.map-node-html.kind-root > .map-node-row > .map-path {
+  font-weight: 700;
+  color: var(--text, #333);
+  background: color-mix(in srgb, var(--text, #444) 12%, transparent);
+}
+.map-name {
+  flex: 1 1 auto;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+.map-node-html.kind-root > .map-node-row > .map-name { font-weight: 700; }
+
+.map-meta {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  opacity: 0.82;
+  unicode-bidi: plaintext;
+}
+.map-count { opacity: 0.7; font-size: 0.78rem; }
+
+.map-status { font-weight: 600; }
+.map-status.online { color: var(--online, #22c55e); }
+.map-status.offline { color: var(--offline, #ef4444); }
+.map-status.unknown { color: var(--unknown, #9ca3af); }
+
+.map-children {
+  margin-inline-start: 1.4rem;             /* إِزاحة أَعمق بِحسب الـ RTL (v2.5.4) */
+  padding-inline-start: 0.75rem;
+  opacity: 0.92;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   v2.5.4 — خطوط وصل بصرية (L) بين الأَب وأَبنائه.
+   كل li داخل .map-children يَحصل على خط رأسي عبر ::before (على الـ edge الأَيمن
+   لِـ RTL)، وخط أَفقي قَصير عبر ::after على رأصف العقدة. آخر li في القائمة يَحصل
+   على `.map-children > li:last-child::before` بِـ height نصفية فقط (L قَصير).
+   هذا يُنتج شكل شجرة هرمية واضحة بَدل القوائم المسطحة.
+   ───────────────────────────────────────────────────────────── */
+.map-children > .map-node-html {
+  position: relative;
+}
+.map-children > .map-node-html::before {
+  /* خط رأسي: يَنزل من الأَعلى إِلى مركز العقدة (yx) */
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-start: -0.75rem;             /* محاذاة لِـ padding-inline-start */
+  width: 1px;
+  height: 100%;
+  background: var(--border, #ccc);
+}
+.map-children > .map-node-html::after {
+  /* خط أَفقي قَصير: من الخط الرأسي إِلى بداية العقدة (يلتقي عند رأصف العقدة) */
+  content: '';
+  position: absolute;
+  top: 0.95rem;                              /* تَقريبًا رأصف .map-node-row المُنتفِخ */
+  inset-inline-start: -0.75rem;
+  width: 0.75rem;
+  height: 1px;
+  background: var(--border, #ccc);
+}
+/* آخر ابن في القائمة: الخط الرأسي يَتوقف عند نقطة الالتقاء (L قَصير) لِـ no over-run */
+.map-children > .map-node-html:last-child::before {
+  height: 0.95rem;
+}
+/* مدلل LRP: loop لكن في الواقع li داخل ul الأَب مَحصور = li بأبنائه يُحسب آخرًا */
+.map-children[data-depth] { /* data-depth لِـ تَخصيص لاحق لو لَزم */ }
+
+/* تَغميق تَدريجي لِـ خلفية العُقد المواقع حسب العمق (v2.5.4) — يُميّز المستوى
+   الأَول عن الثاني عن الثالث بصريًّا. الجذر (depth 0) يَبقى بنفس لون kind.
+   نُضيف alpha بسيط على --node-bg على عُقد المجلدات فقط. */
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="1"] > .map-node-row { background-blend-mode: multiply; }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="2"] > .map-node-row { filter: brightness(0.975); }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="3"] > .map-node-row { filter: brightness(0.95); }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="4"] > .map-node-row { filter: brightness(0.925); }
+.map-node-html:not(.kind-device):not(.kind-root)[data-depth="5"] > .map-node-row { filter: brightness(0.90); }
+
+/* اختصار مَخصوص - ضمان افتراضي لكل الأنواع القديمة من D3 كـ dead-code fallback آمن */
+.map-node-html.kind-site,
+.map-node-html.kind-building,
+.map-node-html.kind-floor,
+.map-node-html.kind-room,
+.map-node-html.kind-rack {
+  border-width: 1px;
+}
+
+/* ===== v2.6.0 — Zones-Grid (خِيار A مُسطّح): بطاقات zones مُرتّبة في شَبكة ===== */
+/* القَواعد القَديمة `.map-tree/.map-node-html/.map-children` (444-695 أَعلاه) ما زالت
+   مَوجُودة لِـ التَوافق الرّجوعي — ستُحذف في v2.7.0. markup v2.6.0 لا يَستَعمِلها،
+   إِنّما يَستَعمِل `.map-grid/.map-zone-card` (هَذا القِسم) — لا تَعارُض. */
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 0.75rem;
+  padding: 0.25rem;
+  counter-reset: zone-sequence;   /* v2.7.0 — تَرقيم البطاقات تَسلسليًّا */
+}
+
+/* v2.7.1 — سهم مرئي بين البطاقات يَدُل على التَتابع (منطقة ← منطقة).
+   يَظهر على حافة البطاقة الـ inline-end (يسار في RTL) باستثناء الأَخيرة و بطاقة
+   «أَجهزة غير مُعَيَّن» (التي ليست جزءاً من السَلسلة). نَستعمِل position:absolute
+   لا يَلتصق بالبطاقة المجاورة (grid gap يَتَرُك فراغاً كافياً). */
+.map-zone-card {
+  position: relative;   /* مَرسا للسَهم المُطلق تَحت */
+}
+.map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after {
+  content: '↣';
+  position: absolute;
+  inset-block-end: 0.35rem;
+  inset-inline-end: -0.65rem;   /* يَتحرك خارج البطاقة باتجاه التالية (يسار في RTL) */
+  z-index: 5;
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+/* السَهم أَوضح في الوَضع الليلي */
+body.dark .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after {
+  opacity: 0.75;
+}
+/* إخفاء السَهم على الموبايل (لتَجنّب الاِزدِحام — التَرقيم التَسلسلي يَكفي) */
+@media (max-width: 768px) {
+  .map-grid > .map-zone-card:not(:last-child):not(.kind-unassigned)::after { display: none; }
+}
+
+/* v2.7.0 (PD) — رَقم تَسلسلي على رأْس كُلّ zone-card (01، 02...) يدُلّ على التَتابُع */
+.map-zone-card .map-zone-header::before {
+  content: counter(zone-sequence, decimal-leading-zero);
+  counter-increment: zone-sequence;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding-inline-end: 0.35rem;
+  opacity: 0.7;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* بطاقة zone: لونها يُضبَط inline عبر --node-bg/--node-border/--node-border-w
+   (نَفس مَيكانيكية v2.5.5 على عُقد الشَجِرة). fallback إِلى متغيّرات الثيم. */
+.map-zone-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--node-bg, var(--card-bg));
+  border: var(--node-border-w, 1px) solid var(--node-border, var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.map-zone-card:hover { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); }
+/* v2.8.9 — إطار الموقع عند الانقطاع **الجزئي** (فيه متصل + منقطع): برتقالي (كان أحمر) */
+.map-zone-card.has-offline {
+  border-color: var(--partial-offline);
+  border-width: 2px;
+}
+/* v2.8.9 — إطار الموقع عند **انهيار كامل** (كل الأجهزة واقعة): أحمر */
+.map-zone-card.has-all-offline {
+  border-color: var(--offline);
+  border-width: 2px;
+}
+
+/* v2.7.4 — السَحب والإِفلات لإعادة تَرتيب بطاقات zones (feedback بَصري) */
+.map-zone-card[draggable="true"] { cursor: grab; }
+.map-zone-card.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  /* نَرفع قَليلاً لِـ إِبراز البطاقة المَسحُوبة */
+  transform: scale(1.01);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.map-zone-card.drag-over {
+  outline: 2px dashed var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+/* انتقال لَطيف للبطاقات أَثناء reorder (يُخفّف القَفزات البَصرية) */
+.map-grid.reordering > .map-zone-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .map-grid.reordering > .map-zone-card { transition: none; }
+  .map-zone-card.dragging { transform: none; }
+}
+
+/* v2.7.0 — إِطار أَخضر مُميَّز لو كُلّ الأَجهزة online (offline=0, online>0) */
+.map-zone-card.has-online {
+  border-color: var(--online);
+  border-width: 2px;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.20);
+}
+/* glow للـ device-dot في حالة online */
+.map-zone-device[data-status="online"] .map-device-dot {
+  background: var(--online);
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.40);
+}
+
+/* ═══ v2.7.0 — الثيم الليلي للخريطة (PB) ═══ */
+/* خلفية header بطاقة مُجَدَّدة في الوَضع الليلي */
+body.dark /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header { background: rgba(255, 255, 255, 0.03); }
+/* glow أَكثر وضُوحاً للـ has-online في الليلي */
+body.dark .map-zone-card.has-online { box-shadow: 0 0 8px var(--online-glow); }
+body.dark .map-zone-card.has-offline { box-shadow: 0 0 8px var(--partial-offline-glow); }
+body.dark .map-zone-card.has-all-offline { box-shadow: 0 0 8px var(--offline-glow); }
+/* device-dot glow أَوضح في الليلي */
+body.dark .map-zone-device[data-status="online"]  .map-device-dot { box-shadow: 0 0 6px var(--online-glow); }
+body.dark .map-zone-device[data-status="offline"] .map-device-dot { box-shadow: 0 0 6px var(--offline-glow); }
+/* hover أَكثر مُلاءَمة لليلي */
+body.dark .map-zone-device:hover { background: var(--map-device-hover, rgba(255, 255, 255, 0.06)); }
+body.dark .map-subzone-title { border-inline-start-color: var(--map-subzone-border); }
+/* dot unknown أَكثر وضُوحاً في الليلي */
+body.dark .map-zone-device[data-status="unknown"] .map-device-dot { box-shadow: 0 0 3px var(--unknown-glow); }
+
+/* ═══ v2.7.1 — تَحسينات إِضافية للوَضع الليلي في الـ grid (PB) ═══ */
+/* خلفيات البطاقات في الليلي تَكون أَوضح تَباينًا بِـ شَفافية أَكثَر على خلفية #1e293b
+   (نَعتمد عَلى متغيّرات --zone-* الـ التي تَعتمد عليها kindColor() في JS). */
+body.dark .map-zone-card { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+body.dark .map-zone-card:hover { box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45); }
+/* header البطاقة في الليلي يَبقى مُميَّزاً بِـ tint خَفيف */
+body.dark /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header { background: var(--map-zone-bg-offset); border-bottom-color: var(--border); }
+/* sub-zone title border أَوضح في الليلي */
+body.dark .map-subzone-title { color: var(--muted); border-inline-start-color: var(--accent); opacity: 1; }
+body.dark .map-subzone-title .map-subzone-stats { color: var(--muted); opacity: 0.85; }
+/* device chip meta/dot في الليلي */
+body.dark .map-device-meta { color: var(--muted); opacity: 0.85; }
+body.dark .map-zone-name { color: var(--text); }
+/* empty/loading states في الليلي */
+body.dark .map-empty, body.dark .map-loading { color: var(--muted); }
+body.dark .map-zone-empty { color: var(--muted); opacity: 0.8; }
+/* map-grid خلفية خَفيفة لِـ تَمييز الـ container في الليلي */
+body.dark .map-grid { background: transparent; }
+/* الرَّقم التَسلسلي (counter) أَوضح في الليلي */
+body.dark .map-zone-card .map-zone-header::before { color: var(--muted); opacity: 0.85; }
+/* summary chips أَوضح border في الليلي */
+body.dark .map-summary-chip { background: transparent; }
+/* tools/menu sub-zone hover في الليلي */
+body.dark .map-zone-device:hover { background: var(--map-device-hover); }
+
+/* تَرويسة البطاقة: زرّ toggle + أَيَقونة + اسم + إِحصائيات */
+/* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  direction: inherit;
+  background: rgba(127, 127, 127, 0.04);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.map-zone-card.collapsed > /* v2.10.7 — سطر «متصل عبر» داخل بطاقة الموقع (تسطيح الخريطة: كل مبنى بطاقة مستقلة) */
+.map-zone-parent {
+  font-size: 0.78em;
+  color: var(--muted);
+  padding: 0 0.6rem 0.35rem;
+  opacity: 0.9;
+}
+
+.map-zone-header { border-bottom-color: transparent; }
+.map-zone-icon { font-size: 1.05rem; flex: 0 0 auto; line-height: 1; }
+.map-zone-name {
+  font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-zone-name .map-path { color: var(--muted); font-weight: 400; font-size: 0.78em; margin-inline-end: 0.25rem; }
+.map-zone-stats {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.map-zone-stats .map-count { color: var(--text); font-weight: 600; }
+.map-zone-toggle {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+.map-zone-card.collapsed > .map-zone-header .map-zone-toggle { transform: rotate(-90deg); }
+.map-zone-toggle:hover { color: var(--accent); }
+
+/* جِسم البطاقة: قائمة أَجهزة + sub-zones، يَنطوي عبر max-height transition */
+.map-zone-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.3rem 0.4rem 0.5rem;
+  transition: max-height 0.25s ease;
+}
+.map-zone-card.collapsed > .map-zone-body { max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+
+/* sub-zone داخِل البطاقة (building/floor/room/rack) — header صَغير + قَائمِته */
+.map-subzone { margin: 0.2rem 0 0.35rem; }
+.map-subzone-title {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0.15rem 0 0.15rem;
+  padding-inline-start: 0.2rem;
+  border-inline-start: 2px solid var(--border);
+  padding-inline-start: 0.35rem;
+}
+.map-subzone-title .map-subzone-stats { font-weight: 400; color: var(--muted); font-size: 0.78em; }
+
+/* device chip/row داخل zone أَو sub-zone */
+.map-zone-device {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: start;
+  direction: inherit;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  transition: background 0.15s ease;
+}
+.map-zone-device:hover { background: rgba(127, 127, 127, 0.08); }
+.map-zone-device .map-device-ic { flex: 0 0 auto; font-size: 0.9rem; }
+.map-zone-device .map-device-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-zone-device .map-device-meta { flex: 0 0 auto; color: var(--muted); font-size: 0.78em; }
+/* نُقطة حالة الجهاز (.) مُلوّنة حسب data-status */
+.map-device-dot {
+  flex: 0 0 auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--unknown);
+  display: inline-block;
+}
+.map-zone-device[data-status="online"]  .map-device-dot { background: var(--online); }
+.map-zone-device[data-status="offline"] .map-device-dot { background: var(--offline); }
+.map-zone-device[data-status="unknown"] .map-device-dot { background: var(--unknown); }
+
+/* حالة فَراغ: لا أَجهزة في البطاقة */
+.map-zone-empty { color: var(--muted); font-size: 0.8rem; padding: 0.3rem 0.4rem; font-style: italic; }
+
+/* ═══ v2.7.0 (PC) — شريط نِسبة التَشغيل في الصَفحة العامة ═══ */
+.map-uptime-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.6rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.uptime-bar {
+  flex: 1 1 auto;
+  min-width: 140px;
+  height: 10px;
+  background: rgba(127, 127, 127, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.uptime-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--offline), var(--warning), var(--online));
+  transition: width 0.4s ease;
+}
+.uptime-text {
+  flex: 0 0 auto;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.uptime-text .uptime-pct { color: var(--online); font-weight: 700; }
+.uptime-text .uptime-pct.low { color: var(--offline); }
+.uptime-text .uptime-pct.mid { color: var(--warning); }
+
+/* ===== v2.7.5 — قياس سرعة الانترنت (الصفحة العامة) ===== */
+.st-server-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.st-server-row select {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.speedtest-results {
+  display: flex;
+  justify-content: space-around;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.st-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+}
+.st-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  direction: ltr;
+}
+.st-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+.st-progress {
+  height: 10px;
+  background: rgba(127, 127, 127, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.5rem 0 0.75rem;
+}
+.st-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--offline), var(--warning), var(--online));
+  transition: width 0.3s ease;
+}
+.st-status {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ===== /v2.6.0 — Zones-Grid ===== */
+
+/* ===== modal تَفاصيل الجهاز العائم (v2.5.3) ===== */
+.map-modal {
+  position: fixed;
+  inset: 0;                              /* overlay كامل الشاشة */
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.map-modal.hidden { display: none; }     /* نمط المشروع: hidden = لا عرض */
+
+.map-modal-content {
+  position: relative;
+  background: var(--card-bg, #fff);
+  color: var(--text, #333);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+  padding: 1.25rem 1.1rem 1.1rem;
+  width: min(560px, 95vw);
+  max-height: 88vh;
+  overflow: auto;
+  direction: inherit;
+}
+.map-modal-content .modal-close {
+  position: absolute;
+  inset-inline-end: 0.6rem;             /* RTL: زر × يسار */
+  top: 0.6rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text, #333);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+.map-modal-content .modal-close:hover { background: rgba(127,127,127,0.15); }
+
+.details-header {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  padding-inline-end: 2.4rem;            /* تَجنّب تَداخل × */
+}
+.details-icon { font-size: 1.7rem; flex: 0 0 auto; }
+.details-title-wrap { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.details-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22rem;
+}
+.details-status-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+.details-status-badge.online  { background: rgba(34,197,94,0.18);  color: var(--online, #22c55e); }
+.details-status-badge.offline { background: rgba(239,68,68,0.18);  color: var(--offline, #ef4444); }
+.details-status-badge.unknown { background: rgba(156,163,175,0.22); color: var(--unknown, #9ca3af); }
+
+.details-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;        /* حقلان لكل صف */
+  gap: 0.4rem 0.75rem;
+  direction: inherit;
+}
+.details-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(127,127,127,0.12);
+}
+.df-label { font-size: 0.74rem; color: var(--muted, #777); }
+/* v2.33.0 — نفس إصلاح NOC: القيم الرقمية/اللاتينية كانت تُعرض في الجهة المقابلة لعنوانها
+   (unicode-bidi:plaintext ⇒ الفقرة LTR ⇒ text-align:start = شمال). نُثبّت اليمين ونُبقي plaintext. */
+.df-value { font-size: 0.92rem; font-weight: 600; unicode-bidi: plaintext; word-break: break-word; text-align: right; }
+
+.details-placeholder {
+  grid-column: 1 / -1;
+  color: var(--muted, #777);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+}
+
+.details-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border, #ddd);
+}
+
+/* قسم هيكل/رصف المواقع — أَنماط الـ select الهرمي (loc-kind / loc-parent_id) */
+#loc-parent_id option { padding-block: 2px; }
+
+/* فلاتر الجدول (devices + locations) تَتَدحرّج على الموبايل */
+@media (max-width: 640px) {
+  #filter-location-devices, #filter-kind-locations { width: 100%; }
+}
+
+/* ===== تَبويب خريطة المواقع — شريط الأَدوات + البحث + الفلترة (v2.5.5) ===== */
+
+/* فقرة الشَرح العُلوية في section-map (يَرِث --muted و 0.9rem من الأَقران) */
+.map-help {
+  color: var(--muted, #6b7280);
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* شريط أَدوات أَفقي مُرن — يَحتضن صَفًّا مِن أَزرار/مُدخلات/ملخّص بِـ flex و RTL تلقائي */
+.map-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;            /* اِنكِسار على الموبايل */
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.map-toolbar-group {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* صُندوق البحث الفوري — يَمتدّ لِـ يَملأ الفراغ */
+.map-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.map-filter-label {
+  font-size: 0.9rem;
+  color: var(--muted, #6b7280);
+  white-space: nowrap;
+}
+.map-clear-btn { font-size: 0.8rem; }
+
+/* ── الملخّص التَفاعلي (chips) ──
+   `aria-live=polite` على #map-summary نُتيح لِـ قارئ الشاشة نُطق الإِجماليات
+   المُحدّثة دون مُقاطعة. الـ chips أَزرار تُطلِق فلترة بناءً على data-filter-status. */
+.map-summary {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  justify-content: flex-end;   /* اِلصاق الـ chips بِـ الـ inline-end في RTL */
+  font-size: 0.9rem;
+  color: var(--muted, #6b7280);
+  min-height: 1.6rem;
+}
+.map-summary-count { font-weight: 500; }
+.map-summary-chip {
+  background: transparent;
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--text, #1f2937);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.map-summary-chip:hover { background: rgba(127, 127, 127, 0.10); }
+.map-summary-chip:active { transform: scale(0.96); }
+.map-summary-chip[data-filter-status="offline"]  { color: var(--offline, #ef4444); border-color: var(--offline, #ef4444); }
+.map-summary-chip[data-filter-status="online"]  { color: var(--online,  #22c55e); border-color: var(--online,  #22c55e); }
+.map-summary-chip[data-filter-status="unknown"] { color: var(--unknown, #9ca3af); border-color: var(--unknown, #9ca3af); }
+
+/* ── حالات آمنة: skeleton تَحميل + خطأ + حالة فَراغ (v2.5.5) ── */
+.map-loading {
+  color: var(--muted, #6b7280);
+  text-align: center;
+  padding: 3rem 0.5rem;
+  font-size: 0.95rem;
+  animation: map-pulse 1.4s ease-in-out infinite;
+}
+@keyframes map-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+.map-empty {
+  color: var(--muted, #6b7280);
+  text-align: center;
+  padding: 2rem;
+}
+.map-empty-error {
+  color: var(--offline, #ef4444) !important;
+}
+
+/* إِتاحة الكيبورد — وَضع التَركيز بَصري على عَناصر التَبويب */
+.map-search:focus-visible,
+.map-summary-chip:focus-visible,
+#map-filter-status:focus-visible,
+#map-refresh-btn:focus-visible,
+#map-expand-btn:focus-visible,
+#map-collapse-btn:focus-visible,
+#map-clear-filters:focus-visible {
+  outline: 2px solid var(--accent, #2563eb);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  .map-summary { justify-content: flex-start; }   /* الـ chips تَلتفّ تَحت الأَزرار على الموبايل */
+  .map-search  { flex: 1 1 100%; }
+}
+/* ── Topology chain (سلسلة الشبكة) ── */
+.t-node { border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; background: rgba(128,128,128,.05); }
+.t-node.up { border-inline-start: 4px solid #22c55e; }
+.t-node.down { border-inline-start: 4px solid #ef4444; background: rgba(239,68,68,.10); }
+.t-node.pathdown { border-inline-start: 4px solid #f59e0b; background: rgba(245,158,11,.10); }
+.t-node.paused { opacity: .55; }
+.t-children { margin-top: 8px; }
+.t-ip, .t-type { opacity: .65; font-size: .85em; }
+
+
+/* ── Topology draw mode (وضع الرسم — سحب البطاقات وحفظ التخطيط) ── */
+.topo-draw-toolbar { margin-top: 18px; padding: 12px 14px; border: 1px dashed var(--border, #94a3b8); border-radius: 10px; background: rgba(148,163,184,.06); }
+.topo-draw-toolbar h3 { margin: 0 0 6px; font-size: 1rem; }
+.topo-draw-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.topo-draw-actions .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+#topo-save-btn.attention { animation: topo-pulse 1.2s ease-in-out infinite; box-shadow: 0 0 0 3px rgba(37,99,235,.35); }
+@keyframes topo-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.topo-canvas-wrap { position: relative; margin-top: 12px; border: 1px solid var(--border, #cbd5e1); border-radius: 10px; background:
+  repeating-conic-gradient(rgba(148,163,184,.08) 0% 25%, transparent 0% 50%) 50% / 24px 24px; overflow: auto; height: 680px; }
+#topology-canvas { position: relative; width: 2800px; height: 1450px; transform-origin: 0 0; transition: transform 0.15s ease-out; }
+#topology-links { position: absolute; inset: 0; width: 2800px; height: 1450px; pointer-events: none; transform-origin: 0 0; transition: transform 0.15s ease-out; }
+.t-card { position: absolute; width: 210px; min-height: 74px; box-sizing: border-box; border: 1px solid rgba(100,116,139,.45);
+  border-radius: 10px; padding: 8px 10px; background: var(--card, #fff); box-shadow: 0 2px 8px rgba(15,23,42,.12);
+  cursor: grab; user-select: none; touch-action: none; }
+.t-card:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(15,23,42,.22); }
+.t-card.up   { border-inline-start: 4px solid #22c55e; }
+.t-card.down { border-inline-start: 4px solid #ef4444; background: rgba(239,68,68,.07); }
+.t-card.pathdown { border-inline-start: 4px solid #f59e0b; }
+.t-card.paused { opacity: .6; }
+.t-card .t-row { display: flex; align-items: center; gap: 6px; }
+.t-card .t-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.t-card .t-nm { font-weight: 700; font-size: .92em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.t-card .t-remove { border: 0; background: transparent; color: #ef4444; cursor: pointer; font-size: .95em; padding: 0 2px; }
+.t-card .t-ip { opacity: .65; font-size: .78em; direction: ltr; text-align: left; margin-top: 2px; }
+.t-card .t-parent-row { font-size: .78em; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.t-card .t-parent { flex: 1; min-width: 0; font-size: .95em; padding: 2px 4px; }
+
+/* v2.8.2 — عقد المواقع في شجرة السلسلة: إطار بنفسجي مميز */
+.t-node.location { border-inline-start: 4px solid #a78bfa; background: rgba(167,139,250,.07); }
+
+/* v2.8.2 — أجهزة داخل بطاقة المبنى (وضع الرسم) */
+.t-card.location { border-inline-start: 4px solid #a78bfa; background: rgba(167,139,250,.06); cursor: grab; }
+.t-inner-list { margin-top: 8px; border-top: 1px dashed rgba(167,139,250,.5); padding-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.t-inner { display: flex; align-items: center; gap: 6px; font-size: .78em; padding: 3px 6px; border-radius: 6px; background: rgba(148,163,184,.08); cursor: default; }
+.t-inner .t-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.t-inner-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.t-inner-ip { direction: ltr; opacity: .6; font-size: .9em; }
+.t-inner-st { flex-shrink: 0; opacity: .85; }
+.t-inner-empty { margin-top: 6px; font-size: .75em; opacity: .5; font-style: italic; }
+
+/* ── v2.8.3 — بطاقة المبنى في وضع الرسم بنفس شكل كارت خريطة المواقع ── */
+.t-card.maploc {
+  width: 320px;
+  background: var(--card-bg, #fff);
+  border: 2px solid #94a3b8;
+  border-inline-start-width: 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.10);
+  cursor: grab;
+  padding: 0;
+  overflow: hidden;
+}
+.t-card.maploc.up   { border-color: #22c55e; }
+.t-card.maploc.down { border-color: #ef4444; box-shadow: 0 2px 12px rgba(239,68,68,.18); }
+.t-card.maploc.warn { border-color: #f59e0b; box-shadow: 0 2px 12px rgba(245,158,11,.18); }   /* v2.10.2 — جزئي */
+.t-card.maploc.neutral { border-color: #a78bfa; }   /* v2.10.2 — لا أجهزة */
+.maploc-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: rgba(127,127,127,.05);
+  border-bottom: 1px solid rgba(127,127,127,.12);
+  cursor: grab;
+}
+.maploc-nm { flex: 1; font-weight: 700; font-size: .95em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maploc-kind { font-size: .78em; opacity: .65; padding: 4px 10px 0; }
+.maploc-head .t-remove { border: 0; background: transparent; color: #ef4444; cursor: pointer; font-size: .95em; }
+/* صفوف الأجهزة جوه البطاقة — نفس شكل صفوف خريطة المواقع */
+.t-card.maploc .t-inner-list { margin-top: 8px; border-top: 1px solid rgba(127,127,127,.12); padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; }
+.t-card.maploc .t-inner {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .8em; padding: 5px 8px; border-radius: 6px;
+  background: transparent; cursor: default;
+  border: 1px solid transparent;
+}
+.t-card.maploc .t-inner:hover { background: rgba(127,127,127,.06); }
+.t-card.maploc .t-inner .t-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.t-inner-type { flex-shrink: 0; opacity: .6; font-size: .92em; max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-card.maploc .t-inner-nm { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-card.maploc .t-inner-ip { direction: ltr; opacity: .55; font-size: .92em; flex-shrink: 0; }
+.t-card.maploc .t-inner-st { flex-shrink: 0; font-size: .92em; }
+.t-card.maploc .t-inner-empty { margin: 8px 10px; font-size: .78em; opacity: .5; font-style: italic; }
+
+/* v2.10.2 — مباني «سلسلة الشبكة» بنفس تنسيق «خريطة المواقع» (ألوان الحالة + الإحصاءات) */
+.t-node.loc-ok   { border-inline-start: 4px solid #22c55e; background: rgba(34,197,94,.07); }
+.t-node.loc-warn { border-inline-start: 4px solid #f59e0b; background: rgba(245,158,11,.10); }
+.t-node.loc-bad  { border-inline-start: 4px solid #ef4444; background: rgba(239,68,68,.10); }
+.t-node.loc-neutral { border-inline-start: 4px solid #a78bfa; background: rgba(167,139,250,.07); }
+.t-loc-stats { font-size: .85em; opacity: .9; margin-inline-start: 6px; }
+
+
+/* ═══ v2.30.1 — جدول الاكتشاف بأسلوب Advanced IP Scanner ═══ */
+#discovery-results .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+#discovery-results thead th { font-size: 0.78rem; color: var(--muted); font-weight: 600; padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--border); }
+#discovery-results tbody td { padding: 0.5rem 0.55rem; vertical-align: middle; border-bottom: 1px solid var(--border); }
+#discovery-results tbody tr { transition: background 0.15s ease; }
+#discovery-results tbody tr:hover { background: rgba(59, 130, 246, 0.10); }
+.disco-name-input {
+  width: 100%; background: transparent; border: 1px solid transparent;
+  color: var(--text); font-weight: 700; font-size: 0.98rem;
+  padding: 0.2rem 0.3rem; border-radius: 6px;
+}
+.disco-name-input:focus { outline: none; border-color: var(--accent); background: var(--card-bg); }
+.dsc-name-cell small { opacity: 0.85; }
+.dsc-vendor-cell { font-size: 0.82rem; color: var(--muted); }
+.dsc-adv select, .dsc-adv input { width: 100%; margin-top: 0.25rem; padding: 0.28rem 0.4rem; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); }
+.dsc-adv details summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); }
+.dsc-adv .adv-row { display: flex; gap: 0.3rem; margin-top: 0.3rem; }
+#discovery-results tbody td code { background: transparent; }
+
+/* ═══ v2.31.0 — شريحة حالة الاتصال (استدلال: إنترنت خارجي أم محلي فقط) ═══ */
+.connect-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.9rem; font-weight: 700; line-height: 1.5;
+  padding: 0.45rem 0.75rem; border-radius: 8px;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid var(--border);
+}

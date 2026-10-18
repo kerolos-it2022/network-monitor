@@ -1,0 +1,522 @@
+// devices.routes.js: مسارات إدارة الأجهزة (عامة للقراءة، محمية للكتابة) + سجل الحالة (history).
+const express = require('express');
+const multer = require('multer');
+const db = require('../db');
+const requireAuth = require('../middleware/requireAuth');
+const { checkHttp, checkHttps } = require('../services/checkers');
+const { uiText } = require('../services/ui-text.service');
+
+const router = express.Router();
+
+// إعداد multer لملفات Excel في الذاكرة
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ---------------------------------------------------------
+// SEC-02 — استعلام الأجهزة وحساب السجل انتقلا إلى services/:
+//   device-query.service.js (مشترك: داخلي + عام) · history.service.js
+// (بلا ازدواج بين المسار الداخلي المحمي والمسار العام المنقّى).
+// ---------------------------------------------------------
+const { DEVICE_SELECT, listDevicesWithOutages, getDeviceById } = require('../services/device-query.service');
+const { getDeviceHistory } = require('../services/history.service');
+
+// Topology chain: التحقق من الأب (موجود، ليس هو نفسه، ولا يُحدث حلقة في السلسلة).
+function validateParent(parentId, deviceId) {
+  if (parentId == null || parentId === '') return { ok: true, value: null };
+  const pid = Number(parentId);
+  if (!Number.isInteger(pid) || pid <= 0) return { ok: false, error: uiText('parent_id غير صالح', 'Invalid parent_id') };
+  if (deviceId != null && pid === Number(deviceId)) {
+    return { ok: false, error: uiText('الجهاز لا يمكن أن يكون أبًا لنفسه', 'A device cannot be its own parent') };
+  }
+  const parent = db.prepare('SELECT id, parent_id FROM devices WHERE id = ?').get(pid);
+  if (!parent) return { ok: false, error: uiText('الجهاز الأب غير موجود (id=' + pid + ')', 'Parent device not found (id=' + pid + ')') };
+  // منع الحلقات: نصعد من الأب — لو وصلنا للجهاز نفسه فسيتكوّن دورة.
+  let cur = parent.parent_id;
+  const seen = new Set();
+  while (cur != null) {
+    if (deviceId != null && Number(cur) === Number(deviceId)) {
+      return { ok: false, error: uiText('تعيين هذا الأب سيُحدث حلقة في سلسلة الشبكة', 'Setting this parent would create a loop in the network chain') };
+    }
+    if (seen.has(cur)) break;
+    seen.add(cur);
+    const row = db.prepare('SELECT parent_id FROM devices WHERE id = ?').get(cur);
+    cur = row ? row.parent_id : null;
+  }
+  return { ok: true, value: pid };
+}
+
+// v2.8.2 — التحقق من parent_location_id (جهاز يتصل بموقع/مبنى):
+// الموقع موجود + الموقع ليس نوع internet (الجذر لا يستقبل أبناء جهاز).
+function validateParentLocation(locationId) {
+  if (locationId == null || locationId === '') return { ok: true, value: null };
+  const lid = Number(locationId);
+  if (!Number.isInteger(lid) || lid <= 0) return { ok: false, error: uiText('parent_location_id غير صالح', 'Invalid parent_location_id') };
+  const loc = db.prepare('SELECT id, kind FROM locations WHERE id = ?').get(lid);
+  if (!loc) return { ok: false, error: uiText('الموقع المتصل عبره غير موجود (id=' + lid + ')', 'Connected location not found (id=' + lid + ')') };
+  return { ok: true, value: lid };
+}
+// GET /api/devices 🔒 (SEC-02 — كان عامًّا يكشف IP/بروتوكول الفحص/المنافذ لكل زائر).
+// الواجهات العامة تستعمل GET /api/public/status المنقّى (بلا أي IP/MAC/سيريال).
+router.get('/', requireAuth, (req, res) => {
+  return res.json({ success: true, data: listDevicesWithOutages() });
+});
+
+// GET /api/devices/:id 🔒 (SEC-02 — كان عامًّا). البديل العام المنقّى: /api/public/devices/:id
+router.get('/:id', requireAuth, (req, res) => {
+  const device = getDeviceById(req.params.id);
+  if (!device) {
+    return res.status(404).json({ success: false, error: uiText('الجهاز غير موجود', 'Device not found') });
+  }
+  return res.json({ success: true, data: device });
+});
+
+// GET /api/devices/:id/history?range=24h|7d|30d 🔒 (SEC-02 — كان عامًّا).
+// نفس الحمولة القديمة بالحرف (بلا كسر للواجهات) — البديل العام المنقّى:
+// GET /api/public/devices/:id/history (نفس الحقول + range/since).
+router.get('/:id/history', requireAuth, (req, res) => {
+  const history = getDeviceHistory(req.params.id, req.query.range);
+  if (!history) {
+    return res.status(404).json({ success: false, error: uiText('الجهاز غير موجود', 'Device not found') });
+  }
+  // HIST-01 — نُعيد الحمولة كاملة: الحقول القديمة كما هي (توافق كامل) + التغطية/الجودة.
+  return res.json({ success: true, data: history });
+});
+
+// POST /api/devices/cleanup-history  🔒 (v2.7.0 — PF)
+// يَمسح أَحداث الانقطاع (downtime_events) المنتهية الأَقدم من المُدّة المُختارة.
+// body: { range: '2h' | 'day' | 'week' | 'month' | 'year' | 'all' }
+// لا يَمسح الانقطاعات الجارية (ended_at IS NULL) — قَط past only.
+// v2.7.x — أَضِيفَت خِيَارات أَصْغَر (2h, day) و «all» لِالتَقْليص الفَورِي لِلجَداول الكَبِيرة.
+router.post('/cleanup-history', requireAuth, (req, res) => {
+  const range = req.body && req.body.range;
+  const hours = range === '2h' ? 2
+    : range === 'day' ? 24
+    : range === 'week' ? 168
+    : range === 'month' ? 720
+    : range === 'year' ? 8760
+    : range === 'all' ? 0           // 0 ← cutoff = الآن ← DELETE كُلّ مَا هُو أَقدم من الآن
+    : null;
+  if (hours == null) {
+    return res.status(400).json({ success: false, error: uiText('range غير صالح (2h|day|week|month|year|all)', 'Invalid range (2h|day|week|month|year|all)') });
+  }
+  const cutoff = new Date(Date.now() - hours * 3600000).toISOString();
+  // أَعمدة الـ schema الفعلية: started_at/ended_at (لا start_at/end_at).
+  // نَمسح فقط الأَحداث المنتهية (ended_at IS NOT NULL) الأَقدم من cutoff.
+  const info = db.prepare(
+    'DELETE FROM downtime_events WHERE ended_at IS NOT NULL AND ended_at < ?'
+  ).run(cutoff);
+  return res.json({
+    success: true,
+    data: { deleted: info.changes, range, cutoff },
+  });
+});
+
+// POST /api/devices/cleanup-status-logs  🔒 (v2.7.3)
+// يَمسح نَقاط فحص الحالة (status_logs) الأَقدم من المُدّة المُختارة.
+// جدول status_logs يَكبر بِسرعة (نُقطة لكل دورة فحص لكل جهاز)، لذا يُهمّ تَقليصه دورياً.
+// body: { range: '2h' | 'day' | 'week' | 'month' | 'year' | 'all' }
+// ملاحظة: status_logs.checked_at مَخزَّن كـ TEXT ISO datetime — نُقارِنه بالـ cutoff ISO.
+//         invaded downtime_events (نَفس الـ schema يؤرّخ الانقطاعات على حدة).
+// v2.7.x — أَضِيفَت خِيَارات أَصْغَر (2h, day) + «all» (تَفْرِيغ كامل + VACUUM) لِـ
+//         الجَداول الكَبِيرة (status_logs يَنمو بِـ ~354 أَلْف صَف/يَوم). «all» يَستَعمل
+//         cutoff = now (DELETE كُلّ مَا هُو < الآن → يُفَرِّغ الجَدول بِالكامِل) ثُمّ VACUUM.
+router.post('/cleanup-status-logs', requireAuth, (req, res) => {
+  const range = req.body && req.body.range;
+  const hours = range === '2h' ? 2
+    : range === 'day' ? 24
+    : range === 'week' ? 168
+    : range === 'month' ? 720
+    : range === 'year' ? 8760
+    : range === 'all' ? 0           // 0 ← cutoff = الآن ← DELETE مَا هُو < الآن = كُلّ شَيء (يُفَرِّغ الجَدول)
+    : null;
+  if (hours == null) {
+    return res.status(400).json({ success: false, error: uiText('range غير صالح (2h|day|week|month|year|all)', 'Invalid range (2h|day|week|month|year|all)') });
+  }
+  const cutoff = new Date(Date.now() - hours * 3600000).toISOString();
+  // نَمسح نَقاط الفحص الأَقدم من cutoff (checked_at TEXT ISO).
+  const info = db.prepare(
+    'DELETE FROM status_logs WHERE checked_at < ?'
+  ).run(cutoff);
+  // ل «all» (تَفْرِيغ كامل): نُضِيف wal_checkpoint + VACUUM لِـ تَقليص حجم ملف DB فعلياً.
+  // VACUUM لا يَعمَل داخِل تَراكْشن (better-sqlite3 يَرْمِي)؛ نُنفِّذه خارِجه بِـ db.exec مُباشِرة.
+  // busy_timeout=5000 (db.js) يَتَكَفَّل تَزاحُم كِتاَبٍ وَراء كَوال النَّشِط مَع cron 10 ثَوانٍ.
+  let vacuumed = false;
+  if (range === 'all' && info.changes > 0) {
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+      db.exec('VACUUM');
+      vacuumed = true;
+    } catch (e) {
+      // VACUUM失败了 (ربما busy) ← لا نَكْسِر الـ request: الجَدول فُرِّغ بِالفِعل،
+      // نُبلِّغ أَنّ VACUUM فَشِل في JSON لِـ شَفافِيّة العَمَل و نَسْتَطِيع إِعادَته لاحِقاً.
+      console.warn('[cleanup-status-logs] VACUUM failed:', e.message);
+    }
+  }
+  return res.json({
+    success: true,
+    data: { deleted: info.changes, range, cutoff, vacuumed },
+  });
+});
+
+// POST /api/devices  🔒
+router.post('/', requireAuth, (req, res) => {
+  const {
+    name, ip, device_type_id, location_id, parent_id, parent_location_id, pos_x, pos_y,
+    check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
+  } = req.body || {};
+
+  if (!name || !ip || !device_type_id) {
+    return res
+      .status(400)
+      .json({ success: false, error: uiText('الحقول name وip وdevice_type_id مطلوبة', 'Fields name, ip and device_type_id are required') });
+  }
+
+  // منع تكرار عنوان IP — كل IP يجب أن يُسجَّل مرة واحدة فقط.
+  const existingIp = db.prepare('SELECT id FROM devices WHERE ip = ?').get(ip);
+  if (existingIp) {
+    return res
+      .status(409)
+      .json({ success: false, code: 'device.ip_conflict', error: uiText('عنوان IP "' + ip + '" مسجّل بالفعل لجهاز آخر (رقم ' + existingIp.id + ')', 'IP address "' + ip + '" is already registered to another device (id ' + existingIp.id + ')') });
+  }
+
+  // Topology chain: التحقق من الأب.
+  const pv = validateParent(parent_id, null);
+  if (!pv.ok) {
+    return res.status(400).json({ success: false, error: pv.error });
+  }
+
+  // v2.8.2: التحقق من الموقع الأب (جهاز يتصل بمبنى/موقع).
+  const plc = validateParentLocation(parent_location_id);
+  if (!plc.ok) {
+    return res.status(400).json({ success: false, error: plc.error });
+  }
+
+  const result = db.prepare(
+    `INSERT INTO devices
+      (name, ip, device_type_id, location_id, parent_id, parent_location_id, pos_x, pos_y, check_protocol, port, web_port,
+       check_interval_seconds, failure_threshold, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    name,
+    ip,
+    device_type_id,
+    location_id ?? null,
+    pv.value,
+    plc.value,
+    Number.isFinite(Number(pos_x)) ? Number(pos_x) : null,
+    Number.isFinite(Number(pos_y)) ? Number(pos_y) : null,
+    check_protocol || 'ping',
+    port ?? null,
+    web_port ?? null,
+    check_interval_seconds ?? 10,
+    failure_threshold ?? 2,
+    is_active == null ? 1 : is_active
+  );
+
+  const newDeviceId = result.lastInsertRowid;
+
+  // فحص تلقائي لبروتوكولات HTTP و HTTPS عند إضافة جهاز جديد
+  // تنفيذ بشكل غير متزامن حتى لا يؤخر إرجاع الرد
+  // v2.7.5 — لو حُدِّد web_port نَفحص HTTP و HTTPS على هذا البورت فقط (واجهة على
+  // بورت مخصص مثل 4444)؛ وإلا البورتات الافتراضية 80/443 كما كان.
+  (async () => {
+    try {
+      const [httpRes, httpsRes] = Number(web_port) > 0
+        ? await Promise.all([
+            checkHttp(ip, Number(web_port), 5000),
+            checkHttps(ip, Number(web_port), 5000),
+          ])
+        : await Promise.all([
+            checkHttp(ip, 80, 5000),
+            checkHttps(ip, 443, 5000),
+          ]);
+      db.prepare(
+        'UPDATE devices SET http_accessible = ?, https_accessible = ? WHERE id = ?'
+      ).run(httpRes.isOnline ? 1 : 0, httpsRes.isOnline ? 1 : 0, newDeviceId);
+      console.log(`[AUTO-SCAN] New device ${newDeviceId} (${ip}): HTTP=${httpRes.isOnline}, HTTPS=${httpsRes.isOnline}`);
+    } catch (e) {
+      console.error(`[AUTO-SCAN] Error scanning new device ${newDeviceId} (${ip}):`, e);
+    }
+  })();
+
+  return res.status(201).json({ success: true, data: { id: newDeviceId } });
+});
+
+// PUT /api/devices/:id  🔒
+router.put('/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const existing = db.prepare('SELECT id, web_port FROM devices WHERE id = ?').get(id);
+  if (!existing) {
+    return res.status(404).json({ success: false, error: uiText('الجهاز غير موجود', 'Device not found') });
+  }
+
+  const {
+    name, ip, device_type_id, location_id, parent_id, parent_location_id, pos_x, pos_y,
+    check_protocol, port, web_port, check_interval_seconds, failure_threshold, is_active,
+  } = req.body || {};
+
+  if (!name || !ip || !device_type_id) {
+    return res
+      .status(400)
+      .json({ success: false, error: uiText('الحقول name وip وdevice_type_id مطلوبة', 'Fields name, ip and device_type_id are required') });
+  }
+
+  // منع تكرار IP عند التعديل — نتأكد أنه لا يملكه جهاز آخر.
+  const ipConflict = db.prepare('SELECT id FROM devices WHERE ip = ? AND id != ?').get(ip, id);
+  if (ipConflict) {
+    return res
+      .status(409)
+      .json({ success: false, code: 'device.ip_conflict', error: uiText('عنوان IP "' + ip + '" مسجّل بالفعل لجهاز آخر (رقم ' + ipConflict.id + ')', 'IP address "' + ip + '" is already registered to another device (id ' + ipConflict.id + ')') });
+  }
+
+  // Topology chain: التحقق من الأب (ليس هو نفسه، موجود، بلا حلقة).
+  // v2.11.4 — parent_id مثل parent_location_id: undefined = يُبقي القيمة القديمة.
+  // (نموذج الجهاز لم يعد يُرسل الحقل؛ وقبله كان أي حفظ بلا الحقل يكتب NULL ⇒ يمسح روابط
+  //  الأجهزة القائمة بصمت.)
+  let pvValue;
+  if (parent_id === undefined) {
+    const row = db.prepare('SELECT parent_id FROM devices WHERE id = ?').get(id);
+    pvValue = row ? row.parent_id : null;
+  } else {
+    const pv = validateParent(parent_id, id);
+    if (!pv.ok) {
+      return res.status(400).json({ success: false, error: pv.error });
+    }
+    pvValue = pv.value;
+  }
+
+  // v2.8.2: الموقع الأب — undefined = يُبقي القيمة القديمة، null/'' = فك، رقم = ربط.
+  let plcValue;
+  if (parent_location_id === undefined) {
+    const row = db.prepare('SELECT parent_location_id FROM devices WHERE id = ?').get(id);
+    plcValue = row ? row.parent_location_id : null;
+  } else {
+    const plc = validateParentLocation(parent_location_id);
+    if (!plc.ok) {
+      return res.status(400).json({ success: false, error: plc.error });
+    }
+    plcValue = plc.value;
+  }
+
+  db.prepare(
+    `UPDATE devices SET
+      name = ?, ip = ?, device_type_id = ?, location_id = ?, parent_id = ?, parent_location_id = ?, pos_x = ?, pos_y = ?,
+      check_protocol = ?, port = ?, web_port = ?,
+      check_interval_seconds = ?, failure_threshold = ?, is_active = ?
+     WHERE id = ?`
+  ).run(
+    name,
+    ip,
+    device_type_id,
+    location_id ?? null,
+    pvValue,
+    plcValue,
+    Number.isFinite(Number(pos_x)) ? Number(pos_x) : null,
+    Number.isFinite(Number(pos_y)) ? Number(pos_y) : null,
+    check_protocol || 'ping',
+    port ?? null,
+    web_port ?? null,
+    check_interval_seconds ?? 10,
+    failure_threshold ?? 2,
+    is_active == null ? 1 : is_active,
+    id
+  );
+
+  // v2.7.5 — لو تغيّر web_port (أُدخل/حُذِف/عُدِّل) نُعيد الفحص التلقائي لِـ HTTP/HTTPS
+  // على البورت الجديد (أو الافتراضي 80/443 لو حُذِف) — نفس نمط الفحص عند الإِضافة.
+  const oldWebPort = existing.web_port == null ? null : Number(existing.web_port);
+  const newWebPort = web_port == null || web_port === '' ? null : Number(web_port);
+  if (oldWebPort !== newWebPort) {
+    const deviceIp = ip;
+    const scanPort = newWebPort;
+    (async () => {
+      try {
+        const [httpRes, httpsRes] = scanPort > 0
+          ? await Promise.all([
+              checkHttp(deviceIp, scanPort, 5000),
+              checkHttps(deviceIp, scanPort, 5000),
+            ])
+          : await Promise.all([
+              checkHttp(deviceIp, 80, 5000),
+              checkHttps(deviceIp, 443, 5000),
+            ]);
+        db.prepare(
+          'UPDATE devices SET http_accessible = ?, https_accessible = ? WHERE id = ?'
+        ).run(httpRes.isOnline ? 1 : 0, httpsRes.isOnline ? 1 : 0, id);
+        console.log(`[AUTO-SCAN] Updated device ${id} (${deviceIp}): HTTP=${httpRes.isOnline}, HTTPS=${httpsRes.isOnline}`);
+      } catch (e) {
+        console.error(`[AUTO-SCAN] Error scanning updated device ${id} (${deviceIp}):`, e);
+      }
+    })();
+  }
+
+  return res.json({ success: true, data: null });
+});
+
+// DELETE /api/devices/:id  🔒
+router.delete('/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const existing = db.prepare('SELECT id FROM devices WHERE id = ?').get(id);
+  if (!existing) {
+    return res.status(404).json({ success: false, error: uiText('الجهاز غير موجود', 'Device not found') });
+  }
+  db.prepare('DELETE FROM devices WHERE id = ?').run(id);
+  return res.json({ success: true, data: null });
+});
+
+// ============================================================
+// تصدير الأجهزة إلى Excel
+// GET /api/devices/export/excel  🔒
+// ============================================================
+router.get('/export/excel', requireAuth, (req, res) => {
+  const XLSX = require('xlsx');
+  const devices = db.prepare(`${DEVICE_SELECT} ORDER BY d.id ASC`).all();
+
+  // تحضير البيانات للتصدير (العناوين بلغة الواجهة — والاستيراد يقبل اللغتين معًا).
+  const exportData = devices.map((d) => ({
+    [uiText('الاسم', 'name')]: d.name,
+    'IP': d.ip,
+    [uiText('النوع', 'type')]: d.device_type_name || '',
+    [uiText('الموقع', 'location')]: d.location_name || '',
+    [uiText('طريقة الفحص', 'protocol')]: d.check_protocol,
+    [uiText('المنفذ', 'port')]: d.port || '',
+    [uiText('فترة الفحص (ثانية)', 'interval')]: d.check_interval_seconds,
+    [uiText('حد التنبيه', 'threshold')]: d.failure_threshold,
+    [uiText('مفعّل', 'is_active')]: d.is_active ? uiText('نعم', 'yes') : uiText('لا', 'no'),
+    [uiText('الحالة الحالية', 'current_status')]: d.current_status,
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  // تعيين عرض الأعمدة
+  ws['!cols'] = [
+    { wch: 25 }, { wch: 18 }, { wch: 15 }, { wch: 25 },
+    { wch: 15 }, { wch: 10 }, { wch: 18 }, { wch: 12 },
+    { wch: 10 }, { wch: 15 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, uiText('الأجهزة', 'devices'));
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename=devices.xlsx');
+  return res.send(buf);
+});
+
+// ============================================================
+// استيراد الأجهزة من Excel
+// POST /api/devices/import/excel  🔒
+// ============================================================
+router.post('/import/excel', requireAuth, upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: uiText('لم يتم رفع ملف', 'No file was uploaded') });
+  }
+
+  const XLSX = require('xlsx');
+
+  try {
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+
+    // تحويل الصفوف إلى JSON (الصف الأول هو العناوين).
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    // خرائط لتحويل أسماء الأعمدة العربية/الإنجليزية إلى معرّفات.
+    const typeMap = new Map();
+    db.prepare('SELECT id, name FROM device_types').all().forEach((t) => typeMap.set(String(t.name).trim(), t.id));
+    const locMap = new Map();
+    db.prepare('SELECT id, name FROM locations').all().forEach((l) => locMap.set(String(l.name).trim(), l.id));
+
+    // مجموعة كل عناوين IP الموجودة فعلاً في قاعدة البيانات + داخل هذا الملف.
+    const existingIps = new Set(
+      db.prepare('SELECT ip FROM devices').all().map((r) => String(r.ip).trim())
+    );
+    const seenInFile = new Set(); // لكتشاف التكرار داخل نفس ملف Excel أيضاً.
+
+    let imported = 0;
+    let skipped = 0;
+    const errors = [];
+
+    const insertStmt = db.prepare(
+      `INSERT INTO devices
+        (name, ip, device_type_id, location_id, check_protocol, port,
+         check_interval_seconds, failure_threshold, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const name = String(row['الاسم'] || row.name || row.Name || '').trim();
+      const ip = String(row['IP'] || row.ip || row.IP || '').trim();
+      const typeName = String(row['النوع'] || row.type || row['device_type'] || '').trim();
+      const locName = String(row['الموقع'] || row.location || '').trim();
+      const protocol = String(row['طريقة الفحص'] || row.protocol || row.check_protocol || 'ping').trim() || 'ping';
+      const port = row['المنفذ'] || row.port || null;
+      const interval = Number(row['فترة الفحص (ثانية)'] || row.interval || row.check_interval_seconds || 10);
+      const threshold = Number(row['حد التنبيه'] || row.threshold || row.failure_threshold || 2);
+      const activeRaw = String(row['مفعّل'] || row.is_active || 'نعم').trim();
+      const isActive = /^(1|true|نعم|yes|y)$/i.test(activeRaw) ? 1 : 0;
+
+      if (!name || !ip || !typeName) {
+        skipped++;
+        errors.push(uiText('الصف ' + (i + 2) + ': حقول مفقودة (الاسم/IP/النوع)', 'Row ' + (i + 2) + ': missing fields (name/IP/type)'));
+        continue;
+      }
+
+      // تخطّي IP الموجود بالفعل في قاعدة البيانات (بدلاً من تكراره).
+      if (existingIps.has(ip)) {
+        skipped++;
+        errors.push(uiText('الصف ' + (i + 2) + ': IP "' + ip + '" موجود بالفعل في قاعدة البيانات — تم تخطّيه', 'Row ' + (i + 2) + ': IP "' + ip + '" already exists in the database — skipped'));
+        continue;
+      }
+      // تخطّي IP المكرر داخل نفس ملف Excel.
+      if (seenInFile.has(ip)) {
+        skipped++;
+        errors.push(uiText('الصف ' + (i + 2) + ': IP "' + ip + '" مكرر داخل الملف — تم تخطّيه', 'Row ' + (i + 2) + ': IP "' + ip + '" duplicated within the file — skipped'));
+        continue;
+      }
+
+      const typeId = typeMap.get(typeName);
+      if (!typeId) {
+        skipped++;
+        errors.push(uiText('الصف ' + (i + 2) + ': النوع "' + typeName + '" غير موجود', 'Row ' + (i + 2) + ': type "' + typeName + '" not found'));
+        continue;
+      }
+      const locId = locName ? locMap.get(locName) || null : null;
+
+      try {
+        insertStmt.run(
+          name,
+          ip,
+          typeId,
+          locId,
+          protocol === 'port' ? 'port' : (protocol === 'http' ? 'http' : (protocol === 'https' ? 'https' : 'ping')),
+          port ? Number(port) : null,
+          interval || 30,
+          threshold || 3,
+          isActive
+        );
+        imported++;
+        // أضف IP لقائمة الموجودة حتى لا يتكرر داخل نفس الملف.
+        existingIps.add(ip);
+        seenInFile.add(ip);
+      } catch (e) {
+        skipped++;
+        errors.push(uiText('الصف ' + (i + 2) + ': ', 'Row ' + (i + 2) + ': ') + e.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        imported,
+        skipped,
+        errors,
+        message: uiText('تم استيراد ' + imported + ' جهاز، تم تخطّي ' + skipped + ' (IPs مكررة أو ناقصة)', 'Imported ' + imported + ' device(s), skipped ' + skipped + ' (duplicate or incomplete IPs)'),
+      },
+    });
+  } catch (e) {
+    console.error('Excel import error:', e);
+    return res.status(500).json({ success: false, error: uiText('فشل قراءة ملف Excel: ', 'Failed to read the Excel file: ') + e.message });
+  }
+});
+
+module.exports = router;

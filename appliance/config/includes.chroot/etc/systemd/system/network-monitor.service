@@ -1,0 +1,33 @@
+[Unit]
+Description=Network Monitor — monitoring service (appliance)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=netmon
+Group=netmon
+WorkingDirectory=/opt/network-monitor/backend
+ExecStart=/usr/bin/node src/server.js
+Environment=NODE_ENV=production
+Environment=PORT=4001
+# env file generated at install time: DB_PATH + SESSION_SECRET
+EnvironmentFile=-/var/lib/network-monitor/env
+Restart=always
+RestartSec=3
+# ping/traceroute need raw sockets — grant to the service (works with NoNewPrivileges).
+# v2.30.2 — CAP_NET_BIND_SERVICE: المستمع الدائم للأسماء (mDNS 5353 / NBNS 137)
+# منافذ مميزة <1024 — بدونها يفشل الربط بصمت وتنعكس بالنتيجة «أسماء الجهاز مش بتظهر».
+AmbientCapabilities=CAP_NET_RAW CAP_NET_BIND_SERVICE
+# basic service hardening.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+# v2.8.7 — مع ProtectSystem=strict يكون /tmp للقراءة فقط إن لم يُفعّل PrivateTmp،
+# وكانت كتابة الملفات المؤقّتة (النسخ الاحتياطي/التحديثات) تفشل بـ EROFS.
+# PrivateTmp يمنح الخدمة /tmp خاصًّا قابلاً للكتابة + عزلاً إضافيًا.
+PrivateTmp=true
+ReadWritePaths=/var/lib/network-monitor
+
+[Install]
+WantedBy=multi-user.target
