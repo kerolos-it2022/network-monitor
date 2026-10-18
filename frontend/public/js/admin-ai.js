@@ -137,7 +137,7 @@ async function aiSend() {
 function aiClear() {
   aiHistory = [];
   const box = document.getElementById('ai-chat-box');
-  box.innerHTML = `<div id="ai-chat-empty" style="margin:auto 0; text-align:start; color:var(--muted); font-size:0.9rem; line-height:1.9;"><div style="font-size:2rem;">🤖</div>${T('frag.type_your_question_below_e_g', 'اكتب سؤالك أسفل… مثل')}: «${T('frag.what_is_down_right_now', 'إيه اللي واقع دلوقتي؟')}» ${T('frag.or', 'أو ')}«${T('frag.is_the_camera_wing_down', 'جنّاح الكاميرات طايح؟')}» ${T('frag.or', 'أو ')}«${T('frag.the_most', 'أكثر ')}${T('tail.devices', ' جهاز')} ${T('frag.fails_most', 'بيقع؟')}»</div>`;
+  box.innerHTML = `<div id="ai-chat-empty" style="margin:auto 0; text-align:start; color:var(--muted); font-size:0.9rem; line-height:1.9;"><div style="font-size:2rem;">🤖</div>${T('frag.type_your_question_below_e_g', 'اكتب سؤالك أسفل… مثل')}: «${T('frag.what_is_down_right_now', 'إيه اللي واقع دلوقتي؟')}» ${T('frag.or', 'أو ')}«${T('frag.is_the_camera_wing_down', 'جنّاح الكاميرات طايح؟')}» ${T('frag.or', 'أو ')}«${T('aichat.deviceFailsMost', 'أكثر جهاز بيقع؟')}»</div>`;
   aiSetStatus(T('tail.conversation_cleared_2', 'محُوِت المحادثة.'), false);
 }
 

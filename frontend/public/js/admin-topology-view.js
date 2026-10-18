@@ -134,7 +134,7 @@
       const byId = new Map();
       indexTree(j.data, null, byId);
       if (!j.data.length) {
-        treeEl.innerHTML = `<p class="muted">${T('common.no', 'لا')} ${T('frag.no_devices_yet_add_devices_from_the', T('frag.no_devices_yet_add_devices_from_the', 'توجد أجهزة بعد — أضف أجهزة من تبويب') + ' ')}«${T('frag.devices_2', 'الأجهزة')}» ${T('frag.and_set_for_each_device', 'وحدّد لكل جهاز ')}«${T('s3.connects_via', 'متصل عبر')}» ${T('frag.to_build_the_path', 'لبناء المسار.')}</p>`;
+        treeEl.innerHTML = `<p class="muted">${T('topo.noDevicesYetAddFromTab', 'لا توجد أجهزة بعد — أضف أجهزة من تبويب')} «${T('frag.devices_2', 'الأجهزة')}» ${T('frag.and_set_for_each_device', 'وحدّد لكل جهاز ')} «${T('s3.connects_via', 'متصل عبر')}» ${T('frag.to_build_the_path', 'لبناء المسار.')}</p>`;
       } else {
         treeEl.innerHTML = j.data.map((n) => renderNode(n, 0)).join('');
       }

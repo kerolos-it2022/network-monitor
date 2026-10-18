@@ -1009,7 +1009,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const nameEl = document.getElementById('noc-modal-name');
     const iconEl = document.getElementById('noc-modal-icon');
     const statusEl = document.getElementById('noc-modal-status');
-    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⏳ ${T('frag.loading_the', 'جَلب ال')}${T('common.details', 'تفاصيل')}…</p>`;
+    if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⏳ ${T('noc.loadingTheDetails', 'جَلب التفاصيل')}…</p>`;
     if (nameEl) nameEl.textContent = '…';
     if (statusEl) { statusEl.className = 'details-status-badge'; statusEl.textContent = '—'; }
     modal.classList.remove('hidden');
@@ -1048,10 +1048,10 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         let ah = '';
         if (d.https_accessible == 1 && ip) ah += `<a class="da-https" href="https://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🔒 ${T('s2x.open_https', 'فتح HTTPS')}</a>`;
         if (d.http_accessible == 1 && ip) ah += `<a class="da-http" href="http://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">${T('s3.open_http', '🌐 فتح HTTP')}</a>`;
-        acts.innerHTML = ah || `<small class="da-none">${T('common.no', 'لا')} ${T('frag.no_web_interface_detected_for_this_devic', T('frag.no_web_interface_detected_for_this_devic', 'توجد واجهة ويب مكتشفة لهذا الجهاز') + ' ')}(${T('frag.check', 'فحص ')}PING ${T('frag.only', 'فقط')}).</small>`;
+        acts.innerHTML = ah || `<small class="da-none">${T('noc.noWebInterfacePingOnly', 'لا توجد واجهة ويب مكتشفة لهذا الجهاز (فحص PING فقط).')}</small>`;
       }
     } catch (e) {
-      if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('frag.could_not_load', 'تعذّر جلب ')}${T('common.details', 'تفاصيل')} ${T('frag.the_device', 'الجهاز.')}</p>`;
+      if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('noc.couldNotLoadDetails', 'تعذّر جلب تفاصيل الجهاز.')}</p>`;
       const acts = document.getElementById('noc-modal-actions');
       if (acts) acts.innerHTML = '';
     }

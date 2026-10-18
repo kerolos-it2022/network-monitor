@@ -441,7 +441,7 @@ window.openDeviceModal = async function (deviceId) {
       var listEl = document.getElementById('modal-downtime-list');
       listEl.innerHTML = '';
       if (!data.downtime_events || data.downtime_events.length === 0) {
-        listEl.innerHTML = `<li>${T('common.no', 'لا')} ${T('frag.no_outages_in_the_period', 'توجد انقطاعات خلال الفترة.')}</li>`;
+        listEl.innerHTML = `<li>${T('pd.noOutagesInThePeriod', 'لا توجد انقطاعات خلال الفترة.')}</li>`;
       } else {
         for (var i = 0; i < data.downtime_events.length; i++) {
           var ev = data.downtime_events[i];

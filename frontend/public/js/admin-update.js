@@ -529,8 +529,8 @@ async function updLoadHistory() {
     const p = (updMode === 'appliance') ? await api('/api/appliance-update/progress') : null;
     const st = p && p.state;
     el.innerHTML = (st && st.message)
-      ? `<div class="upd-row"><span>${T('frag.last_run', 'آخر عملية ')}(${T('frag.appliance_helper', 'مساعد الأب')}${T('common.no', 'لا')}${T('frag.liance', 'ينس')})</span><span>` + esc(String(st.message || '').replace(/✅\s*/g, '').trim()) + (st.at ? ' — ' + updFmtWhen(st.at) : '') + '</span></div>'
-      : `<span style="color:var(--muted);">${T('common.no', 'لا')} ${T('frag.no_runs_logged_yet', 'توجد عمليات مسجّلة بعد.')}</span>`;
+      ? `<div class="upd-row"><span>${T('upd.lastRunApplianceHelper', 'آخر عملية (مساعد الأبلاينس)')}</span><span>` + esc(String(st.message || '').replace(/✅\s*/g, '').trim()) + (st.at ? ' — ' + updFmtWhen(st.at) : '') + '</span></div>'
+      : `<span style="color:var(--muted);">${T('upd.noRunsLoggedYet', 'لا توجد عمليات مسجّلة بعد.')}</span>`;
     return;
   }
   el.innerHTML = rows.slice(0, 10).map((h) => {
