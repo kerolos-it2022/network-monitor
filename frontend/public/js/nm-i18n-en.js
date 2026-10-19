@@ -496,7 +496,6 @@
     'noc.incidentRootCaused': 'This device caused an outage for {n} device(s): {names}',
     'noc.incidentAffectedBy': 'Down as part of an upstream device outage: {name}',
     'noc.chartUnavailable': 'Chart unavailable right now (the chart library could not be loaded — needs internet access).',
-    'noc.openUnverifiedHint': 'Not auto-verified — opens the device address directly',
     'pd.noOutagesInThePeriod': 'No outages in the period.',
     'topo.noDevicesYetAddFromTab': 'No devices yet — add devices from the',
     'aichat.deviceFailsMost': 'Which device fails most?',
