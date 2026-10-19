@@ -201,7 +201,10 @@
       <div class="hidden" id="noc-modal-history">
         <div class="modal-ranges" id="noc-modal-ranges"></div>
         <div class="modal-uptime" id="noc-modal-uptime"></div>
-        <div class="modal-chart-wrap"><canvas id="noc-modal-chart" height="120"></canvas></div>
+        <div class="modal-chart-wrap">
+          <canvas id="noc-modal-chart" height="120"></canvas>
+          <p class="details-placeholder hidden" id="noc-modal-chart-note" data-i18n="noc.chartUnavailable">الرسم البياني غير متاح الآن (تعذّر تحميل مكتبة الرسم — يحتاج اتصالًا بالإنترنت).</p>
+        </div>
         <h5 class="modal-section-title" data-i18n="s3.recent_outages">آخر الانقطاعات</h5>
         <ul class="downtime-list" id="noc-modal-downtime"></ul>
       </div>
@@ -221,6 +224,8 @@
   </div>
 
 <script src="js/nm-format.js"></script>
+<!-- v2.50.7 — Chart.js من CDN (نفس سطر الصفحة العامة): بدونه رسم زمن الاستجابة لا يُرسَم في نافذة الجهاز -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/nm-i18n.js"></script>
 <script src="js/nm-i18n-en.js"></script>

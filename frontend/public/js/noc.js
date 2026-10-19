@@ -1087,9 +1087,22 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         uptimeEl.textContent = T('pd.uptimeRange', 'نسبة التشغيل') + ' (' + (rangeNames[range] || range) + '): ' + pct;
       }
       const canvas = document.getElementById('noc-modal-chart');
-      if (canvas && typeof window.renderDeviceChart === 'function') {
-        if (nocModalChart && typeof nocModalChart.destroy === 'function') { try { nocModalChart.destroy(); } catch (_) {} nocModalChart = null; }
-        try { nocModalChart = window.renderDeviceChart(canvas, data.status_points); } catch (_) { nocModalChart = null; }
+      const chartNote = document.getElementById('noc-modal-chart-note');
+      if (chartNote && canvas) {
+        // v2.50.7 — لو مكتبة الرسم مش متحمّلة (بلا إنترنت مثلًا) نقولها بصراحة بدل مربع فاضي.
+        const noLib = (typeof window.Chart !== 'function' || typeof window.renderDeviceChart !== 'function');
+        chartNote.classList.toggle('hidden', !noLib);
+        canvas.classList.toggle('hidden', noLib);
+        if (!noLib && typeof window.renderDeviceChart === 'function') {
+          if (nocModalChart && typeof nocModalChart.destroy === 'function') { try { nocModalChart.destroy(); } catch (_) {} nocModalChart = null; }
+          try {
+            nocModalChart = window.renderDeviceChart(canvas, data.status_points);
+            if (nocModalChart && (canvas.clientWidth === 0 || canvas.clientHeight === 0) && typeof nocModalChart.resize === 'function') nocModalChart.resize();
+            // بلا أنيميشن: الشاشة دي للمراقبة، ولو التبويب في الخلفية بيتأجّل requestAnimationFrame
+            // فالرسمة النهائية تظهر من أول إطار بدل ما تفضل فاضية.
+            if (nocModalChart) { try { nocModalChart.options.animation = false; nocModalChart.update('none'); } catch (_) {} }
+          } catch (_) { nocModalChart = null; }
+        }
       }
       if (downtimeEl) {
         if (!data.downtime_events || data.downtime_events.length === 0) {

@@ -501,6 +501,7 @@
       'noc.relatedOutages': 'الأعطال المرتبطة بهذا الجهاز',
       'noc.incidentRootCaused': 'الجهاز ده سبب انقطاع {n} جهاز: {names}',
       'noc.incidentAffectedBy': 'واقع ضمن عطل جهاز أعلى: {name}',
+      'noc.chartUnavailable': 'الرسم البياني غير متاح الآن (تعذّر تحميل مكتبة الرسم — يحتاج اتصالًا بالإنترنت).',
       'pd.noOutagesInThePeriod': 'لا توجد انقطاعات خلال الفترة.',
       'topo.noDevicesYetAddFromTab': 'لا توجد أجهزة بعد — أضف أجهزة من تبويب',
       'aichat.deviceFailsMost': 'أكثر جهاز بيقع؟',
