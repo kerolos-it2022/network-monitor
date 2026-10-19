@@ -17,6 +17,7 @@ const { securityHeaders } = require('./middleware/security-headers');
 const { createCsrfGuard } = require('./middleware/csrf-guard');
 const { createSqliteSessionStore } = require('./services/session-store.service');
 const { validateSession } = require('./services/session-auth.service');
+const { uiText } = require('./services/ui-text.service');
 const APP_VERSION = require('../package.json').version;
 
 const authRoutes = require('./routes/auth.routes');
@@ -130,13 +131,13 @@ function createApp() {
   app.use('/api/auth', authRoutes);
 
   // v2.20.0 — فرض الأدوار مركزيًا: حساب «viewer» يقرأ فقط (GET/HEAD/OPTIONS)، مع سماح
-  // بمسارات الحساب الشخصي (خروج/تغيير كلمة المرور). كل تعديل آخر ⇒ 403 برسالة عربية.
+  // بمسارات الحساب الشخصي (خروج/تغيير كلمة المرور). كل تعديل آخر ⇒ 403 برسالة بلغتين.
   app.use((req, res, next) => {
     const user = req.session && req.session.user;
     if (!user || user.role !== 'viewer') return next();
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
     if (req.path.startsWith('/api/auth/')) return next();
-    return res.status(403).json({ success: false, error: 'حسابك (عرض فقط) لا يسمح بالتعديلات — تواصل مع المدير' });
+    return res.status(403).json({ success: false, error: uiText('حسابك (عرض فقط) لا يسمح بالتعديلات — تواصل مع المدير', 'Your account is view-only and cannot make changes — contact the administrator') });
   });
   app.use('/api/devices', devicesRoutes);
   app.use('/api/topology', topologyRoutes);
@@ -174,7 +175,7 @@ function createApp() {
 
   // مسارات API غير المعروفة ⇒ 404 بصيغة JSON (لا صفحة HTML)، فلا يبتلعها SPA fallback.
   app.use('/api', (req, res) => {
-    res.status(404).json({ success: false, error: 'المسار غير موجود' });
+    res.status(404).json({ success: false, error: uiText('المسار غير موجود', 'Path not found') });
   });
 
   // SPA fallback — لو الطلب ليس API ولا ملف موجود، أرجع index.html.
@@ -189,7 +190,7 @@ function createApp() {
   // معالج عام للأخطاء غير المعالجة.
   app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ success: false, error: 'خطأ داخلي في الخادم' });
+    res.status(500).json({ success: false, error: uiText('خطأ داخلي في الخادم', 'Internal server error') });
   });
 
   return app;

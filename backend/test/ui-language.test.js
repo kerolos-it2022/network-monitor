@@ -1,6 +1,7 @@
 // اختبارات لغة الواجهة (ar | en) — إعداد واحد لكل الحاجات (لوحة + صفحة عامة + NOC).
 // يتحقّق من: الافتراضي والتحقّق من القيمة، أن القراءة عامة والكتابة للمدير فقط، أن الإعداد يُحفظ
-// فعلًا، وأنه يُرفَق في ردود العرض العام وشاشة NOC (فتضبط الصفحات لغتها بلا طلب إضافي).
+// فعلًا، وأنه يُرفَق في ردود العرض العام وشاشة NOC (فتضبط الصفحات لغتها بلا طلب إضافي)، وأن
+// رسائل التطبيق في app.js (404 · 403 لحساب «عرض فقط» · 500) تتبع اللغة نفسها.
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -103,4 +104,45 @@ test('تغيير اللغة يُسجَّل في سجل التدقيق', async ()
   ).all().find((r) => String(r.target || '').includes('ui_language') || String(r.details || '').includes('ui_language'));
   assert.ok(row, 'سطر تدقيق لتغيير اللغة موجود');
   db.prepare("DELETE FROM app_settings WHERE key = 'ui_language'").run();   // رجوع للحالة الافتراضية
+});
+
+test('رسائل التطبيق الأساسية بلغتين: مسار غير موجود · حساب «عرض فقط» · خطأ داخلي', async () => {
+  const brokenJson = () => fetch(srv.baseUrl + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{"username":',
+  });
+
+  // إنجليزي (الافتراضي بعد الاختبار السابق ⇒ حذف الإعداد)
+  assert.equal(uiLang.getLang(), 'en');
+
+  const notFoundEn = await fetch(srv.baseUrl + '/api/no-such-endpoint-xyz');
+  assert.equal(notFoundEn.status, 404);
+  assert.equal((await notFoundEn.json()).error, 'Path not found');
+
+  const viewerEn = await viewer.post('/api/devices', { name: 'x', ip: '10.0.0.9' });
+  assert.equal(viewerEn.status, 403);
+  assert.equal(
+    (await viewerEn.json()).error,
+    'Your account is view-only and cannot make changes — contact the administrator'
+  );
+
+  const internalEn = await brokenJson();
+  assert.equal(internalEn.status, 500);
+  assert.equal((await internalEn.json()).error, 'Internal server error');
+
+  // عربي — نفس النصوص القديمة حرفيًّا (عقد حماية للمخرَج العربي)
+  await admin.put('/api/settings/ui-language', { ui_language: 'ar' });
+  try {
+    const notFoundAr = await fetch(srv.baseUrl + '/api/no-such-endpoint-xyz');
+    assert.equal((await notFoundAr.json()).error, 'المسار غير موجود');
+
+    const viewerAr = await viewer.post('/api/devices', { name: 'x', ip: '10.0.0.9' });
+    assert.equal((await viewerAr.json()).error, 'حسابك (عرض فقط) لا يسمح بالتعديلات — تواصل مع المدير');
+
+    const internalAr = await brokenJson();
+    assert.equal((await internalAr.json()).error, 'خطأ داخلي في الخادم');
+  } finally {
+    await admin.put('/api/settings/ui-language', { ui_language: 'en' });
+  }
 });
