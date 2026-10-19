@@ -1002,6 +1002,172 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     if ((d.status || d.overall_health) === 'unknown') return T('status.unknown', 'غير معروف');
     return T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', T('status.online', T('s3b.online_2', T('s2x.online', 'متصل'))))))))))))))))))))))))))));
   }
+  // ══ v2.50.7 — بوب-أب الجهاز: نفس الصفحة العامة + بيانات أكتر (للمسجّل فقط) ══
+  // nocT(key, fallback, vars): نصّ بلغة الواجهة مع استبدال {placeholders} (T لا يدعم المتغيّرات).
+  function nocT(key, fallback, vars) {
+    let out = T(key, fallback);
+    if (vars) for (const k of Object.keys(vars)) out = out.split('{' + k + '}').join(String(vars[k]));
+    return out;
+  }
+  function nocIntervalText(seconds) {
+    const s = Number(seconds) || 0;
+    if (s <= 0) return '—';
+    if (s % 86400 === 0) return nocT('noc.days', '{n} يوم', { n: Math.round(s / 86400) });
+    if (s % 3600 === 0) return nocT('noc.hours', '{n} ساعة', { n: Math.round(s / 3600) });
+    if (s % 60 === 0) return nocT('noc.minutes', '{n} دقيقة', { n: Math.round(s / 60) });
+    return nocT('noc.seconds', '{n} ثانية', { n: s });
+  }
+  function nocFieldHtml(label, value) {
+    return `<div class="details-field"><span class="df-label">${label}</span><span class="df-value">${value}</span></div>`;
+  }
+  // حقول الجهاز: الأساسية في الوضعين، والتفصيلية في الوضع الكامل فقط (المفاتيح لا تُغلَق قبل آخر جلب).
+  function nocDeviceFieldsHtml(d, full) {
+    let h = '';
+    if (d.ip) h += nocFieldHtml('IP', esc(d.ip));
+    h += nocFieldHtml(T('s2.type', 'النوع'), esc(d.device_type_name || '—'));
+    h += nocFieldHtml(T('devices.th.location', T('s3.location', 'الموقع')), esc(d.location_name || '—'));
+    h += nocFieldHtml(T('s2.status', 'الحالة'), esc(overallHealthText(d)));
+    if (d.services_total) h += nocFieldHtml(T('s3.services', 'الخدمات'), `${Number(d.services_down_count) || 0} ${T('nocview.servicesDownOf', 'متوقفة من')} ${Number(d.services_total)}`);
+    h += nocFieldHtml(T('admin.enabled', 'مفعّل'), d.is_active ? T('common.yes', 'نعم') : T('common.no', 'لا'));
+    // v2.50.7 — إصلاح: الوضع الكامل يرسل last_response_time_ms والوضع المنقّى response_time_ms
+    // ⇒ كان زمن الاستجابة يظهر «—» للمسجّل دائمًا.
+    const rt = (d.last_response_time_ms != null) ? d.last_response_time_ms : d.response_time_ms;
+    h += nocFieldHtml(T('s3.response_time', 'زمن الاستجابة'), rt != null ? esc(rt) + ' ms' : '—');
+    h += nocFieldHtml(T('s2.last_check', T('s3.last_check', 'آخر فحص')), esc(fmtDateTime(d.last_checked_at)));
+    if (full) {
+      // v2.50.7 — تفاصيل الفحص والتبعية (متاحة في الحمولة الداخلية فقط).
+      if (d.check_protocol) {
+        const proto = esc(String(d.check_protocol).toUpperCase());
+        const prt = d.port ? ` · ${T('noc.port', 'البورت')} ${esc(d.port)}` : '';
+        h += nocFieldHtml(T('noc.checkProtocol', 'نوع الفحص'), proto + prt);
+      }
+      if (d.web_port) h += nocFieldHtml(T('noc.webPort', 'بورت الويب'), esc(d.web_port));
+      if (d.check_interval_seconds) h += nocFieldHtml(T('noc.checkEvery', 'يُفحَص كل'), esc(nocIntervalText(d.check_interval_seconds)));
+      if (d.failure_threshold) h += nocFieldHtml(T('noc.failureThreshold', 'المحاولات قبل اعتباره واقعًا'), esc(d.failure_threshold));
+      if (d.last_probe_protocol) h += nocFieldHtml(T('noc.lastProbe', 'آخر وسيلة فحص'), esc(String(d.last_probe_protocol).toUpperCase()));
+      if (d.host_status) h += nocFieldHtml(T('noc.hostStatus', 'حالة المضيف'), esc(d.host_status));
+      if (d.parent_id) {
+        const parent = (allDevices || []).find((x) => Number(x.id) === Number(d.parent_id));
+        h += nocFieldHtml(T('noc.parentDevice', 'الجهاز الأب'), esc(parent && parent.name ? parent.name : '#' + d.parent_id));
+      }
+    }
+    return h;
+  }
+  // شريط حالة الاتصال — نفس استدلال الصفحة العامة، بمرتكزات الإنترنت (مواقع kind='internet').
+  function renderConnectChip(d, chipEl) {
+    if (!chipEl) return;
+    const status = d.current_status || d.status || d.overall_health;
+    const online = status === 'online';
+    const intLocIds = new Set((allLocations || []).filter((x) => x.kind === 'internet').map((x) => Number(x.location_id)));
+    const anchors = (allDevices || []).filter((x) => intLocIds.has(Number(x.location_id)));
+    const lineDown = anchors.length > 0 && anchors.every((a) => a.status !== 'online');
+    let text, color;
+    if (online) {
+      if (lineDown) { text = T('pd.chipLanOnly', '🟡 متصل بالشبكة المحلية فقط — الخط الخارجي منقطع'); color = '#f59e0b'; }
+      else { text = T('pd.chipOnline', '🟢 متصل — النفاذ للإنترنت متوقع (الخط الخارجي يعمل)'); color = '#22c55e'; }
+    } else if (lineDown) {
+      text = T('pd.chipBothDown', '🔴 منقطع — والخط الخارجي منقطع أيضًا (عطل خارجي رجّع الشبكة)'); color = '#ef4444';
+    } else {
+      text = T('pd.chipLocalDown', '🔴 منقطع محليًّا — الخط الخارجي يعمل فالعطل بالجهاز/توصيله'); color = '#ef4444';
+    }
+    chipEl.textContent = text;
+    chipEl.style.color = color;
+    chipEl.classList.remove('hidden');
+  }
+  // بلوك السجل: نسبة التشغيل + الرسم البياني + آخر الانقطاعات (نفس الصفحة العامة، للمسجّل فقط).
+  async function loadDeviceHistory(deviceId, rangesEl, uptimeEl, downtimeEl) {
+    const loadRange = async (range) => {
+      const res = await fetch('/api/devices/' + encodeURIComponent(deviceId) + '/history?range=' + encodeURIComponent(range), { credentials: 'same-origin' });
+      const json = await res.json();
+      if (!json || !json.success) return;
+      const data = json.data || {};
+      const rangeNames = { '24h': T('pd.range24h', 'آخر 24 ساعة'), '7d': T('pd.range7d', 'آخر 7 أيام'), '30d': T('pd.range30d', 'آخر 30 يوم') };
+      if (uptimeEl) {
+        const pct = window.NMFormat ? NMFormat.pct(data.uptime_percentage) : (data.uptime_percentage == null ? '—' : data.uptime_percentage + '%');
+        uptimeEl.textContent = T('pd.uptimeRange', 'نسبة التشغيل') + ' (' + (rangeNames[range] || range) + '): ' + pct;
+      }
+      const canvas = document.getElementById('noc-modal-chart');
+      if (canvas && typeof window.renderDeviceChart === 'function') {
+        if (nocModalChart && typeof nocModalChart.destroy === 'function') { try { nocModalChart.destroy(); } catch (_) {} nocModalChart = null; }
+        try { nocModalChart = window.renderDeviceChart(canvas, data.status_points); } catch (_) { nocModalChart = null; }
+      }
+      if (downtimeEl) {
+        if (!data.downtime_events || data.downtime_events.length === 0) {
+          downtimeEl.innerHTML = `<li>${T('pd.noOutagesInThePeriod', 'لا توجد انقطاعات خلال الفترة.')}</li>`;
+        } else {
+          downtimeEl.innerHTML = data.downtime_events.map((ev) => {
+            const ended = ev.ended_at ? fmtDateTime(ev.ended_at) : T('pd.ongoing', 'مستمرة الآن');
+            const dur = window.NMFormat ? NMFormat.duration(ev.duration_seconds) : '';
+            return `<li>${T('frag.from', 'من')} ${esc(fmtDateTime(ev.started_at))} ${T('pd.to', 'إلى')} ${esc(ended)} ${T('tail.duration', '— المدة:')} ${esc(dur)}</li>`;
+          }).join('');
+        }
+      }
+    };
+    if (rangesEl && !rangesEl.dataset.bound) {
+      rangesEl.innerHTML = `<button data-r="24h" type="button">${T('s3b.24_hours', '24 ساعة')}</button>`
+        + `<button data-r="7d" type="button" class="active">${T('s3b.7_days', '7 أيام')}</button>`
+        + `<button data-r="30d" type="button">${T('s3b.30_days', '30 يوم')}</button>`;
+      rangesEl.addEventListener('click', (event) => {
+        const b = event.target.closest('button[data-r]');
+        if (!b) return;
+        rangesEl.querySelectorAll('button[data-r]').forEach((x) => x.classList.toggle('active', x === b));
+        loadRange(b.dataset.r);
+      });
+      rangesEl.dataset.bound = '1';
+    }
+    await loadRange('7d');
+  }
+  // الخدمات المراقَبة بالاسم (مش العدد بس) — للمسجّل فقط.
+  async function loadDeviceServices(deviceId, wrap, listEl) {
+    if (!wrap || !listEl) return;
+    try {
+      const res = await fetch('/api/devices/' + encodeURIComponent(deviceId) + '/services', { credentials: 'same-origin' });
+      const json = await res.json();
+      const rows = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+      if (rows.length === 0) {
+        listEl.innerHTML = `<li>${T('noc.servicesEmpty', 'لا توجد خدمات مُضافة لهذا الجهاز.')}</li>`;
+      } else {
+        listEl.innerHTML = rows.map((s) => {
+          const dot = s.status === 'online' ? '🟢' : (s.status === 'offline' ? '🔴' : '⚪');
+          const st = s.status === 'online' ? T('status.online', 'متصل') : (s.status === 'offline' ? T('status.offline', 'متوقف') : T('status.unknown', 'غير معروف'));
+          const kindPort = [s.kind ? String(s.kind).toUpperCase() : '', s.port || ''].filter(Boolean).join(' ');
+          return `<li>${dot} <strong>${esc(s.name || '—')}</strong>`
+            + (kindPort ? ` · <span class="df-label">${esc(kindPort)}</span>` : '')
+            + ` · ${esc(st)}`
+            + ` · ${T('s2.last_check', 'آخر فحص')}: ${esc(fmtDateTime(s.last_checked_at))}</li>`;
+        }).join('');
+      }
+      wrap.classList.remove('hidden');
+    } catch (_) { wrap.classList.add('hidden'); }
+  }
+  // الأعطال المرتبطة (RCA): الجهاز سببها، أو واقع ضمن عطل جهاز أعلى — للمسجّل فقط.
+  async function loadDeviceIncidents(deviceId, wrap, listEl) {
+    if (!wrap || !listEl) return;
+    try {
+      const res = await fetch('/api/incidents?status=open&limit=50', { credentials: 'same-origin' });
+      const json = await res.json();
+      const list = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+      const id = Number(deviceId);
+      // «عطل منفرد» على الجهاز نفسه (kind='single' بلا أجهزة متأثرة) مش «عطل مرتبط» —
+      // حالته ظاهرة أصلًا في شارة الحالة، فلا يُكرَّر هنا.
+      const mine = list.filter((it) => {
+        const affected = Array.isArray(it.affected) ? it.affected : [];
+        if (Number(it.root_device_id) === id) return affected.length > 0;
+        return affected.some((a) => Number(a.device_id) === id);
+      });
+      if (mine.length === 0) { wrap.classList.add('hidden'); return; }
+      listEl.innerHTML = mine.map((it) => {
+        if (Number(it.root_device_id) === id) {
+          const names = (it.affected || []).map((a) => a.name).filter(Boolean);
+          const n = Number(it.affected_count) || names.length;
+          return `<li>⛔ ${esc(nocT('noc.incidentRootCaused', 'الجهاز ده سبب انقطاع {n} جهاز: {names}', { n, names: names.join(' · ') }))}</li>`;
+        }
+        return `<li>🔗 ${esc(nocT('noc.incidentAffectedBy', 'واقع ضمن عطل جهاز أعلى: {name}', { name: it.root_name || '—' }))}</li>`;
+      }).join('');
+      wrap.classList.remove('hidden');
+    } catch (_) { wrap.classList.add('hidden'); }
+  }
+  let nocModalChart = null;
   async function openDeviceDetails(deviceId) {
     const modal = document.getElementById('noc-device-modal');
     if (!modal) return;
@@ -1009,6 +1175,23 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     const nameEl = document.getElementById('noc-modal-name');
     const iconEl = document.getElementById('noc-modal-icon');
     const statusEl = document.getElementById('noc-modal-status');
+    // v2.50.7 — الوضع الكامل (مسجّل + إعداد المالك) هو الوحيد الذي يعرض البيانات الزيادة.
+    const full = (nocMode === 'full');
+    const chipEl = document.getElementById('noc-modal-chip');
+    const historyEl = document.getElementById('noc-modal-history');
+    const uptimeEl = document.getElementById('noc-modal-uptime');
+    const downtimeEl = document.getElementById('noc-modal-downtime');
+    const svcWrap = document.getElementById('noc-modal-services-wrap');
+    const svcEl = document.getElementById('noc-modal-services');
+    const incWrap = document.getElementById('noc-modal-incidents-wrap');
+    const incEl = document.getElementById('noc-modal-incidents');
+    // تصفير الأقسام الإضافية مع كل جهاز جديد (وأيضًا في وضع الزائر: مخفية دائمًا).
+    [historyEl, svcWrap, incWrap, chipEl].forEach((el) => { if (el) el.classList.add('hidden'); });
+    if (chipEl) chipEl.textContent = '';
+    if (uptimeEl) uptimeEl.textContent = '';
+    if (downtimeEl) downtimeEl.innerHTML = '';
+    if (svcEl) svcEl.innerHTML = '';
+    if (incEl) incEl.innerHTML = '';
     if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⏳ ${T('noc.loadingTheDetails', 'جَلب التفاصيل')}…</p>`;
     if (nameEl) nameEl.textContent = '…';
     if (statusEl) { statusEl.className = 'details-status-badge'; statusEl.textContent = '—'; }
@@ -1016,7 +1199,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
     modal.setAttribute('aria-hidden', 'false');
     try {
       // SEC-02 — المسار حسب وضع شاشة NOC: داخلي كامل (بجلسة مدير + إعداد المالك) أو منقّى.
-      const devUrl = (nocMode === 'full' ? '/api/devices/' : '/api/public/devices/') + encodeURIComponent(deviceId);
+      const devUrl = (full ? '/api/devices/' : '/api/public/devices/') + encodeURIComponent(deviceId);
       const res = await fetch(devUrl, { credentials: 'same-origin' });
       const json = await res.json();
       if (!json || !json.success) throw new Error((json && json.error) || 'فشل الطلب');
@@ -1027,18 +1210,7 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         statusEl.className = 'details-status-badge ' + (d.current_status || 'unknown');
         statusEl.textContent = statusBadgeText(d.current_status);
       }
-      if (fieldsEl) {
-        fieldsEl.innerHTML = `
-          ${d.ip ? `<div class="details-field"><span class="df-label">IP</span><span class="df-value">${esc(d.ip)}</span></div>` : ''}
-          <div class="details-field"><span class="df-label">${T('s2.type', 'النوع')}</span><span class="df-value">${esc(d.device_type_name || '—')}</span></div>
-          <div class="details-field"><span class="df-label">${T('devices.th.location', T('s3.location', 'الموقع'))}</span><span class="df-value">${esc(d.location_name || '—')}</span></div>
-          <div class="details-field"><span class="df-label">${T('s2.status', 'الحالة')}</span><span class="df-value">${esc(overallHealthText(d))}</span></div>
-          ${d.services_total ? `<div class="details-field"><span class="df-label">${T('s3.services', 'الخدمات')}</span><span class="df-value">${Number(d.services_down_count) || 0} ${T('nocview.servicesDownOf', 'متوقفة من')} ${Number(d.services_total)}</span></div>` : ''}
-          <div class="details-field"><span class="df-label">${T('admin.enabled', 'مفعّل')}</span><span class="df-value">${d.is_active ? T('common.yes', 'نعم') : T('common.no', 'لا')}</span></div>
-          <div class="details-field"><span class="df-label">${T('s3.response_time', 'زمن الاستجابة')}</span><span class="df-value">${d.response_time_ms != null ? esc(d.response_time_ms) + ' ms' : '—'}</span></div>
-          <div class="details-field"><span class="df-label">${T('s2.last_check', T('s3.last_check', 'آخر فحص'))}</span><span class="df-value">${esc(fmtDateTime(d.last_checked_at))}</span></div>
-        `;
-      }
+      if (fieldsEl) fieldsEl.innerHTML = nocDeviceFieldsHtml(d, full);
       // v2.15.3 — أزرار فتح واجهة الجهاز (نفس منطق الصفحة العامة):
       //   HTTPS لو الجهاز أجاب على HTTPS · HTTP لو أجاب على HTTP · ببورت الويب المخصص إن وُجد.
       const acts = document.getElementById('noc-modal-actions');
@@ -1049,6 +1221,14 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         if (d.https_accessible == 1 && ip) ah += `<a class="da-https" href="https://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🔒 ${T('s2x.open_https', 'فتح HTTPS')}</a>`;
         if (d.http_accessible == 1 && ip) ah += `<a class="da-http" href="http://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">${T('s3.open_http', '🌐 فتح HTTP')}</a>`;
         acts.innerHTML = ah || `<small class="da-none">${T('noc.noWebInterfacePingOnly', 'لا توجد واجهة ويب مكتشفة لهذا الجهاز (فحص PING فقط).')}</small>`;
+      }
+      // v2.50.7 — البيانات الزيادة للمسجّل فقط: شريط الاتصال · السجل · الخدمات · الأعطال المرتبطة.
+      if (full) {
+        renderConnectChip(d, chipEl);
+        if (historyEl) historyEl.classList.remove('hidden');
+        loadDeviceHistory(deviceId, document.getElementById('noc-modal-ranges'), uptimeEl, downtimeEl);
+        loadDeviceServices(deviceId, svcWrap, svcEl);
+        loadDeviceIncidents(deviceId, incWrap, incEl);
       }
     } catch (e) {
       if (fieldsEl) fieldsEl.innerHTML = `<p class="details-placeholder">⚠️ ${T('noc.couldNotLoadDetails', 'تعذّر جلب تفاصيل الجهاز.')}</p>`;

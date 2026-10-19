@@ -720,7 +720,7 @@
     border-radius: 10px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
     padding: 1.25rem 1.1rem 1.1rem;
-    width: min(560px, 95vw);
+    width: min(700px, 95vw);
     max-height: 88vh;
     overflow: auto;
     direction: inherit;
@@ -889,3 +889,41 @@
 html.noc-day .details-actions .da-https { background: #16a34a; }
 html.noc-day .details-actions .da-http  { background: #2563eb; }
 .details-actions .da-none { color: var(--muted); font-size: 0.8rem; }
+
+/* ═══ v2.50.7 — بوب-أب الجهاز في NOC: أقسام إضافية للمسجّل (شريط الاتصال · نسبة التشغيل ·
+   الرسم البياني · آخر الانقطاعات · الخدمات · الأعطال المرتبطة) — زي بوب-أب الصفحة العامة.
+   الصفحة دي مش بتحمّل style.css، فقواعد المودال (modal-uptime / downtime-list / connect-chip)
+   منسوخة هنا بنفس القيم وألوان رموز NOC. ═══ */
+.noc-modal-card .hidden { display: none !important; }
+.connect-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.9rem; font-weight: 700; line-height: 1.5;
+  padding: 0.45rem 0.75rem; border-radius: 8px;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid var(--mv-border);
+  margin: 0.15rem 0 0.35rem;
+  max-width: 100%;
+}
+.modal-ranges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0 0.15rem; }
+.modal-ranges button {
+  padding: 0.28rem 0.7rem; border-radius: 7px; cursor: pointer;
+  font-size: 0.8rem; font-weight: 600; font-family: inherit;
+  background: transparent; color: var(--mv-muted);
+  border: 1px solid var(--mv-border);
+}
+.modal-ranges button:hover { color: var(--mv-text); }
+.modal-ranges button.active { background: var(--mv-accent); border-color: var(--mv-accent); color: #fff; }
+.modal-uptime { font-size: 1.05rem; margin: 0.45rem 0 0.6rem; font-weight: 600; color: var(--mv-text); }
+.modal-chart-wrap { margin-bottom: 0.5rem; }
+.modal-chart-wrap canvas { width: 100%; max-width: 100%; }
+.modal-section-title { margin: 0.9rem 0 0.4rem; font-size: 0.95rem; font-weight: 700; color: var(--mv-text); }
+.downtime-list { list-style: none; padding: 0; margin: 0; }
+.downtime-list li {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--mv-border);
+  border-radius: 6px;
+  margin-bottom: 0.45rem;
+  font-size: 0.83rem;
+  color: var(--mv-text);
+  word-break: break-word;
+}

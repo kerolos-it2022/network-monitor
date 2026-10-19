@@ -192,8 +192,28 @@
           <span class="details-status-badge" id="noc-modal-status">—</span>
         </div>
       </div>
+      <!-- v2.50.7 — شريط حالة الاتصال (نفس استدلال الصفحة العامة) — للمسجّل فقط -->
+      <div class="connect-chip hidden" id="noc-modal-chip"></div>
       <div class="details-fields" id="noc-modal-fields">
         <p class="details-placeholder"><span data-i18n="tail.click_a_device_on_the_map_to_see_its_details">انقر على جهاز داخل الخريطة لعرض تفاصيله هنا.</span></p>
+      </div>
+      <!-- v2.50.7 — بلوك السجل مثل الصفحة العامة (فترة + نسبة تشغيل + رسم + آخر الانقطاعات) — للمسجّل فقط -->
+      <div class="hidden" id="noc-modal-history">
+        <div class="modal-ranges" id="noc-modal-ranges"></div>
+        <div class="modal-uptime" id="noc-modal-uptime"></div>
+        <div class="modal-chart-wrap"><canvas id="noc-modal-chart" height="120"></canvas></div>
+        <h5 class="modal-section-title" data-i18n="s3.recent_outages">آخر الانقطاعات</h5>
+        <ul class="downtime-list" id="noc-modal-downtime"></ul>
+      </div>
+      <!-- v2.50.7 — الخدمات المراقَبة بالاسم — للمسجّل فقط -->
+      <div class="hidden" id="noc-modal-services-wrap">
+        <h5 class="modal-section-title" data-i18n="s3.services">الخدمات</h5>
+        <ul class="downtime-list" id="noc-modal-services"></ul>
+      </div>
+      <!-- v2.50.7 — الأعطال المرتبطة بهذا الجهاز (RCA) — للمسجّل فقط -->
+      <div class="hidden" id="noc-modal-incidents-wrap">
+        <h5 class="modal-section-title" data-i18n="noc.relatedOutages">الأعطال المرتبطة بهذا الجهاز</h5>
+        <ul class="downtime-list" id="noc-modal-incidents"></ul>
       </div>
       <!-- v2.15.3 — أزرار فتح واجهة الجهاز (زي الصفحة العامة) -->
       <div class="details-actions" id="noc-modal-actions"></div>
@@ -201,6 +221,7 @@
   </div>
 
 <script src="js/nm-format.js"></script>
+<script src="js/charts.js"></script>
 <script src="js/nm-i18n.js"></script>
 <script src="js/nm-i18n-en.js"></script>
 <script src="js/nm-lang.js"></script>
