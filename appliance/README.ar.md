@@ -31,8 +31,8 @@ sudo apt-get install -y live-build debootstrap debian-archive-keyring \
   squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin grub2-common \
   mtools dosfstools e2fsprogs parted rsync
 cd <المستودع>/appliance
-sudo NM_VERSION=v2.50.6 bash build.sh
-# الناتج: network-monitor-appliance-v2.50.6-amd64.iso
+sudo NM_VERSION=v2.50.7 bash build.sh
+# الناتج: network-monitor-appliance-v2.50.7-amd64.iso
 ```
 
 ## ٢) التنصيب على جهاز
