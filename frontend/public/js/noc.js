@@ -1233,6 +1233,14 @@ let nocAlertScreenEnabled = true;   // v2.29.1 — مفتاح غطاء الإن�
         let ah = '';
         if (d.https_accessible == 1 && ip) ah += `<a class="da-https" href="https://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">🔒 ${T('s2x.open_https', 'فتح HTTPS')}</a>`;
         if (d.http_accessible == 1 && ip) ah += `<a class="da-http" href="http://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener">${T('s3.open_http', '🌐 فتح HTTP')}</a>`;
+        if (!ah && ip) {
+          // v2.50.7 — الفحص الآلي ماكشفش واجهة، بس المالك عايز يفتح الجهاز برضه:
+          // نعرض الزرّين مباشرة على عنوان الجهاز (HTTP أولًا لأن أغلب أجهزة الشبكة بتردّ عليه)،
+          // مع تنبيه إنها محاولة مش متحقَّق منها آليًّا — بدل ما نسيب المكان فاضي.
+          const hint = esc(T('noc.openUnverifiedHint', 'لم يُتحقَّق من الواجهة آليًّا — فتح مباشر على عنوان الجهاز'));
+          ah = `<a class="da-http" href="http://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener" title="${hint}">${T('s3.open_http', '🌐 فتح HTTP')}</a>`
+            + `<a class="da-https" href="https://${esc(ip)}${esc(portSuffix)}/" target="_blank" rel="noopener" title="${hint}">🔒 ${T('s2x.open_https', 'فتح HTTPS')}</a>`;
+        }
         acts.innerHTML = ah || `<small class="da-none">${T('noc.noWebInterfacePingOnly', 'لا توجد واجهة ويب مكتشفة لهذا الجهاز (فحص PING فقط).')}</small>`;
       }
       // v2.50.7 — البيانات الزيادة للمسجّل فقط: شريط الاتصال · السجل · الخدمات · الأعطال المرتبطة.
