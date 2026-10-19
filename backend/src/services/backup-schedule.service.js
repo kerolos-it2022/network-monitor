@@ -10,6 +10,9 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
+// TZ-01 — ساعة النسخة (من backup-schedule.json) تُقارَن بوقت الحائط في منطقة اللوحة
+// (notification_settings.timezone) لا بتوقيت الخادم؛ NULL = توقيت الخادم المحلي كما كان.
+const schedulerTime = require('./scheduler-time.service');
 
 let lastRunDay = '';
 let ticking = false;
@@ -71,9 +74,9 @@ async function tick() {
   ticking = true;
   try {
     const cfg = readSchedule();
-    const now = new Date();
-    const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const today = now.toDateString();
+    const wc = schedulerTime.wallClockIn(schedulerTime.schedulerTimezone());
+    const hm = wc.hm;
+    const today = wc.dayKey;
     if (!cfg.enabled || cfg.hour !== hm || lastRunDay === today) return;
     lastRunDay = today;
     const keep = Number(cfg.keep) || 7;

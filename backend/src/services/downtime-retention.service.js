@@ -7,6 +7,9 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
+// TZ-01 — ساعة التنظيف (03:10) تُقارَن بوقت الحائط في منطقة اللوحة (notification_settings.timezone)
+// لا بتوقيت الخادم؛ NULL = توقيت الخادم المحلي كما كان بالحرف.
+const schedulerTime = require('./scheduler-time.service');
 
 const RETENTION_DAYS = Math.max(7, Number(process.env.DOWNTIME_RETENTION_DAYS) || 90);
 let lastRunDay = '';
@@ -67,9 +70,9 @@ function runRetention() {
 
 function startDowntimeRetention() {
   setInterval(() => {
-    const now = new Date();
-    const hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    const today = now.toDateString();
+    const wc = schedulerTime.wallClockIn(schedulerTime.schedulerTimezone());
+    const hm = wc.hm;
+    const today = wc.dayKey;
     if (hm !== '03:10' || lastRunDay === today) return;
     lastRunDay = today;
     try { runRetention(); } catch (e) {

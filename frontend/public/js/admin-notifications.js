@@ -61,6 +61,109 @@ async function pushLogLangToServer(code) {
 // تغيير لغة الواجهة يُعيد كتابة نصّ الزرّ؛ وإعادة رسم الجدول تتكفّل بها nm-lang.js (نقر التبويب).
 document.addEventListener('nm:lang', paintLogLangBtn);
 
+// ═══ TZ-01 (2026-10-18) — المنطقة الزمنية للجدولة من اللوحة ═══
+// المشكلة: التقرير اليومي كان يعمل بتوقيت الخادم (UTC على الأبلاينس) فوصل 13:30 بدل 10:30
+// لمالك UTC+3. الحل: حقل منطقة IANA (Africa/Cairo) يُمرَّر للمجدولات؛ اسم المنطقة — لا إزاحة
+// ثابتة — هو ما يجعل التوقيت الصيفي/الشتوي يُحسب تلقائيًّا (لا تعديل مرتين في السنة).
+const TZ_COMMON = ['Africa/Cairo', 'Asia/Riyadh', 'Asia/Dubai', 'Europe/London', 'Europe/Paris', 'America/New_York', 'UTC'];
+
+// tzT(key, fallback, vars): نصّ بلغة الواجهة مع استبدال {placeholders} (T لا يدعم المتغيّرات).
+function tzT(key, fallback, vars) {
+  if (window.NMI18N && typeof NMI18N.t === 'function') {
+    try { return NMI18N.t(key, vars); } catch (e) { /* نكمل بالاحتياط */ }
+  }
+  let s = fallback;
+  if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
+  return s;
+}
+
+// tzOffsetLabel(zone): إزاحة المنطقة عن UTC الآن (UTC+03:00 صيفًا وUTC+02:00 شتاءً بمصر) —
+// تُحسب لحظة الرسم (لا قيمة محفوظة) وتتبع التوقيت الصيفي تلقائيًّا.
+function tzOffsetLabel(zone) {
+  try {
+    const now = new Date();
+    const p = {};
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: zone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+    }).formatToParts(now).forEach((x) => { p[x.type] = x.value; });
+    const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+    const mins = Math.round((asUTC - Math.floor(now.getTime() / 1000) * 1000) / 60000);
+    const sign = mins >= 0 ? '+' : '-';
+    const abs = Math.abs(mins);
+    return 'UTC' + sign + String(Math.floor(abs / 60)).padStart(2, '0') + ':' + String(abs % 60).padStart(2, '0');
+  } catch (e) { return ''; }
+}
+
+// browserTimeZone(): منطقة المتصفح (اقتراح فقط — لا تُحفظ إلا بنقرة/حفظ صريح).
+function browserTimeZone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; }
+}
+
+// buildTimezoneDatalist(): تعبئة القائمة (أسماء شائعة أولًا ثم Intl.supportedValuesOf كاملة
+// + خيار فارغ صريح معناه «توقيت الخادم (افتراضي)»). بلا supportedValuesOf تبقى الأسماء الشائعة.
+function buildTimezoneDatalist() {
+  const dl = document.getElementById('ntf-timezone-zones');
+  if (!dl) return;
+  let all = [];
+  try { all = (typeof Intl.supportedValuesOf === 'function') ? Intl.supportedValuesOf('timeZone') : []; } catch (e) { all = []; }
+  const seen = new Set();
+  const zones = TZ_COMMON.concat(all.filter((z) => !TZ_COMMON.includes(z)));
+  dl.textContent = '';
+  const system = document.createElement('option');
+  system.value = '';
+  system.label = tzT('notify.timezone.systemOption', 'توقيت الخادم (افتراضي)');
+  dl.appendChild(system);
+  for (const z of zones) {
+    if (seen.has(z)) continue;
+    seen.add(z);
+    const o = document.createElement('option');
+    o.value = z;
+    dl.appendChild(o);
+  }
+}
+
+// paintTimezoneHint(): التلميح الحيّ أسفل الحقل — يُظهر المنطقة الفعّالة وإزاحتها الآن ليرى
+// المالك بعينه سبب فارق الساعات (وينطبق نفسه صيفًا وشتاءً بفضل اسم المنطقة).
+// الفارغ = توقيت الخادم + اقتراح منطقة المتصفح (زر اختيار — لا حفظ تلقائي).
+function paintTimezoneHint() {
+  const hint = document.getElementById('ntf-timezone-hint');
+  const input = document.getElementById('ntf-timezone');
+  if (!hint || !input) return;
+  const val = String(input.value || '').trim();
+  hint.textContent = '';
+  if (!val) {
+    hint.appendChild(document.createTextNode(tzT('notify.timezone.hintSystem', 'بتوقيت الخادم المحلي — اختر منطقتك ليضبط الجدول على ساعتك')));
+    const bz = browserTimeZone();
+    if (bz) {
+      const offset = tzOffsetLabel(bz);
+      const sep = document.createTextNode(' · ');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm';
+      btn.id = 'ntf-timezone-suggest';
+      btn.textContent = tzT('notify.timezone.suggest', 'منطقتك: {zone} ({offset}) — اضغط للاختيار', { zone: bz, offset: offset });
+      btn.addEventListener('click', () => { input.value = bz; paintTimezoneHint(); });
+      hint.appendChild(sep);
+      hint.appendChild(btn);
+    }
+    return;
+  }
+  // اسم منطقة؟ نتحقق به بنفس طريقة التحقق في الخادم (بناء Intl داخل try/catch).
+  try {
+    const resolved = new Intl.DateTimeFormat('en-US', { timeZone: val }).resolvedOptions().timeZone || '';
+    if (resolved) {
+      hint.appendChild(document.createTextNode(tzT('notify.timezone.hint', 'بتوقيت: {zone} ({offset}) — التوقيت الصيفي يُحسب تلقائيًّا', { zone: resolved, offset: tzOffsetLabel(resolved) })));
+      return;
+    }
+  } catch (e) { /* منطقة غير معروفة ⇒ رسالة واضحة أدناه */ }
+  hint.appendChild(document.createTextNode(tzT('notify.timezone.invalid', 'منطقة غير معروفة — اختر اسمًا من القائمة (مثل Africa/Cairo)')));
+}
+
+// تغيير لغة الواجهة يُعيد تعبئة القائمة (تسمية «توقيت الخادم») وإعادة رسم التلميح بلغتها.
+document.addEventListener('nm:lang', () => { buildTimezoneDatalist(); paintTimezoneHint(); });
+
+
 // ═══ v2.34.0 — شرائح شاشة الإشعارات (بنفس نمط شاشة «اكتشاف الأجهزة»): الإعدادات ⇄ سجل الإشعارات ═══
 // شريط الشرائح داخل #section-notifications فيبقى ظاهرًا في الشريحتين، والسجل قسمٌ مستقل يُخفى ويُظهر.
 const NTF_SUB_PANELS = { settings: 'ntf-settings-panel', logs: 'section-logs' };
@@ -110,6 +213,9 @@ async function loadNotificationSettings() {
   (function () { const w = String(d.maintenance_window || '02:00-04:00').split('-'); const fromEl = document.getElementById('ntf-maintenance_from'); const toEl = document.getElementById('ntf-maintenance_to'); if (fromEl) fromEl.value = (w[0] || '02:00').trim(); if (toEl) toEl.value = (w[1] || '04:00').trim(); })();
   document.getElementById('ntf-daily_report_enabled').checked = d.daily_report_enabled === undefined ? true : !!d.daily_report_enabled;
   document.getElementById('ntf-daily_report_hour').value = d.daily_report_hour || '08:00';
+  // TZ-01 — المنطقة الزمنية للجدولة ('' = توقيت الخادم المحلي) + تلميح الإزاحة الحالية.
+  document.getElementById('ntf-timezone').value = d.timezone || '';
+  paintTimezoneHint();
   document.getElementById('ntf-bot_commands_enabled').checked = d.bot_commands_enabled === undefined ? true : !!d.bot_commands_enabled;
   document.getElementById('ntf-storm_digest_enabled').checked = d.storm_digest_enabled === undefined ? true : !!d.storm_digest_enabled;
   document.getElementById('ntf-storm_window_seconds').value = Number(d.storm_window_seconds) || 90;
@@ -153,6 +259,8 @@ async function saveNotificationSettings() {
     maintenance_window: (document.getElementById('ntf-maintenance_from').value || '02:00') + '-' + (document.getElementById('ntf-maintenance_to').value || '04:00'),
     daily_report_enabled: document.getElementById('ntf-daily_report_enabled').checked,
     daily_report_hour: document.getElementById('ntf-daily_report_hour').value || '08:00',
+    // TZ-01 — المنطقة الزمنية (فارغة = توقيت الخادم)؛ الخادم يتحقق منها ويرفض غير الصالح.
+    timezone: document.getElementById('ntf-timezone').value.trim(),
     bot_commands_enabled: document.getElementById('ntf-bot_commands_enabled').checked,
     storm_digest_enabled: document.getElementById('ntf-storm_digest_enabled').checked,
     storm_window_seconds: Number(document.getElementById('ntf-storm_window_seconds').value) || 90,
@@ -307,6 +415,11 @@ async function loadNotificationLogs() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // TZ-01 — قائمة المناطق تُبنى مرة عند الفتح (أسماء شائعة أولًا + كل مناطق Intl)،
+  // والتلميح يُعاد رسمه مع كل كتابة/تغيير لغة.
+  buildTimezoneDatalist();
+  const tzInput = document.getElementById('ntf-timezone');
+  if (tzInput) tzInput.addEventListener('input', paintTimezoneHint);
   await loadNotificationSettings();
   document.getElementById('ntf-save-btn').addEventListener('click', saveNotificationSettings);
   const testBtn = document.getElementById('ntf-test-btn');

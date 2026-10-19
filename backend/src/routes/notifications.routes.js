@@ -6,6 +6,8 @@ const requireAuth = require('../middleware/requireAuth');
 // نصّ الإشعار المُرسَل بلغتين — يتبع إعداد لغة الإشعارات (رسالة واحدة بلغة واحدة).
 const { msg, pick } = require('../services/message-i18n.service');
 const { uiText } = require('../services/ui-text.service');
+// TZ-01 — التحقق من المنطقة الزمنية/تحويلها للاسم القانوني (نفس المصدر الذي تقرأ منه المجدولات).
+const { canonicalTimeZone } = require('../services/scheduler-time.service');
 
 const router = express.Router();
 
@@ -48,6 +50,8 @@ router.get('/settings', requireAuth, async (req, res) => {
       maintenance_window: s.maintenance_window || '',
       daily_report_enabled: s.daily_report_enabled ? 1 : 0,
       daily_report_hour: s.daily_report_hour || '08:00',
+      // TZ-01 — المنطقة الزمنية للجدولة (اسم IANA)؛ '' = توقيت الخادم المحلي.
+      timezone: s.timezone || '',
       bot_commands_enabled: s.bot_commands_enabled === undefined ? 1 : (s.bot_commands_enabled ? 1 : 0),
       storm_digest_enabled: s.storm_digest_enabled === undefined ? 1 : (s.storm_digest_enabled ? 1 : 0),
       storm_window_seconds: Number(s.storm_window_seconds) || 90,
@@ -82,6 +86,7 @@ router.put('/settings', requireAuth, (req, res) => {
     maintenance_window,
     daily_report_enabled,
     daily_report_hour,
+    timezone,
     bot_commands_enabled,
     storm_digest_enabled,
     storm_window_seconds,
@@ -105,6 +110,27 @@ router.put('/settings', requireAuth, (req, res) => {
     return oldValue ? oldValue : null;
   });
 
+  // TZ-01 — المنطقة الزمنية (اسم IANA لجدولة التقرير اليومي/التنظيف/التدوير):
+  //   • null/'' ⇒ تُصفَّر إلى NULL = توقيت الخادم المحلي (سلوك ما قبل الإضافة بالحرف).
+  //   • اسم منطقة صالح ⇒ يُخزَّن باسمه القانوني ('Africa/Cairo').
+  //   • أي شيء آخر (منطقة وهمية أو إزاحة ثابتة '+03:00') ⇒ 400 برسالة بلغة الواجهة.
+  //   • الحقل غير المُرسَل (undefined) يُبقي القيمة الحالية — توافقًا مع واجهة أقدم لا تعرفه.
+  const tzRaw = timezone !== undefined ? timezone : current.timezone;
+  const tzText = tzRaw == null ? '' : String(tzRaw).trim();
+  let timezoneValue = null;
+  if (tzText !== '') {
+    timezoneValue = canonicalTimeZone(tzText);
+    if (!timezoneValue) {
+      return res.status(400).json({
+        success: false,
+        error: uiText(
+          'منطقة زمنية غير معروفة: «' + tzText.slice(0, 60) + '» — اترك الحقل فارغًا لتوقيت الخادم، أو اكتب اسم منطقة IANA مثل Africa/Cairo',
+          'Unknown time zone: "' + tzText.slice(0, 60) + '" — leave the field empty for server time, or use an IANA zone name such as Africa/Cairo'
+        ),
+      });
+    }
+  }
+
   // v2.13.0 — أسماء أعمدة التحديث في قائمة واحدة تُبنى منها العبارة: لا تبقى أسماء الأسطر
   // مكتوبة مرّتين (العبارة + مواضع القيم) فيفترقان عند أول حقل يُضاف لاحقًا.
   const COLUMNS = [
@@ -121,6 +147,7 @@ router.put('/settings', requireAuth, (req, res) => {
     'maintenance_window',
     'daily_report_enabled',
     'daily_report_hour',
+    'timezone',
     'bot_commands_enabled',
     'storm_digest_enabled',
     'storm_window_seconds',
@@ -145,6 +172,7 @@ router.put('/settings', requireAuth, (req, res) => {
     maintenance_window || null,
     daily_report_enabled ? 1 : 0,
     daily_report_hour || '08:00',
+    timezoneValue,
     bot_commands_enabled === undefined ? 1 : (bot_commands_enabled ? 1 : 0),
     storm_digest_enabled === undefined ? 1 : (storm_digest_enabled ? 1 : 0),
     Math.min(600, Math.max(15, Number(storm_window_seconds) || 90)),

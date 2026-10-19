@@ -593,6 +593,16 @@
                   <input type="time" class="nm-input nm-inline-num" id="ntf-daily_report_hour" value="08:00" />
                 </label>
               </div>
+              <!-- TZ-01 — المنطقة الزمنية للجدولة: خياراتها تُبنى في JS من Intl.supportedValuesOf
+                   (مع أسماء شائعة أولًا)، والحقل الفارغ = توقيت الخادم المحلي (الافتراضي كما كان). -->
+              <div class="nm-row">
+                <label class="nm-field"><span data-i18n="notify.timezone.label">🌍 المنطقة الزمنية للجدولة</span>
+                  <input type="text" class="nm-input" id="ntf-timezone" list="ntf-timezone-zones" autocomplete="off" spellcheck="false"
+                         placeholder="اكتب للبحث… مثال: Cairo" data-i18n-attr="placeholder:notify.timezone.placeholder" />
+                  <datalist id="ntf-timezone-zones"></datalist>
+                </label>
+              </div>
+              <span class="nm-option-desc" id="ntf-timezone-hint"></span>
               <span class="nm-option-desc"><span data-i18n="tail.a_24_hour_summary_every_morning_outages_the">ملخص 24 ساعة كل صباح: الانقطاعات وأطولها وأسوأ جهاز.</span></span>
             </div>
 

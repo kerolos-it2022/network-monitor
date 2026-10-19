@@ -8,6 +8,9 @@
 // عبر telegram-bot.service.
 const db = require('../db');
 const { isMaintenanceNow } = require('./maintenance.service');
+// TZ-01 — المنطقة الزمنية من اللوحة: قارن «الآن» بوقت الحائط في منطقة المالك لا بتوقيت
+// الخادم (UTC على الأبلاينس) — كان 10:30 بتوقيت المالك يوصل 13:30 لأن الخادم UTC.
+const schedulerTime = require('./scheduler-time.service');
 // قرار المالك (2026-10-18): رسائل العاصفة والتقرير اليومي **المُرسَلة** تُبنى بلغة الإشعارات (عربي/إنجليزي).
 const { msg, pick, isEn } = require('./message-i18n.service');
 
@@ -219,6 +222,9 @@ async function buildDailyReportWithAnalysis(now = new Date()) {
 
 // startDailyReport(): حلقة دقيقة واحدة تتحقق من الإعدادات (daily_report_enabled + hour)
 // وترسل مرة واحدة يوميًا عند تطابق الساعة:الدقيقة.
+// TZ-01 — التطابق يُحسب في **المنطقة الزمنية المضبوطة من اللوحة** (notification_settings.timezone،
+// اسم IANA يحسب التوقيت الصيفي/الشتوي تلقائيًّا)؛ ولو كانت NULL نعود لتوقيت الخادم المحلي
+// بلا أي تغيير عن السلوك القديم. الحلقة تقرأ الإعداد كل دقيقة ⇒ تغيير المنطقة يسري فورًا بلا إعادة تشغيل.
 function startDailyReport() {
   let lastSentDay = '';
   const tick = async () => {
@@ -228,9 +234,9 @@ function startDailyReport() {
       if (r) { enabled = !!r.daily_report_enabled; hour = String(r.daily_report_hour || '08:00'); }
     } catch (e) { return; }
     if (!enabled) { lastSentDay = ''; return; }
-    const now = new Date();
-    const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const today = now.toDateString();
+    const wc = schedulerTime.wallClockIn(schedulerTime.schedulerTimezone());
+    const hm = wc.hm;
+    const today = wc.dayKey;
     if (hm !== hour || lastSentDay === today) return;
     lastSentDay = today;
     try {

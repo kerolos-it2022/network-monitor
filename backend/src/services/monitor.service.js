@@ -10,6 +10,10 @@ const downtimeService = require('./downtime.service');
 const notifier = require('./notifier.service');
 // v2.8.7 — ناقل البثّ الحيّ (SSE): يُبثّ تغيّر حالة أي جهاز لحظيًا لشاشات العرض (NOC/العامة).
 const live = require('./live.service');
+// TZ-01 — المنطقة الزمنية للجدولة من اللوحة (اسم IANA أو null = توقيت الخادم المحلي).
+// تُقرأ مرة عند الإقلاع لأن node-cron يأخذ الخيار وقت الجدولة: تغييرها من اللوحة يسري على
+// مهام cron التالية **بعد إعادة تشغيل الخدمة** (التقرير اليومي يسري فورًا لأنه فحص كل دقيقة).
+const schedulerTime = require('./scheduler-time.service');
 // قرار المالك (2026-10-18): رسائل حراسة المحرك **المُرسَلة** تُبنى بلغة الإشعارات (عربي/إنجليزي).
 const { msg, pick, isEn } = require('./message-i18n.service');
 
@@ -392,13 +396,14 @@ function startMonitoring() {
       lastTickAt = Date.now();
       tickRunning = false;
     }
-  });
+  }, schedulerTime.cronSchedulerOptions());
   console.log('Monitoring engine started (every 10s tick).');
   // v2.11.9 — تشغيل حلقة حراسة المحرك (نبضة متوقفة/فحوصات عالقة → تحذير تلجرام).
   startWatchdog();
 
   // ═══ HIST-02 — تجميعات ساعية/يومية **قبل** التقليم (وإلا فُقد ما لم يُجمَّع) ═══
   // كل ساعة (دقيقة 5): تحديث دلاء آخر 3 ساعات (رخيص).
+  // TZ-01 — المهام الثلاث التالية مبنية على ساعة الحائط ⇒ تُجدول بمنطقة اللوحة (cron timezone).
   cron.schedule('5 * * * *', () => {
     try {
       const r = require('./rollup.service').runRollupMaintenance({ hoursBack: 3, daysBack: 2 });
@@ -406,7 +411,7 @@ function startMonitoring() {
     } catch (e) {
       console.error('[rollup] hourly error:', e.message);
     }
-  });
+  }, schedulerTime.cronSchedulerOptions());
   // يوميًّا 02:50 (قبل تقليم السجلات 03:00): بناء الدلاء + حذف الأقدم من مدة الاحتفاظ (90 يومًا).
   cron.schedule('50 2 * * *', () => {
     try {
@@ -415,7 +420,7 @@ function startMonitoring() {
     } catch (e) {
       console.error('[rollup] daily error:', e.message);
     }
-  });
+  }, schedulerTime.cronSchedulerOptions());
   console.log('Rollup maintenance scheduled (hourly @:05 · daily 02:50 before raw-log cleanup).');
 
   // v2.7.x — مَسح آلِي يَوْمِي لِـ status_logs (الجَدول الَّذِي يَنمو بِـ ~354 أَلْف صَف/يَوم).
@@ -431,8 +436,8 @@ function startMonitoring() {
     } catch (e) {
       console.error('[auto-cleanup] status_logs cleanup error:', e);
     }
-  });
-  console.log('Daily status_logs auto-cleanup scheduled (03:00 local, retention = ' + (parseInt(process.env.STATUS_LOGS_RETENTION_DAYS, 10) || 7) + ' days).');
+  }, schedulerTime.cronSchedulerOptions());
+  console.log('Daily status_logs auto-cleanup scheduled (03:00 ' + (schedulerTime.schedulerTimezone() || 'local') + ', retention = ' + (parseInt(process.env.STATUS_LOGS_RETENTION_DAYS, 10) || 7) + ' days).');
 }
 
 // ═══ v2.11.9 — صحّة المحرك (Engine Health) + حلقة الحراسة ═══
