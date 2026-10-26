@@ -21,7 +21,7 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "macaddress": "^0.5.4",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "node-cron": "^3.0.3",
     "ping": "^0.4.4",
     "portscanner": "^2.2.0",
